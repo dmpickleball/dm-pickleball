@@ -16,7 +16,7 @@ const DAVID_PHOTO  = "/images/david.jpg";         // was: 1773178886822_IMG_2962
 const FORMSPREE_ID = "mvzwanal";
 
 // ─── THEME ───────────────────────────────────────────────────────────────────
-const G = "#006039", Y = "#f4c430";
+const G = "#1a3c34", Y = "#c0c0c0";
 const inp = { padding:"11px 14px", border:"1.5px solid #e5e7eb", borderRadius:8, fontSize:"0.92rem", outline:"none", background:"#fafafa", width:"100%", boxSizing:"border-box", marginBottom:12 };
 const lbl = { fontSize:"0.78rem", fontWeight:700, color:"#6b7280", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:5, display:"block" };
 
@@ -112,7 +112,7 @@ function CopyButton({code}){
   const[copied,setCopied]=useState(false);
   return(
     <button onClick={()=>{navigator.clipboard.writeText(code).catch(()=>{});setCopied(true);setTimeout(()=>setCopied(false),2000);}}
-      style={{background:copied?"#e8f5ee":"white",color:copied?G:"#374151",border:`1.5px solid ${copied?G:"#e5e7eb"}`,padding:"7px 16px",borderRadius:8,cursor:"pointer",fontSize:"0.82rem",fontWeight:700,whiteSpace:"nowrap",transition:"all 0.2s"}}>
+      style={{background:copied?"#e8f0ee":"white",color:copied?G:"#374151",border:`1.5px solid ${copied?G:"#e5e7eb"}`,padding:"7px 16px",borderRadius:8,cursor:"pointer",fontSize:"0.82rem",fontWeight:700,whiteSpace:"nowrap",transition:"all 0.2s"}}>
       {copied?"✓ Copied!":"Copy Code"}
     </button>
   );
@@ -137,7 +137,7 @@ function CalendarPicker({value,onChange,memberType}){
         <span style={{fontWeight:700,fontSize:"0.95rem"}}>{monthName}</span>
         <button onClick={()=>month===11?setViewing({year:year+1,month:0}):setViewing({year,month:month+1})} style={{background:"none",border:"none",color:"white",fontSize:"1.3rem",cursor:"pointer",padding:"0 8px"}}>›</button>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",background:"#e8f5ee"}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",background:"#e8f0ee"}}>
         {["Su","Mo","Tu","We","Th","Fr","Sa"].map(d=><div key={d} style={{textAlign:"center",padding:"8px 0",fontSize:"0.75rem",fontWeight:700,color:G}}>{d}</div>)}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",padding:"8px"}}>
@@ -154,7 +154,7 @@ function CalendarPicker({value,onChange,memberType}){
 function Nav({user,onLogin,onLogout,setPage,currentPage}){
   return(
     <nav style={{background:G,padding:"14px 32px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100}}>
-      <div onClick={()=>setPage("home")} style={{color:Y,fontWeight:900,fontSize:"1.3rem",cursor:"pointer"}}>DM <span style={{color:"white"}}>Pickleball</span></div>
+      <div onClick={()=>setPage("home")} style={{color:Y,fontWeight:900,fontSize:"1.3rem",letterSpacing:1,cursor:"pointer"}}>DM <span style={{color:"white"}}>Pickleball</span></div>
       <div style={{display:"flex",gap:20,alignItems:"center",flexWrap:"wrap"}}>
         {[["home","Home"],["pricing","Pricing"],["gear","Paddle/Gear"],["contact","Contact"]].map(([p,label])=>(
           <span key={p} onClick={()=>setPage(p)} style={{color:"white",cursor:"pointer",opacity:currentPage===p?1:0.7,fontWeight:currentPage===p?700:400,fontSize:"0.92rem"}}>{label}</span>
@@ -194,7 +194,7 @@ function LessonCard({lesson,isHistory,onCancel}){
       )}
       <div onClick={()=>isHistory&&setExpanded(!expanded)} style={{padding:"16px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:isHistory?"pointer":"default"}}>
         <div style={{display:"flex",alignItems:"center",gap:16}}>
-          <div style={{background:isHistory?"#e8f5ee":lesson.status==="confirmed"?"#e8f5ee":"#fffbea",border:`1.5px solid ${isHistory?G:lesson.status==="confirmed"?G:Y}`,borderRadius:10,padding:"10px 14px",textAlign:"center",minWidth:56}}>
+          <div style={{background:isHistory?"#e8f0ee":lesson.status==="confirmed"?"#e8f0ee":"#fffbea",border:`1.5px solid ${isHistory?G:lesson.status==="confirmed"?G:Y}`,borderRadius:10,padding:"10px 14px",textAlign:"center",minWidth:56}}>
             <div style={{fontSize:"1.3rem",fontWeight:900,color:isHistory?G:lesson.status==="confirmed"?G:"#92400e",lineHeight:1}}>{dateObj.getDate()}</div>
             <div style={{fontSize:"0.65rem",fontWeight:700,color:"#6b7280",textTransform:"uppercase"}}>{dateObj.toLocaleString("default",{month:"short"})}</div>
           </div>
@@ -204,7 +204,7 @@ function LessonCard({lesson,isHistory,onCancel}){
             {lesson.focus&&<div style={{fontSize:"0.8rem",color:G,marginTop:3,fontWeight:600}}>🎯 {lesson.focus}</div>}
             {!isHistory&&(
               <div style={{marginTop:5,display:"flex",flexWrap:"wrap",gap:6,alignItems:"center"}}>
-                <span style={{background:lesson.status==="confirmed"?"#e8f5ee":"#fffbea",color:lesson.status==="confirmed"?G:"#92400e",padding:"2px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>
+                <span style={{background:lesson.status==="confirmed"?"#e8f0ee":"#fffbea",color:lesson.status==="confirmed"?G:"#92400e",padding:"2px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>
                   {lesson.status==="confirmed"?"✓ Confirmed":"⏳ Pending"}
                 </span>
                 {deadline&&(
@@ -219,9 +219,9 @@ function LessonCard({lesson,isHistory,onCancel}){
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           {isHistory&&(
             <>
-              {lesson.notes&&<span style={{fontSize:"0.75rem",background:"#e8f5ee",color:G,padding:"3px 10px",borderRadius:50,fontWeight:600}}>📝</span>}
-              {lesson.photos?.length>0&&<span style={{fontSize:"0.75rem",background:"#e8f5ee",color:G,padding:"3px 10px",borderRadius:50,fontWeight:600}}>🖼 {lesson.photos.length}</span>}
-              {lesson.videos?.length>0&&<span style={{fontSize:"0.75rem",background:"#e8f5ee",color:G,padding:"3px 10px",borderRadius:50,fontWeight:600}}>🎬 {lesson.videos.length}</span>}
+              {lesson.notes&&<span style={{fontSize:"0.75rem",background:"#e8f0ee",color:G,padding:"3px 10px",borderRadius:50,fontWeight:600}}>📝</span>}
+              {lesson.photos?.length>0&&<span style={{fontSize:"0.75rem",background:"#e8f0ee",color:G,padding:"3px 10px",borderRadius:50,fontWeight:600}}>🖼 {lesson.photos.length}</span>}
+              {lesson.videos?.length>0&&<span style={{fontSize:"0.75rem",background:"#e8f0ee",color:G,padding:"3px 10px",borderRadius:50,fontWeight:600}}>🎬 {lesson.videos.length}</span>}
               {!lesson.notes&&!lesson.photos?.length&&!lesson.videos?.length&&<span style={{fontSize:"0.75rem",color:"#9ca3af",fontStyle:"italic"}}>No notes yet</span>}
               <span style={{color:G,fontSize:"1.1rem"}}>{expanded?"▲":"▼"}</span>
             </>
@@ -252,7 +252,7 @@ function LessonCard({lesson,isHistory,onCancel}){
 function Homepage({setPage}){
   return(
     <div>
-      <div style={{background:`linear-gradient(135deg,${G},#004d2e)`,color:"white",textAlign:"center",padding:"80px 24px 64px"}}>
+      <div style={{background:`linear-gradient(135deg,${G},#0d2620)`,color:"white",textAlign:"center",padding:"80px 24px 64px"}}>
         <div style={{fontSize:"0.8rem",letterSpacing:3,opacity:0.75,marginBottom:14,textTransform:"uppercase"}}>Pickleball Coaching · San Francisco Peninsula, Bay Area</div>
         <h1 style={{fontSize:"3rem",fontWeight:900,lineHeight:1.15,marginBottom:16}}>Level Up With One of the<br/><span style={{color:Y}}>Bay Area's Top Competitive Pickleball Coaches</span></h1>
         <p style={{fontSize:"1.1rem",opacity:0.9,maxWidth:500,margin:"0 auto 32px",lineHeight:1.7}}>Private, semi-private & group lessons on the SF Peninsula. Personalized coaching from a tournament competitor who knows what it takes to win.</p>
@@ -278,13 +278,13 @@ function Homepage({setPage}){
             <h2 style={{fontSize:"1.8rem",fontWeight:900,marginBottom:16,lineHeight:1.3}}>From Tennis Courts to Pickleball Pro</h2>
             <p style={{color:"#4b5563",lineHeight:1.8,marginBottom:14,fontSize:"0.97rem"}}>With 15+ years of competitive tennis experience, David Mok brings a unique edge to pickleball coaching. As a 5.0+ rated tournament player and CRBN Ambassador, David has an insider's understanding of what it takes to elevate your game.</p>
             <p style={{color:"#4b5563",lineHeight:1.8,fontSize:"0.97rem"}}>David specializes in coaching tennis players making the transition to pickleball — he knows exactly the habits that help and the ones that hurt. Whether you're a complete beginner or a seasoned competitor, David coaches all skill levels in both doubles and singles across the SF Peninsula.</p>
-            <div style={{background:"#e8f5ee",border:`1px solid ${G}20`,borderRadius:10,padding:"10px 16px",marginTop:14,display:"inline-flex",alignItems:"center",gap:8}}>
+            <div style={{background:"#e8f0ee",border:`1px solid ${G}20`,borderRadius:10,padding:"10px 16px",marginTop:14,display:"inline-flex",alignItems:"center",gap:8}}>
               <span style={{fontSize:"1.1rem"}}>🥇</span>
               <span style={{fontSize:"0.83rem",fontWeight:700,color:G}}>Multiple Gold Medals · Tournament Competitor</span>
             </div>
             <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:14}}>
               {["Multiple Gold Medalist","Tournament Competitor","CRBN Ambassador","Tennis Convert Specialist","All Skill Levels","SF Peninsula"].map(tag=>(
-                <span key={tag} style={{background:"#e8f5ee",color:G,padding:"6px 14px",borderRadius:50,fontSize:"0.8rem",fontWeight:600}}>{tag}</span>
+                <span key={tag} style={{background:"#e8f0ee",color:G,padding:"6px 14px",borderRadius:50,fontSize:"0.8rem",fontWeight:600}}>{tag}</span>
               ))}
             </div>
           </div>
@@ -316,7 +316,7 @@ function Homepage({setPage}){
           <button onClick={()=>setPage("gear")} style={{background:"#f97316",color:"white",border:"none",padding:"12px 28px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"0.95rem"}}>View All Codes →</button>
         </div>
       </div>
-      <div style={{background:`linear-gradient(135deg,${G},#004d2e)`,color:"white",textAlign:"center",padding:"60px 24px"}}>
+      <div style={{background:`linear-gradient(135deg,${G},#0d2620)`,color:"white",textAlign:"center",padding:"60px 24px"}}>
         <h2 style={{fontSize:"1.8rem",fontWeight:900,marginBottom:12}}>Ready to Improve Your Game?</h2>
         <p style={{opacity:0.9,marginBottom:24}}>Reach out via text or call to get started.</p>
         <button onClick={()=>setPage("contact")} style={{background:Y,color:G,border:"none",padding:"13px 32px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem"}}>Contact David</button>
@@ -525,12 +525,12 @@ function ContactPage(){
       </div>
       <div style={{background:"white",borderRadius:12,padding:"28px 32px",boxShadow:"0 2px 16px rgba(0,0,0,0.07)"}}>
         <div style={{display:"flex",gap:16,marginBottom:20}}>
-          <div style={{flex:1,background:"#e8f5ee",border:`1.5px solid ${G}`,borderRadius:10,padding:"14px 18px",textAlign:"center"}}>
+          <div style={{flex:1,background:"#e8f0ee",border:`1.5px solid ${G}`,borderRadius:10,padding:"14px 18px",textAlign:"center"}}>
             <div style={{fontSize:24,marginBottom:4}}>📱</div>
             <div style={{fontWeight:700,fontSize:"0.9rem"}}>Text or Call</div>
             <div style={{color:G,fontWeight:700,marginTop:4}}>(650) 839-3398</div>
           </div>
-          <div style={{flex:1,background:"#e8f5ee",border:`1.5px solid ${G}`,borderRadius:10,padding:"14px 18px",textAlign:"center"}}>
+          <div style={{flex:1,background:"#e8f0ee",border:`1.5px solid ${G}`,borderRadius:10,padding:"14px 18px",textAlign:"center"}}>
             <div style={{fontSize:24,marginBottom:4}}>📧</div>
             <div style={{fontWeight:700,fontSize:"0.9rem"}}>Email</div>
             <div style={{color:G,fontWeight:700,marginTop:4,fontSize:"0.85rem"}}>hello@dmpickleball.com</div>
@@ -636,7 +636,7 @@ function Dashboard({user,setPage,lessons,onCancel}){
         <div>
           <h2 style={{fontWeight:900,color:G,fontSize:"1.6rem",marginBottom:4}}>My Lessons</h2>
           <p style={{color:"#6b7280",fontSize:"0.92rem"}}>Welcome back, <strong>{user.name}</strong> ·
-            <span style={{background:"#e8f5ee",color:G,padding:"2px 10px",borderRadius:50,fontSize:"0.78rem",fontWeight:600,marginLeft:8}}>
+            <span style={{background:"#e8f0ee",color:G,padding:"2px 10px",borderRadius:50,fontSize:"0.78rem",fontWeight:600,marginLeft:8}}>
               {user.memberType==="menlo"?"Menlo Circus Club":"General Student"}
             </span>
           </p>
@@ -692,7 +692,7 @@ function BookingPage({user,setPage,onAddLesson}){
         <h2 style={{fontWeight:900,color:G,fontSize:"1.6rem"}}>Book a Lesson</h2>
         <p style={{color:"#6b7280",marginTop:4,fontSize:"0.92rem"}}>
           Pick your lesson type and duration below, then choose a time.
-          <span style={{background:"#e8f5ee",color:G,padding:"2px 10px",borderRadius:50,fontSize:"0.78rem",fontWeight:600,marginLeft:8}}>
+          <span style={{background:"#e8f0ee",color:G,padding:"2px 10px",borderRadius:50,fontSize:"0.78rem",fontWeight:600,marginLeft:8}}>
             {isMenlo?"Menlo Circus Club":"General Student"}
           </span>
         </p>
@@ -705,7 +705,7 @@ function BookingPage({user,setPage,onAddLesson}){
             :isMenlo?`$${p}/person`:`$${140} total`;
           return(
             <div key={l.id} onClick={()=>setLessonType(l.id)}
-              style={{background:lessonType===l.id?"#e8f5ee":"white",border:`2px solid ${lessonType===l.id?G:"#e5e7eb"}`,borderRadius:12,padding:"16px",cursor:"pointer",textAlign:"center",transition:"all 0.15s"}}>
+              style={{background:lessonType===l.id?"#e8f0ee":"white",border:`2px solid ${lessonType===l.id?G:"#e5e7eb"}`,borderRadius:12,padding:"16px",cursor:"pointer",textAlign:"center",transition:"all 0.15s"}}>
               <div style={{fontSize:28,marginBottom:6}}>{l.icon}</div>
               <div style={{fontWeight:700,fontSize:"0.95rem",color:lessonType===l.id?G:"#1a1a1a"}}>{l.label}</div>
               <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:3}}>{l.desc}</div>
@@ -717,7 +717,7 @@ function BookingPage({user,setPage,onAddLesson}){
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
         {[60,90].map(d=>(
           <div key={d} onClick={()=>setDuration(d)}
-            style={{background:duration===d?"#e8f5ee":"white",border:`2px solid ${duration===d?G:"#e5e7eb"}`,borderRadius:12,padding:"14px 20px",cursor:"pointer",textAlign:"center",transition:"all 0.15s"}}>
+            style={{background:duration===d?"#e8f0ee":"white",border:`2px solid ${duration===d?G:"#e5e7eb"}`,borderRadius:12,padding:"14px 20px",cursor:"pointer",textAlign:"center",transition:"all 0.15s"}}>
             <span style={{fontWeight:700,fontSize:"1rem",color:duration===d?G:"#1a1a1a"}}>{d} min</span>
           </div>
         ))}
@@ -841,7 +841,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
           <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:4}}>Your earnings</div>
         </div>
 
-        <div style={{background:"#e8f5ee",borderRadius:12,padding:"20px 24px",border:`1.5px solid ${G}`}}>
+        <div style={{background:"#e8f0ee",borderRadius:12,padding:"20px 24px",border:`1.5px solid ${G}`}}>
           <div style={{fontSize:"0.72rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Menlo Net (70%)</div>
           <div style={{fontSize:"2rem",fontWeight:900,color:G}}>${earnings.menloNet.toFixed(2)}</div>
           <div style={{fontSize:"0.8rem",color:"#4b5563",marginTop:4}}>Your 70% from MCC</div>
@@ -945,7 +945,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 <div key={email} onClick={()=>{setSel(email);setEditingId(null);setConfirmCancel(null);setShowAddLesson(false);}}
                   style={{background:sel===email?G:"white",color:sel===email?"white":"#374151",border:`1.5px solid ${sel===email?G:"#e5e7eb"}`,padding:"8px 18px",borderRadius:50,cursor:"pointer",fontSize:"0.88rem",fontWeight:600}}>
                   {mockUsers[email]?.name||email}
-                  {mockUsers[email]?.memberType==="menlo"&&<span style={{background:sel===email?"rgba(255,255,255,0.3)":"#e8f5ee",color:sel===email?"white":G,fontSize:"0.65rem",fontWeight:700,padding:"1px 6px",borderRadius:50,marginLeft:6}}>MCC</span>}
+                  {mockUsers[email]?.memberType==="menlo"&&<span style={{background:sel===email?"rgba(255,255,255,0.3)":"#e8f0ee",color:sel===email?"white":G,fontSize:"0.65rem",fontWeight:700,padding:"1px 6px",borderRadius:50,marginLeft:6}}>MCC</span>}
                   {mockUsers[email]?.blocked&&<span style={{background:"#dc2626",color:"white",fontSize:"0.65rem",fontWeight:700,padding:"1px 6px",borderRadius:50,marginLeft:6}}>Blocked</span>}
                   <span style={{opacity:0.6,marginLeft:6,fontSize:"0.75rem"}}>({(allLessons[email]||[]).filter(l=>isPast(l.date,l.time)).length})</span>
                 </div>
@@ -1013,7 +1013,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                       <div style={{fontSize:"0.85rem",color:"#6b7280",marginTop:2}}>{l.type} · {l.duration}{l.focus?` · 🎯 ${l.focus}`:""}</div>
                     </div>
                     <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                      <span style={{background:l.status==="confirmed"?"#e8f5ee":"#fffbea",color:l.status==="confirmed"?G:"#92400e",padding:"3px 12px",borderRadius:50,fontSize:"0.78rem",fontWeight:700}}>
+                      <span style={{background:l.status==="confirmed"?"#e8f0ee":"#fffbea",color:l.status==="confirmed"?G:"#92400e",padding:"3px 12px",borderRadius:50,fontSize:"0.78rem",fontWeight:700}}>
                         {l.status==="confirmed"?"✓ Confirmed":"⏳ Pending"}
                       </span>
                       <button onClick={()=>setConfirmCancel(confirmCancel===l.id?null:l.id)}
@@ -1087,7 +1087,7 @@ export default function App(){
   if(isAdmin)return(
     <div style={{fontFamily:"Segoe UI,sans-serif",background:"#f4f9f6",minHeight:"100vh"}}>
       <nav style={{background:G,padding:"14px 32px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <div style={{color:Y,fontWeight:900,fontSize:"1.3rem"}}>DM <span style={{color:"white"}}>Pickleball</span> <span style={{fontSize:"0.75rem",color:"rgba(255,255,255,0.6)",fontWeight:400}}>· Admin</span></div>
+        <div style={{color:Y,fontWeight:900,fontSize:"1.3rem",letterSpacing:1}}>DM <span style={{color:"white"}}>Pickleball</span> <span style={{fontSize:"0.75rem",color:"rgba(255,255,255,0.6)",fontWeight:400}}>· Admin</span></div>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
           {pendingStudents.length>0&&<span style={{background:"#dc2626",color:"white",borderRadius:50,padding:"3px 10px",fontSize:"0.75rem",fontWeight:800}}>{pendingStudents.length} pending</span>}
           <button onClick={logout} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.4)",color:"white",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem"}}>Log out</button>
