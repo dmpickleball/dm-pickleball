@@ -603,6 +603,15 @@ function LoginPage({onLogin,onAdminLogin}){
             onLogin({...u,email});
           }else{
             if(!name||!email){setError("Please fill in all fields.");return;}
+            fetch(`https://formspree.io/f/${FORMSPREE_ID}`,{
+              method:"POST",
+              headers:{"Content-Type":"application/json","Accept":"application/json"},
+              body:JSON.stringify({
+                name,email,
+                _subject:`New student access request: ${name}`,
+                message:`${name} (${email}) has requested access to the DM Pickleball student portal. Log in to approve or deny: https://dmpickleball.com`
+              })
+            }).catch(()=>{});
             setSignedUp(true);
           }
         }} style={{width:"100%",background:G,color:"white",border:"none",padding:14,borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem",marginBottom:16}}>
