@@ -783,7 +783,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[editNotes,setEditNotes]=useState("");
   const[confirmCancel,setConfirmCancel]=useState(null);
   const[tab,setTab]=useState(pendingStudents.length>0?"pending":"students");
-  const[earningsRange,setEarningsRange]=useState("month");
+  const[earningsRange,setEarningsRange]=useState("month");const[showNialExport,setShowNialExport]=useState(false);const[nialStart,setNialStart]=useState("");const[nialEnd,setNialEnd]=useState("");
   const[showAddStudent,setShowAddStudent]=useState(false);
   const[showAddLesson,setShowAddLesson]=useState(false);
   const[newStudent,setNewStudent]=useState({name:"",email:"",memberType:"public"});
