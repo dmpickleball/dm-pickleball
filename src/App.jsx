@@ -680,9 +680,9 @@ function BookingPage({user,setPage,onAddLesson}){
     :lessonType==="semi"?`$${price}/person · $${price*2} total`
     :isMenlo?`$${price}/person`:`$${140}/total · split equally`;
   const eventMap={
-    private:{60:isMenlo?"mcc-private-lesson-60-min":"private-lesson-60-min", 90:isMenlo?"mcc-private-lesson-90-min":"private-lesson-90-min"},
-    semi:{60:isMenlo?"mcc-semi-private-60-min":"semi-private-60-min", 90:isMenlo?"mcc-semi-private-90-min":"semi-private-90-min"},
-    group:{60:isMenlo?"mcc-group-lesson-60-min":"group-lesson-60-min", 90:isMenlo?"mcc-group-lesson-90-min":"group-lesson-90-min"},
+    private:{60:isMenlo?"mcc-private-60":"private-60", 90:isMenlo?"mcc-private-90":"private-90"},
+    semi:{60:isMenlo?"mcc-semi-60":"semi-60", 90:isMenlo?"mcc-semi-90":"semi-90"},
+    group:{60:isMenlo?"mcc-group-60":"group-60", 90:isMenlo?"mcc-group-90":"group-90"},
   };
   const eventSlug=eventMap[lessonType][duration];
   const calendlyUrl=`https://calendly.com/dmpickleball/${eventSlug}?hide_gdpr_banner=1&primary_color=006039`;
