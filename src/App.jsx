@@ -12,8 +12,8 @@ const DAVID_PHOTO  = "/images/david.jpg";         // was: 1773178886822_IMG_2962
 // ─── FORMSPREE ───────────────────────────────────────────────────────────────
 // 1. Go to https://formspree.io and create a free account
 // 2. Create a new form → copy the form ID (looks like "xrgvkpqz")
-// 3. Replace YOUR_FORM_ID below with your actual ID
-const FORMSPREE_ID = "YOUR_FORM_ID";
+// 3. Replace mvzwanal below with your actual ID
+const FORMSPREE_ID = "mvzwanal";
 
 // ─── THEME ───────────────────────────────────────────────────────────────────
 const G = "#006039", Y = "#f4c430";
