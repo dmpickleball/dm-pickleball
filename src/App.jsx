@@ -771,24 +771,105 @@ function BookingPage({user,setPage,onAddLesson}){
   );
 }
 
-function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,onApprove,onDeny}){
+function getRate(type,duration,memberType){
+  if(memberType==="menlo"){
+    if(type==="Private")return duration===90?172.50:115;
+    if(type==="Semi-Private")return duration===90?180:120;
+    return duration===90?210:140;
+  }
+  if(type==="Private")return duration===90?195:130;
+  if(type==="Semi-Private")return duration===90?210:140;
+  return duration===90?210:140;
+}
+function getMenloNet(gross){return Math.round(gross*0.7*100)/100;}
+function getDurationMins(s){return parseInt(s)||60;}
+function getEarnings(allLessons,mockUsers,range){
+  const now=new Date();
+  let total=0,menloGross=0,menloNet=0;
+  const rows=[];
+  Object.entries(allLessons).forEach(([email,lessons])=>{
+    const u=mockUsers[email]||{memberType:"public"};
+    lessons.filter(l=>l.status!=="cancelled"&&(isPast(l.date,l.time)||l.status==="completed")).forEach(l=>{
+      const d=new Date(l.date+"T12:00:00");
+      const mins=getDurationMins(l.duration);
+      let inRange=false;
+      if(range==="week"){const s=new Date(now);s.setDate(now.getDate()-now.getDay());inRange=d>=s&&d<=now;}
+      else if(range==="month"){inRange=d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}
+      else{inRange=d.getFullYear()===now.getFullYear();}
+      if(!inRange)return;
+      const gross=getRate(l.type,mins,u.memberType);
+      const net=u.memberType==="menlo"?getMenloNet(gross):gross;
+      total+=net;
+      if(u.memberType==="menlo"){menloGross+=gross;menloNet+=net;}
+      rows.push({email,name:u.name||email,date:l.date,type:l.type,duration:l.duration,gross,net,isMenlo:u.memberType==="menlo"});
+    });
+  });
+  return{total,menloGross,menloNet,rows};
+}
+
+function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,onApprove,onDeny,mockUsers,onAddStudent,onAddLesson,onToggleMenlo,onToggleSaturday,onBlockStudent}){
   const students=Object.keys(allLessons);
   const[sel,setSel]=useState(students[0]);
   const[editingId,setEditingId]=useState(null);
   const[editNotes,setEditNotes]=useState("");
   const[confirmCancel,setConfirmCancel]=useState(null);
   const[tab,setTab]=useState(pendingStudents.length>0?"pending":"students");
+  const[earningsRange,setEarningsRange]=useState("month");
+  const[showAddStudent,setShowAddStudent]=useState(false);
+  const[showAddLesson,setShowAddLesson]=useState(false);
+  const[newStudent,setNewStudent]=useState({name:"",email:"",memberType:"public"});
+  const[newLesson,setNewLesson]=useState({date:"",time:"",type:"Private",duration:"60",focus:"",notes:"",status:"completed"});
+  const earnings=getEarnings(allLessons,mockUsers,earningsRange);
   const lessons=allLessons[sel]||[];
   const history=lessons.filter(l=>isPast(l.date,l.time)||l.status==="completed");
   const upcoming=lessons.filter(l=>!isPast(l.date,l.time)&&l.status!=="cancelled");
+  const selUser=mockUsers[sel]||{};
+  const exportNial=()=>{
+    const rows=getEarnings(allLessons,mockUsers,"week").rows.filter(r=>r.isMenlo);
+    if(!rows.length){alert("No Menlo lessons this week.");return;}
+    const lines=["Date,Student,Type,Duration,Gross,David 70%",...rows.map(r=>`${r.date},${r.name},${r.type},${r.duration},$${r.gross},$${r.net}`)];
+    const blob=new Blob([lines.join("\n")],{type:"text/csv"});
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="menlo_weekly_summary.csv";a.click();
+  };
   return(
-    <div style={{maxWidth:900,margin:"0 auto",padding:"40px 24px"}}>
-      <div style={{marginBottom:28}}>
-        <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:4}}>Admin Panel</div>
-        <h2 style={{fontWeight:900,fontSize:"1.6rem",color:G}}>David's Dashboard</h2>
+    <div style={{maxWidth:960,margin:"0 auto",padding:"40px 24px"}}>
+      <div style={{marginBottom:28,display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12}}>
+        <div>
+          <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:4}}>Admin Panel</div>
+          <h2 style={{fontWeight:900,fontSize:"1.6rem",color:G}}>David's Dashboard</h2>
+        </div>
+        <button onClick={exportNial} style={{background:"#1a1a1a",color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>⬇ Export Nial Report</button>
       </div>
-      <div style={{display:"flex",gap:0,borderBottom:"2px solid #e5e7eb",marginBottom:28}}>
-        {[["pending",`Pending Approval (${pendingStudents.length})`],["students","Students & Lessons"]].map(([t,label])=>(
+
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:16,marginBottom:32}}>
+        <div style={{background:"white",borderRadius:12,padding:"20px 24px",border:"1.5px solid #e5e7eb"}}>
+          <div style={{fontSize:"0.72rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>
+            {["week","month","year"].map(r=>(
+              <span key={r} onClick={()=>setEarningsRange(r)} style={{marginRight:8,cursor:"pointer",color:earningsRange===r?G:"#9ca3af",fontWeight:earningsRange===r?800:500}}>{r.charAt(0).toUpperCase()+r.slice(1)}</span>
+            ))}
+          </div>
+          <div style={{fontSize:"2rem",fontWeight:900,color:G}}>${earnings.total.toFixed(2)}</div>
+          <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:4}}>Your earnings</div>
+        </div>
+        <div style={{background:"white",borderRadius:12,padding:"20px 24px",border:"1.5px solid #e5e7eb"}}>
+          <div style={{fontSize:"0.72rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Menlo Gross</div>
+          <div style={{fontSize:"2rem",fontWeight:900,color:"#1a1a1a"}}>${earnings.menloGross.toFixed(2)}</div>
+          <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:4}}>Before MCC 30% cut</div>
+        </div>
+        <div style={{background:"#e8f5ee",borderRadius:12,padding:"20px 24px",border:`1.5px solid ${G}`}}>
+          <div style={{fontSize:"0.72rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Menlo Net (70%)</div>
+          <div style={{fontSize:"2rem",fontWeight:900,color:G}}>${earnings.menloNet.toFixed(2)}</div>
+          <div style={{fontSize:"0.8rem",color:"#4b5563",marginTop:4}}>Your 70% from MCC</div>
+        </div>
+        <div style={{background:"white",borderRadius:12,padding:"20px 24px",border:"1.5px solid #e5e7eb"}}>
+          <div style={{fontSize:"0.72rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Lessons</div>
+          <div style={{fontSize:"2rem",fontWeight:900,color:"#1a1a1a"}}>{earnings.rows.length}</div>
+          <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:4}}>Completed this {earningsRange}</div>
+        </div>
+      </div>
+
+      <div style={{display:"flex",gap:0,borderBottom:"2px solid #e5e7eb",marginBottom:28,flexWrap:"wrap"}}>
+        {[["pending",`Pending (${pendingStudents.length})`],["students","Students & Lessons"],["earnings","Earnings Detail"]].map(([t,label])=>(
           <button key={t} onClick={()=>setTab(t)}
             style={{background:"none",border:"none",borderBottom:`2px solid ${tab===t?G:"transparent"}`,marginBottom:-2,padding:"10px 20px",fontSize:"0.88rem",fontWeight:tab===t?700:500,color:tab===t?G:"#6b7280",cursor:"pointer"}}>
             {label}
@@ -822,20 +903,112 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
           }
         </div>
       )}
+      {tab==="earnings"&&(
+        <div>
+          <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:16}}>Earnings Detail — This {earningsRange.charAt(0).toUpperCase()+earningsRange.slice(1)}</div>
+          {earnings.rows.length===0
+            ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"32px",textAlign:"center",color:"#9ca3af"}}>No completed lessons this {earningsRange}.</div>
+            :<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:"0.88rem"}}>
+                <thead>
+                  <tr style={{background:"#f9f9f6",borderBottom:"1.5px solid #e5e7eb"}}>
+                    {["Date","Student","Type","Duration","Gross","Your Cut"].map(h=>(
+                      <th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#6b7280",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {earnings.rows.map((r,i)=>(
+                    <tr key={i} style={{borderBottom:"1px solid #f3f4f6",background:r.isMenlo?"#f0faf5":"white"}}>
+                      <td style={{padding:"12px 16px"}}>{fmtDateShort(r.date)}</td>
+                      <td style={{padding:"12px 16px"}}>{r.name}{r.isMenlo&&<span style={{background:G,color:"white",fontSize:"0.65rem",fontWeight:700,padding:"1px 6px",borderRadius:50,marginLeft:6}}>MCC</span>}</td>
+                      <td style={{padding:"12px 16px"}}>{r.type}</td>
+                      <td style={{padding:"12px 16px"}}>{r.duration}</td>
+                      <td style={{padding:"12px 16px",color:"#6b7280"}}>${r.gross}</td>
+                      <td style={{padding:"12px 16px",fontWeight:700,color:G}}>${r.net}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      )}
       {tab==="students"&&(
         <>
           <div style={{marginBottom:28}}>
-            <span style={lbl}>Select Student</span>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,flexWrap:"wrap",gap:8}}>
+              <span style={lbl}>Students</span>
+              <button onClick={()=>setShowAddStudent(!showAddStudent)} style={{background:G,color:"white",border:"none",padding:"7px 18px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.82rem"}}>+ Add Student</button>
+            </div>
+            {showAddStudent&&(
+              <div style={{background:"#f9f9f6",borderRadius:12,padding:"20px",marginBottom:16,border:"1.5px solid #e5e7eb"}}>
+                <div style={{fontWeight:700,marginBottom:12,fontSize:"0.92rem"}}>Add Student Manually</div>
+                <input placeholder="Full Name" value={newStudent.name} onChange={e=>setNewStudent({...newStudent,name:e.target.value})} style={inp}/>
+                <input placeholder="Email Address" value={newStudent.email} onChange={e=>setNewStudent({...newStudent,email:e.target.value})} style={inp}/>
+                <select value={newStudent.memberType} onChange={e=>setNewStudent({...newStudent,memberType:e.target.value})} style={{...inp,marginBottom:12}}>
+                  <option value="public">General Student</option>
+                  <option value="menlo">Menlo Circus Club</option>
+                </select>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={()=>setShowAddStudent(false)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"8px 20px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}>Cancel</button>
+                  <button onClick={()=>{if(!newStudent.name||!newStudent.email){alert("Name and email required.");return;}onAddStudent(newStudent);setNewStudent({name:"",email:"",memberType:"public"});setShowAddStudent(false);}} style={{background:G,color:"white",border:"none",padding:"8px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>Add Student</button>
+                </div>
+              </div>
+            )}
             <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
               {students.map(email=>(
-                <div key={email} onClick={()=>{setSel(email);setEditingId(null);setConfirmCancel(null);}}
+                <div key={email} onClick={()=>{setSel(email);setEditingId(null);setConfirmCancel(null);setShowAddLesson(false);}}
                   style={{background:sel===email?G:"white",color:sel===email?"white":"#374151",border:`1.5px solid ${sel===email?G:"#e5e7eb"}`,padding:"8px 18px",borderRadius:50,cursor:"pointer",fontSize:"0.88rem",fontWeight:600}}>
-                  {MOCK_USERS[email]?.name||email}
-                  <span style={{opacity:0.7,marginLeft:6,fontSize:"0.75rem"}}>({(allLessons[email]||[]).filter(l=>isPast(l.date,l.time)).length} past)</span>
+                  {mockUsers[email]?.name||email}
+                  {mockUsers[email]?.memberType==="menlo"&&<span style={{background:sel===email?"rgba(255,255,255,0.3)":"#e8f5ee",color:sel===email?"white":G,fontSize:"0.65rem",fontWeight:700,padding:"1px 6px",borderRadius:50,marginLeft:6}}>MCC</span>}
+                  {mockUsers[email]?.blocked&&<span style={{background:"#dc2626",color:"white",fontSize:"0.65rem",fontWeight:700,padding:"1px 6px",borderRadius:50,marginLeft:6}}>Blocked</span>}
+                  <span style={{opacity:0.6,marginLeft:6,fontSize:"0.75rem"}}>({(allLessons[email]||[]).filter(l=>isPast(l.date,l.time)).length})</span>
                 </div>
               ))}
             </div>
           </div>
+          {sel&&(
+            <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"20px 24px",marginBottom:20}}>
+              <div style={{fontWeight:700,fontSize:"0.97rem",marginBottom:4}}>{selUser.name||sel}</div>
+              <div style={{fontSize:"0.83rem",color:"#6b7280",marginBottom:14}}>{sel}</div>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                <button onClick={()=>onToggleMenlo(sel)} style={{background:selUser.memberType==="menlo"?G:"white",color:selUser.memberType==="menlo"?"white":G,border:`1.5px solid ${G}`,padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>
+                  {selUser.memberType==="menlo"?"✓ Menlo Club":"Set as Menlo Club"}
+                </button>
+                <button onClick={()=>onToggleSaturday(sel)} style={{background:selUser.saturdayEnabled?"#1a1a1a":"white",color:selUser.saturdayEnabled?"white":"#1a1a1a",border:"1.5px solid #1a1a1a",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>
+                  {selUser.saturdayEnabled?"✓ Saturday On":"Enable Saturday"}
+                </button>
+                <button onClick={()=>onBlockStudent(sel)} style={{background:selUser.blocked?"#dc2626":"white",color:selUser.blocked?"white":"#dc2626",border:"1.5px solid #dc2626",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>
+                  {selUser.blocked?"Unblock Student":"Block Student"}
+                </button>
+              </div>
+            </div>
+          )}
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+            <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2}}>Lessons</div>
+            <button onClick={()=>setShowAddLesson(!showAddLesson)} style={{background:"#1a1a1a",color:"white",border:"none",padding:"7px 18px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.82rem"}}>+ Log Lesson</button>
+          </div>
+          {showAddLesson&&(
+            <div style={{background:"#f9f9f6",borderRadius:12,padding:"20px",marginBottom:16,border:"1.5px solid #e5e7eb"}}>
+              <div style={{fontWeight:700,marginBottom:12,fontSize:"0.92rem"}}>Log Lesson for {selUser.name||sel}</div>
+              <input type="date" value={newLesson.date} onChange={e=>setNewLesson({...newLesson,date:e.target.value})} style={inp}/>
+              <input placeholder="Time (e.g. 10:00 AM – 11:00 AM)" value={newLesson.time} onChange={e=>setNewLesson({...newLesson,time:e.target.value})} style={inp}/>
+              <select value={newLesson.type} onChange={e=>setNewLesson({...newLesson,type:e.target.value})} style={{...inp,marginBottom:12}}>
+                {["Private","Semi-Private","Group"].map(t=><option key={t} value={t}>{t}</option>)}
+              </select>
+              <select value={newLesson.duration} onChange={e=>setNewLesson({...newLesson,duration:e.target.value})} style={{...inp,marginBottom:12}}>
+                <option value="60">60 min</option>
+                <option value="90">90 min</option>
+              </select>
+              <input placeholder="Focus area (optional)" value={newLesson.focus} onChange={e=>setNewLesson({...newLesson,focus:e.target.value})} style={inp}/>
+              <textarea placeholder="Coaching notes (optional)" value={newLesson.notes} onChange={e=>setNewLesson({...newLesson,notes:e.target.value})} style={{...inp,height:80,resize:"vertical",fontFamily:"inherit"}}/>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={()=>setShowAddLesson(false)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"8px 20px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}>Cancel</button>
+                <button onClick={()=>{if(!newLesson.date||!newLesson.time){alert("Date and time required.");return;}onAddLesson(sel,{id:Date.now(),date:newLesson.date,time:newLesson.time,type:newLesson.type,duration:`${newLesson.duration} min`,status:"completed",focus:newLesson.focus,notes:newLesson.notes,photos:[],videos:[]});setNewLesson({date:"",time:"",type:"Private",duration:"60",focus:"",notes:"",status:"completed"});setShowAddLesson(false);}} style={{background:G,color:"white",border:"none",padding:"8px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>Save Lesson</button>
+              </div>
+            </div>
+          )}
           {upcoming.length>0&&(
             <div style={{marginBottom:28}}>
               <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Upcoming ({upcoming.length})</div>
@@ -843,7 +1016,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 <div key={l.id} style={{background:"white",borderRadius:10,border:`1.5px solid ${confirmCancel===l.id?"#fca5a5":"#e5e7eb"}`,marginBottom:8,overflow:"hidden"}}>
                   {confirmCancel===l.id&&(
                     <div style={{background:"#fef2f2",borderBottom:"1px solid #fca5a5",padding:"12px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
-                      <span style={{fontWeight:700,color:"#991b1b",fontSize:"0.88rem"}}>Cancel this lesson for {MOCK_USERS[sel]?.name}?</span>
+                      <span style={{fontWeight:700,color:"#991b1b",fontSize:"0.88rem"}}>Cancel this lesson for {mockUsers[sel]?.name}?</span>
                       <div style={{display:"flex",gap:8}}>
                         <button onClick={()=>setConfirmCancel(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Keep it</button>
                         <button onClick={()=>{onCancelLesson(sel,l.id);setConfirmCancel(null);}} style={{background:"#dc2626",color:"white",border:"none",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>Yes, Cancel</button>
@@ -913,13 +1086,19 @@ export default function App(){
   const[isAdmin,setIsAdmin]=useState(false);
   const[allLessons,setAllLessons]=useState(INIT_LESSONS);
   const[pendingStudents,setPendingStudents]=useState(INIT_PENDING);
+  const[mockUsersState,setMockUsersState]=useState(MOCK_USERS);
   const userLessons=user?allLessons[user.email]||[]:[];
   const cancelLesson=id=>setAllLessons(prev=>({...prev,[user.email]:prev[user.email].map(l=>l.id===id?{...l,status:"cancelled"}:l)}));
   const adminCancel=(email,id)=>setAllLessons(prev=>({...prev,[email]:prev[email].map(l=>l.id===id?{...l,status:"cancelled"}:l)}));
   const addLesson=lesson=>setAllLessons(prev=>({...prev,[user.email]:[...(prev[user.email]||[]),lesson]}));
   const updateLesson=(email,id,updates)=>setAllLessons(prev=>({...prev,[email]:prev[email].map(l=>l.id===id?{...l,...updates}:l)}));
-  const approveStudent=(student,memberType)=>{setAllLessons(prev=>({...prev,[student.email]:[]}));setPendingStudents(prev=>prev.filter(s=>s.id!==student.id));};
+  const approveStudent=(student,memberType)=>{setAllLessons(prev=>({...prev,[student.email]:[]}));setMockUsersState(prev=>({...prev,[student.email]:{name:student.name,memberType,approved:true,password:""}}));setPendingStudents(prev=>prev.filter(s=>s.id!==student.id));};
   const denyStudent=id=>setPendingStudents(prev=>prev.filter(s=>s.id!==id));
+  const addStudent=({name,email,memberType})=>{setMockUsersState(prev=>({...prev,[email]:{name,memberType,approved:true,password:""}}));setAllLessons(prev=>({...prev,[email]:[]}));};
+  const adminAddLesson=(email,lesson)=>setAllLessons(prev=>({...prev,[email]:[...(prev[email]||[]),lesson]}));
+  const toggleMenlo=email=>setMockUsersState(prev=>({...prev,[email]:{...prev[email],memberType:prev[email]?.memberType==="menlo"?"public":"menlo"}}));
+  const toggleSaturday=email=>setMockUsersState(prev=>({...prev,[email]:{...prev[email],saturdayEnabled:!prev[email]?.saturdayEnabled}}));
+  const blockStudent=email=>setMockUsersState(prev=>({...prev,[email]:{...prev[email],blocked:!prev[email]?.blocked}}));
   const logout=()=>{setUser(null);setIsAdmin(false);setPage("home");};
   if(isAdmin)return(
     <div style={{fontFamily:"Segoe UI,sans-serif",background:"#f4f9f6",minHeight:"100vh"}}>
@@ -930,7 +1109,7 @@ export default function App(){
           <button onClick={logout} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.4)",color:"white",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem"}}>Log out</button>
         </div>
       </nav>
-      <AdminPanel allLessons={allLessons} onUpdateLesson={updateLesson} onCancelLesson={adminCancel} pendingStudents={pendingStudents} onApprove={approveStudent} onDeny={denyStudent}/>
+      <AdminPanel allLessons={allLessons} onUpdateLesson={updateLesson} onCancelLesson={adminCancel} pendingStudents={pendingStudents} onApprove={approveStudent} onDeny={denyStudent} mockUsers={mockUsersState} onAddStudent={addStudent} onAddLesson={adminAddLesson} onToggleMenlo={toggleMenlo} onToggleSaturday={toggleSaturday} onBlockStudent={blockStudent}/>
     </div>
   );
   return(
