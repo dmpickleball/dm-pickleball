@@ -334,11 +334,15 @@ function PricingPage(){
         <p style={{color:"#6b7280",marginTop:8}}>SF Peninsula, Bay Area</p>
       </div>
       <div style={{display:"grid",gap:16}}>
-        {[["🎯","Private Lesson","1-on-1 personalized coaching · 1 student","$130 / $195"],["👥","Semi-Private","Always 2 students · $70 per person","$140 / $210 total"],["🏆","Group Lesson","3–5 students · split equally","$140 / $210 total"]].map(([icon,title,desc,price])=>(
+        {[["🎯","Private Lesson","1-on-1 personalized coaching","$130/hr"],["👥","Semi-Private","Always 2 students","$70/person/hr"],["🏆","Group Lesson","3–5 students · rate split equally","$140/hr"]].map(([icon,title,desc,price])=>(
           <div key={title} style={{background:"white",border:"2px solid #e5e7eb",borderRadius:12,padding:"24px 28px",display:"flex",alignItems:"center",gap:20}}>
             <div style={{fontSize:36}}>{icon}</div>
-            <div style={{flex:1}}><div style={{fontWeight:700,fontSize:"1.05rem"}}>{title}</div><div style={{fontSize:"0.85rem",color:"#6b7280",marginTop:2}}>{desc}</div></div>
-            <div style={{fontWeight:700,color:G,fontSize:"1.05rem"}}>{price}</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:700,fontSize:"1.05rem"}}>{title}</div>
+              <div style={{fontSize:"0.85rem",color:"#6b7280",marginTop:2}}>{desc}</div>
+              <div style={{fontSize:"0.78rem",color:"#9ca3af",marginTop:4}}>60 & 90 min sessions available</div>
+            </div>
+            <div style={{fontWeight:700,color:G,fontSize:"1.1rem"}}>{price}</div>
           </div>
         ))}
         <div style={{background:"white",border:"2px solid #e5e7eb",borderRadius:12,padding:"24px 28px",display:"flex",alignItems:"center",gap:20}}>
