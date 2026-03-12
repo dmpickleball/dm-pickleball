@@ -662,120 +662,32 @@ function Dashboard({user,setPage,lessons,onCancel}){
 }
 
 function BookingPage({user,setPage,onAddLesson}){
-  const[lessonType,setLessonType]=useState("private");
-  const[duration,setDuration]=useState(60);
-  const[date,setDate]=useState("");
-  const[slot,setSlot]=useState(null);
-  const[focus,setFocus]=useState("");
-  const[customFocus,setCustomFocus]=useState("");
-  const[showConfirm,setShowConfirm]=useState(false);
-  const[done,setDone]=useState(false);
-  const slots=getSlots(date,user.memberType,duration);
-  const dayName=date?new Date(date+"T12:00:00").toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"}):"";
-  const focusLabel=focus==="other"?customFocus:focus;
-  const price=lessonType==="private"?(duration===90?"$195":"$130"):duration===90?"$210 total ($105/person)":"$140 total ($70/person)";
-  const cancelDeadline=slot&&date?getCancelDeadline(date,`${fmt(slot.s)} – ${fmt(slot.e)}`):null;
-  const confirmBooking=()=>{
-    onAddLesson({id:Date.now(),date,time:`${fmt(slot.s)} – ${fmt(slot.e)}`,
-      type:lessonType==="private"?"Private":lessonType==="semi"?"Semi-Private":"Clinic",
-      duration:`${duration} min`,status:"pending",focus:focusLabel,notes:"",photos:[],videos:[]});
-    setDone(true);setShowConfirm(false);
-  };
-  if(done)return(
-    <div style={{maxWidth:480,margin:"60px auto",padding:"0 24px",textAlign:"center"}}>
-      <div style={{background:"white",borderRadius:16,padding:40,boxShadow:"0 4px 24px rgba(0,0,0,0.08)"}}>
-        <div style={{fontSize:48,marginBottom:12}}>✅</div>
-        <h2 style={{color:G,marginBottom:10}}>Booking Requested!</h2>
-        <div style={{background:"#e8f5ee",border:`1.5px solid ${G}`,borderRadius:10,padding:"16px 20px",margin:"16px 0",textAlign:"left",lineHeight:1.9,fontSize:"0.92rem"}}>
-          👤 <strong>{user.name}</strong><br/>📅 {dayName}<br/>⏱ {fmt(slot.s)} – {fmt(slot.e)}<br/>
-          🎾 {lessonType==="private"?"Private":lessonType==="semi"?"Semi-Private":"Clinic"} · {duration} min<br/>
-          🎯 {focusLabel||"No focus specified"}<br/>💰 {price}
-        </div>
-        <p style={{color:"#6b7280",fontSize:"0.85rem"}}>David will confirm and send a calendar invite to <strong>{user.email}</strong></p>
-        <div style={{display:"flex",gap:10,justifyContent:"center",marginTop:20}}>
-          <button onClick={()=>{setDone(false);setDate("");setSlot(null);setFocus("");setCustomFocus("");}} style={{background:"white",color:G,border:`2px solid ${G}`,padding:"11px 24px",borderRadius:50,cursor:"pointer",fontWeight:700}}>Book Another</button>
-          <button onClick={()=>setPage("dashboard")} style={{background:G,color:"white",border:"none",padding:"11px 24px",borderRadius:50,cursor:"pointer",fontWeight:700}}>My Lessons →</button>
-        </div>
-      </div>
-    </div>
-  );
+  const isMenlo=user.memberType==="menlo";
+  const calendlyUrl=isMenlo?"https://calendly.com/dmpickleball?hide_event_type_details=0&hide_gdpr_banner=1&primary_color=006039":"https://calendly.com/dmpickleball?hide_event_type_details=0&hide_gdpr_banner=1&primary_color=006039";
   return(
-    <div style={{maxWidth:700,margin:"0 auto",padding:"48px 24px"}}>
-      {showConfirm&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:24}}>
-          <div style={{background:"white",borderRadius:16,padding:32,maxWidth:440,width:"100%",boxShadow:"0 8px 40px rgba(0,0,0,0.2)"}}>
-            <h3 style={{fontWeight:900,color:G,marginBottom:16}}>Confirm Your Booking</h3>
-            <div style={{background:"#f9f9f6",borderRadius:10,padding:"14px 16px",marginBottom:16,fontSize:"0.92rem",lineHeight:1.9}}>
-              📅 {dayName}<br/>⏱ {fmt(slot.s)} – {fmt(slot.e)}<br/>
-              🎾 {lessonType==="private"?"Private":lessonType==="semi"?"Semi-Private":"Clinic"} · {duration} min<br/>
-              🎯 {focusLabel||"No focus selected"}<br/>💰 {price}
-            </div>
-            <div style={{background:"#fffbea",border:"1.5px solid #f4c430",borderRadius:8,padding:"12px 16px",marginBottom:20,fontSize:"0.85rem",color:"#7a5800"}}>
-              ⚠️ <strong>Cancellation Policy:</strong> Free cancellation until <strong>{cancelDeadline?fmtDeadline(cancelDeadline):"24 hours before"}</strong>.
-            </div>
-            <div style={{display:"flex",gap:10}}>
-              <button onClick={()=>setShowConfirm(false)} style={{flex:1,background:"white",color:"#374151",border:"1.5px solid #e5e7eb",padding:13,borderRadius:50,cursor:"pointer",fontWeight:600}}>Go Back</button>
-              <button onClick={confirmBooking} style={{flex:1,background:G,color:"white",border:"none",padding:13,borderRadius:50,cursor:"pointer",fontWeight:700}}>Confirm Booking →</button>
-            </div>
-          </div>
-        </div>
-      )}
-      <div style={{marginBottom:28}}>
+    <div style={{maxWidth:900,margin:"0 auto",padding:"32px 24px"}}>
+      <div style={{marginBottom:20}}>
         <h2 style={{fontWeight:900,color:G,fontSize:"1.6rem"}}>Book a Lesson</h2>
-        <p style={{color:"#6b7280",marginTop:4}}>
-          <span style={{background:"#e8f5ee",color:G,padding:"2px 10px",borderRadius:50,fontSize:"0.78rem",fontWeight:600}}>
-            {user.memberType==="menlo"?"Menlo Circus Club":"General Student"}
+        <p style={{color:"#6b7280",marginTop:4,fontSize:"0.92rem"}}>
+          Select your lesson type and a time that works for you. You'll get a confirmation email instantly.
+          <span style={{background:"#e8f5ee",color:G,padding:"2px 10px",borderRadius:50,fontSize:"0.78rem",fontWeight:600,marginLeft:8}}>
+            {isMenlo?"Menlo Circus Club":"General Student"}
           </span>
         </p>
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:24}}>
-        <div>
-          <span style={lbl}>Lesson Type</span>
-          {[["private","🎯","Private · 1 student","$130 / $195"],["semi","👥","Semi-Private · 2 students","$70/person"],["group","🏆","Group · 3–5 students","$140 / $210 total"]].map(([v,icon,label,p])=>(
-            <div key={v} onClick={()=>setLessonType(v)} style={{background:lessonType===v?"#e8f5ee":"white",border:`2px solid ${lessonType===v?G:"#e5e7eb"}`,borderRadius:10,padding:"11px 14px",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-              <span style={{fontWeight:600,fontSize:"0.9rem"}}>{icon} {label}</span>
-              <span style={{color:G,fontWeight:700,fontSize:"0.85rem"}}>{p}</span>
-            </div>
-          ))}
-        </div>
-        <div>
-          <span style={lbl}>Duration</span>
-          {[[60,"60 min"],[90,"90 min"]].map(([v,label])=>(
-            <div key={v} onClick={()=>{setDuration(v);setSlot(null);}} style={{background:duration===v?"#e8f5ee":"white",border:`2px solid ${duration===v?G:"#e5e7eb"}`,borderRadius:10,padding:"11px 14px",cursor:"pointer",marginBottom:8,fontWeight:600,fontSize:"0.9rem"}}>{label}</div>
-          ))}
+        <div style={{background:"#fffbea",border:"1.5px solid #f4c430",borderRadius:8,padding:"10px 16px",marginTop:12,fontSize:"0.85rem",color:"#7a5800"}}>
+          ⚠️ <strong>Cancellation Policy:</strong> Please cancel at least 24 hours before your lesson.
         </div>
       </div>
-      <div style={{background:"white",borderRadius:12,padding:24,boxShadow:"0 2px 12px rgba(0,0,0,0.06)",marginBottom:16}}>
-        <span style={lbl}>What would you like to work on?</span>
-        <select value={focus} onChange={e=>setFocus(e.target.value)} style={{...inp,marginBottom:focus==="other"?12:0}}>
-          <option value="">-- Select a focus area --</option>
-          {FOCUS_AREAS.map(f=><option key={f} value={f}>{f}</option>)}
-          <option value="other">Other (write your own)</option>
-        </select>
-        {focus==="other"&&<textarea placeholder="Describe what you'd like to work on..." value={customFocus} onChange={e=>setCustomFocus(e.target.value)} style={{...inp,height:80,resize:"vertical",fontFamily:"inherit",marginBottom:0}}/>}
+      <div style={{background:"white",borderRadius:16,overflow:"hidden",boxShadow:"0 2px 16px rgba(0,0,0,0.07)",minHeight:700}}>
+        <iframe
+          src={calendlyUrl}
+          width="100%"
+          height="750"
+          frameBorder="0"
+          title="Book a Lesson"
+          style={{display:"block"}}
+        />
       </div>
-      <div style={{background:"white",borderRadius:12,padding:24,boxShadow:"0 2px 12px rgba(0,0,0,0.06)",marginBottom:20}}>
-        <span style={lbl}>Pick a Date</span>
-        <CalendarPicker value={date} onChange={d=>{setDate(d);setSlot(null);}} memberType={user.memberType}/>
-        {date&&slots.length===0&&<div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:8,padding:"12px 16px",color:"#991b1b",fontSize:"0.88rem",marginTop:16}}>❌ No availability on {dayName}.</div>}
-        {date&&slots.length>0&&(
-          <div style={{marginTop:20}}>
-            <span style={lbl}>Available Times — {dayName}</span>
-            <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
-              {slots.map(sl=>(
-                <div key={sl.s} onClick={()=>setSlot(sl)} style={{padding:"10px 18px",borderRadius:50,fontSize:"0.88rem",cursor:"pointer",border:`1.5px solid ${slot?.s===sl.s?G:"#e5e7eb"}`,background:slot?.s===sl.s?G:"white",color:slot?.s===sl.s?"white":"#1a1a1a",fontWeight:slot?.s===sl.s?700:400,transition:"all 0.15s"}}>
-                  {fmt(sl.s)}
-                </div>
-              ))}
-            </div>
-            {slot&&<div style={{marginTop:14,background:"#e8f5ee",border:`1.5px solid ${G}`,borderRadius:8,padding:"10px 16px",fontSize:"0.88rem",color:"#003d23"}}>✅ <strong>{fmt(slot.s)} – {fmt(slot.e)}</strong></div>}
-          </div>
-        )}
-      </div>
-      <button onClick={()=>{if(!date||!slot){alert("Please select a date and time.");return;}setShowConfirm(true);}}
-        style={{width:"100%",background:G,color:"white",border:"none",padding:16,borderRadius:50,fontSize:"1rem",fontWeight:700,cursor:"pointer"}}>
-        Review & Confirm →
-      </button>
     </div>
   );
 }
