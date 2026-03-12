@@ -663,23 +663,65 @@ function Dashboard({user,setPage,lessons,onCancel}){
 
 function BookingPage({user,setPage,onAddLesson}){
   const isMenlo=user.memberType==="menlo";
-  const calendlyUrl=isMenlo?"https://calendly.com/dmpickleball?hide_event_type_details=0&hide_gdpr_banner=1&primary_color=006039":"https://calendly.com/dmpickleball?hide_event_type_details=0&hide_gdpr_banner=1&primary_color=006039";
+  const[lessonType,setLessonType]=useState("private");
+  const[duration,setDuration]=useState(60);
+  const PRICES={
+    private:{60:isMenlo?115:130, 90:isMenlo?172.50:195},
+    semi:{60:isMenlo?60:70, 90:isMenlo?90:105},
+    group:{60:isMenlo?40:null, 90:isMenlo?60:null},
+  };
+  const LESSONS=[
+    {id:"private",icon:"🎯",label:"Private",desc:"1-on-1 personalized coaching"},
+    {id:"semi",icon:"👥",label:"Semi-Private",desc:"Always 2 students"},
+    {id:"group",icon:"🏆",label:"Group",desc:isMenlo?"3–6 students":"3–5 students"},
+  ];
+  const price=PRICES[lessonType][duration];
+  const priceLabel=lessonType==="private"?`$${price}`
+    :lessonType==="semi"?`$${price}/person · $${price*2} total`
+    :isMenlo?`$${price}/person`:`$${140}/total · split equally`;
+  const eventMap={
+    private:{60:isMenlo?"mcc-private-lesson-60-min":"private-lesson-60-min", 90:isMenlo?"mcc-private-lesson-90-min":"private-lesson-90-min"},
+    semi:{60:isMenlo?"mcc-semi-private-60-min":"semi-private-60-min", 90:isMenlo?"mcc-semi-private-90-min":"semi-private-90-min"},
+    group:{60:isMenlo?"mcc-group-lesson-60-min":"group-lesson-60-min", 90:isMenlo?"mcc-group-lesson-90-min":"group-lesson-90-min"},
+  };
+  const eventSlug=eventMap[lessonType][duration];
+  const calendlyUrl=`https://calendly.com/dmpickleball/${eventSlug}?hide_gdpr_banner=1&primary_color=006039`;
   return(
     <div style={{maxWidth:900,margin:"0 auto",padding:"32px 24px"}}>
-      <div style={{marginBottom:20}}>
+      <div style={{marginBottom:24}}>
         <h2 style={{fontWeight:900,color:G,fontSize:"1.6rem"}}>Book a Lesson</h2>
         <p style={{color:"#6b7280",marginTop:4,fontSize:"0.92rem"}}>
-          Select your lesson type and a time that works for you. You'll get a confirmation email instantly.
+          Pick your lesson type and duration below, then choose a time.
           <span style={{background:"#e8f5ee",color:G,padding:"2px 10px",borderRadius:50,fontSize:"0.78rem",fontWeight:600,marginLeft:8}}>
             {isMenlo?"Menlo Circus Club":"General Student"}
           </span>
         </p>
-        <div style={{background:"#fffbea",border:"1.5px solid #f4c430",borderRadius:8,padding:"10px 16px",marginTop:12,fontSize:"0.85rem",color:"#7a5800"}}>
-          ⚠️ <strong>Cancellation Policy:</strong> Please cancel at least 24 hours before your lesson.
-        </div>
       </div>
-      <div style={{background:"white",borderRadius:16,overflow:"hidden",boxShadow:"0 2px 16px rgba(0,0,0,0.07)",minHeight:700}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:16}}>
+        {LESSONS.map(l=>(
+          <div key={l.id} onClick={()=>setLessonType(l.id)}
+            style={{background:lessonType===l.id?"#e8f5ee":"white",border:`2px solid ${lessonType===l.id?G:"#e5e7eb"}`,borderRadius:12,padding:"16px",cursor:"pointer",textAlign:"center",transition:"all 0.15s"}}>
+            <div style={{fontSize:28,marginBottom:6}}>{l.icon}</div>
+            <div style={{fontWeight:700,fontSize:"0.95rem",color:lessonType===l.id?G:"#1a1a1a"}}>{l.label}</div>
+            <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:3}}>{l.desc}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+        {[60,90].map(d=>(
+          <div key={d} onClick={()=>setDuration(d)}
+            style={{background:duration===d?"#e8f5ee":"white",border:`2px solid ${duration===d?G:"#e5e7eb"}`,borderRadius:12,padding:"14px 20px",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",transition:"all 0.15s"}}>
+            <span style={{fontWeight:700,color:duration===d?G:"#1a1a1a"}}>{d} min</span>
+            <span style={{fontWeight:800,fontSize:"1.05rem",color:G}}>{priceLabel}</span>
+          </div>
+        ))}
+      </div>
+      <div style={{background:"#fffbea",border:"1.5px solid #f4c430",borderRadius:8,padding:"10px 16px",marginBottom:20,fontSize:"0.85rem",color:"#7a5800"}}>
+        ⚠️ <strong>Cancellation Policy:</strong> Please cancel at least 24 hours before your lesson.
+      </div>
+      <div style={{background:"white",borderRadius:16,overflow:"hidden",boxShadow:"0 2px 16px rgba(0,0,0,0.07)"}}>
         <iframe
+          key={calendlyUrl}
           src={calendlyUrl}
           width="100%"
           height="750"
