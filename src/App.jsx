@@ -882,11 +882,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
           <div style={{fontSize:"2rem",fontWeight:900,color:G}}>${earnings.total.toFixed(2)}</div>
           <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:4}}>Your earnings</div>
         </div>
-        <div style={{background:"white",borderRadius:12,padding:"20px 24px",border:"1.5px solid #e5e7eb"}}>
-          <div style={{fontSize:"0.72rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Menlo Gross</div>
-          <div style={{fontSize:"2rem",fontWeight:900,color:"#1a1a1a"}}>${earnings.menloGross.toFixed(2)}</div>
-          <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:4}}>Before MCC 30% cut</div>
-        </div>
+
         <div style={{background:"#e8f5ee",borderRadius:12,padding:"20px 24px",border:`1.5px solid ${G}`}}>
           <div style={{fontSize:"0.72rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Menlo Net (70%)</div>
           <div style={{fontSize:"2rem",fontWeight:900,color:G}}>${earnings.menloNet.toFixed(2)}</div>
@@ -943,7 +939,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:"0.88rem"}}>
                 <thead>
                   <tr style={{background:"#f9f9f6",borderBottom:"1.5px solid #e5e7eb"}}>
-                    {["Date","Student","Type","Duration","Gross","Your Cut"].map(h=>(
+                    {["Date","Student","Type","Duration","Your Cut"].map(h=>(
                       <th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#6b7280",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>
                     ))}
                   </tr>
@@ -955,7 +951,6 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                       <td style={{padding:"12px 16px"}}>{r.name}{r.isMenlo&&<span style={{background:G,color:"white",fontSize:"0.65rem",fontWeight:700,padding:"1px 6px",borderRadius:50,marginLeft:6}}>MCC</span>}</td>
                       <td style={{padding:"12px 16px"}}>{r.type}</td>
                       <td style={{padding:"12px 16px"}}>{r.duration}</td>
-                      <td style={{padding:"12px 16px",color:"#6b7280"}}>${r.gross}</td>
                       <td style={{padding:"12px 16px",fontWeight:700,color:G}}>${r.net}</td>
                     </tr>
                   ))}
