@@ -297,7 +297,7 @@ function Homepage({setPage}){
             <h2 style={{fontSize:"1.8rem",fontWeight:900}}>Lesson Types</h2>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:16}}>
-            {[["🎯","Private","1-on-1 coaching","$130 / $195"],["👥","Semi-Private","Always 2 students · $70/person","$140 / $210"],["🏆","Group Lesson","3–5 students","$140 / $210 total"]].map(([icon,title,desc,price])=>(
+            {[["🎯","Private","1-on-1 coaching",null],["👥","Semi-Private","Always 2 students · $70/person","$140 / $210"],["🏆","Group Lesson","3–5 students",null]].map(([icon,title,desc,price])=>(
               <div key={title} style={{border:"2px solid #e5e7eb",borderRadius:12,padding:24,textAlign:"center"}}>
                 <div style={{fontSize:32,marginBottom:10}}>{icon}</div>
                 <div style={{fontWeight:700,marginBottom:6}}>{title}</div>
