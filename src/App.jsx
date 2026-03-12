@@ -254,8 +254,8 @@ function Homepage({setPage}){
     <div>
       <div style={{background:`linear-gradient(135deg,${G},#004d2e)`,color:"white",textAlign:"center",padding:"80px 24px 64px"}}>
         <div style={{fontSize:"0.8rem",letterSpacing:3,opacity:0.75,marginBottom:14,textTransform:"uppercase"}}>Pickleball Coaching · San Francisco Peninsula, Bay Area</div>
-        <h1 style={{fontSize:"3rem",fontWeight:900,lineHeight:1.15,marginBottom:16}}>Train With a<br/><span style={{color:Y}}>5.0+ Rated Coach</span></h1>
-        <p style={{fontSize:"1.1rem",opacity:0.9,maxWidth:500,margin:"0 auto 32px",lineHeight:1.7}}>Private, semi-private & group lessons on the SF Peninsula. Real-time scheduling, personalized coaching.</p>
+        <h1 style={{fontSize:"3rem",fontWeight:900,lineHeight:1.15,marginBottom:16}}>Level Up With One of the<br/><span style={{color:Y}}>Bay Area's Top Competitive Pickleball Coaches</span></h1>
+        <p style={{fontSize:"1.1rem",opacity:0.9,maxWidth:500,margin:"0 auto 32px",lineHeight:1.7}}>Private, semi-private & group lessons on the SF Peninsula. Personalized coaching from a tournament competitor who knows what it takes to win.</p>
         <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
           <button onClick={()=>setPage("pricing")} style={{background:Y,color:G,border:"none",padding:"13px 30px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem"}}>View Pricing</button>
           <button onClick={()=>setPage("contact")} style={{background:"transparent",color:"white",border:"2px solid rgba(255,255,255,0.5)",padding:"13px 30px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem"}}>Get in Touch</button>
@@ -280,10 +280,10 @@ function Homepage({setPage}){
             <p style={{color:"#4b5563",lineHeight:1.8,fontSize:"0.97rem"}}>David specializes in coaching tennis players making the transition to pickleball — he knows exactly the habits that help and the ones that hurt. Whether you're a complete beginner or a seasoned competitor, David coaches all skill levels in both doubles and singles across the SF Peninsula.</p>
             <div style={{background:"#e8f5ee",border:`1px solid ${G}20`,borderRadius:10,padding:"10px 16px",marginTop:14,display:"inline-flex",alignItems:"center",gap:8}}>
               <span style={{fontSize:"1.1rem"}}>🥇</span>
-              <span style={{fontSize:"0.83rem",fontWeight:700,color:G}}>Gold Medalist — Honolulu Open (ESPN)</span>
+              <span style={{fontSize:"0.83rem",fontWeight:700,color:G}}>Multiple Gold Medals · Tournament Competitor</span>
             </div>
             <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:14}}>
-              {["5.0+ Rated","Tournament Competitor","CRBN Ambassador","Tennis Convert Specialist","All Skill Levels","SF Peninsula"].map(tag=>(
+              {["Multiple Gold Medalist","Tournament Competitor","CRBN Ambassador","Tennis Convert Specialist","All Skill Levels","SF Peninsula"].map(tag=>(
                 <span key={tag} style={{background:"#e8f5ee",color:G,padding:"6px 14px",borderRadius:50,fontSize:"0.8rem",fontWeight:600}}>{tag}</span>
               ))}
             </div>
@@ -297,7 +297,7 @@ function Homepage({setPage}){
             <h2 style={{fontSize:"1.8rem",fontWeight:900}}>Lesson Types</h2>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:16}}>
-            {[["🎯","Private","1-on-1 focused coaching","$130 / $195"],["👥","Semi-Private","2 players","$140 / $210 total"],["🏆","Group","3–5 players","$140 / $210 total"]].map(([icon,title,desc,price])=>(
+            {[["🎯","Private","1-on-1 coaching","$130 / $195"],["👥","Semi-Private","Always 2 students · $70/person","$140 / $210"],["🏆","Group Lesson","3–5 students","$140 / $210 total"]].map(([icon,title,desc,price])=>(
               <div key={title} style={{border:"2px solid #e5e7eb",borderRadius:12,padding:24,textAlign:"center"}}>
                 <div style={{fontSize:32,marginBottom:10}}>{icon}</div>
                 <div style={{fontWeight:700,marginBottom:6}}>{title}</div>
@@ -334,13 +334,18 @@ function PricingPage(){
         <p style={{color:"#6b7280",marginTop:8}}>SF Peninsula, Bay Area</p>
       </div>
       <div style={{display:"grid",gap:16}}>
-        {[["🎯","Private Lesson","1-on-1 personalized coaching","$130 / $195"],["👥","Semi-Private","2 players · $70/person","$140 / $210 total"],["🏆","Group Lesson","3–5 players · price per person","$47–$140 / session"]].map(([icon,title,desc,price])=>(
+        {[["🎯","Private Lesson","1-on-1 personalized coaching · 1 student","$130 / $195"],["👥","Semi-Private","Always 2 students · $70 per person","$140 / $210 total"],["🏆","Group Lesson","3–5 students · split equally","$140 / $210 total"]].map(([icon,title,desc,price])=>(
           <div key={title} style={{background:"white",border:"2px solid #e5e7eb",borderRadius:12,padding:"24px 28px",display:"flex",alignItems:"center",gap:20}}>
             <div style={{fontSize:36}}>{icon}</div>
             <div style={{flex:1}}><div style={{fontWeight:700,fontSize:"1.05rem"}}>{title}</div><div style={{fontSize:"0.85rem",color:"#6b7280",marginTop:2}}>{desc}</div></div>
             <div style={{fontWeight:700,color:G,fontSize:"1.05rem"}}>{price}</div>
           </div>
         ))}
+        <div style={{background:"white",border:"2px solid #e5e7eb",borderRadius:12,padding:"24px 28px",display:"flex",alignItems:"center",gap:20}}>
+          <div style={{fontSize:36}}>🏢</div>
+          <div style={{flex:1}}><div style={{fontWeight:700,fontSize:"1.05rem"}}>Corporate Events</div><div style={{fontSize:"0.85rem",color:"#6b7280",marginTop:2}}>Group clinics & events for companies and teams</div></div>
+          <div style={{fontWeight:700,color:G,fontSize:"1.05rem"}}>Contact for pricing</div>
+        </div>
       </div>
       <div style={{background:"#fffbea",border:"1.5px solid #f4c430",borderRadius:10,padding:"16px 20px",marginTop:24,fontSize:"0.88rem",color:"#7a5800",textAlign:"center"}}>
         ⚠️ Cancellations must be made at least <strong>24 hours before</strong> your lesson start time.
@@ -713,7 +718,7 @@ function BookingPage({user,setPage,onAddLesson}){
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:24}}>
         <div>
           <span style={lbl}>Lesson Type</span>
-          {[["private","🎯","Private (1-on-1)","$130 / $195"],["semi","👥","Semi-Private (2 people)","$140 / $210 total"],["group","🏆","Group (3–5 people)","$140 / $210 total"]].map(([v,icon,label,p])=>(
+          {[["private","🎯","Private · 1 student","$130 / $195"],["semi","👥","Semi-Private · 2 students","$70/person"],["group","🏆","Group · 3–5 students","$140 / $210 total"]].map(([v,icon,label,p])=>(
             <div key={v} onClick={()=>setLessonType(v)} style={{background:lessonType===v?"#e8f5ee":"white",border:`2px solid ${lessonType===v?G:"#e5e7eb"}`,borderRadius:10,padding:"11px 14px",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
               <span style={{fontWeight:600,fontSize:"0.9rem"}}>{icon} {label}</span>
               <span style={{color:G,fontWeight:700,fontSize:"0.85rem"}}>{p}</span>
