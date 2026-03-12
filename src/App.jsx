@@ -838,7 +838,29 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
           <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:4}}>Admin Panel</div>
           <h2 style={{fontWeight:900,fontSize:"1.6rem",color:G}}>David's Dashboard</h2>
         </div>
-        <button onClick={exportNial} style={{background:"#1a1a1a",color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>⬇ Export Nial Report</button>
+        <button onClick={()=>setShowNialExport(!showNialExport)} style={{background:"#1a1a1a",color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>⬇ Export Nial Report</button>
+      </div>
+      {showNialExport&&(
+        <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"20px 24px",marginBottom:24}}>
+          <div style={{fontWeight:700,fontSize:"0.95rem",marginBottom:4}}>Export Menlo Report for Nial</div>
+          <div style={{fontSize:"0.83rem",color:"#6b7280",marginBottom:16}}>Select the date range to include. Report will show: Date, Member Name, Lesson Type, Duration.</div>
+          <div style={{display:"flex",gap:12,flexWrap:"wrap",alignItems:"flex-end"}}>
+            <div>
+              <div style={{...lbl,marginBottom:4}}>Start Date</div>
+              <input type="date" value={nialStart} onChange={e=>setNialStart(e.target.value)} style={{...inp,marginBottom:0,width:"auto"}}/>
+            </div>
+            <div>
+              <div style={{...lbl,marginBottom:4}}>End Date</div>
+              <input type="date" value={nialEnd} onChange={e=>setNialEnd(e.target.value)} style={{...inp,marginBottom:0,width:"auto"}}/>
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>setShowNialExport(false)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}>Cancel</button>
+              <button onClick={exportNial} style={{background:G,color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>⬇ Download CSV</button>
+            </div>
+          </div>
+        </div>
+      )}
+      <div style={{display:"none"}}
       </div>
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:16,marginBottom:32}}>
