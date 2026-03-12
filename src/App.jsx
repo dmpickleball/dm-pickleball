@@ -297,7 +297,7 @@ function Homepage({setPage}){
             <h2 style={{fontSize:"1.8rem",fontWeight:900}}>Lesson Types</h2>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:16}}>
-            {[["🎯","Private","1-on-1 focused coaching","$130"],["👥","Semi-Private","3–5 players","$140/group"],["🏆","Clinic","Group sessions","$140/group"]].map(([icon,title,desc,price])=>(
+            {[["🎯","Private","1-on-1 focused coaching","$130 / $195"],["👥","Semi-Private","2 players","$140 / $210 total"],["🏆","Group","3–5 players","$140 / $210 total"]].map(([icon,title,desc,price])=>(
               <div key={title} style={{border:"2px solid #e5e7eb",borderRadius:12,padding:24,textAlign:"center"}}>
                 <div style={{fontSize:32,marginBottom:10}}>{icon}</div>
                 <div style={{fontWeight:700,marginBottom:6}}>{title}</div>
@@ -334,7 +334,7 @@ function PricingPage(){
         <p style={{color:"#6b7280",marginTop:8}}>SF Peninsula, Bay Area</p>
       </div>
       <div style={{display:"grid",gap:16}}>
-        {[["🎯","Private Lesson","1-on-1 personalized coaching","$130 per session"],["👥","Semi-Private","3–5 players","$140 per group"],["🏆","Clinic","Group sessions, all levels","$140 per group"]].map(([icon,title,desc,price])=>(
+        {[["🎯","Private Lesson","1-on-1 personalized coaching","$130 / $195"],["👥","Semi-Private","2 players · $70/person","$140 / $210 total"],["🏆","Group Lesson","3–5 players · price per person","$47–$140 / session"]].map(([icon,title,desc,price])=>(
           <div key={title} style={{background:"white",border:"2px solid #e5e7eb",borderRadius:12,padding:"24px 28px",display:"flex",alignItems:"center",gap:20}}>
             <div style={{fontSize:36}}>{icon}</div>
             <div style={{flex:1}}><div style={{fontWeight:700,fontSize:"1.05rem"}}>{title}</div><div style={{fontSize:"0.85rem",color:"#6b7280",marginTop:2}}>{desc}</div></div>
@@ -655,7 +655,7 @@ function BookingPage({user,setPage,onAddLesson}){
   const slots=getSlots(date,user.memberType,duration);
   const dayName=date?new Date(date+"T12:00:00").toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"}):"";
   const focusLabel=focus==="other"?customFocus:focus;
-  const price=lessonType==="private"?"$130":"$140";
+  const price=lessonType==="private"?(duration===90?"$195":"$130"):duration===90?"$210 total ($105/person)":"$140 total ($70/person)";
   const cancelDeadline=slot&&date?getCancelDeadline(date,`${fmt(slot.s)} – ${fmt(slot.e)}`):null;
   const confirmBooking=()=>{
     onAddLesson({id:Date.now(),date,time:`${fmt(slot.s)} – ${fmt(slot.e)}`,
@@ -713,7 +713,7 @@ function BookingPage({user,setPage,onAddLesson}){
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:24}}>
         <div>
           <span style={lbl}>Lesson Type</span>
-          {[["private","🎯","Private (1-on-1)","$130"],["semi","👥","Semi-Private (3–5)","$140/group"],["clinic","🏆","Clinic","$140/group"]].map(([v,icon,label,p])=>(
+          {[["private","🎯","Private (1-on-1)","$130 / $195"],["semi","👥","Semi-Private (2 people)","$140 / $210 total"],["group","🏆","Group (3–5 people)","$140 / $210 total"]].map(([v,icon,label,p])=>(
             <div key={v} onClick={()=>setLessonType(v)} style={{background:lessonType===v?"#e8f5ee":"white",border:`2px solid ${lessonType===v?G:"#e5e7eb"}`,borderRadius:10,padding:"11px 14px",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
               <span style={{fontWeight:600,fontSize:"0.9rem"}}>{icon} {label}</span>
               <span style={{color:G,fontWeight:700,fontSize:"0.85rem"}}>{p}</span>
