@@ -687,7 +687,7 @@ function BookingPage({user,setPage,onAddLesson}){
     const endTime=toTime24(slot.e);
     const timeStr=toTimeStr(slot.s,slot.e);
     const lessonLabel=lessonType==="private"?"Private":lessonType==="semi"?"Semi-Private":"Group";
-    const summary="Pickleball Lesson - "+user.name+" ("+lessonLabel+" "+duration+"min)";
+    const summary=user.name+" pb lesson";
     const description="Student: "+user.name+"\nEmail: "+user.email+"\nType: "+lessonLabel+" "+duration+"min\nFocus: "+(focus||"Not specified")+"\nNotes: "+(notes||"None")+"\nManage: https://dmpickleball.com";
     let eventId="";
     try{
