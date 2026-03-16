@@ -8,9 +8,12 @@ export default async function handler(req, res) {
   if (!date) return res.status(400).json({ error: 'date required' });
 
   try {
+    const rawKey = process.env.GOOGLE_PRIVATE_KEY || '';
+    const privateKey = rawKey.includes('\\n') ? rawKey.replace(/\\n/g, '\n') : rawKey;
+
     const auth = new google.auth.JWT({
       email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      key: privateKey,
       scopes: ['https://www.googleapis.com/auth/calendar.readonly'],
     });
 
