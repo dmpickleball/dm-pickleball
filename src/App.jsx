@@ -50,7 +50,7 @@ const MOCK_USERS = {
   "student@email.com": { password:"test123", name:"Jane Smith", memberType:"public", approved:true },
   "menlo@email.com":   { password:"test123", name:"Mike Chen",  memberType:"menlo",  approved:true },
 };
-const ADMIN_USER = { email:"dlogfx", password:”pejkyt-8sejFu-wyzcac” };
+const ADMIN_USER = { email:"dlogfx", password:"pejkyt-8sejFu-wyzcac" };
 
 const INIT_PENDING = [
   { id:1, name:"Alex Rivera",   email:"alex@email.com",  requestedAt:"Mar 8, 2026" },
