@@ -567,6 +567,31 @@ function ContactPage(){
   );
 }
 
+function AdminLoginPage({onAdminLogin}){
+  const[username,setUsername]=useState("");
+  const[password,setPassword]=useState("");
+  const[error,setError]=useState("");
+  return(
+    <div style={{minHeight:"100vh",background:"#f4f9f6",display:"flex",alignItems:"center",justifyContent:"center",padding:"24px"}}>
+      <div style={{background:"white",borderRadius:16,padding:"40px 36px",boxShadow:"0 4px 24px rgba(0,0,0,0.08)",width:"100%",maxWidth:380}}>
+        <div style={{textAlign:"center",marginBottom:28}}>
+          <div style={{fontSize:36,marginBottom:8}}>🏓</div>
+          <h2 style={{fontWeight:900,color:G,marginBottom:4}}>Admin Login</h2>
+          <p style={{color:"#6b7280",fontSize:"0.85rem"}}>DM Pickleball Dashboard</p>
+        </div>
+        {error&&<div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:8,padding:"10px 14px",color:"#991b1b",fontSize:"0.88rem",marginBottom:16}}>{error}</div>}
+        <input style={inp} type="text" placeholder="Username" value={username} onChange={e=>{setUsername(e.target.value);setError("");}}/>
+        <input style={inp} type="password" placeholder="Password" value={password} onChange={e=>{setPassword(e.target.value);setError("");}}/>
+        <button onClick={()=>{
+          if(username===ADMIN_USER.email&&password===ADMIN_USER.password){onAdminLogin();}
+          else{setError("Invalid credentials.");}
+        }} style={{width:"100%",background:G,color:"white",border:"none",padding:14,borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem"}}>
+          Log In →
+        </button>
+      </div>
+    </div>
+  );
+}
 function LoginPage({onLogin,onAdminLogin}){
   const[mode,setMode]=useState("login");
   const[name,setName]=useState("");
@@ -1518,7 +1543,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
 
 // ─── ROOT APP ─────────────────────────────────────────────────────────────────
 export default function App(){
-  const[page,setPage]=useState("home");
+  const isAdminRoute=window.location.pathname==="/admin";const[page,setPage]=useState(isAdminRoute?"adminlogin":"home");
   const[user,setUser]=useState(null);
   const[isAdmin,setIsAdmin]=useState(false);
   const[allLessons,setAllLessons]=useState(INIT_LESSONS);
@@ -1572,7 +1597,8 @@ export default function App(){
   return(
     <div style={{fontFamily:"Segoe UI,sans-serif",background:"#f4f9f6",minHeight:"100vh"}}>
       <Nav user={user} onLogin={()=>setPage("login")} onLogout={logout} setPage={setPage} currentPage={page}/>
-      {page==="home"&&<Homepage setPage={setPage}/>}
+      {page==="adminlogin"&&<AdminLoginPage onAdminLogin={()=>setIsAdmin(true)}/>}
+      {page==="home"&&!isAdminRoute&&<Homepage setPage={setPage}/>}
       {page==="pricing"&&<PricingPage/>}
       {page==="gear"&&<GearPage/>}
       {page==="contact"&&<ContactPage/>}
