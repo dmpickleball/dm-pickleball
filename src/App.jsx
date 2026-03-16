@@ -677,7 +677,11 @@ function BookingPage({user,setPage,onAddLesson}){
   const PRICES={private:{60:isMenlo?115:130,90:isMenlo?172.50:195},semi:{60:isMenlo?60:70,90:isMenlo?90:105},group:{60:140,90:210}};
   const LESSONS=[{id:"private",icon:"🎯",label:"Private",desc:"1-on-1 personalized coaching"},{id:"semi",icon:"👥",label:"Semi-Private",desc:"Always 2 students"},{id:"group",icon:"🏆",label:"Group",desc:isMenlo?"3-6 students":"3-5 students"}];
   const price=PRICES[lessonType][duration];
-  const slots=getSlots(date,isMenlo?"menlo":"public",duration);
+  const rawSlots=getSlots(date,isMenlo?"menlo":"public",duration);
+  const slots=rawSlots.filter(s=>{
+    if(!busyTimes.length)return true;
+    return !busyTimes.some(b=>s.s<b.endMins&&s.e>b.startMins);
+  });
   const toTime24=(mins)=>{const h=Math.floor(mins/60),m=mins%60;return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");};
   const toTimeStr=(s,e)=>fmt(s)+" - "+fmt(e);
   const handleBook=async()=>{
