@@ -1,6 +1,7 @@
 import { google } from 'googleapis';
 
 export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   const { date } = req.query;
@@ -15,21 +16,26 @@ export default async function handler(req, res) {
 
     const calendar = google.calendar({ version: 'v3', auth });
 
-    const start = new Date(date + 'T00:00:00-08:00');
-    const end = new Date(date + 'T23:59:59-08:00');
+    const timeMin = new Date(date + 'T00:00:00-08:00').toISOString();
+    const timeMax = new Date(date + 'T23:59:59-08:00').toISOString();
 
     const response = await calendar.events.list({
       calendarId: process.env.GOOGLE_CALENDAR_ID,
-      timeMin: start.toISOString(),
-      timeMax: end.toISOString(),
+      timeMin,
+      timeMax,
       singleEvents: true,
       orderBy: 'startTime',
     });
 
-    const busy = (response.data.items || []).map(event => ({
-      start: event.start.dateTime || event.start.date,
-      end: event.end.dateTime || event.end.date,
-    }));
+    const busy = (response.data.items || []).map(event => {
+      const start = event.start.dateTime || (event.start.date + 'T00:00:00-08:00');
+      const end = event.end.dateTime || (event.end.date + 'T23:59:59-08:00');
+      const startPST = new Date(start);
+      const endPST = new Date(end);
+      const startMins = startPST.getHours() * 60 + startPST.getMinutes();
+      const endMins = endPST.getHours() * 60 + endPST.getMinutes();
+      return { start, end, startMins, endMins, summary: event.summary };
+    });
 
     res.status(200).json({ busy });
   } catch (err) {
