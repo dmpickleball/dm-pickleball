@@ -1072,7 +1072,19 @@ export default function App(){
   const[pendingStudents,setPendingStudents]=useState(INIT_PENDING);
   const[mockUsersState,setMockUsersState]=useState(MOCK_USERS);
   const userLessons=user?allLessons[user.email]||[]:[];
-  const cancelLesson=id=>setAllLessons(prev=>({...prev,[user.email]:prev[user.email].map(l=>l.id===id?{...l,status:"cancelled"}:l)}));
+  const cancelLesson=async(id)=>{
+    const lesson=userLessons.find(l=>l.id===id);
+    if(lesson?.gcalEventId){
+      try{
+        await fetch('/api/cancel-booking',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({eventId:lesson.gcalEventId})
+        });
+      }catch(e){console.error('Calendar cancel failed:',e);}
+    }
+    setAllLessons(prev=>({...prev,[user.email]:prev[user.email].map(l=>l.id===id?{...l,status:'cancelled'}:l)}));
+  };
   const adminCancel=(email,id)=>setAllLessons(prev=>({...prev,[email]:prev[email].map(l=>l.id===id?{...l,status:"cancelled"}:l)}));
   const addLesson=lesson=>setAllLessons(prev=>({...prev,[user.email]:[...(prev[user.email]||[]),lesson]}));
   const updateLesson=(email,id,updates)=>setAllLessons(prev=>({...prev,[email]:prev[email].map(l=>l.id===id?{...l,...updates}:l)}));
