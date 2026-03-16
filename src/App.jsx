@@ -668,7 +668,7 @@ function BookingPage({user,setPage,onAddLesson}){
   const[date,setDate]=useState("");
   const[slot,setSlot]=useState(null);const[slotIdx,setSlotIdx]=useState(-1);
   const[focus,setFocus]=useState("");
-  const[notes,setNotes]=useState("");
+  const[notes,setNotes]=useState("");const[groupSize,setGroupSize]=useState(3);const[groupMembers,setGroupMembers]=useState([{name:"",email:""},{name:"",email:""}]);
   const[submitting,setSubmitting]=useState(false);
   const[done,setDone]=useState(false);
   const[error,setError]=useState("");
@@ -688,7 +688,8 @@ function BookingPage({user,setPage,onAddLesson}){
     const timeStr=toTimeStr(slot.s,slot.e);
     const lessonLabel=lessonType==="private"?"Private":lessonType==="semi"?"Semi-Private":"Group";
     const summary=user.name+" pb lesson";
-    const description="Student: "+user.name+"\nEmail: "+user.email+"\nType: "+lessonLabel+" "+duration+"min\nFocus: "+(focus||"Not specified")+"\nNotes: "+(notes||"None")+"\nManage: https://dmpickleball.com";
+    const groupInfo=lessonType==="group"?("\nGroup Members: "+groupMembers.slice(0,groupSize-1).map((m,i)=>"Person "+(i+2)+": "+(m.name||"TBD")+(m.email?" ("+m.email+")":"")).join(", ")):"";
+    const description="Student: "+user.name+"\nEmail: "+user.email+"\nType: "+lessonLabel+" "+duration+"min\nFocus: "+(focus||"Not specified")+"\nNotes: "+(notes||"None")+groupInfo+"\nManage: https://dmpickleball.com";
     let eventId="";
     try{
       const r=await fetch("/api/create-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({summary,description,date,startTime,endTime,studentEmail:user.email,studentName:user.name})});
@@ -699,6 +700,13 @@ function BookingPage({user,setPage,onAddLesson}){
     const endISO=date+"T"+endTime+":00";
     const link="https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(summary)+"&dates="+startISO.replace(/[-:]/g,"").slice(0,15)+"/"+endISO.replace(/[-:]/g,"").slice(0,15)+"&details="+encodeURIComponent(description);
     try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:user.email,_replyto:user.email,_subject:"Your lesson is booked - "+fmtDateShort(date),message:"Hi "+user.name+",\n\nYour pickleball lesson is confirmed!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+duration+" min\nFocus: "+(focus||"Not specified")+"\n\nManage your booking:\nhttps://dmpickleball.com\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398"})});}catch(e){console.error("Student email:",e);}
+    if(lessonType==="group"){
+      groupMembers.slice(0,groupSize-1).forEach(async m=>{
+        if(m.email){
+          try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:m.email,_replyto:"dmpickleball@gmail.com",_subject:"You have been added to a group pickleball lesson - "+fmtDateShort(date),message:"Hi "+m.name+",\n\n"+user.name+" has added you to a group pickleball lesson!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: Group · "+duration+" min\nFocus: "+(focus||"Not specified")+"\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398"})});}catch(e){console.error("Group member email:",e);}
+        }
+      });
+    }
     try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:"dmpickleball@gmail.com",_replyto:user.email,_subject:"New booking: "+user.name+" - "+fmtDateShort(date),message:"New lesson booked!\n\nStudent: "+user.name+"\nEmail: "+user.email+"\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+duration+" min\nFocus: "+(focus||"Not specified")+"\nNotes: "+(notes||"None")+"\nPrice: $"+price+"\nGCal Event ID: "+(eventId||"N/A")})});}catch(e){console.error("David email:",e);}
     const newLesson={id:Date.now(),date,time:timeStr,type:lessonLabel,duration:duration+" min",status:"confirmed",focus,notes:"",photos:[],videos:[],gcalEventId:eventId};
     onAddLesson(newLesson);
@@ -773,6 +781,22 @@ function BookingPage({user,setPage,onAddLesson}){
         <div style={{...lbl,marginBottom:6}}>Notes for David <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(optional)</span></div>
         <textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Anything David should know before the lesson..." style={{...inp,height:80,resize:"vertical",fontFamily:"inherit",marginBottom:0}}/>
       </div>
+            {lessonType==="group"&&(
+        <div style={{marginBottom:20}}>
+          <div style={{...lbl,marginBottom:10}}>Group Size</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
+            {[3,4,5].map(n=>(<div key={n} onClick={()=>{setGroupSize(n);setGroupMembers(Array(n-1).fill(null).map((_,i)=>groupMembers[i]||{name:"",email:""}));}} style={{background:groupSize===n?"#e8f0ee":"white",border:"2px solid "+(groupSize===n?G:"#e5e7eb"),borderRadius:10,padding:"10px",cursor:"pointer",textAlign:"center",fontWeight:groupSize===n?700:500,color:groupSize===n?G:"#374151"}}>{n} people</div>))}
+          </div>
+          <div style={{...lbl,marginBottom:8}}>Other Group Members</div>
+          {Array(groupSize-1).fill(null).map((_,i)=>(
+            <div key={i} style={{background:"#f9f9f6",borderRadius:10,padding:"14px 16px",marginBottom:10}}>
+              <div style={{fontSize:"0.82rem",fontWeight:700,color:"#6b7280",marginBottom:8}}>Person {i+2}</div>
+              <input placeholder="Full Name" value={groupMembers[i]?.name||""} onChange={e=>{const m=[...groupMembers];m[i]={...m[i],name:e.target.value};setGroupMembers(m);}} style={{...inp,marginBottom:8}}/>
+              <input placeholder="Email (optional — for calendar invite)" value={groupMembers[i]?.email||""} onChange={e=>{const m=[...groupMembers];m[i]={...m[i],email:e.target.value};setGroupMembers(m);}} style={{...inp,marginBottom:0}}/>
+            </div>
+          ))}
+        </div>
+      )}
       <div style={{background:"#fffbea",border:"1.5px solid #f4c430",borderRadius:8,padding:"10px 16px",marginBottom:20,fontSize:"0.85rem",color:"#7a5800"}}>
         Cancellation Policy: Please cancel at least 24 hours before your lesson.
       </div>
