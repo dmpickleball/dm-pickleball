@@ -12,7 +12,7 @@ function getAuth() {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  const { summary, description, date, startTime, endTime, studentEmail, studentName } = req.body;
+  const { summary, description, date, startTime, endTime, studentEmail, studentName, location } = req.body;
   try {
     const calendar = google.calendar({ version: 'v3', auth: getAuth() });
     const event = await calendar.events.insert({
@@ -20,6 +20,7 @@ export default async function handler(req, res) {
       requestBody: {
         summary: summary || `Pickleball Lesson — ${studentName}`,
         description: description || '',
+        location: location || '',
         start: { dateTime: `${date}T${startTime}:00`, timeZone: 'America/Los_Angeles' },
         end: { dateTime: `${date}T${endTime}:00`, timeZone: 'America/Los_Angeles' },
         

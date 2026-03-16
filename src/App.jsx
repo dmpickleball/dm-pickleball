@@ -668,7 +668,7 @@ function BookingPage({user,setPage,onAddLesson}){
   const[date,setDate]=useState("");
   const[slot,setSlot]=useState(null);const[slotIdx,setSlotIdx]=useState(-1);
   const[focus,setFocus]=useState("");
-  const[notes,setNotes]=useState("");const[groupSize,setGroupSize]=useState(3);const[groupMembers,setGroupMembers]=useState([{name:"",email:""},{name:"",email:""}]);
+  const[notes,setNotes]=useState("");const[groupSize,setGroupSize]=useState(3);const[groupMembers,setGroupMembers]=useState([{name:"",email:""},{name:"",email:""}]);const[partner,setPartner]=useState({name:"",email:""});
   const[submitting,setSubmitting]=useState(false);
   const[done,setDone]=useState(false);
   const[error,setError]=useState("");
@@ -682,17 +682,29 @@ function BookingPage({user,setPage,onAddLesson}){
   const toTimeStr=(s,e)=>fmt(s)+" - "+fmt(e);
   const handleBook=async()=>{
     if(!date||!slot){setError("Please select a date and time.");return;}
+    if(lessonType==="semi"&&!partner.name){setError("Please enter your partner's name.");return;}
+    if(lessonType==="semi"&&partner.email){
+      try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:partner.email,_replyto:"dmpickleball@gmail.com",_subject:"You have been added to a pickleball lesson - "+fmtDateShort(date),message:"Hi "+partner.name+",\n\n"+user.name+" has added you to a pickleball lesson!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: Semi-Private · "+duration+" min\nFocus: "+(focus||"Not specified")+"\nLocation: "+location+"\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398"})});}catch(e){console.error("Partner email:",e);}
+    }
+    if(lessonType==="group"){
+      const missing=groupMembers.slice(0,groupSize-1).some(m=>!m.name);
+      if(missing){setError("Please enter all group member names.");return;}
+    }
     setSubmitting(true);setError("");
     const startTime=toTime24(slot.s);
     const endTime=toTime24(slot.e);
     const timeStr=toTimeStr(slot.s,slot.e);
     const lessonLabel=lessonType==="private"?"Private":lessonType==="semi"?"Semi-Private":"Group";
-    const summary=user.name+" pb lesson";
-    const groupInfo=lessonType==="group"?("\nGroup Members: "+groupMembers.slice(0,groupSize-1).map((m,i)=>"Person "+(i+2)+": "+(m.name||"TBD")+(m.email?" ("+m.email+")":"")).join(", ")):"";
-    const description="Student: "+user.name+"\nEmail: "+user.email+"\nType: "+lessonLabel+" "+duration+"min\nFocus: "+(focus||"Not specified")+"\nNotes: "+(notes||"None")+groupInfo+"\nManage: https://dmpickleball.com";
+    const memberNames=lessonType==="semi"?[user.name,partner.name]:lessonType==="group"?[user.name,...groupMembers.slice(0,groupSize-1).map(m=>m.name)]:[user.name];
+    const titleSuffix=lessonType==="group"?" pb group lesson":" pb lesson";
+    const summary=memberNames.join("/")+titleSuffix;
+    const partnerInfo=lessonType==="semi"?"\nPartner: "+partner.name+(partner.email?" ("+partner.email+")":""):"";
+    const groupInfo=lessonType==="group"?"\nGroup Members: "+groupMembers.slice(0,groupSize-1).map((m,i)=>"Person "+(i+2)+": "+m.name+(m.email?" ("+m.email+")":"")).join(", "):"";
+    const location=!isMenlo?"3003 Bay Rd, Redwood City, CA 94063":"Stanford Redwood City";
+    const description="Student: "+user.name+"\nEmail: "+user.email+"\nType: "+lessonLabel+" "+duration+"min\nFocus: "+(focus||"Not specified")+"\nNotes: "+(notes||"None")+partnerInfo+groupInfo+"\nLocation: "+location+"\nManage: https://dmpickleball.com";
     let eventId="";
     try{
-      const r=await fetch("/api/create-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({summary,description,date,startTime,endTime,studentEmail:user.email,studentName:user.name})});
+      const r=await fetch("/api/create-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({summary,description,date,startTime,endTime,location,studentEmail:user.email,studentName:user.name})});
       const d=await r.json();
       if(d.eventId)eventId=d.eventId;
     }catch(e){console.error("GCal:",e);}
@@ -700,6 +712,9 @@ function BookingPage({user,setPage,onAddLesson}){
     const endISO=date+"T"+endTime+":00";
     const link="https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(summary)+"&dates="+startISO.replace(/[-:]/g,"").slice(0,15)+"/"+endISO.replace(/[-:]/g,"").slice(0,15)+"&details="+encodeURIComponent(description);
     try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:user.email,_replyto:user.email,_subject:"Your lesson is booked - "+fmtDateShort(date),message:"Hi "+user.name+",\n\nYour pickleball lesson is confirmed!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+duration+" min\nFocus: "+(focus||"Not specified")+"\n\nManage your booking:\nhttps://dmpickleball.com\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398"})});}catch(e){console.error("Student email:",e);}
+    if(lessonType==="semi"&&partner.email){
+      try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:partner.email,_replyto:"dmpickleball@gmail.com",_subject:"You have been added to a pickleball lesson - "+fmtDateShort(date),message:"Hi "+partner.name+",\n\n"+user.name+" has added you to a pickleball lesson!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: Semi-Private · "+duration+" min\nFocus: "+(focus||"Not specified")+"\nLocation: "+location+"\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398"})});}catch(e){console.error("Partner email:",e);}
+    }
     if(lessonType==="group"){
       groupMembers.slice(0,groupSize-1).forEach(async m=>{
         if(m.email){
@@ -708,7 +723,11 @@ function BookingPage({user,setPage,onAddLesson}){
       });
     }
     try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:"dmpickleball@gmail.com",_replyto:user.email,_subject:"New booking: "+user.name+" - "+fmtDateShort(date),message:"New lesson booked!\n\nStudent: "+user.name+"\nEmail: "+user.email+"\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+duration+" min\nFocus: "+(focus||"Not specified")+"\nNotes: "+(notes||"None")+"\nPrice: $"+price+"\nGCal Event ID: "+(eventId||"N/A")})});}catch(e){console.error("David email:",e);}
-    const newLesson={id:Date.now(),date,time:timeStr,type:lessonLabel,duration:duration+" min",status:"confirmed",focus,notes:"",photos:[],videos:[],gcalEventId:eventId};
+    const newLesson={id:Date.now(),date,time:timeStr,type:lessonLabel,duration:duration+" min",status:"confirmed",focus,notes:"",photos:[],videos:[],gcalEventId:eventId,
+      partnerEmail:lessonType==="semi"?partner.email:"",
+      groupEmails:lessonType==="group"?groupMembers.slice(0,groupSize-1).map(m=>m.email).filter(Boolean):[],
+      members:lessonType==="semi"?[partner.name]:lessonType==="group"?groupMembers.slice(0,groupSize-1).map(m=>m.name):[]
+    };
     onAddLesson(newLesson);
     setGcalLink(link);
     setBookedSummary({date,timeStr,lessonLabel,duration,focus,price});
@@ -781,7 +800,16 @@ function BookingPage({user,setPage,onAddLesson}){
         <div style={{...lbl,marginBottom:6}}>Notes for David <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(optional)</span></div>
         <textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Anything David should know before the lesson..." style={{...inp,height:80,resize:"vertical",fontFamily:"inherit",marginBottom:0}}/>
       </div>
-            {lessonType==="group"&&(
+            {lessonType==="semi"&&(
+        <div style={{marginBottom:20}}>
+          <div style={{...lbl,marginBottom:8}}>Partner Info</div>
+          <div style={{background:"#f9f9f6",borderRadius:10,padding:"14px 16px"}}>
+            <input placeholder="Partner Full Name (required)" value={partner.name} onChange={e=>setPartner({...partner,name:e.target.value})} style={{...inp,marginBottom:8}}/>
+            <input placeholder="Partner Email (optional — for calendar invite)" value={partner.email} onChange={e=>setPartner({...partner,email:e.target.value})} style={{...inp,marginBottom:0}}/>
+          </div>
+        </div>
+      )}
+      {lessonType==="group"&&(
         <div style={{marginBottom:20}}>
           <div style={{...lbl,marginBottom:10}}>Group Size</div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
@@ -1153,15 +1181,15 @@ export default function App(){
   const cancelLesson=async(id)=>{
     const lesson=userLessons.find(l=>l.id===id);
     if(lesson?.gcalEventId){
-      try{
-        await fetch('/api/cancel-booking',{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({eventId:lesson.gcalEventId})
-        });
-      }catch(e){console.error('Calendar cancel failed:',e);}
+      try{await fetch('/api/cancel-booking',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({eventId:lesson.gcalEventId})});}
+      catch(e){console.error('Calendar cancel failed:',e);}
     }
-    setAllLessons(prev=>({...prev,[user.email]:prev[user.email].map(l=>l.id===id?{...l,status:'cancelled'}:l)}));
+    const cancelMsg="Your pickleball lesson on "+fmtDateShort(lesson.date)+" at "+lesson.time+" has been cancelled.\n\nIf you have any questions, please contact David at (650) 839-3398.";
+    try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:user.email,_subject:"Lesson Cancelled - "+fmtDateShort(lesson.date),message:"Hi "+user.name+",\n\n"+cancelMsg})});}catch(e){}
+    try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:"dmpickleball@gmail.com",_subject:"Lesson Cancelled: "+user.name+" - "+fmtDateShort(lesson.date),message:user.name+" has cancelled their lesson on "+fmtDateShort(lesson.date)+" at "+lesson.time+"."})});}catch(e){}
+    if(lesson.partnerEmail){try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:lesson.partnerEmail,_subject:"Lesson Cancelled - "+fmtDateShort(lesson.date),message:"Hi,\n\n"+cancelMsg})});}catch(e){}}
+    if(lesson.groupEmails){lesson.groupEmails.forEach(async email=>{if(email){try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email,_subject:"Lesson Cancelled - "+fmtDateShort(lesson.date),message:"Hi,\n\n"+cancelMsg})});}catch(e){}}});}
+    setAllLessons(prev=>({...prev,[user.email]:prev[user.email].map(l=>l.id===id?{...l,status:"cancelled"}:l)}));
   };
   const adminCancel=async(email,id)=>{
     const lesson=(allLessons[email]||[]).find(l=>l.id===id);
