@@ -708,7 +708,7 @@ function BookingPage({user,setPage,onAddLesson}){
     const summary=memberNames.join("/")+titleSuffix;
     const partnerInfo=lessonType==="semi"?"\nPartner: "+partner.name+(partner.email?" ("+partner.email+")":""):"";
     const groupInfo=lessonType==="group"?"\nGroup: "+groupMembers.slice(0,groupSize-1).map(m=>m.name+(m.email?" ("+m.email+")":"")).join(", "):"";
-    const location=!isMenlo?"3003 Bay Rd, Redwood City, CA 94063":"Stanford Redwood City";
+    const location=!isMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City, CA 94063, USA":"Stanford Redwood City";
     const description="Student: "+user.name+"\nEmail: "+user.email+"\nType: "+lessonLabel+" "+duration+"min\nFocus: "+(focus||"Not specified")+"\nNotes: "+(notes||"None")+partnerInfo+groupInfo+"\nLocation: "+location+"\nManage: https://dmpickleball.com";
     let eventId="";
     try{
@@ -721,7 +721,7 @@ function BookingPage({user,setPage,onAddLesson}){
     const link="https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(summary)+"&dates="+startISO.replace(/[-:]/g,"").slice(0,15)+"/"+endISO.replace(/[-:]/g,"").slice(0,15)+"&details="+encodeURIComponent(description)+"&location="+encodeURIComponent(location);
     try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:user.email,_replyto:user.email,_subject:"Your lesson is booked - "+fmtDateShort(date),message:"Hi "+user.name+",\n\nYour pickleball lesson is confirmed!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+duration+" min\nFocus: "+(focus||"Not specified")+"\nLocation: "+location+"\n\nManage your booking:\nhttps://dmpickleball.com\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398"})});}catch(e){}
     try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:"dmpickleball@gmail.com",_replyto:user.email,_subject:"New booking: "+summary+" - "+fmtDateShort(date),message:"New lesson booked!\n\nStudent: "+user.name+"\nEmail: "+user.email+"\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+duration+" min\nFocus: "+(focus||"Not specified")+"\nNotes: "+(notes||"None")+partnerInfo+groupInfo+"\nPrice: $"+price+"\nLocation: "+location})});}catch(e){}
-    if(lessonType==="semi"&&partner.email){try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:partner.email,_subject:"You have been added to a pickleball lesson - "+fmtDateShort(date),message:"Hi "+partner.name+",\n\n"+user.name+" has added you to a lesson!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nLocation: "+location+"\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok"})})}catch(e){}}
+    if(lessonType==="semi"&&partner.email){try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({_to:partner.email,email:partner.email,_replyto:"dmpickleball@gmail.com",_subject:"You have been added to a pickleball lesson - "+fmtDateShort(date),message:"Hi "+partner.name+",\n\n"+user.name+" has added you to a lesson!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: Semi-Private · "+duration+" min\nFocus: "+(focus||"Not specified")+"\nLocation: "+location+"\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398"})})}catch(e){}}
     if(lessonType==="group"){groupMembers.slice(0,groupSize-1).forEach(async m=>{if(m.email){try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:m.email,_subject:"You have been added to a group pickleball lesson - "+fmtDateShort(date),message:"Hi "+m.name+",\n\n"+user.name+" has added you to a group lesson!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nLocation: "+location+"\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok"})})}catch(e){}}});}
     const newLesson={id:Date.now(),date,time:timeStr,type:lessonLabel,duration:duration+" min",status:"confirmed",focus,notes:"",photos:[],videos:[],gcalEventId:eventId,partnerEmail:lessonType==="semi"?partner.email:"",groupEmails:lessonType==="group"?groupMembers.slice(0,groupSize-1).map(m=>m.email).filter(Boolean):[],members:memberNames.slice(1)};
     onAddLesson(newLesson);
@@ -745,7 +745,7 @@ function BookingPage({user,setPage,onAddLesson}){
             <div>🎯 {bookedSummary?.lessonLabel} · {bookedSummary?.duration} min</div>
             {bookedSummary?.focus&&<div>🏓 {bookedSummary.focus}</div>}
             <div>💰 ${bookedSummary?.price}{lessonType!=="private"?" per person":""}</div>
-            <div>📍 {!isMenlo?"3003 Bay Rd, Redwood City":"Stanford Redwood City"}</div>
+            <div>📍 {!isMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City":"Stanford Redwood City"}</div>
           </div>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -890,7 +890,7 @@ function BookingPage({user,setPage,onAddLesson}){
               <div>🎯 {lessonType==="private"?"Private":lessonType==="semi"?"Semi-Private":"Group"} · {duration} min</div>
               {focus&&<div>🏓 Focus: {focus}</div>}
               <div>💰 ${price}{lessonType!=="private"?" per person":""}</div>
-              <div>📍 {!isMenlo?"3003 Bay Rd, Redwood City":"Stanford Redwood City"}</div>
+              <div>📍 {!isMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City":"Stanford Redwood City"}</div>
               {lessonType==="semi"&&<div>👥 Partner: {partner.name}</div>}
               {lessonType==="group"&&<div>👥 Group: {[user.name,...groupMembers.slice(0,groupSize-1).map(m=>m.name)].join(", ")}</div>}
             </div>
