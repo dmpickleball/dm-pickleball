@@ -622,13 +622,17 @@ function LoginPage({onLogin,onAdminLogin}){
           popup.close();
           fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+token}})
             .then(r=>r.json())
-            .then(info=>{
-              setLoading(false);
-              const email=info.email.toLowerCase();
-              const u=MOCK_USERS[email];
-              if(!u){setError("Your account is not approved yet. Please request access.");setMode("signup");return;}
-              if(!u.approved){setError("Your account is pending approval from David.");return;}
-              onLogin({...u,email,name:info.name||u.name,picture:info.picture});
+            .then(async info=>{
+              const email=info.email.toLowerCase();window._pendingEmail=email;
+              try{
+                const r=await fetch("/api/get-student?email="+encodeURIComponent(email));
+                const data=await r.json();
+                if(!data.student){setLoading(false);setError("Your account is not approved yet. Please request access.");setMode("signup");return;}
+                if(!data.student.approved){setLoading(false);setError("Your account is pending approval from David.");return;}
+                if(data.student.blocked){setLoading(false);setError("Your account has been blocked. Please contact David.");return;}
+                setLoading(false);
+                onLogin({email,name:data.student.name||info.name,memberType:data.student.member_type,approved:true,picture:info.picture,phone:data.student.phone,homeCourt:data.student.home_court});
+              }catch(e){setLoading(false);setError("Login failed. Please try again.");}
             })
             .catch(()=>{setLoading(false);setError("Google login failed. Please try again.");});
         }
@@ -681,12 +685,16 @@ function LoginPage({onLogin,onAdminLogin}){
             <p style={{fontSize:"0.82rem",color:"#6b7280",marginBottom:16,lineHeight:1.6}}>You will sign in with Google. Please provide your details so David can approve your account.</p>
             <button onClick={()=>{
               if(!name||!phone){setError("Name and phone number are required.");return;}
-              fetch("https://formspree.io/f/"+FORMSPREE_ID,{
+              fetch("/api/request-access",{
                 method:"POST",
-                headers:{"Content-Type":"application/json","Accept":"application/json"},
-                body:JSON.stringify({name,phone,homeCourt,_subject:"New student access request: "+name,message:name+" has requested access.\nPhone: "+phone+"\nHome Court: "+(homeCourt||"Not specified")})
-              }).catch(()=>{});
-              setSignedUp(true);
+                headers:{"Content-Type":"application/json"},
+                body:JSON.stringify({email:window._pendingEmail||"",name,phone,homeCourt})
+              }).then(r=>r.json()).then(data=>{
+                if(data.error==="already_exists"){setError("You already have an account. Please sign in.");return;}
+                if(data.error==="already_requested"){setError("You already have a pending request. David will be in touch.");return;}
+                fetch("https://formspree.io/f/"+FORMSPREE_ID,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:"dmpickleball@gmail.com",_subject:"New access request: "+name,message:name+" has requested access.\nEmail: "+(window._pendingEmail||"")+"\nPhone: "+phone+"\nHome Court: "+(homeCourt||"Not specified")+"\n\nApprove at: https://dmpickleball.com/admin"})}).catch(()=>{});
+                setSignedUp(true);
+              }).catch(()=>setSignedUp(true));
             }} style={{width:"100%",background:G,color:"white",border:"none",padding:14,borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem",marginBottom:16}}>
               Request Access →
             </button>
@@ -1572,12 +1580,44 @@ export default function App(){
     }
     setAllLessons(prev=>({...prev,[email]:prev[email].map(l=>l.id===id?{...l,status:"cancelled"}:l)}));
   };
-  const addLesson=lesson=>setAllLessons(prev=>({...prev,[user.email]:[...(prev[user.email]||[]),lesson]}));
-  const updateLesson=(email,id,updates)=>setAllLessons(prev=>({...prev,[email]:prev[email].map(l=>l.id===id?{...l,...updates}:l)}));
-  const approveStudent=(student,memberType)=>{setAllLessons(prev=>({...prev,[student.email]:[]}));setMockUsersState(prev=>({...prev,[student.email]:{name:student.name,memberType,approved:true,password:""}}));setPendingStudents(prev=>prev.filter(s=>s.id!==student.id));};
-  const denyStudent=id=>setPendingStudents(prev=>prev.filter(s=>s.id!==id));
+  const addLesson=async lesson=>{
+    setAllLessons(prev=>({...prev,[user.email]:[...(prev[user.email]||[]),lesson]}));
+    try{
+      await fetch("/api/save-lesson",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lesson:{...lesson,studentEmail:user.email}})});
+    }catch(e){console.error("Save lesson error:",e);}
+  };
+  const updateLesson=async(email,id,updates)=>{
+    setAllLessons(prev=>({...prev,[email]:prev[email].map(l=>l.id===id?{...l,...updates}:l)}));
+    try{
+      await fetch("/api/update-lesson",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:id,updates})});
+    }catch(e){console.error("Update lesson error:",e);}
+  };
+  const approveStudent=async(student,memberType)=>{
+    try{
+      await fetch("/api/approve-student",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({requestId:student.id,email:student.email,name:student.name,phone:student.phone||"",homeCourt:student.homeCourt||"",memberType,action:"approve"})});
+      setAllLessons(prev=>({...prev,[student.email]:[]}));
+      setMockUsersState(prev=>({...prev,[student.email]:{name:student.name,memberType,approved:true}}));
+      setPendingStudents(prev=>prev.filter(s=>s.id!==student.id));
+      // Send approval email
+      fetch("https://formspree.io/f/"+FORMSPREE_ID,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:student.email,_subject:"Your DM Pickleball account is approved!",message:"Hi "+student.name+",\n\nYour account has been approved! You can now log in at:\nhttps://dmpickleball.com\n\nSee you on the court!\nDavid Mok"})}).catch(()=>{});
+    }catch(e){console.error("Approve error:",e);}
+  };
+  const denyStudent=async id=>{
+    const student=pendingStudents.find(s=>s.id===id);
+    if(student){
+      try{
+        await fetch("/api/approve-student",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({requestId:id,action:"deny"})});
+      }catch(e){console.error("Deny error:",e);}
+    }
+    setPendingStudents(prev=>prev.filter(s=>s.id!==id));
+  };
   const addStudent=({name,email,memberType})=>{setMockUsersState(prev=>({...prev,[email]:{name,memberType,approved:true,password:""}}));setAllLessons(prev=>({...prev,[email]:[]}));};
-  const adminAddLesson=(email,lesson)=>setAllLessons(prev=>({...prev,[email]:[...(prev[email]||[]),lesson]}));
+  const adminAddLesson=async(email,lesson)=>{
+    setAllLessons(prev=>({...prev,[email]:[...(prev[email]||[]),lesson]}));
+    try{
+      await fetch("/api/save-lesson",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lesson:{...lesson,studentEmail:email}})});
+    }catch(e){console.error("Admin save lesson error:",e);}
+  };
   const toggleMenlo=email=>setMockUsersState(prev=>({...prev,[email]:{...prev[email],memberType:prev[email]?.memberType==="menlo"?"public":"menlo"}}));
   const toggleSaturday=email=>setMockUsersState(prev=>({...prev,[email]:{...prev[email],saturdayEnabled:!prev[email]?.saturdayEnabled}}));
   const blockStudent=email=>setMockUsersState(prev=>({...prev,[email]:{...prev[email],blocked:!prev[email]?.blocked}}));
