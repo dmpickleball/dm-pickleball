@@ -83,7 +83,7 @@ function getSlots(dateStr,memberType,duration){
   if(dow===0)return[];
   if(memberType==="menlo"&&dow===6)return[];
   const sb=STANFORD_BLOCKS[dow],pk=PICKUP[dow],slots=[];
-  for(let s=8*60;s+duration<=19*60;s+=30){
+  const maxStart=dow===6?10*60:16*60;for(let s=8*60;s<=maxStart;s+=30){
     const e=s+duration;
     if(sb&&s<sb.end&&e>sb.start)continue;
     if(pk&&s<pk.resume&&e>pk.buffer)continue;
