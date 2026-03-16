@@ -740,7 +740,7 @@ function BookingPage({user,setPage,onAddLesson}){
       <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:16}}>
         {LESSONS.map(l=>{
           const p=PRICES[l.id][duration];
-          const pLabel=l.id==="private"?"$"+p:l.id==="semi"?"$"+p+"/person":isMenlo?"$"+p+"/person":"$140 total";
+          const pLabel=l.id==="private"?"$"+p:l.id==="semi"?"$"+p+"/person":"$"+p+" total";
           return(<div key={l.id} onClick={()=>{setLessonType(l.id);setSlot(null);}} style={{background:lessonType===l.id?"#e8f0ee":"white",border:"2px solid "+(lessonType===l.id?G:"#e5e7eb"),borderRadius:12,padding:"16px",cursor:"pointer",textAlign:"center"}}><div style={{fontSize:28,marginBottom:6}}>{l.icon}</div><div style={{fontWeight:700,fontSize:"0.95rem",color:lessonType===l.id?G:"#1a1a1a"}}>{l.label}</div><div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:3}}>{l.desc}</div><div style={{fontWeight:800,color:G,fontSize:"1rem",marginTop:8}}>{pLabel}</div></div>);
         })}
       </div>
