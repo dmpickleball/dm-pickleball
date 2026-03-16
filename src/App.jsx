@@ -21,7 +21,7 @@ const inp = { padding:"11px 14px", border:"1.5px solid #e5e7eb", borderRadius:8,
 const lbl = { fontSize:"0.78rem", fontWeight:700, color:"#6b7280", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:5, display:"block" };
 
 // ─── SCHEDULING DATA ─────────────────────────────────────────────────────────
-const STANFORD_BLOCKS = { 2:{start:16*60,end:19*60}, 3:{start:12*60,end:13*60+30}, 4:{start:16*60,end:19*60}, 5:{start:9*60+30,end:11*60} };
+const STANFORD_BLOCKS = { 2:{start:16*60,end:17*60+30}, 3:{start:12*60,end:13*60+30}, 5:{start:9*60+30,end:11*60} };
 const PICKUP = { 1:{buffer:14*60+35,resume:15*60+20}, 2:{buffer:14*60+35,resume:15*60+20}, 3:{buffer:14*60,resume:14*60+45}, 4:{buffer:14*60,resume:14*60+45}, 5:{buffer:14*60+35,resume:15*60+20} };
 const FOCUS_AREAS = ["Dinking & kitchen game","Third shot drops","Serve & return","Volleys & net play","Footwork & movement","Transition game","Overhead smash","Singles strategy","Doubles strategy","Tennis-to-pickleball transition","Drives"];
 
