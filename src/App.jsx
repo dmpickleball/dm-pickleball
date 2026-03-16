@@ -666,7 +666,7 @@ function BookingPage({user,setPage,onAddLesson}){
   const[lessonType,setLessonType]=useState("private");
   const[duration,setDuration]=useState(60);
   const[date,setDate]=useState("");
-  const[slot,setSlot]=useState(null);
+  const[slot,setSlot]=useState(null);const[slotIdx,setSlotIdx]=useState(-1);
   const[focus,setFocus]=useState("");
   const[notes,setNotes]=useState("");
   const[submitting,setSubmitting]=useState(false);
@@ -674,7 +674,7 @@ function BookingPage({user,setPage,onAddLesson}){
   const[error,setError]=useState("");
   const[gcalLink,setGcalLink]=useState("");
   const[bookedSummary,setBookedSummary]=useState(null);
-  const PRICES={private:{60:isMenlo?115:130,90:isMenlo?172.50:195},semi:{60:isMenlo?60:70,90:isMenlo?90:105},group:{60:isMenlo?40:null,90:isMenlo?60:null}};
+  const PRICES={private:{60:isMenlo?115:130,90:isMenlo?172.50:195},semi:{60:isMenlo?60:70,90:isMenlo?90:105},group:{60:140,90:210}};
   const LESSONS=[{id:"private",icon:"🎯",label:"Private",desc:"1-on-1 personalized coaching"},{id:"semi",icon:"👥",label:"Semi-Private",desc:"Always 2 students"},{id:"group",icon:"🏆",label:"Group",desc:isMenlo?"3-6 students":"3-5 students"}];
   const price=PRICES[lessonType][duration];
   const slots=getSlots(date,isMenlo?"menlo":"public",duration);
@@ -757,7 +757,7 @@ function BookingPage({user,setPage,onAddLesson}){
           {slots.length===0
             ?<div style={{background:"#fef2f2",borderRadius:8,padding:"14px",color:"#991b1b",fontSize:"0.88rem"}}>No available slots on this date. Please pick another day.</div>
             :<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:8}}>
-              {slots.map((s,i)=>(<div key={i} onClick={()=>setSlot(s)} style={{background:slot===s?"#e8f0ee":"white",border:"2px solid "+(slot===s?G:"#e5e7eb"),borderRadius:10,padding:"10px",cursor:"pointer",textAlign:"center",fontWeight:slot===s?700:500,color:slot===s?G:"#374151",fontSize:"0.88rem"}}>{fmt(s.s)}</div>))}
+              {slots.map((s,i)=>(<div key={i} onClick={()=>{setSlot(s);setSlotIdx(i);}} style={{background:slotIdx===i?"#e8f0ee":"white",border:"2px solid "+(slotIdx===i?G:"#e5e7eb"),borderRadius:10,padding:"10px",cursor:"pointer",textAlign:"center",fontWeight:slotIdx===i?700:500,color:slotIdx===i?G:"#374151",fontSize:"0.88rem"}}>{fmt(s.s)}</div>))}
             </div>
           }
         </div>
