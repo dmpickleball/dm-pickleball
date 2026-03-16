@@ -665,175 +665,77 @@ function BookingPage({user,setPage,onAddLesson}){
   const isMenlo=user.memberType==="menlo";
   const[lessonType,setLessonType]=useState("private");
   const[duration,setDuration]=useState(60);
-  const[date,setDate]=useState("");
-  const[slot,setSlot]=useState(null);
-  const[focus,setFocus]=useState("");
-  const[notes,setNotes]=useState("");
-  const[submitting,setSubmitting]=useState(false);
-  const[done,setDone]=useState(false);
-  const[error,setError]=useState("");
-  const[gcalLink,setGcalLink]=useState("");
-  const[bookedSummary,setBookedSummary]=useState(null);
-  const PRICES={private:{60:isMenlo?115:130,90:isMenlo?172.50:195},semi:{60:isMenlo?60:70,90:isMenlo?90:105},group:{60:isMenlo?40:null,90:isMenlo?60:null}};
-  const LESSONS=[{id:"private",icon:"🎯",label:"Private",desc:"1-on-1 personalized coaching"},{id:"semi",icon:"👥",label:"Semi-Private",desc:"Always 2 students"},{id:"group",icon:"🏆",label:"Group",desc:isMenlo?"3-6 students":"3-5 students"}];
-  const price=PRICES[lessonType][duration];
-  const slots=getSlots(date,isMenlo?"menlo":"public",duration);
-  const toTime24=(mins)=>{const h=Math.floor(mins/60),m=mins%60;return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");};
-  const toTimeStr=(s,e)=>fmt(s)+" - "+fmt(e);
-  const handleBook=async()=>{
-    if(!date||!slot){setError("Please select a date and time.");return;}
-    setSubmitting(true);setError("");
-    const startTime=toTime24(slot.s);
-    const endTime=toTime24(slot.e);
-    const timeStr=toTimeStr(slot.s,slot.e);
-    const lessonLabel=lessonType==="private"?"Private":lessonType==="semi"?"Semi-Private":"Group";
-    const summary="Pickleball Lesson - "+user.name+" ("+lessonLabel+" "+duration+"min)";
-    const description="Student: "+user.name+"\nEmail: "+user.email+"\nType: "+lessonLabel+" "+duration+"min\nFocus: "+(focus||"Not specified")+"\nNotes: "+(notes||"None")+"\nManage: https://dmpickleball.com";
-    let eventId="";
-    try{
-      const r=await fetch("/api/create-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({summary,description,date,startTime,endTime,studentEmail:user.email,studentName:user.name})});
-      const d=await r.json();
-      if(d.eventId)eventId=d.eventId;
-    }catch(e){console.error("GCal:",e);}
-    const startISO=date+"T"+startTime+":00";
-    const endISO=date+"T"+endTime+":00";
-    const link="https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(summary)+"&dates="+startISO.replace(/[-:]/g,"").slice(0,15)+"/"+endISO.replace(/[-:]/g,"").slice(0,15)+"&details="+encodeURIComponent(description);
-    try{
-      await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:user.email,_replyto:user.em
-cat > /tmp/booking.jsx << 'ENDFN'
-function BookingPage({user,setPage,onAddLesson}){
-  const isMenlo=user.memberType==="menlo";
-  const[lessonType,setLessonType]=useState("private");
-  const[duration,setDuration]=useState(60);
-  const[date,setDate]=useState("");
-  const[slot,setSlot]=useState(null);
-  const[focus,setFocus]=useState("");
-  const[notes,setNotes]=useState("");
-  const[submitting,setSubmitting]=useState(false);
-  const[done,setDone]=useState(false);
-  const[error,setError]=useState("");
-  const[gcalLink,setGcalLink]=useState("");
-  const[bookedSummary,setBookedSummary]=useState(null);
-  const PRICES={private:{60:isMenlo?115:130,90:isMenlo?172.50:195},semi:{60:isMenlo?60:70,90:isMenlo?90:105},group:{60:isMenlo?40:null,90:isMenlo?60:null}};
-  const LESSONS=[{id:"private",icon:"🎯",label:"Private",desc:"1-on-1 personalized coaching"},{id:"semi",icon:"👥",label:"Semi-Private",desc:"Always 2 students"},{id:"group",icon:"🏆",label:"Group",desc:isMenlo?"3-6 students":"3-5 students"}];
-  const price=PRICES[lessonType][duration];
-  const slots=getSlots(date,isMenlo?"menlo":"public",duration);
-  const toTime24=(mins)=>{const h=Math.floor(mins/60),m=mins%60;return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");};
-  const toTimeStr=(s,e)=>fmt(s)+" - "+fmt(e);
-  const handleBook=async()=>{
-    if(!date||!slot){setError("Please select a date and time.");return;}
-    setSubmitting(true);setError("");
-    const startTime=toTime24(slot.s);
-    const endTime=toTime24(slot.e);
-    const timeStr=toTimeStr(slot.s,slot.e);
-    const lessonLabel=lessonType==="private"?"Private":lessonType==="semi"?"Semi-Private":"Group";
-    const summary="Pickleball Lesson - "+user.name+" ("+lessonLabel+" "+duration+"min)";
-    const description="Student: "+user.name+"\nEmail: "+user.email+"\nType: "+lessonLabel+" "+duration+"min\nFocus: "+(focus||"Not specified")+"\nNotes: "+(notes||"None")+"\nManage: https://dmpickleball.com";
-    let eventId="";
-    try{
-      const r=await fetch("/api/create-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({summary,description,date,startTime,endTime,studentEmail:user.email,studentName:user.name})});
-      const d=await r.json();
-      if(d.eventId)eventId=d.eventId;
-    }catch(e){console.error("GCal:",e);}
-    const startISO=date+"T"+startTime+":00";
-    const endISO=date+"T"+endTime+":00";
-    const link="https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(summary)+"&dates="+startISO.replace(/[-:]/g,"").slice(0,15)+"/"+endISO.replace(/[-:]/g,"").slice(0,15)+"&details="+encodeURIComponent(description);
-    try{
-      await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:user.email,_replyto:user.email,_subject:"Your lesson is booked - "+fmtDateShort(date),message:"Hi "+user.name+",\n\nYour pickleball lesson is confirmed!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+duration+" min\nFocus: "+(focus||"Not specified")+"\n\nManage your booking:\nhttps://dmpickleball.com\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398"})});
-    }catch(e){console.error("Student email:",e);}
-    try{
-      await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:"dmpickleball@gmail.com",_replyto:user.email,_subject:"New booking: "+user.name+" - "+fmtDateShort(date),message:"New lesson booked!\n\nStudent: "+user.name+"\nEmail: "+user.email+"\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+duration+" min\nFocus: "+(focus||"Not specified")+"\nNotes: "+(notes||"None")+"\nPrice: $"+price+"\nGCal Event ID: "+(eventId||"N/A")})});
-    }catch(e){console.error("David email:",e);}
-    const newLesson={id:Date.now(),date,time:timeStr,type:lessonLabel,duration:duration+" min",status:"confirmed",focus,notes:"",photos:[],videos:[],gcalEventId:eventId};
-    onAddLesson(newLesson);
-    setGcalLink(link);
-    setBookedSummary({date,timeStr,lessonLabel,duration,focus,price});
-    setSubmitting(false);
-    setDone(true);
+  const PRICES={
+    private:{60:isMenlo?115:130, 90:isMenlo?172.50:195},
+    semi:{60:isMenlo?60:70, 90:isMenlo?90:105},
+    group:{60:isMenlo?40:null, 90:isMenlo?60:null},
   };
-  if(done)return(
-    <div style={{maxWidth:560,margin:"60px auto",padding:"0 24px",textAlign:"center"}}>
-      <div style={{background:"white",borderRadius:16,padding:"40px 32px",boxShadow:"0 4px 24px rgba(0,0,0,0.08)"}}>
-        <div style={{fontSize:56,marginBottom:16}}>🎉</div>
-        <h2 style={{fontWeight:900,color:G,marginBottom:8}}>You're booked!</h2>
-        <p style={{color:"#6b7280",marginBottom:24,lineHeight:1.7}}>A confirmation email has been sent to <strong>{user.email}</strong> with all the details.</p>
-        <div style={{background:"#f9f9f6",borderRadius:12,padding:"20px",marginBottom:24,textAlign:"left"}}>
-          <div style={{fontWeight:700,marginBottom:12,color:G}}>Booking Summary</div>
-          <div style={{fontSize:"0.9rem",color:"#4b5563",lineHeight:2}}>
-            <div>📅 {bookedSummary&&fmtDate(bookedSummary.date)}</div>
-            <div>⏱ {bookedSummary?.timeStr}</div>
-            <div>🎯 {bookedSummary?.lessonLabel} · {bookedSummary?.duration} min</div>
-            {bookedSummary?.focus&&<div>🏓 Focus: {bookedSummary.focus}</div>}
-            <div>💰 ${bookedSummary?.price}{lessonType!=="private"?" per person":""}</div>
-          </div>
-        </div>
-        <div style={{display:"flex",flexDirection:"column",gap:10}}>
-          <a href={gcalLink} target="_blank" rel="noreferrer" style={{background:G,color:"white",padding:"13px",borderRadius:50,fontWeight:700,textDecoration:"none",fontSize:"0.95rem"}}>📅 Add to Google Calendar</a>
-          <button onClick={()=>setPage("dashboard")} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"13px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"0.95rem"}}>View My Lessons →</button>
-        </div>
-      </div>
-    </div>
-  );
+  const LESSONS=[
+    {id:"private",icon:"🎯",label:"Private",desc:"1-on-1 personalized coaching"},
+    {id:"semi",icon:"👥",label:"Semi-Private",desc:"Always 2 students"},
+    {id:"group",icon:"🏆",label:"Group",desc:isMenlo?"3–6 students":"3–5 students"},
+  ];
+  const price=PRICES[lessonType][duration];
+  const priceLabel=lessonType==="private"?`$${price}`
+    :lessonType==="semi"?`$${price}/person · $${price*2} total`
+    :isMenlo?`$${price}/person`:`$${140}/total · split equally`;
+  const eventMap={
+    private:{60:isMenlo?"mcc-private-60":"private-60", 90:isMenlo?"mcc-private-90":"private-90"},
+    semi:{60:isMenlo?"mcc-semi-60":"semi-60", 90:isMenlo?"mcc-semi-90":"semi-90"},
+    group:{60:isMenlo?"mcc-group-60":"group-60", 90:isMenlo?"mcc-group-90":"group-90"},
+  };
+  const eventSlug=eventMap[lessonType][duration];
+  const calendlyUrl=`https://calendly.com/dmpickleball/${eventSlug}?hide_gdpr_banner=1&primary_color=006039`;
   return(
-    <div style={{maxWidth:700,margin:"0 auto",padding:"32px 24px"}}>
+    <div style={{maxWidth:900,margin:"0 auto",padding:"32px 24px"}}>
       <div style={{marginBottom:24}}>
         <h2 style={{fontWeight:900,color:G,fontSize:"1.6rem"}}>Book a Lesson</h2>
-        <p style={{color:"#6b7280",marginTop:4,fontSize:"0.92rem"}}>Booking as <strong>{user.name}</strong> <span style={{background:"#e8f0ee",color:G,padding:"2px 10px",borderRadius:50,fontSize:"0.78rem",fontWeight:600,marginLeft:8}}>{isMenlo?"Menlo Circus Club":"General Student"}</span></p>
+        <p style={{color:"#6b7280",marginTop:4,fontSize:"0.92rem"}}>
+          Pick your lesson type and duration below, then choose a time.
+          <span style={{background:"#e8f0ee",color:G,padding:"2px 10px",borderRadius:50,fontSize:"0.78rem",fontWeight:600,marginLeft:8}}>
+            {isMenlo?"Menlo Circus Club":"General Student"}
+          </span>
+        </p>
       </div>
-      {error&&<div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:8,padding:"12px 16px",color:"#991b1b",fontSize:"0.88rem",marginBottom:16}}>{error}</div>}
       <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:16}}>
         {LESSONS.map(l=>{
           const p=PRICES[l.id][duration];
-          const pLabel=l.id==="private"?"$"+p:l.id==="semi"?"$"+p+"/person":isMenlo?"$"+p+"/person":"$140 total";
-          return(<div key={l.id} onClick={()=>{setLessonType(l.id);setSlot(null);}} style={{background:lessonType===l.id?"#e8f0ee":"white",border:"2px solid "+(lessonType===l.id?G:"#e5e7eb"),borderRadius:12,padding:"16px",cursor:"pointer",textAlign:"center"}}><div style={{fontSize:28,marginBottom:6}}>{l.icon}</div><div style={{fontWeight:700,fontSize:"0.95rem",color:lessonType===l.id?G:"#1a1a1a"}}>{l.label}</div><div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:3}}>{l.desc}</div><div style={{fontWeight:800,color:G,fontSize:"1rem",marginTop:8}}>{pLabel}</div></div>);
+          const pLabel=l.id==="private"?`$${p}`
+            :l.id==="semi"?`$${p}/person`
+            :isMenlo?`$${p}/person`:`$${140} total`;
+          return(
+            <div key={l.id} onClick={()=>setLessonType(l.id)}
+              style={{background:lessonType===l.id?"#e8f0ee":"white",border:`2px solid ${lessonType===l.id?G:"#e5e7eb"}`,borderRadius:12,padding:"16px",cursor:"pointer",textAlign:"center",transition:"all 0.15s"}}>
+              <div style={{fontSize:28,marginBottom:6}}>{l.icon}</div>
+              <div style={{fontWeight:700,fontSize:"0.95rem",color:lessonType===l.id?G:"#1a1a1a"}}>{l.label}</div>
+              <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:3}}>{l.desc}</div>
+              <div style={{fontWeight:800,color:G,fontSize:"1rem",marginTop:8}}>{pLabel}</div>
+            </div>
+          );
         })}
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
-        {[60,90].map(d=>(<div key={d} onClick={()=>{setDuration(d);setSlot(null);}} style={{background:duration===d?"#e8f0ee":"white",border:"2px solid "+(duration===d?G:"#e5e7eb"),borderRadius:12,padding:"14px 20px",cursor:"pointer",textAlign:"center"}}><span style={{fontWeight:700,fontSize:"1rem",color:duration===d?G:"#1a1a1a"}}>{d} min</span></div>))}
-      </div>
-      <div style={{marginBottom:20}}>
-        <div style={{...lbl,marginBottom:10}}>Select a Date</div>
-        <CalendarPicker value={date} onChange={d=>{setDate(d);setSlot(null);}} memberType={isMenlo?"menlo":"public"}/>
-      </div>
-      {date&&(
-        <div style={{marginBottom:20}}>
-          <div style={{...lbl,marginBottom:10}}>Select a Time — {fmtDateShort(date)}</div>
-          {slots.length===0
-            ?<div style={{background:"#fef2f2",borderRadius:8,padding:"14px",color:"#991b1b",fontSize:"0.88rem"}}>No available slots on this date. Please pick another day.</div>
-            :<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:8}}>
-              {slots.map((s,i)=>(<div key={i} onClick={()=>setSlot(s)} style={{background:slot===s?"#e8f0ee":"white",border:"2px solid "+(slot===s?G:"#e5e7eb"),borderRadius:10,padding:"10px",cursor:"pointer",textAlign:"center",fontWeight:slot===s?700:500,color:slot===s?G:"#374151",fontSize:"0.88rem"}}>{fmt(s.s)}</div>))}
-            </div>
-          }
-        </div>
-      )}
-      <div style={{marginBottom:20}}>
-        <div style={{...lbl,marginBottom:6}}>Focus Area <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(optional)</span></div>
-        <select value={focus} onChange={e=>setFocus(e.target.value)} style={{...inp,marginBottom:0}}>
-          <option value="">No specific focus</option>
-          {FOCUS_AREAS.map(f=><option key={f} value={f}>{f}</option>)}
-        </select>
-      </div>
-      <div style={{marginBottom:20}}>
-        <div style={{...lbl,marginBottom:6}}>Notes for David <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(optional)</span></div>
-        <textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Anything David should know before the lesson..." style={{...inp,height:80,resize:"vertical",fontFamily:"inherit",marginBottom:0}}/>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+        {[60,90].map(d=>(
+          <div key={d} onClick={()=>setDuration(d)}
+            style={{background:duration===d?"#e8f0ee":"white",border:`2px solid ${duration===d?G:"#e5e7eb"}`,borderRadius:12,padding:"14px 20px",cursor:"pointer",textAlign:"center",transition:"all 0.15s"}}>
+            <span style={{fontWeight:700,fontSize:"1rem",color:duration===d?G:"#1a1a1a"}}>{d} min</span>
+          </div>
+        ))}
       </div>
       <div style={{background:"#fffbea",border:"1.5px solid #f4c430",borderRadius:8,padding:"10px 16px",marginBottom:20,fontSize:"0.85rem",color:"#7a5800"}}>
         ⚠️ <strong>Cancellation Policy:</strong> Please cancel at least 24 hours before your lesson.
       </div>
-      {slot&&date&&(
-        <div style={{background:"#e8f0ee",borderRadius:12,padding:"16px 20px",marginBottom:20,border:"1.5px solid "+G}}>
-          <div style={{fontWeight:700,color:G,marginBottom:8}}>Booking Summary</div>
-          <div style={{fontSize:"0.9rem",color:"#374151",lineHeight:2}}>
-            <div>📅 {fmtDate(date)}</div>
-            <div>⏱ {toTimeStr(slot.s,slot.e)}</div>
-            <div>🎯 {lessonType==="private"?"Private":lessonType==="semi"?"Semi-Private":"Group"} · {duration} min</div>
-            <div>💰 ${price}{lessonType!=="private"?" per person":""}</div>
-          </div>
-        </div>
-      )}
-      <button onClick={handleBook} disabled={!date||!slot||submitting} style={{width:"100%",background:!date||!slot?"#e5e7eb":submitting?"#9ca3af":G,color:!date||!slot?"#9ca3af":"white",border:"none",padding:"15px",borderRadius:50,fontWeight:700,cursor:!date||!slot||submitting?"not-allowed":"pointer",fontSize:"1rem"}}>
-        {submitting?"Booking...":"Confirm Booking →"}
-      </button>
+      <div style={{background:"white",borderRadius:16,overflow:"hidden",boxShadow:"0 2px 16px rgba(0,0,0,0.07)"}}>
+        <iframe
+          key={calendlyUrl}
+          src={calendlyUrl}
+          width="100%"
+          height="750"
+          frameBorder="0"
+          title="Book a Lesson"
+          style={{display:"block"}}
+        />
+      </div>
     </div>
   );
 }
