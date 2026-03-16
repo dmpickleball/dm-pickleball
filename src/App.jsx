@@ -666,7 +666,7 @@ function BookingPage({user,setPage,onAddLesson}){
   const[lessonType,setLessonType]=useState("private");
   const[duration,setDuration]=useState(60);
   const[date,setDate]=useState("");
-  const[slot,setSlot]=useState(null);const[slotIdx,setSlotIdx]=useState(-1);const[slotIdx,setSlotIdx]=useState(-1);
+  const[slot,setSlot]=useState(null);const[slotIdx,setSlotIdx]=useState(-1);
   const[focus,setFocus]=useState("");
   const[notes,setNotes]=useState("");
   const[submitting,setSubmitting]=useState(false);
