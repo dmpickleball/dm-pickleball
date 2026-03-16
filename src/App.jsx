@@ -948,51 +948,133 @@ function getEarnings(allLessons,mockUsers,range){
 }
 
 function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,onApprove,onDeny,mockUsers,onAddStudent,onAddLesson,onToggleMenlo,onToggleSaturday,onBlockStudent}){
-  const students=Object.keys(allLessons);
-  const[sel,setSel]=useState(students[0]);
+  const[tab,setTab]=useState(pendingStudents.length>0?"pending":"students");
+  const[studentSearch,setStudentSearch]=useState("");
+  const[selectedStudent,setSelectedStudent]=useState(null);
+  const[editingStudent,setEditingStudent]=useState(false);
+  const[editStudentData,setEditStudentData]=useState({});
+  const[showSchedule,setShowSchedule]=useState(false);
+  const[earningsRange,setEarningsRange]=useState("month");
+  const[showNialExport,setShowNialExport]=useState(false);
+  const[nialStart,setNialStart]=useState("");
+  const[nialEnd,setNialEnd]=useState("");
+  const[lessonFilter,setLessonFilter]=useState("upcoming");
   const[editingId,setEditingId]=useState(null);
   const[editNotes,setEditNotes]=useState("");
   const[confirmCancel,setConfirmCancel]=useState(null);
-  const[tab,setTab]=useState(pendingStudents.length>0?"pending":"students");
-  const[earningsRange,setEarningsRange]=useState("month");const[showNialExport,setShowNialExport]=useState(false);const[nialStart,setNialStart]=useState("");const[nialEnd,setNialEnd]=useState("");
+  const[scheduleStep,setScheduleStep]=useState(1);
+  const[schedLessonType,setSchedLessonType]=useState("private");
+  const[schedDuration,setSchedDuration]=useState(60);
+  const[schedDate,setSchedDate]=useState("");
+  const[schedSlot,setSchedSlot]=useState(null);
+  const[schedSlotIdx,setSchedSlotIdx]=useState(-1);
+  const[schedFocus,setSchedFocus]=useState("");
+  const[schedNotes,setSchedNotes]=useState("");
+  const[schedPartner,setSchedPartner]=useState({name:"",email:""});
+  const[schedGroupSize,setSchedGroupSize]=useState(3);
+  const[schedGroupMembers,setSchedGroupMembers]=useState([{name:"",email:""},{name:"",email:""},{name:"",email:""}]);
+  const[schedBusyTimes,setSchedBusyTimes]=useState([]);
+  const[schedLoadingSlots,setSchedLoadingSlots]=useState(false);
+  const[schedSubmitting,setSchedSubmitting]=useState(false);
   const[showAddStudent,setShowAddStudent]=useState(false);
-  const[showAddLesson,setShowAddLesson]=useState(false);
   const[newStudent,setNewStudent]=useState({name:"",email:"",memberType:"public"});
-  const[newLesson,setNewLesson]=useState({date:"",time:"",type:"Private",duration:"60",focus:"",notes:"",status:"completed"});
+
   const earnings=getEarnings(allLessons,mockUsers,earningsRange);
-  const lessons=allLessons[sel]||[];
-  const history=lessons.filter(l=>isPast(l.date,l.time)||l.status==="completed");
-  const upcoming=lessons.filter(l=>!isPast(l.date,l.time)&&l.status!=="cancelled");
-  const selUser=mockUsers[sel]||{};
-  const exportNial=()=>{
-    const rows=getEarnings(allLessons,mockUsers,"week").rows.filter(r=>r.isMenlo);
-    if(!rows.length){alert("No Menlo lessons this week.");return;}
-    const lines=["Date,Student,Type,Duration,Gross,David 70%",...rows.map(r=>`${r.date},${r.name},${r.type},${r.duration},$${r.gross},$${r.net}`)];
-    const blob=new Blob([lines.join("\n")],{type:"text/csv"});
-    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="menlo_weekly_summary.csv";a.click();
+  const allStudents=Object.keys(allLessons);
+  const filteredStudents=allStudents.filter(email=>{
+    const u=mockUsers[email]||{};
+    return (u.name||email).toLowerCase().includes(studentSearch.toLowerCase())||email.toLowerCase().includes(studentSearch.toLowerCase());
+  });
+
+  const allLessonsList=Object.entries(allLessons).flatMap(([email,lessons])=>
+    lessons.map(l=>({...l,studentEmail:email,studentName:mockUsers[email]?.name||email,isMenlo:mockUsers[email]?.memberType==="menlo"}))
+  ).sort((a,b)=>new Date(b.date)-new Date(a.date));
+
+  const filteredLessons=allLessonsList.filter(l=>{
+    if(lessonFilter==="upcoming")return !isPast(l.date,l.time)&&l.status!=="cancelled";
+    if(lessonFilter==="past")return isPast(l.date,l.time)||l.status==="completed";
+    if(lessonFilter==="cancelled")return l.status==="cancelled";
+    return true;
+  });
+
+  const SCHED_PRICES={private:{60:selectedStudent&&mockUsers[selectedStudent]?.memberType==="menlo"?115:130,90:selectedStudent&&mockUsers[selectedStudent]?.memberType==="menlo"?172.50:195},semi:{60:selectedStudent&&mockUsers[selectedStudent]?.memberType==="menlo"?60:70,90:selectedStudent&&mockUsers[selectedStudent]?.memberType==="menlo"?90:105},group:{60:140,90:210}};
+  const schedIsMenlo=selectedStudent&&mockUsers[selectedStudent]?.memberType==="menlo";
+  const schedSlots=schedDate?getSlots(schedDate,schedIsMenlo?"menlo":"public",schedDuration).filter(s=>!schedBusyTimes.some(b=>s.s<b.endMins&&s.e>b.startMins)):[];
+  const toTime24=(mins)=>{const h=Math.floor(mins/60),m=mins%60;return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");};
+  const toTimeStr=(s,e)=>fmt(s)+" - "+fmt(e);
+
+  const handleSchedule=async()=>{
+    if(!selectedStudent||!schedDate||!schedSlot)return;
+    setSchedSubmitting(true);
+    const startTime=toTime24(schedSlot.s);
+    const endTime=toTime24(schedSlot.e);
+    const timeStr=toTimeStr(schedSlot.s,schedSlot.e);
+    const student=mockUsers[selectedStudent]||{};
+    const lessonLabel=schedLessonType==="private"?"Private":schedLessonType==="semi"?"Semi-Private":"Group";
+    const memberNames=schedLessonType==="semi"?[student.name,schedPartner.name]:schedLessonType==="group"?[student.name,...schedGroupMembers.slice(0,schedGroupSize-1).map(m=>m.name)]:[student.name];
+    const titleSuffix=schedLessonType==="group"?" pb group lesson":" pb lesson";
+    const summary=memberNames.join("/")+titleSuffix;
+    const location=!schedIsMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City, CA 94063, USA":"Stanford Redwood City";
+    const description="Student: "+student.name+"\nEmail: "+selectedStudent+"\nType: "+lessonLabel+" "+schedDuration+"min\nFocus: "+(schedFocus||"Not specified")+"\nNotes: "+(schedNotes||"None")+"\nLocation: "+location+"\nManage: https://dmpickleball.com";
+    let eventId="";
+    try{
+      const r=await fetch("/api/create-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({summary,description,date:schedDate,startTime,endTime,location,studentEmail:selectedStudent,studentName:student.name})});
+      const d=await r.json();
+      if(d.eventId)eventId=d.eventId;
+    }catch(e){console.error("GCal:",e);}
+    const startISO=schedDate+"T"+startTime+":00";
+    const endISO=schedDate+"T"+endTime+":00";
+    const link="https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(summary)+"&dates="+startISO.replace(/[-:]/g,"").slice(0,15)+"/"+endISO.replace(/[-:]/g,"").slice(0,15)+"&details="+encodeURIComponent(description)+"&location="+encodeURIComponent(location);
+    try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:selectedStudent,_replyto:"dmpickleball@gmail.com",_subject:"Your lesson is booked - "+fmtDateShort(schedDate),message:"Hi "+student.name+",\n\nDavid has scheduled a lesson for you!\n\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+schedDuration+" min\nFocus: "+(schedFocus||"Not specified")+"\nLocation: "+location+"\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398"})});}catch(e){}
+    try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:"dmpickleball@gmail.com",_replyto:selectedStudent,_subject:"Scheduled: "+summary+" - "+fmtDateShort(schedDate),message:"You scheduled a lesson!\n\nStudent: "+student.name+"\nEmail: "+selectedStudent+"\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+schedDuration+" min\nFocus: "+(schedFocus||"Not specified")+"\nLocation: "+location})});}catch(e){}
+    const newLesson={id:Date.now(),date:schedDate,time:timeStr,type:lessonLabel,duration:schedDuration+" min",status:"confirmed",focus:schedFocus,notes:"",photos:[],videos:[],gcalEventId:eventId};
+    onAddLesson(selectedStudent,newLesson);
+    setShowSchedule(false);
+    setSchedStep(1);setSchedLessonType("private");setSchedDuration(60);setSchedDate("");setSchedSlot(null);setSchedSlotIdx(-1);setSchedFocus("");setSchedNotes("");setSchedBusyTimes([]);
+    setSchedSubmitting(false);
+    alert("Lesson scheduled for "+student.name+"!");
   };
+
+  const exportNial=()=>{
+    if(!nialStart||!nialEnd){alert("Please select a date range.");return;}
+    const start=new Date(nialStart+"T00:00:00");
+    const end=new Date(nialEnd+"T23:59:59");
+    const rows=[];
+    Object.entries(allLessons).forEach(([email,lessons])=>{
+      const u=mockUsers[email]||{};
+      if(u.memberType!=="menlo")return;
+      lessons.filter(l=>l.status!=="cancelled"&&(isPast(l.date,l.time)||l.status==="completed")).forEach(l=>{
+        const d=new Date(l.date+"T12:00:00");
+        if(d<start||d>end)return;
+        const mins=parseInt(l.duration)||60;
+        const gross=getRate(l.type,mins,"menlo");
+        const net=getMenloNet(gross);
+        rows.push({name:u.name||email,date:l.date,type:l.type,duration:l.duration,gross,net});
+      });
+    });
+    if(!rows.length){alert("No Menlo lessons in that range.");return;}
+    const lines=["Date,Student,Type,Duration,Gross,David 70%",...rows.map(r=>r.date+","+r.name+","+r.type+","+r.duration+",$"+r.gross+",$"+r.net)];
+    const blob=new Blob([lines.join("\n")],{type:"text/csv"});
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="menlo_"+nialStart+"_to_"+nialEnd+".csv";a.click();
+  };
+
   return(
-    <div style={{maxWidth:960,margin:"0 auto",padding:"40px 24px"}}>
-      <div style={{marginBottom:28,display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12}}>
+    <div style={{maxWidth:1100,margin:"0 auto",padding:"40px 24px"}}>
+      <div style={{marginBottom:28,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
         <div>
-          <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:4}}>Admin Panel</div>
-          <h2 style={{fontWeight:900,fontSize:"1.6rem",color:G}}>David's Dashboard</h2>
+          <div style={{fontSize:"0.78rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:4}}>Admin Panel</div>
+          <h2 style={{fontWeight:900,fontSize:"1.6rem",color:G}}>David Dashboard</h2>
         </div>
         <button onClick={()=>setShowNialExport(!showNialExport)} style={{background:"#1a1a1a",color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>⬇ Export Nial Report</button>
       </div>
+
       {showNialExport&&(
         <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"20px 24px",marginBottom:24}}>
           <div style={{fontWeight:700,fontSize:"0.95rem",marginBottom:4}}>Export Menlo Report for Nial</div>
-          <div style={{fontSize:"0.83rem",color:"#6b7280",marginBottom:16}}>Select the date range to include. Report will show: Date, Member Name, Lesson Type, Duration.</div>
+          <div style={{fontSize:"0.83rem",color:"#6b7280",marginBottom:16}}>Select date range — shows Date, Member Name, Lesson Type, Duration.</div>
           <div style={{display:"flex",gap:12,flexWrap:"wrap",alignItems:"flex-end"}}>
-            <div>
-              <div style={{...lbl,marginBottom:4}}>Start Date</div>
-              <input type="date" value={nialStart} onChange={e=>setNialStart(e.target.value)} style={{...inp,marginBottom:0,width:"auto"}}/>
-            </div>
-            <div>
-              <div style={{...lbl,marginBottom:4}}>End Date</div>
-              <input type="date" value={nialEnd} onChange={e=>setNialEnd(e.target.value)} style={{...inp,marginBottom:0,width:"auto"}}/>
-            </div>
+            <div><div style={{...lbl,marginBottom:4}}>Start Date</div><input type="date" value={nialStart} onChange={e=>setNialStart(e.target.value)} style={{...inp,marginBottom:0,width:"auto"}}/></div>
+            <div><div style={{...lbl,marginBottom:4}}>End Date</div><input type="date" value={nialEnd} onChange={e=>setNialEnd(e.target.value)} style={{...inp,marginBottom:0,width:"auto"}}/></div>
             <div style={{display:"flex",gap:8}}>
               <button onClick={()=>setShowNialExport(false)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}>Cancel</button>
               <button onClick={exportNial} style={{background:G,color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>⬇ Download CSV</button>
@@ -1001,38 +1083,41 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
         </div>
       )}
 
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:16,marginBottom:32}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:16,marginBottom:32}}>
         <div style={{background:"white",borderRadius:12,padding:"20px 24px",border:"1.5px solid #e5e7eb"}}>
           <div style={{fontSize:"0.72rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>
-            {["week","month","year"].map(r=>(
-              <span key={r} onClick={()=>setEarningsRange(r)} style={{marginRight:8,cursor:"pointer",color:earningsRange===r?G:"#9ca3af",fontWeight:earningsRange===r?800:500}}>{r.charAt(0).toUpperCase()+r.slice(1)}</span>
-            ))}
+            {["week","month","year"].map(r=>(<span key={r} onClick={()=>setEarningsRange(r)} style={{marginRight:8,cursor:"pointer",color:earningsRange===r?G:"#9ca3af",fontWeight:earningsRange===r?800:500}}>{r.charAt(0).toUpperCase()+r.slice(1)}</span>))}
           </div>
           <div style={{fontSize:"2rem",fontWeight:900,color:G}}>${earnings.total.toFixed(2)}</div>
           <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:4}}>Your earnings</div>
         </div>
-
-        <div style={{background:"#e8f0ee",borderRadius:12,padding:"20px 24px",border:`1.5px solid ${G}`}}>
+        <div style={{background:"#e8f0ee",borderRadius:12,padding:"20px 24px",border:"1.5px solid "+G}}>
           <div style={{fontSize:"0.72rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Menlo Net (70%)</div>
           <div style={{fontSize:"2rem",fontWeight:900,color:G}}>${earnings.menloNet.toFixed(2)}</div>
           <div style={{fontSize:"0.8rem",color:"#4b5563",marginTop:4}}>Your 70% from MCC</div>
         </div>
         <div style={{background:"white",borderRadius:12,padding:"20px 24px",border:"1.5px solid #e5e7eb"}}>
-          <div style={{fontSize:"0.72rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Lessons</div>
-          <div style={{fontSize:"2rem",fontWeight:900,color:"#1a1a1a"}}>{earnings.rows.length}</div>
-          <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:4}}>Completed this {earningsRange}</div>
+          <div style={{fontSize:"0.72rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Total Students</div>
+          <div style={{fontSize:"2rem",fontWeight:900,color:"#1a1a1a"}}>{allStudents.length}</div>
+          <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:4}}>Active students</div>
+        </div>
+        <div style={{background:"white",borderRadius:12,padding:"20px 24px",border:"1.5px solid #e5e7eb"}}>
+          <div style={{fontSize:"0.72rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Upcoming</div>
+          <div style={{fontSize:"2rem",fontWeight:900,color:"#1a1a1a"}}>{allLessonsList.filter(l=>!isPast(l.date,l.time)&&l.status!=="cancelled").length}</div>
+          <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:4}}>Lessons scheduled</div>
         </div>
       </div>
 
       <div style={{display:"flex",gap:0,borderBottom:"2px solid #e5e7eb",marginBottom:28,flexWrap:"wrap"}}>
-        {[["pending",`Pending (${pendingStudents.length})`],["students","Students & Lessons"],["earnings","Earnings Detail"]].map(([t,label])=>(
-          <button key={t} onClick={()=>setTab(t)}
-            style={{background:"none",border:"none",borderBottom:`2px solid ${tab===t?G:"transparent"}`,marginBottom:-2,padding:"10px 20px",fontSize:"0.88rem",fontWeight:tab===t?700:500,color:tab===t?G:"#6b7280",cursor:"pointer"}}>
+        {[["pending","Pending"+(pendingStudents.length>0?" ("+pendingStudents.length+")":"")],["students","Students"],["lessons","Lessons"],["earnings","Earnings"]].map(([t,label])=>(
+          <button key={t} onClick={()=>{setTab(t);setSelectedStudent(null);setShowSchedule(false);}}
+            style={{background:"none",border:"none",borderBottom:"2px solid "+(tab===t?G:"transparent"),marginBottom:-2,padding:"10px 20px",fontSize:"0.88rem",fontWeight:tab===t?700:500,color:tab===t?G:"#6b7280",cursor:"pointer"}}>
             {label}
             {t==="pending"&&pendingStudents.length>0&&<span style={{background:"#dc2626",color:"white",borderRadius:50,padding:"1px 7px",fontSize:"0.7rem",fontWeight:800,marginLeft:6}}>{pendingStudents.length}</span>}
           </button>
         ))}
       </div>
+
       {tab==="pending"&&(
         <div>
           {pendingStudents.length===0
@@ -1043,34 +1128,325 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 <div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2,marginBottom:12}}>{student.email} · Requested {student.requestedAt}</div>
                 <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
                   <span style={{fontSize:"0.78rem",fontWeight:600,color:"#6b7280"}}>Approve as:</span>
-                  {["public","menlo"].map(type=>(
-                    <button key={type} onClick={()=>onApprove(student,type)}
-                      style={{background:type==="menlo"?G:"#1a1a1a",color:"white",border:"none",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>
-                      ✓ {type==="menlo"?"Menlo Club":"General"}
-                    </button>
-                  ))}
-                  <button onClick={()=>onDeny(student.id)}
-                    style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>
-                    ✕ Deny
-                  </button>
+                  {["public","menlo"].map(type=>(<button key={type} onClick={()=>onApprove(student,type)} style={{background:type==="menlo"?G:"#1a1a1a",color:"white",border:"none",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>✓ {type==="menlo"?"Menlo Club":"General"}</button>))}
+                  <button onClick={()=>onDeny(student.id)} style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>✕ Deny</button>
                 </div>
               </div>
             ))
           }
         </div>
       )}
+
+      {tab==="students"&&!selectedStudent&&(
+        <div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
+            <input placeholder="🔍 Search students..." value={studentSearch} onChange={e=>setStudentSearch(e.target.value)} style={{...inp,marginBottom:0,maxWidth:300,flex:1}}/>
+            <button onClick={()=>setShowAddStudent(!showAddStudent)} style={{background:G,color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>+ Add Student</button>
+          </div>
+          {showAddStudent&&(
+            <div style={{background:"#f9f9f6",borderRadius:12,padding:"20px",marginBottom:16,border:"1.5px solid #e5e7eb"}}>
+              <div style={{fontWeight:700,marginBottom:12}}>Add Student Manually</div>
+              <input placeholder="Full Name" value={newStudent.name} onChange={e=>setNewStudent({...newStudent,name:e.target.value})} style={inp}/>
+              <input placeholder="Email Address" value={newStudent.email} onChange={e=>setNewStudent({...newStudent,email:e.target.value})} style={inp}/>
+              <select value={newStudent.memberType} onChange={e=>setNewStudent({...newStudent,memberType:e.target.value})} style={{...inp,marginBottom:12}}>
+                <option value="public">General Student</option>
+                <option value="menlo">Menlo Circus Club</option>
+              </select>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={()=>setShowAddStudent(false)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"8px 20px",borderRadius:50,cursor:"pointer",fontWeight:600}}>Cancel</button>
+                <button onClick={()=>{if(!newStudent.name||!newStudent.email){alert("Name and email required.");return;}onAddStudent(newStudent);setNewStudent({name:"",email:"",memberType:"public"});setShowAddStudent(false);}} style={{background:G,color:"white",border:"none",padding:"8px 20px",borderRadius:50,cursor:"pointer",fontWeight:700}}>Add Student</button>
+              </div>
+            </div>
+          )}
+          <div style={{display:"grid",gap:10}}>
+            {filteredStudents.map(email=>{
+              const u=mockUsers[email]||{};
+              const lessons=allLessons[email]||[];
+              const upcoming=lessons.filter(l=>!isPast(l.date,l.time)&&l.status!=="cancelled");
+              const completed=lessons.filter(l=>isPast(l.date,l.time)||l.status==="completed");
+              return(
+                <div key={email} onClick={()=>setSelectedStudent(email)} style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"16px 20px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8,transition:"all 0.15s"}}
+                  onMouseEnter={e=>e.currentTarget.style.borderColor=G}
+                  onMouseLeave={e=>e.currentTarget.style.borderColor="#e5e7eb"}>
+                  <div style={{display:"flex",alignItems:"center",gap:14}}>
+                    <div style={{width:42,height:42,borderRadius:"50%",background:u.memberType==="menlo"?G:"#e8f0ee",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:"1rem",color:u.memberType==="menlo"?"white":G}}>
+                      {(u.name||email).charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div style={{fontWeight:700,fontSize:"0.97rem"}}>{u.name||email}</div>
+                      <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:2}}>{email}</div>
+                    </div>
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    {u.memberType==="menlo"&&<span style={{background:G,color:"white",padding:"2px 10px",borderRadius:50,fontSize:"0.7rem",fontWeight:700}}>MCC</span>}
+                    {u.blocked&&<span style={{background:"#dc2626",color:"white",padding:"2px 10px",borderRadius:50,fontSize:"0.7rem",fontWeight:700}}>Blocked</span>}
+                    <span style={{fontSize:"0.8rem",color:"#6b7280"}}>{upcoming.length} upcoming · {completed.length} completed</span>
+                    <span style={{color:G,fontSize:"1.1rem"}}>›</span>
+                  </div>
+                </div>
+              );
+            })}
+            {filteredStudents.length===0&&<div style={{textAlign:"center",color:"#9ca3af",padding:"40px"}}>No students found.</div>}
+          </div>
+        </div>
+      )}
+
+      {tab==="students"&&selectedStudent&&!showSchedule&&(
+        <div>
+          <button onClick={()=>setSelectedStudent(null)} style={{background:"none",border:"none",color:G,fontWeight:700,cursor:"pointer",fontSize:"0.88rem",marginBottom:20,padding:0}}>← Back to Students</button>
+          <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"24px",marginBottom:20}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12,marginBottom:20}}>
+              <div style={{display:"flex",alignItems:"center",gap:16}}>
+                <div style={{width:56,height:56,borderRadius:"50%",background:mockUsers[selectedStudent]?.memberType==="menlo"?G:"#e8f0ee",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:"1.3rem",color:mockUsers[selectedStudent]?.memberType==="menlo"?"white":G}}>
+                  {(mockUsers[selectedStudent]?.name||selectedStudent).charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  {editingStudent?(
+                    <div>
+                      <input value={editStudentData.name||""} onChange={e=>setEditStudentData({...editStudentData,name:e.target.value})} style={{...inp,marginBottom:8,fontWeight:700,fontSize:"1rem"}} placeholder="Full Name"/>
+                      <input value={editStudentData.email||""} onChange={e=>setEditStudentData({...editStudentData,email:e.target.value})} style={{...inp,marginBottom:0,fontSize:"0.85rem"}} placeholder="Email"/>
+                    </div>
+                  ):(
+                    <div>
+                      <div style={{fontWeight:800,fontSize:"1.1rem"}}>{mockUsers[selectedStudent]?.name||selectedStudent}</div>
+                      <div style={{fontSize:"0.85rem",color:"#6b7280",marginTop:2}}>{selectedStudent}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                {editingStudent?(
+                  <>
+                    <button onClick={()=>setEditingStudent(false)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.82rem"}}>Cancel</button>
+                    <button onClick={()=>{onAddStudent({name:editStudentData.name,email:selectedStudent,memberType:mockUsers[selectedStudent]?.memberType||"public"});setEditingStudent(false);}} style={{background:G,color:"white",border:"none",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.82rem"}}>Save ✓</button>
+                  </>
+                ):(
+                  <button onClick={()=>{setEditStudentData({name:mockUsers[selectedStudent]?.name||"",email:selectedStudent});setEditingStudent(true);}} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.82rem"}}>✏️ Edit</button>
+                )}
+                <button onClick={()=>setShowSchedule(true)} style={{background:G,color:"white",border:"none",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.82rem"}}>+ Schedule Lesson</button>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              <button onClick={()=>onToggleMenlo(selectedStudent)} style={{background:mockUsers[selectedStudent]?.memberType==="menlo"?G:"white",color:mockUsers[selectedStudent]?.memberType==="menlo"?"white":G,border:"1.5px solid "+G,padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>
+                {mockUsers[selectedStudent]?.memberType==="menlo"?"✓ Menlo Club":"Set Menlo Club"}
+              </button>
+              <button onClick={()=>onBlockStudent(selectedStudent)} style={{background:mockUsers[selectedStudent]?.blocked?"#dc2626":"white",color:mockUsers[selectedStudent]?.blocked?"white":"#dc2626",border:"1.5px solid #dc2626",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>
+                {mockUsers[selectedStudent]?.blocked?"Unblock":"Block Student"}
+              </button>
+            </div>
+          </div>
+
+          <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Lesson History</div>
+          {(allLessons[selectedStudent]||[]).length===0&&<div style={{color:"#9ca3af",fontSize:"0.9rem",textAlign:"center",padding:"32px"}}>No lessons yet.</div>}
+          {(allLessons[selectedStudent]||[]).sort((a,b)=>new Date(b.date)-new Date(a.date)).map(l=>(
+            <div key={l.id} style={{background:"white",borderRadius:12,border:"1.5px solid "+(editingId===l.id?G:"#e5e7eb"),marginBottom:10,overflow:"hidden"}}>
+              <div style={{padding:"14px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+                <div>
+                  <div style={{fontWeight:700}}>{fmtDateShort(l.date)} · {l.time}</div>
+                  <div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>{l.type} · {l.duration}{l.focus?" · 🎯 "+l.focus:""}</div>
+                  {l.notes&&editingId!==l.id&&<div style={{background:"#f9f9f6",borderRadius:6,padding:"8px 12px",marginTop:8,fontSize:"0.85rem",color:"#374151"}}>{l.notes}</div>}
+                </div>
+                <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                  <span style={{background:l.status==="confirmed"?"#e8f0ee":l.status==="cancelled"?"#fef2f2":"#fffbea",color:l.status==="confirmed"?G:l.status==="cancelled"?"#dc2626":"#92400e",padding:"3px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>
+                    {l.status==="confirmed"?"✓ Confirmed":l.status==="cancelled"?"✕ Cancelled":"⏳ Pending"}
+                  </span>
+                  {l.status!=="cancelled"&&(
+                    <>
+                      <button onClick={()=>editingId===l.id?setEditingId(null):(setEditingId(l.id),setEditNotes(l.notes||""))} style={{background:editingId===l.id?"#f3f4f6":G,color:editingId===l.id?"#374151":"white",border:"none",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>
+                        {editingId===l.id?"Cancel":"✏️ Notes"}
+                      </button>
+                      {!isPast(l.date,l.time)&&(
+                        <button onClick={()=>setConfirmCancel(confirmCancel===l.id?null:l.id)} style={{background:"#fef2f2",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>✕ Cancel</button>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+              {confirmCancel===l.id&&(
+                <div style={{background:"#fef2f2",borderTop:"1px solid #fca5a5",padding:"12px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+                  <span style={{fontWeight:700,color:"#991b1b",fontSize:"0.88rem"}}>Cancel this lesson?</span>
+                  <div style={{display:"flex",gap:8}}>
+                    <button onClick={()=>setConfirmCancel(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Keep it</button>
+                    <button onClick={()=>{onCancelLesson(selectedStudent,l.id);setConfirmCancel(null);}} style={{background:"#dc2626",color:"white",border:"none",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>Yes, Cancel</button>
+                  </div>
+                </div>
+              )}
+              {editingId===l.id&&(
+                <div style={{borderTop:"1px solid #e5e7eb",padding:"16px 18px",background:"#f9f9f6"}}>
+                  <textarea value={editNotes} onChange={e=>setEditNotes(e.target.value)} placeholder="Add coaching notes..." style={{...inp,height:90,resize:"vertical",fontFamily:"inherit",background:"white"}}/>
+                  <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+                    <button onClick={()=>setEditingId(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 18px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}>Cancel</button>
+                    <button onClick={()=>{onUpdateLesson(selectedStudent,l.id,{notes:editNotes});setEditingId(null);}} style={{background:G,color:"white",border:"none",padding:"7px 18px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>Save Notes ✓</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab==="students"&&selectedStudent&&showSchedule&&(
+        <div style={{maxWidth:620}}>
+          <button onClick={()=>{setShowSchedule(false);setSchedStep(1);}} style={{background:"none",border:"none",color:G,fontWeight:700,cursor:"pointer",fontSize:"0.88rem",marginBottom:20,padding:0}}>← Back to {mockUsers[selectedStudent]?.name}</button>
+          <h3 style={{fontWeight:800,fontSize:"1.2rem",marginBottom:4,color:G}}>Schedule Lesson</h3>
+          <p style={{color:"#6b7280",fontSize:"0.88rem",marginBottom:24}}>Scheduling for <strong>{mockUsers[selectedStudent]?.name}</strong></p>
+
+          <div style={{display:"flex",alignItems:"center",marginBottom:28,gap:0}}>
+            {["Type","Date & Time","Details","Confirm"].map((s,i)=>{
+              const n=i+1;
+              const active=scheduleStep===n;
+              const done=scheduleStep>n;
+              return(
+                <div key={i} style={{display:"flex",alignItems:"center",flex:i<3?1:"auto"}}>
+                  <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+                    <div style={{width:28,height:28,borderRadius:"50%",background:done?G:active?G:"#e5e7eb",color:done||active?"white":"#9ca3af",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:"0.8rem",cursor:done?"pointer":"default"}} onClick={()=>done&&setSchedStep(n)}>
+                      {done?"✓":n}
+                    </div>
+                    <div style={{fontSize:"0.62rem",fontWeight:600,color:active?G:done?G:"#9ca3af",whiteSpace:"nowrap"}}>{s}</div>
+                  </div>
+                  {i<3&&<div style={{flex:1,height:2,background:done?G:"#e5e7eb",margin:"0 6px",marginBottom:14}}/>}
+                </div>
+              );
+            })}
+          </div>
+
+          {scheduleStep===1&&(
+            <div>
+              <div style={{...lbl,marginBottom:12}}>Lesson Type</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:20}}>
+                {[{id:"private",icon:"🎯",label:"Private"},{id:"semi",icon:"👥",label:"Semi-Private"},{id:"group",icon:"🏆",label:"Group"}].map(l=>(
+                  <div key={l.id} onClick={()=>setSchedLessonType(l.id)} style={{background:schedLessonType===l.id?"#e8f0ee":"white",border:"2px solid "+(schedLessonType===l.id?G:"#e5e7eb"),borderRadius:12,padding:"14px",cursor:"pointer",textAlign:"center"}}>
+                    <div style={{fontSize:24,marginBottom:4}}>{l.icon}</div>
+                    <div style={{fontWeight:700,fontSize:"0.9rem",color:schedLessonType===l.id?G:"#1a1a1a"}}>{l.label}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{...lbl,marginBottom:12}}>Duration</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:24}}>
+                {[60,90].map(d=>(<div key={d} onClick={()=>setSchedDuration(d)} style={{background:schedDuration===d?"#e8f0ee":"white",border:"2px solid "+(schedDuration===d?G:"#e5e7eb"),borderRadius:12,padding:"14px",cursor:"pointer",textAlign:"center",fontWeight:700,color:schedDuration===d?G:"#1a1a1a"}}>{d} min</div>))}
+              </div>
+              <button onClick={()=>setSchedStep(2)} style={{width:"100%",background:G,color:"white",border:"none",padding:"13px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"0.95rem"}}>Next: Date & Time →</button>
+            </div>
+          )}
+
+          {scheduleStep===2&&(
+            <div>
+              <div style={{...lbl,marginBottom:12}}>Select a Date</div>
+              <div style={{marginBottom:20}}>
+                <CalendarPicker value={schedDate} onChange={async d=>{setSchedDate(d);setSchedSlot(null);setSchedSlotIdx(-1);setSchedLoadingSlots(true);try{const r=await fetch("/api/get-busy-times?date="+d);const data=await r.json();setSchedBusyTimes(data.busy||[]);}catch(e){setSchedBusyTimes([]);}setSchedLoadingSlots(false);}} memberType={schedIsMenlo?"menlo":"public"}/>
+              </div>
+              {schedDate&&(
+                <div style={{marginBottom:20}}>
+                  <div style={{...lbl,marginBottom:10}}>Select a Time — {fmtDateShort(schedDate)}</div>
+                  {schedLoadingSlots
+                    ?<div style={{textAlign:"center",padding:"16px",color:"#6b7280",fontSize:"0.85rem"}}>Checking availability...</div>
+                    :schedSlots.length===0
+                      ?<div style={{background:"#fef2f2",borderRadius:8,padding:"12px",color:"#991b1b",fontSize:"0.85rem"}}>No available slots. Please pick another day.</div>
+                      :<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(110px,1fr))",gap:8}}>
+                        {schedSlots.map((s,i)=>(<div key={i} onClick={()=>{setSchedSlot(s);setSchedSlotIdx(i);}} style={{background:schedSlotIdx===i?"#e8f0ee":"white",border:"2px solid "+(schedSlotIdx===i?G:"#e5e7eb"),borderRadius:10,padding:"9px",cursor:"pointer",textAlign:"center",fontWeight:schedSlotIdx===i?700:500,color:schedSlotIdx===i?G:"#374151",fontSize:"0.82rem"}}>{fmt(s.s)}</div>))}
+                      </div>
+                  }
+                </div>
+              )}
+              <div style={{display:"flex",gap:10}}>
+                <button onClick={()=>setSchedStep(1)} style={{flex:1,background:"white",border:"1.5px solid #e5e7eb",padding:"13px",borderRadius:50,fontWeight:600,cursor:"pointer"}}>← Back</button>
+                <button onClick={()=>setSchedStep(3)} disabled={!schedDate||!schedSlot} style={{flex:2,background:schedDate&&schedSlot?G:"#e5e7eb",color:schedDate&&schedSlot?"white":"#9ca3af",border:"none",padding:"13px",borderRadius:50,fontWeight:700,cursor:schedDate&&schedSlot?"pointer":"not-allowed"}}>Next →</button>
+              </div>
+            </div>
+          )}
+
+          {scheduleStep===3&&(
+            <div>
+              <div style={{marginBottom:16}}>
+                <div style={{...lbl,marginBottom:6}}>Focus Area <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(optional)</span></div>
+                <select value={schedFocus} onChange={e=>setSchedFocus(e.target.value)} style={{...inp,marginBottom:0}}>
+                  <option value="">No specific focus</option>
+                  {FOCUS_AREAS.map(f=><option key={f} value={f}>{f}</option>)}
+                </select>
+              </div>
+              <div style={{marginBottom:20}}>
+                <div style={{...lbl,marginBottom:6}}>Notes <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(optional)</span></div>
+                <textarea value={schedNotes} onChange={e=>setSchedNotes(e.target.value)} placeholder="Any notes for this lesson..." style={{...inp,height:80,resize:"vertical",fontFamily:"inherit",marginBottom:0}}/>
+              </div>
+              <div style={{display:"flex",gap:10}}>
+                <button onClick={()=>setSchedStep(2)} style={{flex:1,background:"white",border:"1.5px solid #e5e7eb",padding:"13px",borderRadius:50,fontWeight:600,cursor:"pointer"}}>← Back</button>
+                <button onClick={()=>setSchedStep(4)} style={{flex:2,background:G,color:"white",border:"none",padding:"13px",borderRadius:50,fontWeight:700,cursor:"pointer"}}>Next: Review →</button>
+              </div>
+            </div>
+          )}
+
+          {scheduleStep===4&&(
+            <div>
+              <div style={{background:"#f9f9f6",borderRadius:12,padding:"20px",marginBottom:20,border:"1.5px solid #e5e7eb"}}>
+                <div style={{fontWeight:700,color:G,marginBottom:12}}>Booking Summary</div>
+                <div style={{fontSize:"0.9rem",color:"#374151",lineHeight:2}}>
+                  <div>👤 {mockUsers[selectedStudent]?.name}</div>
+                  <div>📅 {fmtDate(schedDate)}</div>
+                  <div>⏱ {schedSlot&&toTimeStr(schedSlot.s,schedSlot.e)}</div>
+                  <div>🎯 {schedLessonType==="private"?"Private":schedLessonType==="semi"?"Semi-Private":"Group"} · {schedDuration} min</div>
+                  {schedFocus&&<div>🏓 {schedFocus}</div>}
+                  <div>💰 ${SCHED_PRICES[schedLessonType][schedDuration]}{schedLessonType!=="private"?" per person":""}</div>
+                  <div>📍 {!schedIsMenlo?"Andrew Spinas Park, Redwood City":"Stanford Redwood City"}</div>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:10}}>
+                <button onClick={()=>setSchedStep(3)} style={{flex:1,background:"white",border:"1.5px solid #e5e7eb",padding:"13px",borderRadius:50,fontWeight:600,cursor:"pointer"}}>← Back</button>
+                <button onClick={handleSchedule} disabled={schedSubmitting} style={{flex:2,background:schedSubmitting?"#9ca3af":G,color:"white",border:"none",padding:"13px",borderRadius:50,fontWeight:700,cursor:schedSubmitting?"not-allowed":"pointer"}}>
+                  {schedSubmitting?"Scheduling...":"Confirm & Send Confirmation ✓"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab==="lessons"&&(
+        <div>
+          <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}>
+            {[["upcoming","Upcoming"],["past","Past"],["cancelled","Cancelled"],["all","All"]].map(([f,label])=>(
+              <button key={f} onClick={()=>setLessonFilter(f)} style={{background:lessonFilter===f?G:"white",color:lessonFilter===f?"white":"#374151",border:"1.5px solid "+(lessonFilter===f?G:"#e5e7eb"),padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:lessonFilter===f?700:500}}>
+                {label} <span style={{opacity:0.7,fontSize:"0.75rem"}}>({allLessonsList.filter(l=>{if(f==="upcoming")return !isPast(l.date,l.time)&&l.status!=="cancelled";if(f==="past")return isPast(l.date,l.time)||l.status==="completed";if(f==="cancelled")return l.status==="cancelled";return true;}).length})</span>
+              </button>
+            ))}
+          </div>
+          {filteredLessons.length===0
+            ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"40px",textAlign:"center",color:"#9ca3af"}}>No lessons found.</div>
+            :filteredLessons.map(l=>(
+              <div key={l.id+l.studentEmail} style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"16px 20px",marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+                <div style={{display:"flex",alignItems:"center",gap:14}}>
+                  <div style={{background:"#e8f0ee",borderRadius:10,padding:"10px 14px",textAlign:"center",minWidth:48}}>
+                    <div style={{fontSize:"1.2rem",fontWeight:900,color:G,lineHeight:1}}>{new Date(l.date+"T12:00:00").getDate()}</div>
+                    <div style={{fontSize:"0.6rem",fontWeight:700,color:"#6b7280",textTransform:"uppercase"}}>{new Date(l.date+"T12:00:00").toLocaleString("default",{month:"short"})}</div>
+                  </div>
+                  <div>
+                    <div style={{fontWeight:700,fontSize:"0.95rem"}}>{l.studentName}</div>
+                    <div style={{fontSize:"0.82rem",color:"#6b7280",marginTop:2}}>{l.type} · {l.duration} · {l.time}</div>
+                    {l.focus&&<div style={{fontSize:"0.78rem",color:G,marginTop:2,fontWeight:600}}>🎯 {l.focus}</div>}
+                  </div>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  {l.isMenlo&&<span style={{background:G,color:"white",padding:"2px 8px",borderRadius:50,fontSize:"0.68rem",fontWeight:700}}>MCC</span>}
+                  <span style={{background:l.status==="confirmed"?"#e8f0ee":l.status==="cancelled"?"#fef2f2":"#fffbea",color:l.status==="confirmed"?G:l.status==="cancelled"?"#dc2626":"#92400e",padding:"3px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>
+                    {l.status==="confirmed"?"✓ Confirmed":l.status==="cancelled"?"✕ Cancelled":"⏳ Pending"}
+                  </span>
+                  <button onClick={()=>{setSelectedStudent(l.studentEmail);setTab("students");}} style={{background:"none",border:"1.5px solid #e5e7eb",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:600,color:"#374151"}}>View Student</button>
+                </div>
+              </div>
+            ))
+          }
+        </div>
+      )}
+
       {tab==="earnings"&&(
         <div>
-          <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:16}}>Earnings Detail — This {earningsRange.charAt(0).toUpperCase()+earningsRange.slice(1)}</div>
+          <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:16}}>Earnings — This {earningsRange.charAt(0).toUpperCase()+earningsRange.slice(1)}</div>
           {earnings.rows.length===0
             ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"32px",textAlign:"center",color:"#9ca3af"}}>No completed lessons this {earningsRange}.</div>
             :<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:"0.88rem"}}>
                 <thead>
                   <tr style={{background:"#f9f9f6",borderBottom:"1.5px solid #e5e7eb"}}>
-                    {["Date","Student","Type","Duration","Your Cut"].map(h=>(
-                      <th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#6b7280",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>
-                    ))}
+                    {["Date","Student","Type","Duration","Your Cut"].map(h=>(<th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#6b7280",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>))}
                   </tr>
                 </thead>
                 <tbody>
@@ -1088,147 +1464,6 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
             </div>
           }
         </div>
-      )}
-      {tab==="students"&&(
-        <>
-          <div style={{marginBottom:28}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,flexWrap:"wrap",gap:8}}>
-              <span style={lbl}>Students</span>
-              <button onClick={()=>setShowAddStudent(!showAddStudent)} style={{background:G,color:"white",border:"none",padding:"7px 18px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.82rem"}}>+ Add Student</button>
-            </div>
-            {showAddStudent&&(
-              <div style={{background:"#f9f9f6",borderRadius:12,padding:"20px",marginBottom:16,border:"1.5px solid #e5e7eb"}}>
-                <div style={{fontWeight:700,marginBottom:12,fontSize:"0.92rem"}}>Add Student Manually</div>
-                <input placeholder="Full Name" value={newStudent.name} onChange={e=>setNewStudent({...newStudent,name:e.target.value})} style={inp}/>
-                <input placeholder="Email Address" value={newStudent.email} onChange={e=>setNewStudent({...newStudent,email:e.target.value})} style={inp}/>
-                <select value={newStudent.memberType} onChange={e=>setNewStudent({...newStudent,memberType:e.target.value})} style={{...inp,marginBottom:12}}>
-                  <option value="public">General Student</option>
-                  <option value="menlo">Menlo Circus Club</option>
-                </select>
-                <div style={{display:"flex",gap:8}}>
-                  <button onClick={()=>setShowAddStudent(false)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"8px 20px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}>Cancel</button>
-                  <button onClick={()=>{if(!newStudent.name||!newStudent.email){alert("Name and email required.");return;}onAddStudent(newStudent);setNewStudent({name:"",email:"",memberType:"public"});setShowAddStudent(false);}} style={{background:G,color:"white",border:"none",padding:"8px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>Add Student</button>
-                </div>
-              </div>
-            )}
-            <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-              {students.map(email=>(
-                <div key={email} onClick={()=>{setSel(email);setEditingId(null);setConfirmCancel(null);setShowAddLesson(false);}}
-                  style={{background:sel===email?G:"white",color:sel===email?"white":"#374151",border:`1.5px solid ${sel===email?G:"#e5e7eb"}`,padding:"8px 18px",borderRadius:50,cursor:"pointer",fontSize:"0.88rem",fontWeight:600}}>
-                  {mockUsers[email]?.name||email}
-                  {mockUsers[email]?.memberType==="menlo"&&<span style={{background:sel===email?"rgba(255,255,255,0.3)":"#e8f0ee",color:sel===email?"white":G,fontSize:"0.65rem",fontWeight:700,padding:"1px 6px",borderRadius:50,marginLeft:6}}>MCC</span>}
-                  {mockUsers[email]?.blocked&&<span style={{background:"#dc2626",color:"white",fontSize:"0.65rem",fontWeight:700,padding:"1px 6px",borderRadius:50,marginLeft:6}}>Blocked</span>}
-                  <span style={{opacity:0.6,marginLeft:6,fontSize:"0.75rem"}}>({(allLessons[email]||[]).filter(l=>isPast(l.date,l.time)).length})</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          {sel&&(
-            <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"20px 24px",marginBottom:20}}>
-              <div style={{fontWeight:700,fontSize:"0.97rem",marginBottom:4}}>{selUser.name||sel}</div>
-              <div style={{fontSize:"0.83rem",color:"#6b7280",marginBottom:14}}>{sel}</div>
-              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                <button onClick={()=>onToggleMenlo(sel)} style={{background:selUser.memberType==="menlo"?G:"white",color:selUser.memberType==="menlo"?"white":G,border:`1.5px solid ${G}`,padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>
-                  {selUser.memberType==="menlo"?"✓ Menlo Club":"Set as Menlo Club"}
-                </button>
-                <button onClick={()=>onToggleSaturday(sel)} style={{background:selUser.saturdayEnabled?"#1a1a1a":"white",color:selUser.saturdayEnabled?"white":"#1a1a1a",border:"1.5px solid #1a1a1a",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>
-                  {selUser.saturdayEnabled?"✓ Saturday On":"Enable Saturday"}
-                </button>
-                <button onClick={()=>onBlockStudent(sel)} style={{background:selUser.blocked?"#dc2626":"white",color:selUser.blocked?"white":"#dc2626",border:"1.5px solid #dc2626",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>
-                  {selUser.blocked?"Unblock Student":"Block Student"}
-                </button>
-              </div>
-            </div>
-          )}
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-            <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2}}>Lessons</div>
-            <button onClick={()=>setShowAddLesson(!showAddLesson)} style={{background:"#1a1a1a",color:"white",border:"none",padding:"7px 18px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.82rem"}}>+ Log Lesson</button>
-          </div>
-          {showAddLesson&&(
-            <div style={{background:"#f9f9f6",borderRadius:12,padding:"20px",marginBottom:16,border:"1.5px solid #e5e7eb"}}>
-              <div style={{fontWeight:700,marginBottom:12,fontSize:"0.92rem"}}>Log Lesson for {selUser.name||sel}</div>
-              <input type="date" value={newLesson.date} onChange={e=>setNewLesson({...newLesson,date:e.target.value})} style={inp}/>
-              <input placeholder="Time (e.g. 10:00 AM – 11:00 AM)" value={newLesson.time} onChange={e=>setNewLesson({...newLesson,time:e.target.value})} style={inp}/>
-              <select value={newLesson.type} onChange={e=>setNewLesson({...newLesson,type:e.target.value})} style={{...inp,marginBottom:12}}>
-                {["Private","Semi-Private","Group"].map(t=><option key={t} value={t}>{t}</option>)}
-              </select>
-              <select value={newLesson.duration} onChange={e=>setNewLesson({...newLesson,duration:e.target.value})} style={{...inp,marginBottom:12}}>
-                <option value="60">60 min</option>
-                <option value="90">90 min</option>
-              </select>
-              <input placeholder="Focus area (optional)" value={newLesson.focus} onChange={e=>setNewLesson({...newLesson,focus:e.target.value})} style={inp}/>
-              <textarea placeholder="Coaching notes (optional)" value={newLesson.notes} onChange={e=>setNewLesson({...newLesson,notes:e.target.value})} style={{...inp,height:80,resize:"vertical",fontFamily:"inherit"}}/>
-              <div style={{display:"flex",gap:8}}>
-                <button onClick={()=>setShowAddLesson(false)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"8px 20px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}>Cancel</button>
-                <button onClick={()=>{if(!newLesson.date||!newLesson.time){alert("Date and time required.");return;}onAddLesson(sel,{id:Date.now(),date:newLesson.date,time:newLesson.time,type:newLesson.type,duration:`${newLesson.duration} min`,status:"completed",focus:newLesson.focus,notes:newLesson.notes,photos:[],videos:[]});setNewLesson({date:"",time:"",type:"Private",duration:"60",focus:"",notes:"",status:"completed"});setShowAddLesson(false);}} style={{background:G,color:"white",border:"none",padding:"8px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>Save Lesson</button>
-              </div>
-            </div>
-          )}
-          {upcoming.length>0&&(
-            <div style={{marginBottom:28}}>
-              <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Upcoming ({upcoming.length})</div>
-              {upcoming.map(l=>(
-                <div key={l.id} style={{background:"white",borderRadius:10,border:`1.5px solid ${confirmCancel===l.id?"#fca5a5":"#e5e7eb"}`,marginBottom:8,overflow:"hidden"}}>
-                  {confirmCancel===l.id&&(
-                    <div style={{background:"#fef2f2",borderBottom:"1px solid #fca5a5",padding:"12px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
-                      <span style={{fontWeight:700,color:"#991b1b",fontSize:"0.88rem"}}>Cancel this lesson for {mockUsers[sel]?.name}?</span>
-                      <div style={{display:"flex",gap:8}}>
-                        <button onClick={()=>setConfirmCancel(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Keep it</button>
-                        <button onClick={()=>{onCancelLesson(sel,l.id);setConfirmCancel(null);}} style={{background:"#dc2626",color:"white",border:"none",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>Yes, Cancel</button>
-                      </div>
-                    </div>
-                  )}
-                  <div style={{padding:"14px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
-                    <div>
-                      <div style={{fontWeight:700}}>{fmtDateShort(l.date)} · {l.time}</div>
-                      <div style={{fontSize:"0.85rem",color:"#6b7280",marginTop:2}}>{l.type} · {l.duration}{l.focus?` · 🎯 ${l.focus}`:""}</div>
-                    </div>
-                    <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                      <span style={{background:l.status==="confirmed"?"#e8f0ee":"#fffbea",color:l.status==="confirmed"?G:"#92400e",padding:"3px 12px",borderRadius:50,fontSize:"0.78rem",fontWeight:700}}>
-                        {l.status==="confirmed"?"✓ Confirmed":"⏳ Pending"}
-                      </span>
-                      <button onClick={()=>setConfirmCancel(confirmCancel===l.id?null:l.id)}
-                        style={{background:"#fef2f2",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>
-                        ✕ Cancel
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-          <div>
-            <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Lesson History — Add Notes</div>
-            {history.length===0&&<div style={{color:"#9ca3af",fontSize:"0.9rem"}}>No past lessons yet.</div>}
-            {history.map(l=>(
-              <div key={l.id} style={{background:"white",borderRadius:12,border:`1.5px solid ${editingId===l.id?G:"#e5e7eb"}`,marginBottom:12,overflow:"hidden"}}>
-                <div style={{padding:"16px 20px",display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8}}>
-                  <div>
-                    <div style={{fontWeight:700,fontSize:"0.97rem"}}>{fmtDate(l.date)}</div>
-                    <div style={{fontSize:"0.85rem",color:"#6b7280",marginTop:2}}>⏱ {l.time} · {l.type} · {l.duration}</div>
-                    {l.focus&&<div style={{fontSize:"0.8rem",color:G,marginTop:3,fontWeight:600}}>🎯 {l.focus}</div>}
-                    {l.notes&&editingId!==l.id&&<div style={{background:"#f9f9f6",borderRadius:8,padding:"10px 14px",marginTop:10,fontSize:"0.88rem",color:"#374151",lineHeight:1.7,maxWidth:460}}>{l.notes}</div>}
-                    {!l.notes&&editingId!==l.id&&<div style={{fontSize:"0.82rem",color:"#9ca3af",marginTop:6,fontStyle:"italic"}}>No notes yet</div>}
-                  </div>
-                  <button onClick={()=>editingId===l.id?setEditingId(null):(setEditingId(l.id),setEditNotes(l.notes||""))}
-                    style={{background:editingId===l.id?"#f3f4f6":G,color:editingId===l.id?"#374151":"white",border:"none",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700,whiteSpace:"nowrap"}}>
-                    {editingId===l.id?"Cancel":"✏️ Edit Notes"}
-                  </button>
-                </div>
-                {editingId===l.id&&(
-                  <div style={{borderTop:"1px solid #e5e7eb",padding:"16px 20px",background:"#f9f9f6"}}>
-                    <textarea value={editNotes} onChange={e=>setEditNotes(e.target.value)} placeholder="Add coaching notes..."
-                      style={{...inp,height:100,resize:"vertical",fontFamily:"inherit",background:"white"}}/>
-                    <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
-                      <button onClick={()=>setEditingId(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"8px 20px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.88rem"}}>Cancel</button>
-                      <button onClick={()=>{onUpdateLesson(sel,editingId,{notes:editNotes});setEditingId(null);}} style={{background:G,color:"white",border:"none",padding:"8px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.88rem"}}>Save Notes ✓</button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </>
       )}
     </div>
   );
