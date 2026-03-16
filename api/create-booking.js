@@ -22,7 +22,7 @@ export default async function handler(req, res) {
         description: description || '',
         start: { dateTime: `${date}T${startTime}:00`, timeZone: 'America/Los_Angeles' },
         end: { dateTime: `${date}T${endTime}:00`, timeZone: 'America/Los_Angeles' },
-        attendees: studentEmail ? [{ email: studentEmail }] : [],
+        
       },
     });
     res.status(200).json({ success: true, eventId: event.data.id });
