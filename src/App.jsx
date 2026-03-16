@@ -82,10 +82,11 @@ function getSlots(dateStr,memberType,duration){
   const dow=new Date(dateStr+"T12:00:00").getDay();
   if(dow===0)return[];
   if(memberType==="menlo"&&dow===6)return[];
-  const sb=STANFORD_BLOCKS[dow],pk=PICKUP[dow],slots=[];
+  const sb=STANFORD_BLOCKS[dow],fridayMorning=dow===5?{start:7*60+30,end:9*60}:null,slots=[];
   const maxStart=dow===6?10*60:16*60;for(let s=8*60;s<=maxStart;s+=30){
     const e=s+duration;
     if(sb&&s<sb.end&&e>sb.start)continue;
+    if(fridayMorning&&s<fridayMorning.end&&e>fridayMorning.start)continue;
     
     
     slots.push({s,e});
