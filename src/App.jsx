@@ -14,6 +14,7 @@ const DAVID_PHOTO  = "/images/david.jpg";         // was: 1773178886822_IMG_2962
 // 2. Create a new form → copy the form ID (looks like "xrgvkpqz")
 // 3. Replace mvzwanal below with your actual ID
 const FORMSPREE_ID = "mvzwanal";
+const GOOGLE_CLIENT_ID = "708565807163-uu8teuc876ufboujut8vhdo34ro27v8s.apps.googleusercontent.com";
 
 // ─── THEME ───────────────────────────────────────────────────────────────────
 const G = "#1a3c34", Y = "#c0c0c0";
@@ -567,62 +568,108 @@ function ContactPage(){
 }
 
 function LoginPage({onLogin,onAdminLogin}){
-  const[email,setEmail]=useState("");
-  const[password,setPassword]=useState("");
   const[mode,setMode]=useState("login");
   const[name,setName]=useState("");
+  const[phone,setPhone]=useState("");
+  const[homeCourt,setHomeCourt]=useState("");
   const[error,setError]=useState("");
   const[signedUp,setSignedUp]=useState(false);
+  const[loading,setLoading]=useState(false);
+
+  const handleGoogleLogin=()=>{
+    setLoading(true);
+    const params=new URLSearchParams({
+      client_id:GOOGLE_CLIENT_ID,
+      redirect_uri:window.location.origin,
+      response_type:"token",
+      scope:"email profile",
+      prompt:"select_account",
+    });
+    const popup=window.open("https://accounts.google.com/o/oauth2/v2/auth?"+params.toString(),"google-login","width=500,height=600,scrollbars=yes");
+    const timer=setInterval(()=>{
+      try{
+        if(popup.closed){clearInterval(timer);setLoading(false);return;}
+        const url=popup.location.href;
+        if(url.includes(window.location.origin)&&url.includes("access_token")){
+          clearInterval(timer);
+          const hash=new URLSearchParams(url.split("#")[1]);
+          const token=hash.get("access_token");
+          popup.close();
+          fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+token}})
+            .then(r=>r.json())
+            .then(info=>{
+              setLoading(false);
+              const email=info.email.toLowerCase();
+              const u=MOCK_USERS[email];
+              if(!u){setError("Your account is not approved yet. Please request access.");setMode("signup");return;}
+              if(!u.approved){setError("Your account is pending approval from David.");return;}
+              onLogin({...u,email,name:info.name||u.name,picture:info.picture});
+            })
+            .catch(()=>{setLoading(false);setError("Google login failed. Please try again.");});
+        }
+      }catch(e){}
+    },500);
+  };
+
   if(signedUp)return(
     <div style={{maxWidth:440,margin:"80px auto",padding:"0 24px",textAlign:"center"}}>
       <div style={{background:"white",borderRadius:16,padding:40,boxShadow:"0 4px 24px rgba(0,0,0,0.08)"}}>
         <div style={{fontSize:48,marginBottom:16}}>🎾</div>
         <h2 style={{color:G,marginBottom:10}}>Request Received!</h2>
-        <p style={{color:"#6b7280",lineHeight:1.7}}>Thanks <strong>{name}</strong>! David will review your request and reach out at <strong>{email}</strong> once approved.</p>
+        <p style={{color:"#6b7280",lineHeight:1.7}}>Thanks <strong>{name}</strong>! David will review your request and reach out once approved.</p>
         <button onClick={()=>{setMode("login");setSignedUp(false);setError("");}} style={{marginTop:20,background:G,color:"white",border:"none",padding:"11px 28px",borderRadius:50,cursor:"pointer",fontWeight:700}}>Back to Login</button>
       </div>
     </div>
   );
+
   return(
     <div style={{maxWidth:420,margin:"60px auto",padding:"0 24px"}}>
       <div style={{background:"white",borderRadius:16,padding:"36px 32px",boxShadow:"0 4px 24px rgba(0,0,0,0.08)"}}>
         <div style={{textAlign:"center",marginBottom:28}}>
           <div style={{fontSize:36,marginBottom:8}}>🏓</div>
           <h2 style={{fontWeight:900,color:G}}>{mode==="login"?"Student Login":"Request Access"}</h2>
-          <p style={{color:"#6b7280",fontSize:"0.88rem",marginTop:6}}>{mode==="login"?"Access your lessons & booking portal":"David will approve your account"}</p>
+          <p style={{color:"#6b7280",fontSize:"0.88rem",marginTop:6}}>{mode==="login"?"Sign in with your Google account":"Fill in your details to request access"}</p>
         </div>
-        {error&&<div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:8,padding:"10px 14px",color:"#991b1b",fontSize:"0.88rem",marginBottom:14}}>{error}</div>}
-        {mode==="signup"&&<input style={inp} type="text" placeholder="Full Name" value={name} onChange={e=>setName(e.target.value)}/>}
-        <input style={inp} type="email" placeholder="Email Address" value={email} onChange={e=>{setEmail(e.target.value);setError("");}}/>
-        {mode==="login"&&<input style={inp} type="password" placeholder="Password" value={password} onChange={e=>{setPassword(e.target.value);setError("");}}/>}
-        <button onClick={()=>{
-          if(mode==="login"){
-            if(email.toLowerCase()===ADMIN_USER.email&&password===ADMIN_USER.password){onAdminLogin();return;}
-            const u=MOCK_USERS[email.toLowerCase()];
-            if(!u||u.password!==password){setError("Invalid email or password.");return;}
-            if(!u.approved){setError("Your account is pending approval.");return;}
-            onLogin({...u,email});
-          }else{
-            if(!name||!email){setError("Please fill in all fields.");return;}
-            fetch(`https://formspree.io/f/${FORMSPREE_ID}`,{
-              method:"POST",
-              headers:{"Content-Type":"application/json","Accept":"application/json"},
-              body:JSON.stringify({
-                name,email,
-                _subject:`New student access request: ${name}`,
-                message:`${name} (${email}) has requested access to the DM Pickleball student portal. Log in to approve or deny: https://dmpickleball.com`
-              })
-            }).catch(()=>{});
-            setSignedUp(true);
-          }
-        }} style={{width:"100%",background:G,color:"white",border:"none",padding:14,borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem",marginBottom:16}}>
-          {mode==="login"?"Log In →":"Request Access →"}
-        </button>
-        <div style={{textAlign:"center",fontSize:"0.85rem",color:"#6b7280"}}>
-          {mode==="login"
-            ?<>Don't have access? <span onClick={()=>{setMode("signup");setError("");}} style={{color:G,fontWeight:700,cursor:"pointer"}}>Request it here</span></>
-            :<>Have an account? <span onClick={()=>{setMode("login");setError("");}} style={{color:G,fontWeight:700,cursor:"pointer"}}>Log in</span></>}
-        </div>
+        {error&&<div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:8,padding:"10px 14px",color:"#991b1b",fontSize:"0.88rem",marginBottom:16}}>{error}</div>}
+        {mode==="login"?(
+          <>
+            <button onClick={handleGoogleLogin} disabled={loading}
+              style={{width:"100%",background:loading?"#f3f4f6":"white",color:"#374151",border:"1.5px solid #e5e7eb",padding:"13px 20px",borderRadius:50,fontWeight:700,cursor:loading?"not-allowed":"pointer",fontSize:"0.95rem",display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:16}}>
+              {loading?(
+                <span>Connecting...</span>
+              ):(
+                <>
+                  <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                  Sign in with Google
+                </>
+              )}
+            </button>
+            <div style={{textAlign:"center",fontSize:"0.85rem",color:"#6b7280"}}>
+              Don't have access? <span onClick={()=>{setMode("signup");setError("");}} style={{color:G,fontWeight:700,cursor:"pointer"}}>Request it here</span>
+            </div>
+          </>
+        ):(
+          <>
+            <input style={inp} type="text" placeholder="Full Name (required)" value={name} onChange={e=>setName(e.target.value)}/>
+            <input style={inp} type="tel" placeholder="Phone Number (required)" value={phone} onChange={e=>setPhone(e.target.value)}/>
+            <input style={inp} type="text" placeholder="Home Court (optional)" value={homeCourt} onChange={e=>setHomeCourt(e.target.value)}/>
+            <p style={{fontSize:"0.82rem",color:"#6b7280",marginBottom:16,lineHeight:1.6}}>You will sign in with Google. Please provide your details so David can approve your account.</p>
+            <button onClick={()=>{
+              if(!name||!phone){setError("Name and phone number are required.");return;}
+              fetch("https://formspree.io/f/"+FORMSPREE_ID,{
+                method:"POST",
+                headers:{"Content-Type":"application/json","Accept":"application/json"},
+                body:JSON.stringify({name,phone,homeCourt,_subject:"New student access request: "+name,message:name+" has requested access.\nPhone: "+phone+"\nHome Court: "+(homeCourt||"Not specified")})
+              }).catch(()=>{});
+              setSignedUp(true);
+            }} style={{width:"100%",background:G,color:"white",border:"none",padding:14,borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem",marginBottom:16}}>
+              Request Access →
+            </button>
+            <div style={{textAlign:"center",fontSize:"0.85rem",color:"#6b7280"}}>
+              Already approved? <span onClick={()=>{setMode("login");setError("");}} style={{color:G,fontWeight:700,cursor:"pointer"}}>Sign in</span>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
