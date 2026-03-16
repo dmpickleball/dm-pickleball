@@ -252,8 +252,76 @@ function LessonCard({lesson,isHistory,onCancel}){
 
 function Homepage({setPage}){
   return(
-    <div style={{minHeight:"100vh",background:"#000",display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <img src="/images/comingsoon.png" alt="DM Pickleball Coming Soon" style={{maxWidth:"100%",maxHeight:"100vh",objectFit:"contain"}}/>
+    <div>
+      <div style={{background:`linear-gradient(135deg,${G},#0d2620)`,color:"white",textAlign:"center",padding:"80px 24px 64px"}}>
+        <div style={{fontSize:"0.8rem",letterSpacing:3,opacity:0.75,marginBottom:14,textTransform:"uppercase"}}>Pickleball Coaching · San Francisco Peninsula, Bay Area</div>
+        <h1 style={{fontSize:"3rem",fontWeight:900,lineHeight:1.15,marginBottom:16}}>Level Up With One of the<br/><span style={{color:Y}}>Bay Area's Top Competitive Pickleball Coaches</span></h1>
+        <p style={{fontSize:"1.1rem",opacity:0.9,maxWidth:500,margin:"0 auto 32px",lineHeight:1.7}}>Private, semi-private & group lessons on the SF Peninsula. Personalized coaching from a tournament competitor who knows what it takes to win.</p>
+        <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
+          <button onClick={()=>setPage("pricing")} style={{background:Y,color:G,border:"none",padding:"13px 30px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem"}}>View Pricing</button>
+          <button onClick={()=>setPage("contact")} style={{background:"transparent",color:"white",border:"2px solid rgba(255,255,255,0.5)",padding:"13px 30px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem"}}>Get in Touch</button>
+        </div>
+      </div>
+      <div style={{background:"white",padding:"40px 24px"}}>
+        <div style={{maxWidth:700,margin:"0 auto",display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:24,textAlign:"center"}}>
+          {[["15+","Years Tennis Experience"],["6","Years Pickleball Coaching"],["5.0+","Tournament Rating"]].map(([num,label])=>(
+            <div key={label}><div style={{fontSize:"2.4rem",fontWeight:900,color:G}}>{num}</div><div style={{fontSize:"0.88rem",color:"#6b7280",marginTop:4}}>{label}</div></div>
+          ))}
+        </div>
+      </div>
+      <div style={{background:"#f4f9f6",padding:"60px 24px"}}>
+        <div style={{maxWidth:760,margin:"0 auto",display:"grid",gridTemplateColumns:"1fr 2fr",gap:40,alignItems:"center"}}>
+          <div style={{borderRadius:16,overflow:"hidden",aspectRatio:"3/4",boxShadow:"0 8px 32px rgba(0,96,57,0.2)"}}>
+            <img src={DAVID_PHOTO} alt="David Mok — Honolulu Open Gold Medal" style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top"}}/>
+          </div>
+          <div>
+            <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:10}}>About David</div>
+            <h2 style={{fontSize:"1.8rem",fontWeight:900,marginBottom:16,lineHeight:1.3}}>From Tennis Courts to Pickleball Pro</h2>
+            <p style={{color:"#4b5563",lineHeight:1.8,marginBottom:14,fontSize:"0.97rem"}}>With 15+ years of competitive tennis experience, David Mok brings a unique edge to pickleball coaching. As a 5.0+ rated tournament player and CRBN Ambassador, David has an insider's understanding of what it takes to elevate your game.</p>
+            <p style={{color:"#4b5563",lineHeight:1.8,fontSize:"0.97rem"}}>David specializes in coaching tennis players making the transition to pickleball — he knows exactly the habits that help and the ones that hurt. Whether you're a complete beginner or a seasoned competitor, David coaches all skill levels in both doubles and singles across the SF Peninsula.</p>
+            <div style={{background:"#e8f0ee",border:`1px solid ${G}20`,borderRadius:10,padding:"10px 16px",marginTop:14,display:"inline-flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:"1.1rem"}}>🥇</span>
+              <span style={{fontSize:"0.83rem",fontWeight:700,color:G}}>Multiple Gold Medals · Tournament Competitor</span>
+            </div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:14}}>
+              {["Multiple Gold Medalist","Tournament Competitor","CRBN Ambassador","Tennis Convert Specialist","All Skill Levels","SF Peninsula"].map(tag=>(
+                <span key={tag} style={{background:"#e8f0ee",color:G,padding:"6px 14px",borderRadius:50,fontSize:"0.8rem",fontWeight:600}}>{tag}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style={{background:"white",padding:"60px 24px"}}>
+        <div style={{maxWidth:700,margin:"0 auto"}}>
+          <div style={{textAlign:"center",marginBottom:36}}>
+            <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>What's Available</div>
+            <h2 style={{fontSize:"1.8rem",fontWeight:900}}>Lesson Types</h2>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:16}}>
+            {[["🎯","Private","1-on-1 coaching",null],["👥","Semi-Private","Always 2 students · $70/person","$140 / $210"],["🏆","Group Lesson","3–5 students",null]].map(([icon,title,desc,price])=>(
+              <div key={title} style={{border:"2px solid #e5e7eb",borderRadius:12,padding:24,textAlign:"center"}}>
+                <div style={{fontSize:32,marginBottom:10}}>{icon}</div>
+                <div style={{fontWeight:700,marginBottom:6}}>{title}</div>
+                <div style={{fontSize:"0.83rem",color:"#6b7280",marginBottom:12}}>{desc}</div>
+                <div style={{fontWeight:800,color:G,fontSize:"1.1rem"}}>{price}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div style={{background:"#111111",padding:"48px 24px"}}>
+        <div style={{maxWidth:700,margin:"0 auto",textAlign:"center"}}>
+          <div style={{fontSize:"0.78rem",fontWeight:700,color:"#f97316",textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>Gear I Trust</div>
+          <h2 style={{fontSize:"1.8rem",fontWeight:900,color:"white",marginBottom:12}}>Paddle & Gear Discounts</h2>
+          <p style={{color:"rgba(255,255,255,0.55)",marginBottom:28,lineHeight:1.7,maxWidth:480,margin:"0 auto 28px"}}>Get discounts on the paddles and gear David uses and recommends.</p>
+          <button onClick={()=>setPage("gear")} style={{background:"#f97316",color:"white",border:"none",padding:"12px 28px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"0.95rem"}}>View All Codes →</button>
+        </div>
+      </div>
+      <div style={{background:`linear-gradient(135deg,${G},#0d2620)`,color:"white",textAlign:"center",padding:"60px 24px"}}>
+        <h2 style={{fontSize:"1.8rem",fontWeight:900,marginBottom:12}}>Ready to Improve Your Game?</h2>
+        <p style={{opacity:0.9,marginBottom:24}}>Reach out via text or call to get started.</p>
+        <button onClick={()=>setPage("contact")} style={{background:Y,color:G,border:"none",padding:"13px 32px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem"}}>Contact David</button>
+      </div>
     </div>
   );
 }
