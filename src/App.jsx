@@ -672,16 +672,12 @@ function BookingPage({user,setPage,onAddLesson}){
   const[submitting,setSubmitting]=useState(false);
   const[done,setDone]=useState(false);
   const[error,setError]=useState("");
-  const[gcalLink,setGcalLink]=useState("");
+  const[gcalLink,setGcalLink]=useState("");const[busyTimes,setBusyTimes]=useState([]);const[loadingSlots,setLoadingSlots]=useState(false);
   const[bookedSummary,setBookedSummary]=useState(null);
   const PRICES={private:{60:isMenlo?115:130,90:isMenlo?172.50:195},semi:{60:isMenlo?60:70,90:isMenlo?90:105},group:{60:140,90:210}};
   const LESSONS=[{id:"private",icon:"🎯",label:"Private",desc:"1-on-1 personalized coaching"},{id:"semi",icon:"👥",label:"Semi-Private",desc:"Always 2 students"},{id:"group",icon:"🏆",label:"Group",desc:isMenlo?"3-6 students":"3-5 students"}];
   const price=PRICES[lessonType][duration];
-  const rawSlots=getSlots(date,isMenlo?"menlo":"public",duration);
-  const slots=rawSlots.filter(s=>{
-    if(!busyTimes.length)return true;
-    return !busyTimes.some(b=>s.s<b.endMins&&s.e>b.startMins);
-  });
+  const slots=getSlots(date,isMenlo?"menlo":"public",duration).filter(s=>!busyTimes.some(b=>s.s<b.endMins&&s.e>b.startMins));
   const toTime24=(mins)=>{const h=Math.floor(mins/60),m=mins%60;return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");};
   const toTimeStr=(s,e)=>fmt(s)+" - "+fmt(e);
   const handleBook=async()=>{
@@ -753,7 +749,7 @@ function BookingPage({user,setPage,onAddLesson}){
       </div>
       <div style={{marginBottom:20}}>
         <div style={{...lbl,marginBottom:10}}>Select a Date</div>
-        <CalendarPicker value={date} onChange={d=>{setDate(d);setSlot(null);}} memberType={isMenlo?"menlo":"public"}/>
+        <CalendarPicker value={date} onChange={async d=>{setDate(d);setSlot(null);setSlotIdx(-1);setLoadingSlots(true);try{const r=await fetch("/api/get-busy-times?date="+d);const data=await r.json();setBusyTimes(data.busy||[]);}catch(e){setBusyTimes([]);}setLoadingSlots(false);}} memberType={isMenlo?"menlo":"public"}/>
       </div>
       {date&&(
         <div style={{marginBottom:20}}>
