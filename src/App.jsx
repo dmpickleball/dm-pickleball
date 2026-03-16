@@ -1139,7 +1139,15 @@ export default function App(){
     }
     setAllLessons(prev=>({...prev,[user.email]:prev[user.email].map(l=>l.id===id?{...l,status:'cancelled'}:l)}));
   };
-  const adminCancel=(email,id)=>setAllLessons(prev=>({...prev,[email]:prev[email].map(l=>l.id===id?{...l,status:"cancelled"}:l)}));
+  const adminCancel=async(email,id)=>{
+    const lesson=(allLessons[email]||[]).find(l=>l.id===id);
+    if(lesson?.gcalEventId){
+      try{
+        await fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:lesson.gcalEventId})});
+      }catch(e){console.error("Admin GCal cancel failed:",e);}
+    }
+    setAllLessons(prev=>({...prev,[email]:prev[email].map(l=>l.id===id?{...l,status:"cancelled"}:l)}));
+  };
   const addLesson=lesson=>setAllLessons(prev=>({...prev,[user.email]:[...(prev[user.email]||[]),lesson]}));
   const updateLesson=(email,id,updates)=>setAllLessons(prev=>({...prev,[email]:prev[email].map(l=>l.id===id?{...l,...updates}:l)}));
   const approveStudent=(student,memberType)=>{setAllLessons(prev=>({...prev,[student.email]:[]}));setMockUsersState(prev=>({...prev,[student.email]:{name:student.name,memberType,approved:true,password:""}}));setPendingStudents(prev=>prev.filter(s=>s.id!==student.id));};
