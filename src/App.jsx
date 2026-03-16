@@ -663,33 +663,41 @@ function Dashboard({user,setPage,lessons,onCancel}){
 
 function BookingPage({user,setPage,onAddLesson}){
   const isMenlo=user.memberType==="menlo";
-  const[lessonType,setLessonType]=useState("private");
-  const[duration,setDuration]=useState(60);
+  const[step,setStep]=useState(1);
+  const[lessonType,setLessonType]=useState("");
+  const[duration,setDuration]=useState(null);
   const[date,setDate]=useState("");
-  const[slot,setSlot]=useState(null);const[slotIdx,setSlotIdx]=useState(-1);
+  const[slot,setSlot]=useState(null);
+  const[slotIdx,setSlotIdx]=useState(-1);
   const[focus,setFocus]=useState("");
-  const[notes,setNotes]=useState("");const[groupSize,setGroupSize]=useState(3);const[groupMembers,setGroupMembers]=useState([{name:"",email:""},{name:"",email:""}]);const[partner,setPartner]=useState({name:"",email:""});
+  const[notes,setNotes]=useState("");
+  const[partner,setPartner]=useState({name:"",email:""});
+  const[groupSize,setGroupSize]=useState(3);
+  const[groupMembers,setGroupMembers]=useState([{name:"",email:""},{name:"",email:""},{name:"",email:""}]);
   const[submitting,setSubmitting]=useState(false);
   const[done,setDone]=useState(false);
   const[error,setError]=useState("");
-  const[gcalLink,setGcalLink]=useState("");const[busyTimes,setBusyTimes]=useState([]);const[loadingSlots,setLoadingSlots]=useState(false);
+  const[gcalLink,setGcalLink]=useState("");
   const[bookedSummary,setBookedSummary]=useState(null);
+  const[busyTimes,setBusyTimes]=useState([]);
+  const[loadingSlots,setLoadingSlots]=useState(false);
+
   const PRICES={private:{60:isMenlo?115:130,90:isMenlo?172.50:195},semi:{60:isMenlo?60:70,90:isMenlo?90:105},group:{60:140,90:210}};
-  const LESSONS=[{id:"private",icon:"🎯",label:"Private",desc:"1-on-1 personalized coaching"},{id:"semi",icon:"👥",label:"Semi-Private",desc:"Always 2 students"},{id:"group",icon:"🏆",label:"Group",desc:isMenlo?"3-6 students":"3-5 students"}];
-  const price=PRICES[lessonType][duration];
-  const slots=getSlots(date,isMenlo?"menlo":"public",duration).filter(s=>!busyTimes.some(b=>s.s<b.endMins&&s.e>b.startMins));
+  const LESSONS=[{id:"private",icon:"🎯",label:"Private",desc:"1-on-1 coaching"},{id:"semi",icon:"👥",label:"Semi-Private",desc:"Always 2 students"},{id:"group",icon:"🏆",label:"Group",desc:"3-5 students"}];
+  const price=lessonType&&duration?PRICES[lessonType][duration]:null;
+  const slots=date?getSlots(date,isMenlo?"menlo":"public",duration||60).filter(s=>!busyTimes.some(b=>s.s<b.endMins&&s.e>b.startMins)):[];
   const toTime24=(mins)=>{const h=Math.floor(mins/60),m=mins%60;return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");};
   const toTimeStr=(s,e)=>fmt(s)+" - "+fmt(e);
+
+  const STEPS=["Type & Duration","Date & Time",lessonType==="private"?"Details":"People & Details","Confirm"];
+  const totalSteps=4;
+
+  const step1Done=lessonType&&duration;
+  const step2Done=date&&slot;
+  const step3Done=lessonType==="private"?true:lessonType==="semi"?partner.name.trim()!=="":groupMembers.slice(0,groupSize-1).every(m=>m.name.trim()!=="");
+  const canConfirm=step1Done&&step2Done&&step3Done;
+
   const handleBook=async()=>{
-    if(!date||!slot){setError("Please select a date and time.");return;}
-    if(lessonType==="semi"&&!partner.name){setError("Please enter your partner's name.");return;}
-    if(lessonType==="semi"&&partner.email){
-      try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:partner.email,_replyto:"dmpickleball@gmail.com",_subject:"You have been added to a pickleball lesson - "+fmtDateShort(date),message:"Hi "+partner.name+",\n\n"+user.name+" has added you to a pickleball lesson!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: Semi-Private · "+duration+" min\nFocus: "+(focus||"Not specified")+"\nLocation: "+location+"\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398"})});}catch(e){console.error("Partner email:",e);}
-    }
-    if(lessonType==="group"){
-      const missing=groupMembers.slice(0,groupSize-1).some(m=>!m.name);
-      if(missing){setError("Please enter all group member names.");return;}
-    }
     setSubmitting(true);setError("");
     const startTime=toTime24(slot.s);
     const endTime=toTime24(slot.e);
@@ -699,7 +707,7 @@ function BookingPage({user,setPage,onAddLesson}){
     const titleSuffix=lessonType==="group"?" pb group lesson":" pb lesson";
     const summary=memberNames.join("/")+titleSuffix;
     const partnerInfo=lessonType==="semi"?"\nPartner: "+partner.name+(partner.email?" ("+partner.email+")":""):"";
-    const groupInfo=lessonType==="group"?"\nGroup Members: "+groupMembers.slice(0,groupSize-1).map((m,i)=>"Person "+(i+2)+": "+m.name+(m.email?" ("+m.email+")":"")).join(", "):"";
+    const groupInfo=lessonType==="group"?"\nGroup: "+groupMembers.slice(0,groupSize-1).map(m=>m.name+(m.email?" ("+m.email+")":"")).join(", "):"";
     const location=!isMenlo?"3003 Bay Rd, Redwood City, CA 94063":"Stanford Redwood City";
     const description="Student: "+user.name+"\nEmail: "+user.email+"\nType: "+lessonLabel+" "+duration+"min\nFocus: "+(focus||"Not specified")+"\nNotes: "+(notes||"None")+partnerInfo+groupInfo+"\nLocation: "+location+"\nManage: https://dmpickleball.com";
     let eventId="";
@@ -710,44 +718,34 @@ function BookingPage({user,setPage,onAddLesson}){
     }catch(e){console.error("GCal:",e);}
     const startISO=date+"T"+startTime+":00";
     const endISO=date+"T"+endTime+":00";
-    const link="https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(summary)+"&dates="+startISO.replace(/[-:]/g,"").slice(0,15)+"/"+endISO.replace(/[-:]/g,"").slice(0,15)+"&details="+encodeURIComponent(description);
-    try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:user.email,_replyto:user.email,_subject:"Your lesson is booked - "+fmtDateShort(date),message:"Hi "+user.name+",\n\nYour pickleball lesson is confirmed!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+duration+" min\nFocus: "+(focus||"Not specified")+"\n\nManage your booking:\nhttps://dmpickleball.com\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398"})});}catch(e){console.error("Student email:",e);}
-    if(lessonType==="semi"&&partner.email){
-      try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:partner.email,_replyto:"dmpickleball@gmail.com",_subject:"You have been added to a pickleball lesson - "+fmtDateShort(date),message:"Hi "+partner.name+",\n\n"+user.name+" has added you to a pickleball lesson!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: Semi-Private · "+duration+" min\nFocus: "+(focus||"Not specified")+"\nLocation: "+location+"\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398"})});}catch(e){console.error("Partner email:",e);}
-    }
-    if(lessonType==="group"){
-      groupMembers.slice(0,groupSize-1).forEach(async m=>{
-        if(m.email){
-          try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:m.email,_replyto:"dmpickleball@gmail.com",_subject:"You have been added to a group pickleball lesson - "+fmtDateShort(date),message:"Hi "+m.name+",\n\n"+user.name+" has added you to a group pickleball lesson!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: Group · "+duration+" min\nFocus: "+(focus||"Not specified")+"\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398"})});}catch(e){console.error("Group member email:",e);}
-        }
-      });
-    }
-    try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:"dmpickleball@gmail.com",_replyto:user.email,_subject:"New booking: "+user.name+" - "+fmtDateShort(date),message:"New lesson booked!\n\nStudent: "+user.name+"\nEmail: "+user.email+"\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+duration+" min\nFocus: "+(focus||"Not specified")+"\nNotes: "+(notes||"None")+"\nPrice: $"+price+"\nGCal Event ID: "+(eventId||"N/A")})});}catch(e){console.error("David email:",e);}
-    const newLesson={id:Date.now(),date,time:timeStr,type:lessonLabel,duration:duration+" min",status:"confirmed",focus,notes:"",photos:[],videos:[],gcalEventId:eventId,
-      partnerEmail:lessonType==="semi"?partner.email:"",
-      groupEmails:lessonType==="group"?groupMembers.slice(0,groupSize-1).map(m=>m.email).filter(Boolean):[],
-      members:lessonType==="semi"?[partner.name]:lessonType==="group"?groupMembers.slice(0,groupSize-1).map(m=>m.name):[]
-    };
+    const link="https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(summary)+"&dates="+startISO.replace(/[-:]/g,"").slice(0,15)+"/"+endISO.replace(/[-:]/g,"").slice(0,15)+"&details="+encodeURIComponent(description)+"&location="+encodeURIComponent(location);
+    try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:user.email,_replyto:user.email,_subject:"Your lesson is booked - "+fmtDateShort(date),message:"Hi "+user.name+",\n\nYour pickleball lesson is confirmed!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+duration+" min\nFocus: "+(focus||"Not specified")+"\nLocation: "+location+"\n\nManage your booking:\nhttps://dmpickleball.com\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398"})});}catch(e){}
+    try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:"dmpickleball@gmail.com",_replyto:user.email,_subject:"New booking: "+summary+" - "+fmtDateShort(date),message:"New lesson booked!\n\nStudent: "+user.name+"\nEmail: "+user.email+"\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+duration+" min\nFocus: "+(focus||"Not specified")+"\nNotes: "+(notes||"None")+partnerInfo+groupInfo+"\nPrice: $"+price+"\nLocation: "+location})});}catch(e){}
+    if(lessonType==="semi"&&partner.email){try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:partner.email,_subject:"You have been added to a pickleball lesson - "+fmtDateShort(date),message:"Hi "+partner.name+",\n\n"+user.name+" has added you to a lesson!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nLocation: "+location+"\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok"})})}catch(e){}}
+    if(lessonType==="group"){groupMembers.slice(0,groupSize-1).forEach(async m=>{if(m.email){try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:m.email,_subject:"You have been added to a group pickleball lesson - "+fmtDateShort(date),message:"Hi "+m.name+",\n\n"+user.name+" has added you to a group lesson!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nLocation: "+location+"\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok"})})}catch(e){}}});}
+    const newLesson={id:Date.now(),date,time:timeStr,type:lessonLabel,duration:duration+" min",status:"confirmed",focus,notes:"",photos:[],videos:[],gcalEventId:eventId,partnerEmail:lessonType==="semi"?partner.email:"",groupEmails:lessonType==="group"?groupMembers.slice(0,groupSize-1).map(m=>m.email).filter(Boolean):[],members:memberNames.slice(1)};
     onAddLesson(newLesson);
     setGcalLink(link);
-    setBookedSummary({date,timeStr,lessonLabel,duration,focus,price});
+    setBookedSummary({date,timeStr,lessonLabel,duration,focus,price,summary});
     setSubmitting(false);
     setDone(true);
   };
+
   if(done)return(
     <div style={{maxWidth:560,margin:"60px auto",padding:"0 24px",textAlign:"center"}}>
       <div style={{background:"white",borderRadius:16,padding:"40px 32px",boxShadow:"0 4px 24px rgba(0,0,0,0.08)"}}>
         <div style={{fontSize:56,marginBottom:16}}>🎉</div>
         <h2 style={{fontWeight:900,color:G,marginBottom:8}}>You are booked!</h2>
-        <p style={{color:"#6b7280",marginBottom:24,lineHeight:1.7}}>A confirmation email has been sent to <strong>{user.email}</strong> with all the details.</p>
+        <p style={{color:"#6b7280",marginBottom:24,lineHeight:1.7}}>Confirmation sent to <strong>{user.email}</strong>.</p>
         <div style={{background:"#f9f9f6",borderRadius:12,padding:"20px",marginBottom:24,textAlign:"left"}}>
           <div style={{fontWeight:700,marginBottom:12,color:G}}>Booking Summary</div>
           <div style={{fontSize:"0.9rem",color:"#4b5563",lineHeight:2}}>
             <div>📅 {bookedSummary&&fmtDate(bookedSummary.date)}</div>
             <div>⏱ {bookedSummary?.timeStr}</div>
             <div>🎯 {bookedSummary?.lessonLabel} · {bookedSummary?.duration} min</div>
-            {bookedSummary?.focus&&<div>🏓 Focus: {bookedSummary.focus}</div>}
+            {bookedSummary?.focus&&<div>🏓 {bookedSummary.focus}</div>}
             <div>💰 ${bookedSummary?.price}{lessonType!=="private"?" per person":""}</div>
+            <div>📍 {!isMenlo?"3003 Bay Rd, Redwood City":"Stanford Redwood City"}</div>
           </div>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -757,91 +755,157 @@ function BookingPage({user,setPage,onAddLesson}){
       </div>
     </div>
   );
+
   return(
-    <div style={{maxWidth:700,margin:"0 auto",padding:"32px 24px"}}>
-      <div style={{marginBottom:24}}>
-        <h2 style={{fontWeight:900,color:G,fontSize:"1.6rem"}}>Book a Lesson</h2>
-        <p style={{color:"#6b7280",marginTop:4,fontSize:"0.92rem"}}>Booking as <strong>{user.name}</strong> <span style={{background:"#e8f0ee",color:G,padding:"2px 10px",borderRadius:50,fontSize:"0.78rem",fontWeight:600,marginLeft:8}}>{isMenlo?"Menlo Circus Club":"General Student"}</span></p>
+    <div style={{maxWidth:620,margin:"0 auto",padding:"32px 24px"}}>
+      <div style={{marginBottom:28}}>
+        <h2 style={{fontWeight:900,color:G,fontSize:"1.6rem",marginBottom:4}}>Book a Lesson</h2>
+        <p style={{color:"#6b7280",fontSize:"0.88rem"}}>Booking as <strong>{user.name}</strong> <span style={{background:"#e8f0ee",color:G,padding:"2px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:600,marginLeft:6}}>{isMenlo?"Menlo Circus Club":"General Student"}</span></p>
       </div>
-      {error&&<div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:8,padding:"12px 16px",color:"#991b1b",fontSize:"0.88rem",marginBottom:16}}>{error}</div>}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:16}}>
-        {LESSONS.map(l=>{
-          const p=PRICES[l.id][duration];
-          const pLabel=l.id==="private"?"$"+p:l.id==="semi"?"$"+p+"/person":"$"+p+" total";
-          return(<div key={l.id} onClick={()=>{setLessonType(l.id);setSlot(null);}} style={{background:lessonType===l.id?"#e8f0ee":"white",border:"2px solid "+(lessonType===l.id?G:"#e5e7eb"),borderRadius:12,padding:"16px",cursor:"pointer",textAlign:"center"}}><div style={{fontSize:28,marginBottom:6}}>{l.icon}</div><div style={{fontWeight:700,fontSize:"0.95rem",color:lessonType===l.id?G:"#1a1a1a"}}>{l.label}</div><div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:3}}>{l.desc}</div><div style={{fontWeight:800,color:G,fontSize:"1rem",marginTop:8}}>{pLabel}</div></div>);
+
+      <div style={{display:"flex",alignItems:"center",marginBottom:32,gap:0}}>
+        {STEPS.map((s,i)=>{
+          const n=i+1;
+          const active=step===n;
+          const done=step>n;
+          return(
+            <div key={i} style={{display:"flex",alignItems:"center",flex:i<STEPS.length-1?1:"auto"}}>
+              <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+                <div style={{width:32,height:32,borderRadius:"50%",background:done?G:active?G:"#e5e7eb",color:done||active?"white":"#9ca3af",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:"0.85rem",cursor:done?"pointer":"default",transition:"all 0.2s"}}
+                  onClick={()=>done&&setStep(n)}>
+                  {done?"✓":n}
+                </div>
+                <div style={{fontSize:"0.65rem",fontWeight:600,color:active?G:done?G:"#9ca3af",whiteSpace:"nowrap",textAlign:"center"}}>{s}</div>
+              </div>
+              {i<STEPS.length-1&&<div style={{flex:1,height:2,background:done?G:"#e5e7eb",margin:"0 8px",marginBottom:16,transition:"all 0.2s"}}/>}
+            </div>
+          );
         })}
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
-        {[60,90].map(d=>(<div key={d} onClick={()=>{setDuration(d);setSlot(null);}} style={{background:duration===d?"#e8f0ee":"white",border:"2px solid "+(duration===d?G:"#e5e7eb"),borderRadius:12,padding:"14px 20px",cursor:"pointer",textAlign:"center"}}><span style={{fontWeight:700,fontSize:"1rem",color:duration===d?G:"#1a1a1a"}}>{d} min</span></div>))}
-      </div>
-      <div style={{marginBottom:20}}>
-        <div style={{...lbl,marginBottom:10}}>Select a Date</div>
-        <CalendarPicker value={date} onChange={async d=>{setDate(d);setSlot(null);setSlotIdx(-1);setLoadingSlots(true);try{const r=await fetch("/api/get-busy-times?date="+d);const data=await r.json();setBusyTimes(data.busy||[]);}catch(e){setBusyTimes([]);}setLoadingSlots(false);}} memberType={isMenlo?"menlo":"public"}/>
-      </div>
-      {date&&(
-        <div style={{marginBottom:20}}>
-          <div style={{...lbl,marginBottom:10}}>Select a Time - {fmtDateShort(date)}</div>
-          {slots.length===0
-            ?<div style={{background:"#fef2f2",borderRadius:8,padding:"14px",color:"#991b1b",fontSize:"0.88rem"}}>No available slots on this date. Please pick another day.</div>
-            :<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:8}}>
-              {slots.map((s,i)=>(<div key={i} onClick={()=>{setSlot(s);setSlotIdx(i);}} style={{background:slotIdx===i?"#e8f0ee":"white",border:"2px solid "+(slotIdx===i?G:"#e5e7eb"),borderRadius:10,padding:"10px",cursor:"pointer",textAlign:"center",fontWeight:slotIdx===i?700:500,color:slotIdx===i?G:"#374151",fontSize:"0.88rem"}}>{fmt(s.s)}</div>))}
+
+      {error&&<div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:8,padding:"12px 16px",color:"#991b1b",fontSize:"0.88rem",marginBottom:16}}>{error}</div>}
+
+      {step===1&&(
+        <div>
+          <div style={{...lbl,marginBottom:12}}>Select Lesson Type</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:24}}>
+            {LESSONS.map(l=>{
+              const p=duration?PRICES[l.id][duration]:null;
+              const pLabel=!p?"Select duration":l.id==="private"?"$"+p:l.id==="semi"?"$"+p+"/person":"$"+p+" total";
+              return(<div key={l.id} onClick={()=>setLessonType(l.id)} style={{background:lessonType===l.id?"#e8f0ee":"white",border:"2px solid "+(lessonType===l.id?G:"#e5e7eb"),borderRadius:12,padding:"16px",cursor:"pointer",textAlign:"center"}}><div style={{fontSize:28,marginBottom:6}}>{l.icon}</div><div style={{fontWeight:700,fontSize:"0.95rem",color:lessonType===l.id?G:"#1a1a1a"}}>{l.label}</div><div style={{fontSize:"0.75rem",color:"#6b7280",marginTop:2,marginBottom:8}}>{l.desc}</div><div style={{fontWeight:800,color:G,fontSize:"0.95rem"}}>{pLabel}</div></div>);
+            })}
+          </div>
+          <div style={{...lbl,marginBottom:12}}>Select Duration</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:32}}>
+            {[60,90].map(d=>(<div key={d} onClick={()=>setDuration(d)} style={{background:duration===d?"#e8f0ee":"white",border:"2px solid "+(duration===d?G:"#e5e7eb"),borderRadius:12,padding:"16px",cursor:"pointer",textAlign:"center"}}><div style={{fontWeight:700,fontSize:"1rem",color:duration===d?G:"#1a1a1a"}}>{d} min</div></div>))}
+          </div>
+          <button onClick={()=>setStep(2)} disabled={!step1Done} style={{width:"100%",background:step1Done?G:"#e5e7eb",color:step1Done?"white":"#9ca3af",border:"none",padding:"14px",borderRadius:50,fontWeight:700,cursor:step1Done?"pointer":"not-allowed",fontSize:"1rem"}}>
+            Next: Select Date & Time →
+          </button>
+        </div>
+      )}
+
+      {step===2&&(
+        <div>
+          <div style={{...lbl,marginBottom:12}}>Select a Date</div>
+          <div style={{marginBottom:20}}>
+            <CalendarPicker value={date} onChange={async d=>{setDate(d);setSlot(null);setSlotIdx(-1);setLoadingSlots(true);try{const r=await fetch("/api/get-busy-times?date="+d);const data=await r.json();setBusyTimes(data.busy||[]);}catch(e){setBusyTimes([]);}setLoadingSlots(false);}} memberType={isMenlo?"menlo":"public"}/>
+          </div>
+          {date&&(
+            <div style={{marginBottom:24}}>
+              <div style={{...lbl,marginBottom:10}}>Select a Time — {fmtDateShort(date)}</div>
+              {loadingSlots
+                ?<div style={{textAlign:"center",padding:"20px",color:"#6b7280",fontSize:"0.88rem"}}>Checking availability...</div>
+                :slots.length===0
+                  ?<div style={{background:"#fef2f2",borderRadius:8,padding:"14px",color:"#991b1b",fontSize:"0.88rem"}}>No available slots on this date. Please pick another day.</div>
+                  :<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(120px,1fr))",gap:8}}>
+                    {slots.map((s,i)=>(<div key={i} onClick={()=>{setSlot(s);setSlotIdx(i);}} style={{background:slotIdx===i?"#e8f0ee":"white",border:"2px solid "+(slotIdx===i?G:"#e5e7eb"),borderRadius:10,padding:"10px",cursor:"pointer",textAlign:"center",fontWeight:slotIdx===i?700:500,color:slotIdx===i?G:"#374151",fontSize:"0.85rem"}}>{fmt(s.s)}</div>))}
+                  </div>
+              }
             </div>
-          }
-        </div>
-      )}
-      <div style={{marginBottom:20}}>
-        <div style={{...lbl,marginBottom:6}}>Focus Area <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(optional)</span></div>
-        <select value={focus} onChange={e=>setFocus(e.target.value)} style={{...inp,marginBottom:0}}>
-          <option value="">No specific focus</option>
-          {FOCUS_AREAS.map(f=><option key={f} value={f}>{f}</option>)}
-        </select>
-      </div>
-      <div style={{marginBottom:20}}>
-        <div style={{...lbl,marginBottom:6}}>Notes for David <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(optional)</span></div>
-        <textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Anything David should know before the lesson..." style={{...inp,height:80,resize:"vertical",fontFamily:"inherit",marginBottom:0}}/>
-      </div>
-            {lessonType==="semi"&&(
-        <div style={{marginBottom:20}}>
-          <div style={{...lbl,marginBottom:8}}>Partner Info</div>
-          <div style={{background:"#f9f9f6",borderRadius:10,padding:"14px 16px"}}>
-            <input placeholder="Partner Full Name (required)" value={partner.name} onChange={e=>setPartner({...partner,name:e.target.value})} style={{...inp,marginBottom:8}}/>
-            <input placeholder="Partner Email (optional — for calendar invite)" value={partner.email} onChange={e=>setPartner({...partner,email:e.target.value})} style={{...inp,marginBottom:0}}/>
+          )}
+          <div style={{display:"flex",gap:10}}>
+            <button onClick={()=>setStep(1)} style={{flex:1,background:"white",border:"1.5px solid #e5e7eb",padding:"14px",borderRadius:50,fontWeight:600,cursor:"pointer",fontSize:"0.95rem"}}>← Back</button>
+            <button onClick={()=>setStep(3)} disabled={!step2Done} style={{flex:2,background:step2Done?G:"#e5e7eb",color:step2Done?"white":"#9ca3af",border:"none",padding:"14px",borderRadius:50,fontWeight:700,cursor:step2Done?"pointer":"not-allowed",fontSize:"0.95rem"}}>
+              Next: {lessonType==="private"?"Add Details":"Add People"} →
+            </button>
           </div>
         </div>
       )}
-      {lessonType==="group"&&(
-        <div style={{marginBottom:20}}>
-          <div style={{...lbl,marginBottom:10}}>Group Size</div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
-            {[3,4,5].map(n=>(<div key={n} onClick={()=>{setGroupSize(n);setGroupMembers(Array(n-1).fill(null).map((_,i)=>groupMembers[i]||{name:"",email:""}));}} style={{background:groupSize===n?"#e8f0ee":"white",border:"2px solid "+(groupSize===n?G:"#e5e7eb"),borderRadius:10,padding:"10px",cursor:"pointer",textAlign:"center",fontWeight:groupSize===n?700:500,color:groupSize===n?G:"#374151"}}>{n} people</div>))}
-          </div>
-          <div style={{...lbl,marginBottom:8}}>Other Group Members</div>
-          {Array(groupSize-1).fill(null).map((_,i)=>(
-            <div key={i} style={{background:"#f9f9f6",borderRadius:10,padding:"14px 16px",marginBottom:10}}>
-              <div style={{fontSize:"0.82rem",fontWeight:700,color:"#6b7280",marginBottom:8}}>Person {i+2}</div>
-              <input placeholder="Full Name" value={groupMembers[i]?.name||""} onChange={e=>{const m=[...groupMembers];m[i]={...m[i],name:e.target.value};setGroupMembers(m);}} style={{...inp,marginBottom:8}}/>
-              <input placeholder="Email (optional — for calendar invite)" value={groupMembers[i]?.email||""} onChange={e=>{const m=[...groupMembers];m[i]={...m[i],email:e.target.value};setGroupMembers(m);}} style={{...inp,marginBottom:0}}/>
+
+      {step===3&&(
+        <div>
+          {lessonType==="semi"&&(
+            <div style={{marginBottom:20}}>
+              <div style={{...lbl,marginBottom:8}}>Partner Info <span style={{color:"#dc2626",fontWeight:700}}>*</span></div>
+              <div style={{background:"#f9f9f6",borderRadius:10,padding:"16px"}}>
+                <input placeholder="Partner Full Name (required)" value={partner.name} onChange={e=>setPartner({...partner,name:e.target.value})} style={{...inp,marginBottom:8,border:partner.name?"1.5px solid #e5e7eb":"1.5px solid #fca5a5"}}/>
+                <input placeholder="Partner Email (optional — sends calendar invite)" value={partner.email} onChange={e=>setPartner({...partner,email:e.target.value})} style={{...inp,marginBottom:0}}/>
+              </div>
             </div>
-          ))}
-        </div>
-      )}
-      <div style={{background:"#fffbea",border:"1.5px solid #f4c430",borderRadius:8,padding:"10px 16px",marginBottom:20,fontSize:"0.85rem",color:"#7a5800"}}>
-        Cancellation Policy: Please cancel at least 24 hours before your lesson.
-      </div>
-      {slot&&date&&(
-        <div style={{background:"#e8f0ee",borderRadius:12,padding:"16px 20px",marginBottom:20,border:"1.5px solid "+G}}>
-          <div style={{fontWeight:700,color:G,marginBottom:8}}>Booking Summary</div>
-          <div style={{fontSize:"0.9rem",color:"#374151",lineHeight:2}}>
-            <div>📅 {fmtDate(date)}</div>
-            <div>⏱ {toTimeStr(slot.s,slot.e)}</div>
-            <div>🎯 {lessonType==="private"?"Private":lessonType==="semi"?"Semi-Private":"Group"} - {duration} min</div>
-            <div>💰 ${price}{lessonType!=="private"?" per person":""}</div>
+          )}
+          {lessonType==="group"&&(
+            <div style={{marginBottom:20}}>
+              <div style={{...lbl,marginBottom:10}}>Group Size</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
+                {[3,4,5].map(n=>(<div key={n} onClick={()=>{setGroupSize(n);}} style={{background:groupSize===n?"#e8f0ee":"white",border:"2px solid "+(groupSize===n?G:"#e5e7eb"),borderRadius:10,padding:"10px",cursor:"pointer",textAlign:"center",fontWeight:groupSize===n?700:500,color:groupSize===n?G:"#374151"}}>{n} people</div>))}
+              </div>
+              <div style={{...lbl,marginBottom:8}}>Group Members <span style={{color:"#dc2626",fontWeight:700}}>*</span></div>
+              {Array(groupSize-1).fill(null).map((_,i)=>(
+                <div key={i} style={{background:"#f9f9f6",borderRadius:10,padding:"14px 16px",marginBottom:10}}>
+                  <div style={{fontSize:"0.82rem",fontWeight:700,color:"#6b7280",marginBottom:8}}>Person {i+2}</div>
+                  <input placeholder="Full Name (required)" value={groupMembers[i]?.name||""} onChange={e=>{const m=[...groupMembers];m[i]={...m[i],name:e.target.value};setGroupMembers(m);}} style={{...inp,marginBottom:8,border:groupMembers[i]?.name?"1.5px solid #e5e7eb":"1.5px solid #fca5a5"}}/>
+                  <input placeholder="Email (optional — sends calendar invite)" value={groupMembers[i]?.email||""} onChange={e=>{const m=[...groupMembers];m[i]={...m[i],email:e.target.value};setGroupMembers(m);}} style={{...inp,marginBottom:0}}/>
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{marginBottom:16}}>
+            <div style={{...lbl,marginBottom:6}}>Focus Area <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(optional)</span></div>
+            <select value={focus} onChange={e=>setFocus(e.target.value)} style={{...inp,marginBottom:0}}>
+              <option value="">No specific focus</option>
+              {FOCUS_AREAS.map(f=><option key={f} value={f}>{f}</option>)}
+            </select>
+          </div>
+          <div style={{marginBottom:24}}>
+            <div style={{...lbl,marginBottom:6}}>Notes for David <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(optional)</span></div>
+            <textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Anything David should know..." style={{...inp,height:80,resize:"vertical",fontFamily:"inherit",marginBottom:0}}/>
+          </div>
+          <div style={{display:"flex",gap:10}}>
+            <button onClick={()=>setStep(2)} style={{flex:1,background:"white",border:"1.5px solid #e5e7eb",padding:"14px",borderRadius:50,fontWeight:600,cursor:"pointer",fontSize:"0.95rem"}}>← Back</button>
+            <button onClick={()=>setStep(4)} disabled={!step3Done} style={{flex:2,background:step3Done?G:"#e5e7eb",color:step3Done?"white":"#9ca3af",border:"none",padding:"14px",borderRadius:50,fontWeight:700,cursor:step3Done?"pointer":"not-allowed",fontSize:"0.95rem"}}>
+              Next: Review & Confirm →
+            </button>
           </div>
         </div>
       )}
-      <button onClick={handleBook} disabled={!date||!slot||submitting} style={{width:"100%",background:!date||!slot?"#e5e7eb":submitting?"#9ca3af":G,color:!date||!slot?"#9ca3af":"white",border:"none",padding:"15px",borderRadius:50,fontWeight:700,cursor:!date||!slot||submitting?"not-allowed":"pointer",fontSize:"1rem"}}>
-        {submitting?"Booking...":"Confirm Booking"}
-      </button>
+
+      {step===4&&(
+        <div>
+          <div style={{background:"#f9f9f6",borderRadius:12,padding:"24px",marginBottom:20,border:"1.5px solid #e5e7eb"}}>
+            <div style={{fontWeight:700,color:G,marginBottom:16,fontSize:"1rem"}}>Booking Summary</div>
+            <div style={{fontSize:"0.92rem",color:"#374151",lineHeight:2.2}}>
+              <div>📅 {fmtDate(date)}</div>
+              <div>⏱ {slot&&toTimeStr(slot.s,slot.e)}</div>
+              <div>🎯 {lessonType==="private"?"Private":lessonType==="semi"?"Semi-Private":"Group"} · {duration} min</div>
+              {focus&&<div>🏓 Focus: {focus}</div>}
+              <div>💰 ${price}{lessonType!=="private"?" per person":""}</div>
+              <div>📍 {!isMenlo?"3003 Bay Rd, Redwood City":"Stanford Redwood City"}</div>
+              {lessonType==="semi"&&<div>👥 Partner: {partner.name}</div>}
+              {lessonType==="group"&&<div>👥 Group: {[user.name,...groupMembers.slice(0,groupSize-1).map(m=>m.name)].join(", ")}</div>}
+            </div>
+          </div>
+          <div style={{background:"#fffbea",border:"1.5px solid #f4c430",borderRadius:8,padding:"10px 16px",marginBottom:20,fontSize:"0.85rem",color:"#7a5800"}}>
+            ⚠️ Cancellation Policy: Please cancel at least 24 hours before your lesson.
+          </div>
+          <div style={{display:"flex",gap:10}}>
+            <button onClick={()=>setStep(3)} style={{flex:1,background:"white",border:"1.5px solid #e5e7eb",padding:"14px",borderRadius:50,fontWeight:600,cursor:"pointer",fontSize:"0.95rem"}}>← Back</button>
+            <button onClick={handleBook} disabled={submitting} style={{flex:2,background:submitting?"#9ca3af":G,color:"white",border:"none",padding:"14px",borderRadius:50,fontWeight:700,cursor:submitting?"not-allowed":"pointer",fontSize:"0.95rem"}}>
+              {submitting?"Booking...":"Confirm Booking ✓"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
