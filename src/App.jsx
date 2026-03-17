@@ -1591,7 +1591,8 @@ export default function App(){
               gcalEventId:l.gcal_event_id||"",
               partnerEmail:l.partner_email||"",
               groupEmails:l.group_emails||[],
-              members:l.members||[]
+              members:l.members||[],
+              createdAt:l.created_at||""
             });
             if(!users[l.student_email]){
               users[l.student_email]={name:l.student_name||l.student_email,memberType:"public",approved:true};
@@ -1631,10 +1632,15 @@ export default function App(){
     try{await fetch("/api/update-lesson",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:id,updates:{status:"cancelled",cancelled_by:"admin",cancelled_at:new Date().toISOString()}})});}catch(e){console.error("Update lesson status error:",e);}
   };
   const addLesson=async lesson=>{
-    setAllLessons(prev=>({...prev,[user.email]:[...(prev[user.email]||[]),lesson]}));
     try{
-      await fetch("/api/save-lesson",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lesson:{...lesson,studentEmail:user.email}})});
-    }catch(e){console.error("Save lesson error:",e);}
+      const r=await fetch("/api/save-lesson",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lesson:{...lesson,studentEmail:user.email}})});
+      const data=await r.json();
+      const finalLesson=data.id?{...lesson,id:data.id}:lesson;
+      setAllLessons(prev=>({...prev,[user.email]:[...(prev[user.email]||[]),finalLesson]}));
+    }catch(e){
+      console.error("Save lesson error:",e);
+      setAllLessons(prev=>({...prev,[user.email]:[...(prev[user.email]||[]),lesson]}));
+    }
   };
   const updateLesson=async(email,id,updates)=>{
     setAllLessons(prev=>({...prev,[email]:prev[email].map(l=>l.id===id?{...l,...updates}:l)}));
