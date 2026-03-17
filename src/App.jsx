@@ -52,10 +52,7 @@ const MOCK_USERS = {
 };
 const ADMIN_USER = { email:"dlogfx", password:"pejkyt-8sejFu-wyzcac" };
 
-const INIT_PENDING = [
-  { id:1, name:"Alex Rivera",   email:"alex@email.com",  requestedAt:"Mar 8, 2026" },
-  { id:2, name:"Sarah Johnson", email:"sarah@email.com", requestedAt:"Mar 9, 2026" },
-];
+const INIT_PENDING = [];
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
