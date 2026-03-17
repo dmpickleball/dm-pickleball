@@ -1358,7 +1358,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                       {u.picture?<img src={u.picture} alt={u.name} style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:"50%"}}/>:(u.name||email).charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <div style={{fontWeight:700,fontSize:"0.97rem"}}>{u.name||email}</div>
+                      <div style={{fontWeight:700,fontSize:"0.97rem"}}>{u.lastName&&u.firstName?u.lastName+", "+u.firstName:u.name||email}</div>
                       <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:2}}>{email}</div>
                     </div>
                   </div>
@@ -1388,12 +1388,18 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 <div>
                   {editingStudent?(
                     <div>
-                      <input value={editStudentData.name||""} onChange={e=>setEditStudentData({...editStudentData,name:e.target.value})} style={{...inp,marginBottom:8,fontWeight:700,fontSize:"1rem"}} placeholder="Full Name"/>
-                      <input value={editStudentData.email||""} onChange={e=>setEditStudentData({...editStudentData,email:e.target.value})} style={{...inp,marginBottom:0,fontSize:"0.85rem"}} placeholder="Email"/>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+                        <input value={editStudentData.firstName||""} onChange={e=>setEditStudentData({...editStudentData,firstName:e.target.value})} style={{...inp,marginBottom:0,fontWeight:700}} placeholder="First Name"/>
+                        <input value={editStudentData.lastName||""} onChange={e=>setEditStudentData({...editStudentData,lastName:e.target.value})} style={{...inp,marginBottom:0,fontWeight:700}} placeholder="Last Name"/>
+                      </div>
+                      <input value={selectedStudent} disabled style={{...inp,marginBottom:8,fontSize:"0.85rem",background:"#f3f4f6",color:"#9ca3af",cursor:"not-allowed"}}/>
+                      <input value={editStudentData.phone||""} onChange={e=>setEditStudentData({...editStudentData,phone:e.target.value})} style={{...inp,marginBottom:8,fontSize:"0.85rem"}} placeholder="Phone Number"/>
+                      <input value={editStudentData.city||""} onChange={e=>setEditStudentData({...editStudentData,city:e.target.value})} style={{...inp,marginBottom:8,fontSize:"0.85rem"}} placeholder="City"/>
+                      <input value={editStudentData.homeCourt||""} onChange={e=>setEditStudentData({...editStudentData,homeCourt:e.target.value})} style={{...inp,marginBottom:0,fontSize:"0.85rem"}} placeholder="Home Court"/>
                     </div>
                   ):(
                     <div>
-                      <div style={{fontWeight:800,fontSize:"1.1rem"}}>{mockUsers[selectedStudent]?.name||selectedStudent}</div>
+                      <div style={{fontWeight:800,fontSize:"1.1rem"}}>{mockUsers[selectedStudent]?.lastName&&mockUsers[selectedStudent]?.firstName?mockUsers[selectedStudent].lastName+", "+mockUsers[selectedStudent].firstName:mockUsers[selectedStudent]?.name||selectedStudent}</div>
                       <div style={{fontSize:"0.85rem",color:"#6b7280",marginTop:2}}>{selectedStudent}</div>
                       {mockUsers[selectedStudent]?.phone&&<div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>📱 {formatPhone(mockUsers[selectedStudent].phone)}</div>}
                       {mockUsers[selectedStudent]?.city&&<div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>📍 {mockUsers[selectedStudent].city}</div>}
@@ -1406,10 +1412,13 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 {editingStudent?(
                   <>
                     <button onClick={()=>setEditingStudent(false)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.82rem"}}>Cancel</button>
-                    <button onClick={()=>{onAddStudent({name:editStudentData.name,email:selectedStudent,memberType:mockUsers[selectedStudent]?.memberType||"public"});setEditingStudent(false);}} style={{background:G,color:"white",border:"none",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.82rem"}}>Save ✓</button>
+                    <button onClick={()=>{const fullName=(editStudentData.firstName+" "+editStudentData.lastName).trim()||editStudentData.name;
+              fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:selectedStudent,updates:{name:fullName,first_name:editStudentData.firstName,last_name:editStudentData.lastName,phone:editStudentData.phone,city:editStudentData.city,home_court:editStudentData.homeCourt}})}).catch(()=>{});
+              onAddStudent({name:fullName,firstName:editStudentData.firstName,lastName:editStudentData.lastName,phone:editStudentData.phone,city:editStudentData.city,homeCourt:editStudentData.homeCourt,email:selectedStudent,memberType:mockUsers[selectedStudent]?.memberType||"public"});
+              setEditingStudent(false);}} style={{background:G,color:"white",border:"none",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.82rem"}}>Save ✓</button>
                   </>
                 ):(
-                  <button onClick={()=>{setEditStudentData({name:mockUsers[selectedStudent]?.name||"",email:selectedStudent});setEditingStudent(true);}} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.82rem"}}>✏️ Edit</button>
+                  <button onClick={()=>{setEditStudentData({name:mockUsers[selectedStudent]?.name||"",firstName:mockUsers[selectedStudent]?.firstName||"",lastName:mockUsers[selectedStudent]?.lastName||"",phone:mockUsers[selectedStudent]?.phone||"",city:mockUsers[selectedStudent]?.city||"",homeCourt:mockUsers[selectedStudent]?.homeCourt||""});setEditingStudent(true);}} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.82rem"}}>✏️ Edit</button>
                 )}
                 <button onClick={()=>setShowSchedule(true)} style={{background:G,color:"white",border:"none",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.82rem"}}>+ Schedule Lesson</button>
               </div>
