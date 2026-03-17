@@ -184,7 +184,7 @@ function LessonCard({lesson,isHistory,onCancel}){
   const[expanded,setExpanded]=useState(false);
   const[confirmCancel,setConfirmCancel]=useState(false);
   const deadline=!isHistory?getCancelDeadline(lesson.date,lesson.time):null;
-  const cancellable=!isHistory&&canCancel(lesson.date,lesson.time);
+  const cancellable=!isHistory&&canCancel(lesson.date,lesson.time,lesson.createdAt);const withinGrace=!isHistory&&!canCancel(lesson.date,lesson.time)&&canCancel(lesson.date,lesson.time,lesson.createdAt);
   const closed=!isHistory&&!cancellable;
   const dateObj=new Date(lesson.date+"T12:00:00");
   return(
@@ -215,8 +215,8 @@ function LessonCard({lesson,isHistory,onCancel}){
                   {lesson.status==="confirmed"?"✓ Confirmed":"⏳ Pending"}
                 </span>
                 {deadline&&(
-                  <span style={{fontSize:"0.75rem",color:cancellable?"#6b7280":"#dc2626",background:cancellable?"#f9f9f6":"#fef2f2",padding:"2px 10px",borderRadius:50,border:`1px solid ${cancellable?"#e5e7eb":"#fca5a5"}`}}>
-                    {cancellable?`Cancel by: ${fmtDeadline(deadline)}`:"⛔ Cancellation closed"}
+                  <span style={{fontSize:"0.75rem",color:withinGrace?"#92400e":cancellable?"#6b7280":"#dc2626",background:withinGrace?"#fffbea":cancellable?"#f9f9f6":"#fef2f2",padding:"2px 10px",borderRadius:50,border:`1px solid ${withinGrace?"#f4c430":cancellable?"#e5e7eb":"#fca5a5"}`}}>
+                    {withinGrace?"⚠️ Cancel within 15 min (inside 24hr window)":cancellable?`Cancel by: ${fmtDeadline(deadline)}`:"⛔ Cancellation closed"}
                   </span>
                 )}
               </div>
