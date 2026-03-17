@@ -103,7 +103,14 @@ function getLessonStart(dateStr,timeStr){
 }
 function getCancelDeadline(ds,ts){return new Date(getLessonStart(ds,ts).getTime()-24*60*60*1000);}
 function fmtDeadline(d){return d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})+" at "+d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});}
-function canCancel(ds,ts){return new Date()<getCancelDeadline(ds,ts);}
+function canCancel(ds,ts,bookedAt){
+  const now=new Date();
+  const deadline=getCancelDeadline(ds,ts);
+  if(now<deadline)return true;
+  // 15 min grace period if booked less than 15 mins ago
+  if(bookedAt){const bookedTime=new Date(bookedAt);const minsAgo=(now-bookedTime)/60000;if(minsAgo<15)return true;}
+  return false;
+}
 function isPast(ds,ts){return new Date()>getLessonStart(ds,ts);}
 
 // ─── COMPONENTS ──────────────────────────────────────────────────────────────
@@ -1611,6 +1618,7 @@ export default function App(){
     if(lesson.partnerEmail){try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:lesson.partnerEmail,_subject:"Lesson Cancelled - "+fmtDateShort(lesson.date),message:"Hi,\n\n"+cancelMsg})});}catch(e){}}
     if(lesson.groupEmails){lesson.groupEmails.forEach(async email=>{if(email){try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email,_subject:"Lesson Cancelled - "+fmtDateShort(lesson.date),message:"Hi,\n\n"+cancelMsg})});}catch(e){}}});}
     setAllLessons(prev=>({...prev,[user.email]:prev[user.email].map(l=>l.id===id?{...l,status:"cancelled"}:l)}));
+    try{await fetch("/api/update-lesson",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:id,updates:{status:"cancelled",cancelled_by:"student",cancelled_at:new Date().toISOString()}})});}catch(e){console.error("Update lesson status error:",e);}
   };
   const adminCancel=async(email,id)=>{
     const lesson=(allLessons[email]||[]).find(l=>l.id===id);
@@ -1620,6 +1628,7 @@ export default function App(){
       }catch(e){console.error("Admin GCal cancel failed:",e);}
     }
     setAllLessons(prev=>({...prev,[email]:prev[email].map(l=>l.id===id?{...l,status:"cancelled"}:l)}));
+    try{await fetch("/api/update-lesson",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:id,updates:{status:"cancelled",cancelled_by:"admin",cancelled_at:new Date().toISOString()}})});}catch(e){console.error("Update lesson status error:",e);}
   };
   const addLesson=async lesson=>{
     setAllLessons(prev=>({...prev,[user.email]:[...(prev[user.email]||[]),lesson]}));
