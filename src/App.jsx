@@ -169,6 +169,7 @@ function Nav({user,onLogin,onLogout,setPage,currentPage}){
         {user?(
           <>
             <span onClick={()=>setPage("dashboard")} style={{color:Y,cursor:"pointer",fontWeight:700,fontSize:"0.92rem"}}>My Lessons</span>
+            <span onClick={()=>setPage("account")} style={{color:"white",cursor:"pointer",opacity:currentPage==="account"?1:0.7,fontSize:"0.92rem"}}>My Account</span>
             <span onClick={()=>setPage("booking")} style={{background:"rgba(255,255,255,0.15)",color:"white",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.88rem"}}>Book</span>
             <button onClick={onLogout} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.4)",color:"white",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem"}}>Log out</button>
           </>
@@ -713,6 +714,78 @@ function LoginPage({onLogin,onAdminLogin}){
   );
 }
 
+function AccountPage({user,setPage,onUpdateUser}){
+  const[name,setName]=useState(user.name||"");
+  const[phone,setPhone]=useState(user.phone||"");
+  const[homeCourt,setHomeCourt]=useState(user.homeCourt||"");
+  const[saving,setSaving]=useState(false);
+  const[saved,setSaved]=useState(false);
+  const[error,setError]=useState("");
+
+  const handleSave=async()=>{
+    if(!name){setError("Name is required.");return;}
+    setSaving(true);setError("");
+    try{
+      const r=await fetch("/api/update-student",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({email:user.email,updates:{name,phone,home_court:homeCourt}})
+      });
+      const data=await r.json();
+      if(data.success){
+        onUpdateUser({...user,name,phone,homeCourt});
+        setSaved(true);
+        setTimeout(()=>setSaved(false),3000);
+      }else{setError("Failed to save. Please try again.");}
+    }catch(e){setError("Failed to save. Please try again.");}
+    setSaving(false);
+  };
+
+  return(
+    <div style={{maxWidth:560,margin:"0 auto",padding:"48px 24px"}}>
+      <button onClick={()=>setPage("dashboard")} style={{background:"none",border:"none",color:G,fontWeight:700,cursor:"pointer",fontSize:"0.88rem",marginBottom:24,padding:0}}>← Back to My Lessons</button>
+      <h2 style={{fontWeight:900,color:G,fontSize:"1.6rem",marginBottom:4}}>Account Settings</h2>
+      <p style={{color:"#6b7280",marginBottom:32,fontSize:"0.92rem"}}>Update your profile information</p>
+      <div style={{background:"white",borderRadius:12,padding:"28px 32px",boxShadow:"0 2px 16px rgba(0,0,0,0.07)"}}>
+        <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:28,paddingBottom:24,borderBottom:"1px solid #e5e7eb"}}>
+          {user.picture
+            ?<img src={user.picture} alt={user.name} style={{width:56,height:56,borderRadius:"50%",objectFit:"cover"}}/>
+            :<div style={{width:56,height:56,borderRadius:"50%",background:G,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:"1.3rem",color:"white"}}>{(user.name||"?").charAt(0).toUpperCase()}</div>
+          }
+          <div>
+            <div style={{fontWeight:700,fontSize:"1rem"}}>{user.name}</div>
+            <div style={{fontSize:"0.85rem",color:"#6b7280",marginTop:2}}>{user.email}</div>
+            <span style={{background:"#e8f0ee",color:G,padding:"2px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:600,marginTop:4,display:"inline-block"}}>
+              {user.memberType==="menlo"?"Menlo Circus Club":"General Student"}
+            </span>
+          </div>
+        </div>
+        {error&&<div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:8,padding:"10px 14px",color:"#991b1b",fontSize:"0.88rem",marginBottom:16}}>{error}</div>}
+        {saved&&<div style={{background:"#e8f0ee",border:"1.5px solid "+G,borderRadius:8,padding:"10px 14px",color:G,fontSize:"0.88rem",marginBottom:16,fontWeight:600}}>✓ Changes saved!</div>}
+        <div style={{marginBottom:16}}>
+          <label style={lbl}>Full Name <span style={{color:"#dc2626"}}>*</span></label>
+          <input value={name} onChange={e=>setName(e.target.value)} style={inp} placeholder="Your full name"/>
+        </div>
+        <div style={{marginBottom:16}}>
+          <label style={lbl}>Email</label>
+          <input value={user.email} disabled style={{...inp,background:"#f3f4f6",color:"#9ca3af",cursor:"not-allowed"}}/>
+          <div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:4}}>Email is managed by Google and cannot be changed here.</div>
+        </div>
+        <div style={{marginBottom:16}}>
+          <label style={lbl}>Phone Number</label>
+          <input value={phone} onChange={e=>setPhone(e.target.value)} style={inp} placeholder="(650) 000-0000" type="tel"/>
+        </div>
+        <div style={{marginBottom:24}}>
+          <label style={lbl}>Home Court <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(optional)</span></label>
+          <input value={homeCourt} onChange={e=>setHomeCourt(e.target.value)} style={inp} placeholder="e.g. Andrew Spinas Park, Redwood City"/>
+        </div>
+        <button onClick={handleSave} disabled={saving} style={{width:"100%",background:saving?"#9ca3af":G,color:"white",border:"none",padding:"14px",borderRadius:50,fontWeight:700,cursor:saving?"not-allowed":"pointer",fontSize:"1rem"}}>
+          {saving?"Saving...":"Save Changes"}
+        </button>
+      </div>
+    </div>
+  );
+}
 function Dashboard({user,setPage,lessons,onCancel}){
   const upcoming=lessons.filter(l=>!isPast(l.date,l.time)&&l.status!=="cancelled");
   const history=lessons.filter(l=>isPast(l.date,l.time)||l.status==="completed");
@@ -1621,7 +1694,7 @@ export default function App(){
     };
     loadFromSupabase();
   },[]);
-  const userLessons=user?allLessons[user.email]||[]:[];
+  const userLessons=user?allLessons[user.email]||[]:[]; const updateUser=(updatedUser)=>setUser(updatedUser);
   const cancelLesson=async(id)=>{
     const lesson=userLessons.find(l=>l.id===id);
     if(lesson?.gcalEventId){
@@ -1714,6 +1787,7 @@ export default function App(){
       {page==="gear"&&<GearPage/>}
       {page==="contact"&&<ContactPage/>}
       {page==="login"&&<LoginPage onLogin={u=>{setUser(u);setPage("dashboard");}} onAdminLogin={()=>setIsAdmin(true)}/>}
+      {page==="account"&&(user?<AccountPage user={user} setPage={setPage} onUpdateUser={updateUser}/>:<LoginPage onLogin={u=>{setUser(u);setPage("dashboard");}} onAdminLogin={()=>setIsAdmin(true)}/>)}
       {page==="dashboard"&&(user?<Dashboard user={user} setPage={setPage} lessons={userLessons} onCancel={cancelLesson}/>:<LoginPage onLogin={u=>{setUser(u);setPage("dashboard");}} onAdminLogin={()=>setIsAdmin(true)}/>)}
       {page==="booking"&&(user?<BookingPage user={user} setPage={setPage} onAddLesson={addLesson}/>:<LoginPage onLogin={u=>{setUser(u);setPage("dashboard");}} onAdminLogin={()=>setIsAdmin(true)}/>)}
       <footer style={{textAlign:"center",padding:24,color:"#9ca3af",fontSize:"0.82rem",borderTop:"1px solid #e5e7eb",marginTop:20}}>
