@@ -81,7 +81,8 @@ function getSlots(dateStr,memberType,duration){
   if(dow===0)return[];
   if(memberType==="menlo"&&dow===6)return[];
   const sb=STANFORD_BLOCKS[dow],fridayMorning=dow===5?{start:7*60+30,end:9*60}:null,slots=[];
-  const maxStart=dow===6?10*60:16*60;for(let s=8*60;s<=maxStart;s+=30){
+  const isToday=dateStr===toDS(new Date());const nowMins=new Date().getHours()*60+new Date().getMinutes();const minStart=isToday?nowMins+180:0;for(let s=8*60;s<=maxStart;s+=30){
+    if(isToday&&s<minStart)continue;
     const e=s+duration;
     if(sb&&s<sb.end&&e>sb.start)continue;
     if(fridayMorning&&s<fridayMorning.end&&e>fridayMorning.start)continue;
@@ -823,7 +824,7 @@ function BookingPage({user,setPage,onAddLesson}){
             <div>🎯 {bookedSummary?.lessonLabel} · {bookedSummary?.duration} min</div>
             {bookedSummary?.focus&&<div>🏓 {bookedSummary.focus}</div>}
             <div>💰 ${bookedSummary?.price}{lessonType!=="private"?" per person":""}</div>
-            <div>📍 {!isMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City":"Stanford Redwood City"}</div>
+            <div>📍 <a href={!isMenlo?"https://maps.google.com/?q=Andrew+Spinas+Park,+3003+Bay+Rd,+Redwood+City,+CA+94063":"https://maps.google.com/?q=Stanford+Redwood+City+Recreation+and+Wellness+Center"} target="_blank" rel="noreferrer" style={{color:G,fontWeight:600}}>{!isMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City":"Stanford Redwood City"}</a></div>
           </div>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -968,7 +969,7 @@ function BookingPage({user,setPage,onAddLesson}){
               <div>🎯 {lessonType==="private"?"Private":lessonType==="semi"?"Semi-Private":"Group"} · {duration} min</div>
               {focus&&<div>🏓 Focus: {focus}</div>}
               <div>💰 ${price}{lessonType!=="private"?" per person":""}</div>
-              <div>📍 {!isMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City":"Stanford Redwood City"}</div>
+              <div>📍 <a href={!isMenlo?"https://maps.google.com/?q=Andrew+Spinas+Park,+3003+Bay+Rd,+Redwood+City,+CA+94063":"https://maps.google.com/?q=Stanford+Redwood+City+Recreation+and+Wellness+Center"} target="_blank" rel="noreferrer" style={{color:G,fontWeight:600}}>{!isMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City":"Stanford Redwood City"}</a></div>
               {lessonType==="semi"&&<div>👥 Partner: {partner.name}</div>}
               {lessonType==="group"&&<div>👥 Group: {[user.name,...groupMembers.slice(0,groupSize-1).map(m=>m.name)].join(", ")}</div>}
             </div>
@@ -1463,7 +1464,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                   <div>🎯 {schedLessonType==="private"?"Private":schedLessonType==="semi"?"Semi-Private":"Group"} · {schedDuration} min</div>
                   {schedFocus&&<div>🏓 {schedFocus}</div>}
                   <div>💰 ${SCHED_PRICES[schedLessonType][schedDuration]}{schedLessonType!=="private"?" per person":""}</div>
-                  <div>📍 {!schedIsMenlo?"Andrew Spinas Park, Redwood City":"Stanford Redwood City"}</div>
+                  <div>📍 <a href={!schedIsMenlo?"https://maps.google.com/?q=Andrew+Spinas+Park,+3003+Bay+Rd,+Redwood+City,+CA+94063":"https://maps.google.com/?q=Stanford+Redwood+City+Recreation+and+Wellness+Center"} target="_blank" rel="noreferrer" style={{color:G,fontWeight:600}}>{!schedIsMenlo?"Andrew Spinas Park, Redwood City":"Stanford Redwood City"}</a></div>
                 </div>
               </div>
               <div style={{display:"flex",gap:10}}>
