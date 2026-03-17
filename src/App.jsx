@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // ─── IMAGE PATHS ────────────────────────────────────────────────────────────
 // All images live in /public/images/ — drop your files there with these names:
