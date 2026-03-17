@@ -637,14 +637,14 @@ function LoginPage({onLogin,onAdminLogin}){
             .then(async info=>{
               const email=info.email.toLowerCase();window._pendingEmail=email;
               try{
-                const r=await fetch("/api/get-student?email="+encodeURIComponent(email));
+                const r=await fetch("/api/students?action=get&email="+encodeURIComponent(email));
                 const data=await r.json();
                 if(!data.student){setLoading(false);setError("Your account is not approved yet. Please request access.");setMode("signup");return;}
                 if(!data.student.approved){setLoading(false);setError("Your account is pending approval from David.");return;}
                 if(data.student.blocked){setLoading(false);setError("Your account has been blocked. Please contact David.");return;}
                 setLoading(false);
                 onLogin({email,name:data.student.name||info.name,memberType:data.student.member_type,approved:true,picture:info.picture,phone:data.student.phone,homeCourt:data.student.home_court,city:data.student.city||""});
-                fetch("/api/update-student",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,updates:{picture:info.picture}})}).catch(()=>{});
+                fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,updates:{picture:info.picture}})}).catch(()=>{});
               }catch(e){setLoading(false);setError("Login failed. Please try again.");}
             })
             .catch(()=>{setLoading(false);setError("Google login failed. Please try again.");});
@@ -698,7 +698,7 @@ function LoginPage({onLogin,onAdminLogin}){
             <p style={{fontSize:"0.82rem",color:"#6b7280",marginBottom:16,lineHeight:1.6}}>You will sign in with Google. Please provide your details so David can approve your account.</p>
             <button onClick={()=>{
               if(!name||!phone){setError("Name and phone number are required.");return;}
-              fetch("/api/request-access",{
+              fetch("/api/students?action=request",{
                 method:"POST",
                 headers:{"Content-Type":"application/json"},
                 body:JSON.stringify({email:window._pendingEmail||"",name,phone,homeCourt})
@@ -737,7 +737,7 @@ function AccountPage({user,setPage,onUpdateUser}){
     setSaving(true);setError("");
     const fullName=firstName.trim()+" "+lastName.trim();
     try{
-      const r=await fetch("/api/update-student",{
+      const r=await fetch("/api/students?action=update",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({email:user.email,updates:{name:fullName,first_name:firstName.trim(),last_name:lastName.trim(),phone,city,home_court:homeCourt}})
@@ -1687,9 +1687,9 @@ export default function App(){
     const loadFromSupabase=async()=>{
       try{
         const [pr,lr,sr]=await Promise.all([
-          fetch("/api/get-pending").then(r=>r.json()),
-          fetch("/api/get-lessons").then(r=>r.json()),
-          fetch("/api/get-students").then(r=>r.json()),
+          fetch("/api/students?action=pending").then(r=>r.json()),
+          fetch("/api/lessons?action=list").then(r=>r.json()),
+          fetch("/api/students?action=list").then(r=>r.json()),
         ]);
         if(pr.requests){
           setPendingStudents(pr.requests.map(r=>({
@@ -1752,7 +1752,7 @@ export default function App(){
     if(lesson.partnerEmail){try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:lesson.partnerEmail,_subject:"Lesson Cancelled - "+fmtDateShort(lesson.date),message:"Hi,\n\n"+cancelMsg})});}catch(e){}}
     if(lesson.groupEmails){lesson.groupEmails.forEach(async email=>{if(email){try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email,_subject:"Lesson Cancelled - "+fmtDateShort(lesson.date),message:"Hi,\n\n"+cancelMsg})});}catch(e){}}});}
     setAllLessons(prev=>({...prev,[user.email]:prev[user.email].map(l=>l.id===id?{...l,status:"cancelled"}:l)}));
-    try{await fetch("/api/update-lesson",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:id,updates:{status:"cancelled",cancelled_by:"student",cancelled_at:new Date().toISOString()}})});}catch(e){console.error("Update lesson status error:",e);}
+    try{await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:id,updates:{status:"cancelled",cancelled_by:"student",cancelled_at:new Date().toISOString()}})});}catch(e){console.error("Update lesson status error:",e);}
   };
   const adminCancel=async(email,id)=>{
     const lesson=(allLessons[email]||[]).find(l=>l.id===id);
@@ -1762,11 +1762,11 @@ export default function App(){
       }catch(e){console.error("Admin GCal cancel failed:",e);}
     }
     setAllLessons(prev=>({...prev,[email]:prev[email].map(l=>l.id===id?{...l,status:"cancelled"}:l)}));
-    try{await fetch("/api/update-lesson",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:id,updates:{status:"cancelled",cancelled_by:"admin",cancelled_at:new Date().toISOString()}})});}catch(e){console.error("Update lesson status error:",e);}
+    try{await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:id,updates:{status:"cancelled",cancelled_by:"admin",cancelled_at:new Date().toISOString()}})});}catch(e){console.error("Update lesson status error:",e);}
   };
   const addLesson=async lesson=>{
     try{
-      const r=await fetch("/api/save-lesson",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lesson:{...lesson,studentEmail:user.email}})});
+      const r=await fetch("/api/lessons?action=save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lesson:{...lesson,studentEmail:user.email}})});
       const data=await r.json();
       const finalLesson=data.id?{...lesson,id:data.id}:lesson;
       setAllLessons(prev=>({...prev,[user.email]:[...(prev[user.email]||[]),finalLesson]}));
@@ -1778,12 +1778,12 @@ export default function App(){
   const updateLesson=async(email,id,updates)=>{
     setAllLessons(prev=>({...prev,[email]:prev[email].map(l=>l.id===id?{...l,...updates}:l)}));
     try{
-      await fetch("/api/update-lesson",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:id,updates})});
+      await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:id,updates})});
     }catch(e){console.error("Update lesson error:",e);}
   };
   const approveStudent=async(student,memberType)=>{
     try{
-      await fetch("/api/approve-student",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({requestId:student.id,email:student.email,name:student.name,phone:student.phone||"",homeCourt:student.homeCourt||"",memberType,action:"approve"})});
+      await fetch("/api/students?action=approve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({requestId:student.id,email:student.email,name:student.name,phone:student.phone||"",homeCourt:student.homeCourt||"",memberType,action:"approve"})});
       setAllLessons(prev=>({...prev,[student.email]:[]}));
       setMockUsersState(prev=>({...prev,[student.email]:{name:student.name,memberType,approved:true}}));
       setPendingStudents(prev=>prev.filter(s=>s.id!==student.id));
@@ -1795,7 +1795,7 @@ export default function App(){
     const student=pendingStudents.find(s=>s.id===id);
     if(student){
       try{
-        await fetch("/api/approve-student",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({requestId:id,action:"deny"})});
+        await fetch("/api/students?action=approve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({requestId:id,action:"deny"})});
       }catch(e){console.error("Deny error:",e);}
     }
     setPendingStudents(prev=>prev.filter(s=>s.id!==id));
@@ -1804,7 +1804,7 @@ export default function App(){
   const adminAddLesson=async(email,lesson)=>{
     setAllLessons(prev=>({...prev,[email]:[...(prev[email]||[]),lesson]}));
     try{
-      await fetch("/api/save-lesson",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lesson:{...lesson,studentEmail:email}})});
+      await fetch("/api/lessons?action=save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lesson:{...lesson,studentEmail:email}})});
     }catch(e){console.error("Admin save lesson error:",e);}
   };
   const toggleMenlo=email=>setMockUsersState(prev=>({...prev,[email]:{...prev[email],memberType:prev[email]?.memberType==="menlo"?"public":"menlo"}}));
