@@ -1515,6 +1515,21 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                     {l.status==="confirmed"?"✓ Confirmed":l.status==="cancelled"?"✕ Cancelled":"⏳ Pending"}
                   </span>
                   <button onClick={()=>{setSelectedStudent(l.studentEmail);setTab("students");}} style={{background:"none",border:"1.5px solid #e5e7eb",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:600,color:"#374151"}}>View Student</button>
+                  {l.status!=="cancelled"&&!isPast(l.date,l.time)&&(
+                    <button onClick={()=>setConfirmCancel(l.id+l.studentEmail)} style={{background:"#fef2f2",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>✕ Cancel</button>
+                  )}
+                  {confirmCancel===l.id+l.studentEmail&&(
+                    <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:999}}>
+                      <div style={{background:"white",borderRadius:16,padding:"28px 32px",maxWidth:400,width:"90%",boxShadow:"0 8px 32px rgba(0,0,0,0.2)"}}>
+                        <div style={{fontWeight:800,fontSize:"1rem",marginBottom:8}}>Cancel this lesson?</div>
+                        <div style={{fontSize:"0.88rem",color:"#6b7280",marginBottom:20}}>{l.studentName} · {fmtDateShort(l.date)} · {l.time}</div>
+                        <div style={{display:"flex",gap:10}}>
+                          <button onClick={()=>setConfirmCancel(null)} style={{flex:1,background:"white",border:"1.5px solid #e5e7eb",padding:"10px",borderRadius:50,cursor:"pointer",fontWeight:600}}>Keep it</button>
+                          <button onClick={async()=>{await onCancelLesson(l.studentEmail,l.id);setConfirmCancel(null);}} style={{flex:1,background:"#dc2626",color:"white",border:"none",padding:"10px",borderRadius:50,cursor:"pointer",fontWeight:700}}>Yes, Cancel</button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))
