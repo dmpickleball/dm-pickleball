@@ -169,7 +169,7 @@ function Nav({user,onLogin,onLogout,setPage,currentPage}){
         {user?(
           <>
             <span onClick={()=>setPage("dashboard")} style={{color:Y,cursor:"pointer",fontWeight:700,fontSize:"0.92rem"}}>My Lessons</span>
-            <span onClick={()=>setPage("account")} style={{color:"white",cursor:"pointer",opacity:currentPage==="account"?1:0.7,fontSize:"0.92rem"}}>My Account</span>
+            <span onClick={()=>setPage("account")} title="Account Settings" style={{color:"white",cursor:"pointer",opacity:currentPage==="account"?1:0.7,fontSize:"1.2rem",lineHeight:1}}>⚙️</span>
             <span onClick={()=>setPage("booking")} style={{background:"rgba(255,255,255,0.15)",color:"white",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.88rem"}}>Book</span>
             <button onClick={onLogout} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.4)",color:"white",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem"}}>Log out</button>
           </>
@@ -637,7 +637,8 @@ function LoginPage({onLogin,onAdminLogin}){
                 if(!data.student.approved){setLoading(false);setError("Your account is pending approval from David.");return;}
                 if(data.student.blocked){setLoading(false);setError("Your account has been blocked. Please contact David.");return;}
                 setLoading(false);
-                onLogin({email,name:data.student.name||info.name,memberType:data.student.member_type,approved:true,picture:info.picture,phone:data.student.phone,homeCourt:data.student.home_court});
+                onLogin({email,name:data.student.name||info.name,memberType:data.student.member_type,approved:true,picture:info.picture,phone:data.student.phone,homeCourt:data.student.home_court,city:data.student.city||""});
+                fetch("/api/update-student",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,updates:{picture:info.picture}})}).catch(()=>{});
               }catch(e){setLoading(false);setError("Login failed. Please try again.");}
             })
             .catch(()=>{setLoading(false);setError("Google login failed. Please try again.");});
@@ -715,25 +716,29 @@ function LoginPage({onLogin,onAdminLogin}){
 }
 
 function AccountPage({user,setPage,onUpdateUser}){
-  const[name,setName]=useState(user.name||"");
+  const nameParts=(user.name||"").split(" ");
+  const[firstName,setFirstName]=useState(nameParts[0]||"");
+  const[lastName,setLastName]=useState(nameParts.slice(1).join(" ")||"");
   const[phone,setPhone]=useState(user.phone||"");
+  const[city,setCity]=useState(user.city||"");
   const[homeCourt,setHomeCourt]=useState(user.homeCourt||"");
   const[saving,setSaving]=useState(false);
   const[saved,setSaved]=useState(false);
   const[error,setError]=useState("");
 
   const handleSave=async()=>{
-    if(!name){setError("Name is required.");return;}
+    if(!firstName||!lastName){setError("First and last name are required.");return;}
     setSaving(true);setError("");
+    const fullName=firstName.trim()+" "+lastName.trim();
     try{
       const r=await fetch("/api/update-student",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({email:user.email,updates:{name,phone,home_court:homeCourt}})
+        body:JSON.stringify({email:user.email,updates:{name:fullName,first_name:firstName.trim(),last_name:lastName.trim(),phone,city,home_court:homeCourt}})
       });
       const data=await r.json();
       if(data.success){
-        onUpdateUser({...user,name,phone,homeCourt});
+        onUpdateUser({...user,name:fullName,firstName:firstName.trim(),lastName:lastName.trim(),phone,city,homeCourt});
         setSaved(true);
         setTimeout(()=>setSaved(false),3000);
       }else{setError("Failed to save. Please try again.");}
@@ -749,11 +754,11 @@ function AccountPage({user,setPage,onUpdateUser}){
       <div style={{background:"white",borderRadius:12,padding:"28px 32px",boxShadow:"0 2px 16px rgba(0,0,0,0.07)"}}>
         <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:28,paddingBottom:24,borderBottom:"1px solid #e5e7eb"}}>
           {user.picture
-            ?<img src={user.picture} alt={user.name} style={{width:56,height:56,borderRadius:"50%",objectFit:"cover"}}/>
-            :<div style={{width:56,height:56,borderRadius:"50%",background:G,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:"1.3rem",color:"white"}}>{(user.name||"?").charAt(0).toUpperCase()}</div>
+            ?<img src={user.picture} alt={user.name} style={{width:64,height:64,borderRadius:"50%",objectFit:"cover",border:"2px solid #e5e7eb"}}/>
+            :<div style={{width:64,height:64,borderRadius:"50%",background:G,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:"1.4rem",color:"white"}}>{(firstName||"?").charAt(0).toUpperCase()}</div>
           }
           <div>
-            <div style={{fontWeight:700,fontSize:"1rem"}}>{user.name}</div>
+            <div style={{fontWeight:700,fontSize:"1rem"}}>{firstName} {lastName}</div>
             <div style={{fontSize:"0.85rem",color:"#6b7280",marginTop:2}}>{user.email}</div>
             <span style={{background:"#e8f0ee",color:G,padding:"2px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:600,marginTop:4,display:"inline-block"}}>
               {user.memberType==="menlo"?"Menlo Circus Club":"General Student"}
@@ -762,22 +767,32 @@ function AccountPage({user,setPage,onUpdateUser}){
         </div>
         {error&&<div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:8,padding:"10px 14px",color:"#991b1b",fontSize:"0.88rem",marginBottom:16}}>{error}</div>}
         {saved&&<div style={{background:"#e8f0ee",border:"1.5px solid "+G,borderRadius:8,padding:"10px 14px",color:G,fontSize:"0.88rem",marginBottom:16,fontWeight:600}}>✓ Changes saved!</div>}
-        <div style={{marginBottom:16}}>
-          <label style={lbl}>Full Name <span style={{color:"#dc2626"}}>*</span></label>
-          <input value={name} onChange={e=>setName(e.target.value)} style={inp} placeholder="Your full name"/>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+          <div>
+            <label style={lbl}>First Name <span style={{color:"#dc2626"}}>*</span></label>
+            <input value={firstName} onChange={e=>setFirstName(e.target.value)} style={{...inp,marginBottom:0}} placeholder="First name"/>
+          </div>
+          <div>
+            <label style={lbl}>Last Name <span style={{color:"#dc2626"}}>*</span></label>
+            <input value={lastName} onChange={e=>setLastName(e.target.value)} style={{...inp,marginBottom:0}} placeholder="Last name"/>
+          </div>
         </div>
-        <div style={{marginBottom:16}}>
+        <div style={{marginBottom:16,marginTop:16}}>
           <label style={lbl}>Email</label>
           <input value={user.email} disabled style={{...inp,background:"#f3f4f6",color:"#9ca3af",cursor:"not-allowed"}}/>
-          <div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:4}}>Email is managed by Google and cannot be changed here.</div>
+          <div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:4}}>Managed by Google — cannot be changed here.</div>
         </div>
         <div style={{marginBottom:16}}>
-          <label style={lbl}>Phone Number</label>
+          <label style={lbl}>Phone Number <span style={{color:"#dc2626"}}>*</span></label>
           <input value={phone} onChange={e=>setPhone(e.target.value)} style={inp} placeholder="(650) 000-0000" type="tel"/>
+        </div>
+        <div style={{marginBottom:16}}>
+          <label style={lbl}>City <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(optional)</span></label>
+          <input value={city} onChange={e=>setCity(e.target.value)} style={inp} placeholder="e.g. Redwood City"/>
         </div>
         <div style={{marginBottom:24}}>
           <label style={lbl}>Home Court <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(optional)</span></label>
-          <input value={homeCourt} onChange={e=>setHomeCourt(e.target.value)} style={inp} placeholder="e.g. Andrew Spinas Park, Redwood City"/>
+          <input value={homeCourt} onChange={e=>setHomeCourt(e.target.value)} style={inp} placeholder="e.g. Andrew Spinas Park"/>
         </div>
         <button onClick={handleSave} disabled={saving} style={{width:"100%",background:saving?"#9ca3af":G,color:"white",border:"none",padding:"14px",borderRadius:50,fontWeight:700,cursor:saving?"not-allowed":"pointer",fontSize:"1rem"}}>
           {saving?"Saving...":"Save Changes"}
@@ -786,6 +801,7 @@ function AccountPage({user,setPage,onUpdateUser}){
     </div>
   );
 }
+
 function Dashboard({user,setPage,lessons,onCancel}){
   const upcoming=lessons.filter(l=>!isPast(l.date,l.time)&&l.status!=="cancelled");
   const history=lessons.filter(l=>isPast(l.date,l.time)||l.status==="completed");
@@ -1139,7 +1155,12 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
 
   const earnings=getEarnings(allLessons,mockUsers,earningsRange);
   const allStudents=Object.keys(allLessons);
-  const filteredStudents=allStudents.filter(email=>{
+  const sortedStudents=[...allStudents].sort((a,b)=>{
+    const aLast=(mockUsers[a]?.name||a).split(" ").slice(-1)[0].toLowerCase();
+    const bLast=(mockUsers[b]?.name||b).split(" ").slice(-1)[0].toLowerCase();
+    return aLast.localeCompare(bLast);
+  });
+  const filteredStudents=sortedStudents.filter(email=>{
     const u=mockUsers[email]||{};
     return (u.name||email).toLowerCase().includes(studentSearch.toLowerCase())||email.toLowerCase().includes(studentSearch.toLowerCase());
   });
@@ -1327,8 +1348,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                   onMouseEnter={e=>e.currentTarget.style.borderColor=G}
                   onMouseLeave={e=>e.currentTarget.style.borderColor="#e5e7eb"}>
                   <div style={{display:"flex",alignItems:"center",gap:14}}>
-                    <div style={{width:42,height:42,borderRadius:"50%",background:u.memberType==="menlo"?G:"#e8f0ee",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:"1rem",color:u.memberType==="menlo"?"white":G}}>
-                      {(u.name||email).charAt(0).toUpperCase()}
+                    <div style={{width:42,height:42,borderRadius:"50%",overflow:"hidden",background:u.memberType==="menlo"?G:"#e8f0ee",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:"1rem",color:u.memberType==="menlo"?"white":G}}>
+                      {u.picture?<img src={u.picture} alt={u.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>:(u.name||email).charAt(0).toUpperCase()}
                     </div>
                     <div>
                       <div style={{fontWeight:700,fontSize:"0.97rem"}}>{u.name||email}</div>
