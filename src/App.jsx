@@ -81,7 +81,7 @@ function getSlots(dateStr,memberType,duration){
   if(dow===0)return[];
   if(memberType==="menlo"&&dow===6)return[];
   const sb=STANFORD_BLOCKS[dow],fridayMorning=dow===5?{start:7*60+30,end:9*60}:null,slots=[];
-  const _now=new Date();const _todayStr=_now.getFullYear()+"-"+String(_now.getMonth()+1).padStart(2,"0")+"-"+String(_now.getDate()).padStart(2,"0");const isToday=dateStr===_todayStr;const nowMins=new Date().getHours()*60+new Date().getMinutes();const minStart=isToday?nowMins+180:0;for(let s=8*60;s<=maxStart;s+=30){
+  const maxStart=dow===6?10*60:16*60;const _now=new Date();const _todayStr=_now.getFullYear()+"-"+String(_now.getMonth()+1).padStart(2,"0")+"-"+String(_now.getDate()).padStart(2,"0");const isToday=dateStr===_todayStr;const nowMins=_now.getHours()*60+_now.getMinutes();const minStart=isToday?nowMins+180:0;for(let s=8*60;s<=maxStart;s+=30){
     if(isToday&&s<minStart)continue;
     const e=s+duration;
     if(sb&&s<sb.end&&e>sb.start)continue;
