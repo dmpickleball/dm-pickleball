@@ -158,6 +158,12 @@ function CalendarPicker({value,onChange,memberType}){
   );
 }
 
+function formatPhone(p){
+  const d=(p||"").replace(/\D/g,"");
+  if(d.length===10)return "("+d.slice(0,3)+") "+d.slice(3,6)+"-"+d.slice(6);
+  if(d.length===11)return "+"+d[0]+" ("+d.slice(1,4)+") "+d.slice(4,7)+"-"+d.slice(7);
+  return p;
+}
 function Nav({user,onLogin,onLogout,setPage,currentPage}){
   return(
     <nav style={{background:G,padding:"14px 32px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100}}>
@@ -1349,7 +1355,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                   onMouseLeave={e=>e.currentTarget.style.borderColor="#e5e7eb"}>
                   <div style={{display:"flex",alignItems:"center",gap:14}}>
                     <div style={{width:42,height:42,borderRadius:"50%",overflow:"hidden",background:u.memberType==="menlo"?G:"#e8f0ee",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:"1rem",color:u.memberType==="menlo"?"white":G}}>
-                      {u.picture?<img src={u.picture} alt={u.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>:(u.name||email).charAt(0).toUpperCase()}
+                      {u.picture?<img src={u.picture} alt={u.name} style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:"50%"}}/>:(u.name||email).charAt(0).toUpperCase()}
                     </div>
                     <div>
                       <div style={{fontWeight:700,fontSize:"0.97rem"}}>{u.name||email}</div>
@@ -1389,6 +1395,9 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                     <div>
                       <div style={{fontWeight:800,fontSize:"1.1rem"}}>{mockUsers[selectedStudent]?.name||selectedStudent}</div>
                       <div style={{fontSize:"0.85rem",color:"#6b7280",marginTop:2}}>{selectedStudent}</div>
+                      {mockUsers[selectedStudent]?.phone&&<div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>📱 {formatPhone(mockUsers[selectedStudent].phone)}</div>}
+                      {mockUsers[selectedStudent]?.city&&<div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>📍 {mockUsers[selectedStudent].city}</div>}
+                      {mockUsers[selectedStudent]?.homeCourt&&<div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>🏓 {mockUsers[selectedStudent].homeCourt}</div>}
                     </div>
                   )}
                 </div>
@@ -1677,9 +1686,10 @@ export default function App(){
   useEffect(()=>{
     const loadFromSupabase=async()=>{
       try{
-        const [pr,lr]=await Promise.all([
+        const [pr,lr,sr]=await Promise.all([
           fetch("/api/get-pending").then(r=>r.json()),
           fetch("/api/get-lessons").then(r=>r.json()),
+          fetch("/api/get-students").then(r=>r.json()),
         ]);
         if(pr.requests){
           setPendingStudents(pr.requests.map(r=>({
@@ -1688,27 +1698,41 @@ export default function App(){
             requestedAt:new Date(r.requested_at).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})
           })));
         }
-        if(lr.lessons){
-          const byStudent={};
+        if(sr.students){
           const users={};
-          lr.lessons.forEach(l=>{
-            if(!byStudent[l.student_email])byStudent[l.student_email]=[];
-            byStudent[l.student_email].push({
-              id:l.id,date:l.date,time:l.time,type:l.type,
-              duration:l.duration,status:l.status,focus:l.focus||"",
-              notes:l.notes||"",photos:[],videos:[],
-              gcalEventId:l.gcal_event_id||"",
-              partnerEmail:l.partner_email||"",
-              groupEmails:l.group_emails||[],
-              members:l.members||[],
-              createdAt:l.created_at||""
-            });
-            if(!users[l.student_email]){
-              users[l.student_email]={name:l.student_name||l.student_email,memberType:"public",approved:true};
-            }
+          const lessonsByStudent={};
+          sr.students.forEach(s=>{
+            users[s.email]={
+              name:s.name||s.email,
+              firstName:s.first_name||"",
+              lastName:s.last_name||"",
+              memberType:s.member_type||"public",
+              approved:s.approved,
+              blocked:s.blocked,
+              phone:s.phone||"",
+              city:s.city||"",
+              homeCourt:s.home_court||"",
+              picture:s.picture||"",
+            };
+            lessonsByStudent[s.email]=[];
           });
-          setAllLessons(byStudent);
-          setMockUsersState(prev=>({...prev,...users}));
+          if(lr.lessons){
+            lr.lessons.forEach(l=>{
+              if(!lessonsByStudent[l.student_email])lessonsByStudent[l.student_email]=[];
+              lessonsByStudent[l.student_email].push({
+                id:l.id,date:l.date,time:l.time,type:l.type,
+                duration:l.duration,status:l.status,focus:l.focus||"",
+                notes:l.notes||"",photos:[],videos:[],
+                gcalEventId:l.gcal_event_id||"",
+                partnerEmail:l.partner_email||"",
+                groupEmails:l.group_emails||[],
+                members:l.members||[],
+                createdAt:l.created_at||""
+              });
+            });
+          }
+          setAllLessons(lessonsByStudent);
+          setMockUsersState(users);
         }
       }catch(e){console.error("Supabase load error:",e);}
       setDbLoaded(true);
