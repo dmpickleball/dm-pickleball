@@ -1548,12 +1548,55 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
 
 // ─── ROOT APP ─────────────────────────────────────────────────────────────────
 export default function App(){
-  const isAdminRoute=window.location.pathname==="/admin";const[page,setPage]=useState(isAdminRoute?"adminlogin":"home");
+  const isAdminRoute=window.location.pathname==="/admin";
+  const[page,setPage]=useState(isAdminRoute?"adminlogin":"home");
   const[user,setUser]=useState(null);
   const[isAdmin,setIsAdmin]=useState(false);
-  const[allLessons,setAllLessons]=useState(INIT_LESSONS);
-  const[pendingStudents,setPendingStudents]=useState(INIT_PENDING);
-  const[mockUsersState,setMockUsersState]=useState(MOCK_USERS);
+  const[allLessons,setAllLessons]=useState({});
+  const[pendingStudents,setPendingStudents]=useState([]);
+  const[mockUsersState,setMockUsersState]=useState({});
+  const[dbLoaded,setDbLoaded]=useState(false);
+
+  useEffect(()=>{
+    const loadFromSupabase=async()=>{
+      try{
+        const [pr,lr]=await Promise.all([
+          fetch("/api/get-pending").then(r=>r.json()),
+          fetch("/api/get-lessons").then(r=>r.json()),
+        ]);
+        if(pr.requests){
+          setPendingStudents(pr.requests.map(r=>({
+            id:r.id,name:r.name,email:r.email,
+            phone:r.phone,homeCourt:r.home_court,
+            requestedAt:new Date(r.requested_at).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})
+          })));
+        }
+        if(lr.lessons){
+          const byStudent={};
+          const users={};
+          lr.lessons.forEach(l=>{
+            if(!byStudent[l.student_email])byStudent[l.student_email]=[];
+            byStudent[l.student_email].push({
+              id:l.id,date:l.date,time:l.time,type:l.type,
+              duration:l.duration,status:l.status,focus:l.focus||"",
+              notes:l.notes||"",photos:[],videos:[],
+              gcalEventId:l.gcal_event_id||"",
+              partnerEmail:l.partner_email||"",
+              groupEmails:l.group_emails||[],
+              members:l.members||[]
+            });
+            if(!users[l.student_email]){
+              users[l.student_email]={name:l.student_name||l.student_email,memberType:"public",approved:true};
+            }
+          });
+          setAllLessons(byStudent);
+          setMockUsersState(prev=>({...prev,...users}));
+        }
+      }catch(e){console.error("Supabase load error:",e);}
+      setDbLoaded(true);
+    };
+    loadFromSupabase();
+  },[]);
   const userLessons=user?allLessons[user.email]||[]:[];
   const cancelLesson=async(id)=>{
     const lesson=userLessons.find(l=>l.id===id);
