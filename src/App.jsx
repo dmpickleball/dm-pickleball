@@ -1350,7 +1350,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
               const upcoming=lessons.filter(l=>!isPast(l.date,l.time)&&l.status!=="cancelled");
               const completed=lessons.filter(l=>isPast(l.date,l.time)||l.status==="completed");
               return(
-                <div key={email} onClick={()=>setSelectedStudent(email)} style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"16px 20px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8,transition:"all 0.15s"}}
+                <div key={email} onClick={()=>{setSelectedStudent(email);setEditingStudent(false);setEditStudentData({});}} style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"16px 20px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8,transition:"all 0.15s"}}
                   onMouseEnter={e=>e.currentTarget.style.borderColor=G}
                   onMouseLeave={e=>e.currentTarget.style.borderColor="#e5e7eb"}>
                   <div style={{display:"flex",alignItems:"center",gap:14}}>
@@ -1378,7 +1378,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
 
       {tab==="students"&&selectedStudent&&!showSchedule&&(
         <div>
-          <button onClick={()=>setSelectedStudent(null)} style={{background:"none",border:"none",color:G,fontWeight:700,cursor:"pointer",fontSize:"0.88rem",marginBottom:20,padding:0}}>← Back to Students</button>
+          <button onClick={()=>{setSelectedStudent(null);setEditingStudent(false);setEditStudentData({});}} style={{background:"none",border:"none",color:G,fontWeight:700,cursor:"pointer",fontSize:"0.88rem",marginBottom:20,padding:0}}>← Back to Students</button>
           <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"24px",marginBottom:20}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12,marginBottom:20}}>
               <div style={{display:"flex",alignItems:"center",gap:16}}>
