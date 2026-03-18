@@ -24,6 +24,16 @@ const lbl = { fontSize:"0.78rem", fontWeight:700, color:"#6b7280", textTransform
 // ─── SCHEDULING DATA ─────────────────────────────────────────────────────────
 const STANFORD_BLOCKS = { 2:{start:16*60,end:17*60+30}, 3:{start:12*60,end:13*60+30}, 5:{start:9*60+30,end:11*60} };
 const PICKUP = {};
+const KNOWN_LOCATIONS = [
+  "Andrew Spinas Park, 3003 Bay Rd, Redwood City, CA 94063",
+  "Rick's Home, 60 Middlefield Rd, Atherton, CA 94027",
+  "Ann's Home, 250 Austin Ave, Atherton, CA 94027",
+  "Warren & Tricia's Home, 438 Addison Ave, Palo Alto, CA 94301",
+  "Flood Park, 215 Bay Rd, Menlo Park, CA 94025",
+  "Kelly Park, 100 Terminal Ave, Menlo Park, CA 94025",
+  "Mitchell Park, 600 E Meadow Dr, Palo Alto, CA 94303",
+  "Nealon Park, 800 Middle Ave, Menlo Park, CA 94025",
+];
 const FOCUS_AREAS = ["Dinking & kitchen game","Third shot drops","Serve & return","Volleys & net play","Footwork & movement","Transition game","Overhead smash","Singles strategy","Doubles strategy","Tennis-to-pickleball transition","Drives"];
 
 // ─── BRANDS ──────────────────────────────────────────────────────────────────
@@ -1688,7 +1698,15 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 </div>
                 {customLocation&&(
                   <div style={{marginTop:12}}>
-                    <input id="sched-location-input" value={schedLocation} onChange={e=>setSchedLocation(e.target.value)} onKeyDown={e=>e.key==="Enter"&&e.preventDefault()} placeholder="e.g. 60 Middlefield Rd, Atherton" style={{...inp,marginBottom:0}}/>
+                    {/* Location dropdown */}
+                    <select value={KNOWN_LOCATIONS.includes(schedLocation)?schedLocation:"custom"} onChange={e=>{if(e.target.value!=="custom"){setSchedLocation(e.target.value);}else{setSchedLocation("");}}} style={{...inp,marginBottom:schedLocation&&!KNOWN_LOCATIONS.includes(schedLocation)?8:0}}>
+                      <option value="">Select a location...</option>
+                      {KNOWN_LOCATIONS.map(l=>(<option key={l} value={l}>{l}</option>))}
+                      <option value="custom">+ Enter custom address</option>
+                    </select>
+                    {(!KNOWN_LOCATIONS.includes(schedLocation)&&schedLocation!=="")&&(
+                      <input value={schedLocation} onChange={e=>setSchedLocation(e.target.value)} placeholder="Enter custom address..." style={{...inp,marginBottom:0}}/>
+                    )}
                   </div>
                 )}
               </div>
