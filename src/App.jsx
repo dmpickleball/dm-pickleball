@@ -866,7 +866,7 @@ function BookingPage({user,setPage,onAddLesson}){
   const PRICES={private:{60:isMenlo?115:130,90:isMenlo?172.50:195},semi:{60:isMenlo?60:70,90:isMenlo?90:105},group:{60:140,90:210}};
   const LESSONS=[{id:"private",icon:"🎯",label:"Private",desc:"1-on-1 coaching"},{id:"semi",icon:"👥",label:"Semi-Private",desc:"Always 2 students"},{id:"group",icon:"🏆",label:"Group",desc:"3-5 students"}];
   const price=lessonType&&duration?PRICES[lessonType][duration]:null;
-  const slots=date?getSlots(date,isMenlo?"menlo":"public",duration||60).filter(s=>!busyTimes.some(b=>s.s<(b.endMins+(b.bufferAfter||30))&&s.e>(b.startMins-(b.bufferBefore||30)))):[];
+  const slots=date?getSlots(date,isMenlo?"menlo":"public",duration||60).filter(s=>!busyTimes.some(b=>{const bufA=b.bufferAfter??30;const bufB=b.bufferBefore??30;return s.s<(b.endMins+bufA)&&s.e>(b.startMins-bufB);})):[];
   const toTime24=(mins)=>{const h=Math.floor(mins/60),m=mins%60;return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");};
   const toTimeStr=(s,e)=>fmt(s)+" - "+fmt(e);
 
@@ -1184,7 +1184,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
 
   const SCHED_PRICES={private:{60:selectedStudent&&mockUsers[selectedStudent]?.memberType==="menlo"?115:130,90:selectedStudent&&mockUsers[selectedStudent]?.memberType==="menlo"?172.50:195},semi:{60:selectedStudent&&mockUsers[selectedStudent]?.memberType==="menlo"?60:70,90:selectedStudent&&mockUsers[selectedStudent]?.memberType==="menlo"?90:105},group:{60:140,90:210}};
   const schedIsMenlo=selectedStudent&&mockUsers[selectedStudent]?.memberType==="menlo";
-  const schedSlots=schedDate?getSlots(schedDate,schedIsMenlo?"menlo":"public",schedDuration).filter(s=>!schedBusyTimes.some(b=>s.s<(b.endMins+(b.bufferAfter||30))&&s.e>(b.startMins-(b.bufferBefore||30)))):[];
+  const schedSlots=schedDate?getSlots(schedDate,schedIsMenlo?"menlo":"public",schedDuration).filter(s=>!schedBusyTimes.some(b=>{const bufA=b.bufferAfter??30;const bufB=b.bufferBefore??30;return s.s<(b.endMins+bufA)&&s.e>(b.startMins-bufB);})):[];
   const toTime24=(mins)=>{const h=Math.floor(mins/60),m=mins%60;return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");};
   const toTimeStr=(s,e)=>fmt(s)+" - "+fmt(e);
 
