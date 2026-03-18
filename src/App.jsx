@@ -164,6 +164,26 @@ function formatPhone(p){
   if(d.length===11)return "+"+d[0]+" ("+d.slice(1,4)+") "+d.slice(4,7)+"-"+d.slice(7);
   return p;
 }
+function usePlacesAutocomplete(inputId, onSelect) {
+  useEffect(()=>{
+    const tryInit=()=>{
+      const input=document.getElementById(inputId);
+      if(!input||!window.google?.maps?.places)return;
+      const ac=new window.google.maps.places.Autocomplete(input,{
+        types:["establishment","geocode"],
+        componentRestrictions:{country:"us"}
+      });
+      ac.addListener("place_changed",()=>{
+        const place=ac.getPlace();
+        if(place.name||place.formatted_address){
+          onSelect(place.name?place.name+(place.formatted_address?", "+place.formatted_address:""):place.formatted_address);
+        }
+      });
+    };
+    const timer=setTimeout(tryInit,500);
+    return()=>clearTimeout(timer);
+  },[inputId]);
+}
 function Nav({user,onLogin,onLogout,setPage,currentPage}){
   return(
     <nav style={{background:G,padding:"14px 32px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100}}>
@@ -694,7 +714,7 @@ function LoginPage({onLogin,onAdminLogin}){
           <>
             <input style={inp} type="text" placeholder="Full Name (required)" value={name} onChange={e=>setName(e.target.value)}/>
             <input style={inp} type="tel" placeholder="Phone Number (required)" value={phone} onChange={e=>setPhone(e.target.value)}/>
-            <input style={inp} type="text" placeholder="Home Court (optional)" value={homeCourt} onChange={e=>setHomeCourt(e.target.value)}/>
+            <input id="signup-home-court" style={inp} type="text" placeholder="Home Court (optional)" value={homeCourt} onChange={e=>setHomeCourt(e.target.value)}/>
             <p style={{fontSize:"0.82rem",color:"#6b7280",marginBottom:16,lineHeight:1.6}}>You will sign in with Google. Please provide your details so David can approve your account.</p>
             <button onClick={()=>{
               if(!name||!phone){setError("Name and phone number are required.");return;}
@@ -727,7 +747,7 @@ function AccountPage({user,setPage,onUpdateUser}){
   const[lastName,setLastName]=useState(nameParts.slice(1).join(" ")||"");
   const[phone,setPhone]=useState(user.phone||"");
   const[city,setCity]=useState(user.city||"");
-  const[homeCourt,setHomeCourt]=useState(user.homeCourt||"");
+  const[homeCourt,setHomeCourt]=useState(user.homeCourt||"");usePlacesAutocomplete("account-home-court",v=>setHomeCourt(v));
   const[saving,setSaving]=useState(false);
   const[saved,setSaved]=useState(false);
   const[error,setError]=useState("");
@@ -798,7 +818,7 @@ function AccountPage({user,setPage,onUpdateUser}){
         </div>
         <div style={{marginBottom:24}}>
           <label style={lbl}>Home Court <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(optional)</span></label>
-          <input value={homeCourt} onChange={e=>setHomeCourt(e.target.value)} style={inp} placeholder="e.g. Andrew Spinas Park"/>
+          <input id="account-home-court" value={homeCourt} onChange={e=>setHomeCourt(e.target.value)} style={inp} placeholder="e.g. Andrew Spinas Park"/>
         </div>
         <button onClick={handleSave} disabled={saving} style={{width:"100%",background:saving?"#9ca3af":G,color:"white",border:"none",padding:"14px",borderRadius:50,fontWeight:700,cursor:saving?"not-allowed":"pointer",fontSize:"1rem"}}>
           {saving?"Saving...":"Save Changes"}
@@ -1275,7 +1295,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[studentSearch,setStudentSearch]=useState("");
   const[selectedStudent,setSelectedStudent]=useState(null);
   const[editingStudent,setEditingStudent]=useState(false);
-  const[editStudentData,setEditStudentData]=useState({});
+  const[editStudentData,setEditStudentData]=useState({});usePlacesAutocomplete("admin-home-court",v=>setEditStudentData(prev=>({...prev,homeCourt:v})));
   const[showSchedule,setShowSchedule]=useState(false);
   const[earningsRange,setEarningsRange]=useState("month");
   const[financeRange,setFinanceRange]=useState("month");
@@ -1542,7 +1562,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                       <input value={selectedStudent} disabled style={{...inp,marginBottom:8,fontSize:"0.85rem",background:"#f3f4f6",color:"#9ca3af",cursor:"not-allowed"}}/>
                       <input value={editStudentData.phone||""} onChange={e=>setEditStudentData({...editStudentData,phone:e.target.value})} style={{...inp,marginBottom:8,fontSize:"0.85rem"}} placeholder="Phone Number"/>
                       <input value={editStudentData.city||""} onChange={e=>setEditStudentData({...editStudentData,city:e.target.value})} style={{...inp,marginBottom:8,fontSize:"0.85rem"}} placeholder="City"/>
-                      <input value={editStudentData.homeCourt||""} onChange={e=>setEditStudentData({...editStudentData,homeCourt:e.target.value})} style={{...inp,marginBottom:0,fontSize:"0.85rem"}} placeholder="Home Court"/>
+                      <input id="admin-home-court" value={editStudentData.homeCourt||""} onChange={e=>setEditStudentData({...editStudentData,homeCourt:e.target.value})} style={{...inp,marginBottom:0,fontSize:"0.85rem"}} placeholder="Home Court"/>
                     </div>
                   ):(
                     <div>
