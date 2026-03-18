@@ -1127,6 +1127,149 @@ function getEarnings(allLessons,mockUsers,range){
   return{total,menloGross,menloNet,rows};
 }
 
+function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeStanford,financeData,setFinanceData,financeLoading,setFinanceLoading,allLessons,mockUsers}){
+  const now=new Date();
+  const getDateRange=(range)=>{
+    const end=new Date();
+    let start=new Date();
+    if(range==="week"){start.setDate(now.getDate()-now.getDay());}
+    else if(range==="month"){start=new Date(now.getFullYear(),now.getMonth(),1);}
+    else if(range==="year"){start=new Date(now.getFullYear(),0,1);}
+    const fmt=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    return{start:fmt(start),end:fmt(end)};
+  };
+  const loadFinances=async(range,withStanford)=>{
+    setFinanceLoading(true);
+    const{start,end}=getDateRange(range);
+    try{
+      const r=await fetch("/api/earnings-calendar?start="+start+"&end="+end+"&includeStanford="+(withStanford?"true":"false"));
+      const data=await r.json();
+      setFinanceData(data);
+    }catch(e){console.error("Finance load error:",e);}
+    setFinanceLoading(false);
+  };
+  useEffect(()=>{loadFinances(financeRange,includeStanford);},[]);
+  const handleRangeChange=(r)=>{setFinanceRange(r);loadFinances(r,includeStanford);};
+  const handleStanfordToggle=()=>{const next=!includeStanford;setIncludeStanford(next);loadFinances(financeRange,next);};
+  const portalEarnings=getEarnings(allLessons,mockUsers,financeRange);
+  const typeColors={private:"#1a3c34",semi:"#0ea5e9",group:"#f97316",stanford_rec:"#8b5cf6",stanford_open:"#8b5cf6"};
+  const calendarLessons=(financeData?.events||[]).filter(e=>!e.isStanford);
+  const stanfordEvents=(financeData?.events||[]).filter(e=>e.isStanford);
+  const totalEarnings=(financeData?.lessonEarnings||0)+portalEarnings.total+(includeStanford?(financeData?.stanfordEarnings||0):0);
+  return(
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:12}}>
+        <div style={{display:"flex",gap:8}}>
+          {["week","month","year"].map(r=>(
+            <button key={r} onClick={()=>handleRangeChange(r)} style={{background:financeRange===r?"#1a3c34":"white",color:financeRange===r?"white":"#374151",border:"1.5px solid "+(financeRange===r?"#1a3c34":"#e5e7eb"),padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:financeRange===r?700:500}}>
+              {r.charAt(0).toUpperCase()+r.slice(1)}
+            </button>
+          ))}
+        </div>
+        <button onClick={handleStanfordToggle} style={{background:includeStanford?"#8b5cf6":"white",color:includeStanford?"white":"#374151",border:"1.5px solid "+(includeStanford?"#8b5cf6":"#e5e7eb"),padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:600}}>
+          {includeStanford?"✓ Stanford Included":"+ Include Stanford"}
+        </button>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:16,marginBottom:28}}>
+        <div style={{background:"white",borderRadius:12,padding:"20px",border:"1.5px solid #e5e7eb"}}>
+          <div style={{fontSize:"0.7rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Total Earnings</div>
+          <div style={{fontSize:"1.8rem",fontWeight:900,color:"#1a3c34"}}>${totalEarnings.toFixed(2)}</div>
+          <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:4}}>This {financeRange}</div>
+        </div>
+        <div style={{background:"white",borderRadius:12,padding:"20px",border:"1.5px solid #e5e7eb"}}>
+          <div style={{fontSize:"0.7rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Portal Lessons</div>
+          <div style={{fontSize:"1.8rem",fontWeight:900,color:"#1a3c34"}}>${portalEarnings.total.toFixed(2)}</div>
+          <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:4}}>{portalEarnings.rows.length} lessons</div>
+        </div>
+        <div style={{background:"white",borderRadius:12,padding:"20px",border:"1.5px solid #e5e7eb"}}>
+          <div style={{fontSize:"0.7rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Calendar Lessons</div>
+          <div style={{fontSize:"1.8rem",fontWeight:900,color:"#1a3c34"}}>${(financeData?.lessonEarnings||0).toFixed(2)}</div>
+          <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:4}}>{calendarLessons.length} lessons</div>
+        </div>
+        {includeStanford&&(
+          <div style={{background:"#f5f3ff",borderRadius:12,padding:"20px",border:"1.5px solid #8b5cf6"}}>
+            <div style={{fontSize:"0.7rem",fontWeight:700,color:"#8b5cf6",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Stanford</div>
+            <div style={{fontSize:"1.8rem",fontWeight:900,color:"#8b5cf6"}}>${(financeData?.stanfordEarnings||0).toFixed(2)}</div>
+            <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:4}}>{(financeData?.stanfordHours||0).toFixed(1)} hrs</div>
+          </div>
+        )}
+      </div>
+      {financeLoading?(
+        <div style={{textAlign:"center",padding:"40px",color:"#6b7280"}}>Loading financial data...</div>
+      ):(
+        <>
+          {calendarLessons.length>0&&(
+            <div style={{marginBottom:24}}>
+              <div style={{fontSize:"0.8rem",fontWeight:700,color:"#1a3c34",textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Calendar Lessons</div>
+              <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
+                <table style={{width:"100%",borderCollapse:"collapse",fontSize:"0.88rem"}}>
+                  <thead><tr style={{background:"#f9f9f6",borderBottom:"1.5px solid #e5e7eb"}}>{["Date","Event","Type","Hours","Earnings"].map(h=>(<th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#6b7280",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>))}</tr></thead>
+                  <tbody>
+                    {calendarLessons.map((e,i)=>(
+                      <tr key={i} style={{borderBottom:"1px solid #f3f4f6"}}>
+                        <td style={{padding:"12px 16px"}}>{fmtDateShort(e.date)}</td>
+                        <td style={{padding:"12px 16px",maxWidth:180,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.summary}</td>
+                        <td style={{padding:"12px 16px"}}><span style={{background:(typeColors[e.type]||"#666")+"22",color:typeColors[e.type]||"#666",padding:"2px 8px",borderRadius:50,fontSize:"0.72rem",fontWeight:700}}>{e.category}</span></td>
+                        <td style={{padding:"12px 16px"}}>{e.hours}h</td>
+                        <td style={{padding:"12px 16px",fontWeight:700,color:"#1a3c34"}}>${e.earnings}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          {includeStanford&&stanfordEvents.length>0&&(
+            <div style={{marginBottom:24}}>
+              <div style={{fontSize:"0.8rem",fontWeight:700,color:"#8b5cf6",textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Stanford Events</div>
+              <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
+                <table style={{width:"100%",borderCollapse:"collapse",fontSize:"0.88rem"}}>
+                  <thead><tr style={{background:"#faf5ff",borderBottom:"1.5px solid #e5e7eb"}}>{["Date","Event","Type","Hours","Earnings"].map(h=>(<th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#8b5cf6",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>))}</tr></thead>
+                  <tbody>
+                    {stanfordEvents.map((e,i)=>(
+                      <tr key={i} style={{borderBottom:"1px solid #f3f4f6",background:"#faf5ff"}}>
+                        <td style={{padding:"12px 16px"}}>{fmtDateShort(e.date)}</td>
+                        <td style={{padding:"12px 16px",maxWidth:180,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.summary}</td>
+                        <td style={{padding:"12px 16px"}}><span style={{background:"#8b5cf622",color:"#8b5cf6",padding:"2px 8px",borderRadius:50,fontSize:"0.72rem",fontWeight:700}}>{e.category}</span></td>
+                        <td style={{padding:"12px 16px"}}>{e.hours}h</td>
+                        <td style={{padding:"12px 16px",fontWeight:700,color:"#8b5cf6"}}>${e.earnings}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          {portalEarnings.rows.length>0&&(
+            <div>
+              <div style={{fontSize:"0.8rem",fontWeight:700,color:"#1a3c34",textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Portal Lessons</div>
+              <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
+                <table style={{width:"100%",borderCollapse:"collapse",fontSize:"0.88rem"}}>
+                  <thead><tr style={{background:"#f9f9f6",borderBottom:"1.5px solid #e5e7eb"}}>{["Date","Student","Type","Duration","Your Cut"].map(h=>(<th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#6b7280",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>))}</tr></thead>
+                  <tbody>
+                    {portalEarnings.rows.map((r,i)=>(
+                      <tr key={i} style={{borderBottom:"1px solid #f3f4f6",background:r.isMenlo?"#f0faf5":"white"}}>
+                        <td style={{padding:"12px 16px"}}>{fmtDateShort(r.date)}</td>
+                        <td style={{padding:"12px 16px"}}>{r.name}{r.isMenlo&&<span style={{background:"#1a3c34",color:"white",fontSize:"0.65rem",fontWeight:700,padding:"1px 6px",borderRadius:50,marginLeft:6}}>MCC</span>}</td>
+                        <td style={{padding:"12px 16px"}}>{r.type}</td>
+                        <td style={{padding:"12px 16px"}}>{r.duration}</td>
+                        <td style={{padding:"12px 16px",fontWeight:700,color:"#1a3c34"}}>${r.net}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          {calendarLessons.length===0&&portalEarnings.rows.length===0&&!financeLoading&&(
+            <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"40px",textAlign:"center",color:"#9ca3af"}}>No earnings data found for this period.</div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,onApprove,onDeny,mockUsers,onAddStudent,onAddLesson,onToggleMenlo,onToggleSaturday,onBlockStudent}){
   const[tab,setTab]=useState(pendingStudents.length>0?"pending":"students");
   const[studentSearch,setStudentSearch]=useState("");
@@ -1135,6 +1278,10 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[editStudentData,setEditStudentData]=useState({});
   const[showSchedule,setShowSchedule]=useState(false);
   const[earningsRange,setEarningsRange]=useState("month");
+  const[financeRange,setFinanceRange]=useState("month");
+  const[includeStanford,setIncludeStanford]=useState(false);
+  const[financeData,setFinanceData]=useState(null);
+  const[financeLoading,setFinanceLoading]=useState(false);
   const[showNialExport,setShowNialExport]=useState(false);
   const[nialStart,setNialStart]=useState("");
   const[nialEnd,setNialEnd]=useState("");
@@ -1294,7 +1441,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
       </div>
 
       <div style={{display:"flex",gap:0,borderBottom:"2px solid #e5e7eb",marginBottom:28,flexWrap:"wrap"}}>
-        {[["pending","Pending"+(pendingStudents.length>0?" ("+pendingStudents.length+")":"")],["students","Students"],["lessons","Lessons"],["earnings","Earnings"]].map(([t,label])=>(
+        {[["pending","Pending"+(pendingStudents.length>0?" ("+pendingStudents.length+")":"")],["students","Students"],["lessons","Lessons"],["earnings","Earnings"],["finances","Finances"]].map(([t,label])=>(
           <button key={t} onClick={()=>{setTab(t);setSelectedStudent(null);setShowSchedule(false);}}
             style={{background:"none",border:"none",borderBottom:"2px solid "+(tab===t?G:"transparent"),marginBottom:-2,padding:"10px 20px",fontSize:"0.88rem",fontWeight:tab===t?700:500,color:tab===t?G:"#6b7280",cursor:"pointer"}}>
             {label}
@@ -1650,6 +1797,20 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
         </div>
       )}
 
+      {tab==="finances"&&(
+        <FinancesTab
+          financeRange={financeRange}
+          setFinanceRange={setFinanceRange}
+          includeStanford={includeStanford}
+          setIncludeStanford={setIncludeStanford}
+          financeData={financeData}
+          setFinanceData={setFinanceData}
+          financeLoading={financeLoading}
+          setFinanceLoading={setFinanceLoading}
+          allLessons={allLessons}
+          mockUsers={mockUsers}
+        />
+      )}
       {tab==="earnings"&&(
         <div>
           <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:16}}>Earnings — This {earningsRange.charAt(0).toUpperCase()+earningsRange.slice(1)}</div>
