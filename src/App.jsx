@@ -1137,6 +1137,116 @@ function getEarnings(allLessons,mockUsers,range){
   return{total,menloGross,menloNet,rows};
 }
 
+function LocationsTab({locations,setLocations}){
+  const[editingId,setEditingId]=useState(null);
+  const[editName,setEditName]=useState("");
+  const[editAddress,setEditAddress]=useState("");
+  const[adding,setAdding]=useState(false);
+  const[newName,setNewName]=useState("");
+  const[newAddress,setNewAddress]=useState("");
+  const[deleteConfirm,setDeleteConfirm]=useState(null);
+  const[saving,setSaving]=useState(false);
+
+  const startEdit=(loc)=>{setEditingId(loc.id);setEditName(loc.name);setEditAddress(loc.address);};
+  const cancelEdit=()=>{setEditingId(null);setEditName("");setEditAddress("");};
+
+  const saveEdit=async(id)=>{
+    setSaving(true);
+    await fetch("/api/locations?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id,name:editName,address:editAddress})});
+    setLocations(prev=>prev.map(l=>l.id===id?{...l,name:editName,address:editAddress}:l));
+    cancelEdit();
+    setSaving(false);
+  };
+
+  const handleDelete=async(id)=>{
+    await fetch("/api/locations?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})});
+    setLocations(prev=>prev.filter(l=>l.id!==id));
+    setDeleteConfirm(null);
+  };
+
+  const handleAdd=async()=>{
+    if(!newName||!newAddress)return;
+    setSaving(true);
+    const r=await fetch("/api/locations?action=add",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:newName,address:newAddress})});
+    const data=await r.json();
+    if(data.location)setLocations(prev=>[...prev,data.location].sort((a,b)=>a.name.localeCompare(b.name)));
+    setNewName("");setNewAddress("");setAdding(false);
+    setSaving(false);
+  };
+
+  return(
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+        <div>
+          <div style={{fontWeight:800,fontSize:"1.1rem"}}>Known Locations</div>
+          <div style={{fontSize:"0.82rem",color:"#6b7280",marginTop:2}}>Manage locations used in scheduling</div>
+        </div>
+        <button onClick={()=>{setAdding(true);setEditingId(null);}} style={{background:G,color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.88rem"}}>+ Add Location</button>
+      </div>
+
+      {adding&&(
+        <div style={{background:"#e8f0ee",borderRadius:12,padding:"20px",marginBottom:20,border:"1.5px solid "+G}}>
+          <div style={{fontWeight:700,marginBottom:12,color:G}}>Add New Location</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+            <div>
+              <label style={lbl}>Location Name</label>
+              <input value={newName} onChange={e=>setNewName(e.target.value)} placeholder="e.g. Nealon Park" style={{...inp,marginBottom:0}}/>
+            </div>
+            <div>
+              <label style={lbl}>Address</label>
+              <input value={newAddress} onChange={e=>setNewAddress(e.target.value)} placeholder="e.g. 800 Middle Ave, Menlo Park, CA 94025" style={{...inp,marginBottom:0}}/>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={()=>{setAdding(false);setNewName("");setNewAddress("");}} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"8px 20px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}>Cancel</button>
+            <button onClick={handleAdd} disabled={!newName||!newAddress||saving} style={{background:G,color:"white",border:"none",padding:"8px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>Save Location</button>
+          </div>
+        </div>
+      )}
+
+      <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
+        {locations.length===0?(
+          <div style={{padding:"40px",textAlign:"center",color:"#9ca3af"}}>No locations yet. Add one above.</div>
+        ):locations.map((loc,i)=>(
+          <div key={loc.id} style={{padding:"16px 20px",borderBottom:i<locations.length-1?"1px solid #f3f4f6":"none",display:"flex",alignItems:"center",gap:12}}>
+            {editingId===loc.id?(
+              <div style={{flex:1,display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                <input value={editName} onChange={e=>setEditName(e.target.value)} style={{...inp,marginBottom:0,fontSize:"0.88rem"}} placeholder="Name"/>
+                <input value={editAddress} onChange={e=>setEditAddress(e.target.value)} style={{...inp,marginBottom:0,fontSize:"0.88rem"}} placeholder="Address"/>
+              </div>
+            ):(
+              <div style={{flex:1}}>
+                <div style={{fontWeight:700,fontSize:"0.95rem"}}>{loc.name}</div>
+                <div style={{fontSize:"0.82rem",color:"#6b7280",marginTop:2}}>{loc.address}</div>
+              </div>
+            )}
+            <div style={{display:"flex",gap:8,flexShrink:0}}>
+              {editingId===loc.id?(
+                <>
+                  <button onClick={()=>saveEdit(loc.id)} disabled={saving} style={{background:G,color:"white",border:"none",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.8rem"}}>Save</button>
+                  <button onClick={cancelEdit} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem"}}>Cancel</button>
+                </>
+              ):(
+                <>
+                  <button onClick={()=>startEdit(loc)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>Edit</button>
+                  {deleteConfirm===loc.id?(
+                    <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                      <span style={{fontSize:"0.78rem",color:"#dc2626",fontWeight:600}}>Delete?</span>
+                      <button onClick={()=>handleDelete(loc.id)} style={{background:"#dc2626",color:"white",border:"none",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>Yes</button>
+                      <button onClick={()=>setDeleteConfirm(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem"}}>No</button>
+                    </div>
+                  ):(
+                    <button onClick={()=>setDeleteConfirm(loc.id)} style={{background:"white",border:"1.5px solid #fca5a5",color:"#dc2626",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>Delete</button>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeStanford,financeData,setFinanceData,financeLoading,setFinanceLoading,allLessons,mockUsers}){
   const now=new Date();
   const getDateRange=(range)=>{
@@ -1288,7 +1398,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[editStudentData,setEditStudentData]=useState({});
   const[showSchedule,setShowSchedule]=useState(false);
   const[earningsRange,setEarningsRange]=useState("month");
-  const[financeRange,setFinanceRange]=useState("month");
+  const[financeRange,setFinanceRange]=useState("month");const[locations,setLocations]=useState([]);
   const[includeStanford,setIncludeStanford]=useState(false);
   const[financeData,setFinanceData]=useState(null);
   const[financeLoading,setFinanceLoading]=useState(false);
@@ -1452,7 +1562,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
       </div>
 
       <div style={{display:"flex",gap:0,borderBottom:"2px solid #e5e7eb",marginBottom:28,flexWrap:"wrap"}}>
-        {[["pending","Pending"+(pendingStudents.length>0?" ("+pendingStudents.length+")":"")],["students","Students"],["lessons","Lessons"],["earnings","Earnings"],["finances","Finances"]].map(([t,label])=>(
+        {[["pending","Pending"+(pendingStudents.length>0?" ("+pendingStudents.length+")":"")],["students","Students"],["lessons","Lessons"],["earnings","Earnings"],["finances","Finances"],["locations","Locations"]].map(([t,label])=>(
           <button key={t} onClick={()=>{setTab(t);setSelectedStudent(null);setShowSchedule(false);}}
             style={{background:"none",border:"none",borderBottom:"2px solid "+(tab===t?G:"transparent"),marginBottom:-2,padding:"10px 20px",fontSize:"0.88rem",fontWeight:tab===t?700:500,color:tab===t?G:"#6b7280",cursor:"pointer"}}>
             {label}
@@ -1837,6 +1947,9 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
         </div>
       )}
 
+      {tab==="locations"&&(
+        <LocationsTab locations={locations} setLocations={setLocations}/>
+      )}
       {tab==="finances"&&(
         <FinancesTab
           financeRange={financeRange}
@@ -1897,10 +2010,11 @@ export default function App(){
   useEffect(()=>{
     const loadFromSupabase=async()=>{
       try{
-        const [pr,lr,sr]=await Promise.all([
+        const [pr,lr,sr,locr]=await Promise.all([
           fetch("/api/students?action=pending").then(r=>r.json()),
           fetch("/api/lessons?action=list").then(r=>r.json()),
           fetch("/api/students?action=list").then(r=>r.json()),
+          fetch("/api/locations?action=list").then(r=>r.json()),
         ]);
         if(pr.requests){
           setPendingStudents(pr.requests.map(r=>({
@@ -1946,6 +2060,7 @@ export default function App(){
           setMockUsersState(users);
         }
       }catch(e){console.error("Supabase load error:",e);}
+      if(locr.locations)setLocations(locr.locations);
       setDbLoaded(true);
     };
     loadFromSupabase();
