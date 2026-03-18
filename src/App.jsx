@@ -1398,7 +1398,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[editStudentData,setEditStudentData]=useState({});
   const[showSchedule,setShowSchedule]=useState(false);
   const[earningsRange,setEarningsRange]=useState("month");
-  const[financeRange,setFinanceRange]=useState("month");const[locations,setLocations]=useState([]);
+  const[financeRange,setFinanceRange]=useState("month");
   const[includeStanford,setIncludeStanford]=useState(false);
   const[financeData,setFinanceData]=useState(null);
   const[financeLoading,setFinanceLoading]=useState(false);
