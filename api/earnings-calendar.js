@@ -17,7 +17,7 @@ function getDurationHrs(start, end) {
 function categorizeEvent(summary, location) {
   const s = (summary || '').toLowerCase();
   const l = (location || '').toLowerCase();
-  const isMenlo = l.includes('190 park') || l.includes('atherton');
+  const isMenlo = l.includes('190 park') || l.includes('190 park ln');
   if (isMenlo) return null;
 
   if (s.includes('stanford rec')) {
