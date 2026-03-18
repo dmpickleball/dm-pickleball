@@ -1717,13 +1717,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 </div>
                 {customLocation&&(
                   <div style={{marginTop:12}}>
-                    <input
-                      id="sched-location-input"
-                      value={schedLocation}
-                      onChange={e=>setSchedLocation(e.target.value)}
-                      placeholder="Search for a location..."
-                      style={{...inp,marginBottom:0}}
-                    />
+                    <div id="sched-location-container" style={{width:"100%"}}></div>
+                    {schedLocation&&<div style={{fontSize:"0.82rem",color:G,marginTop:6,fontWeight:600}}>📍 {schedLocation}</div>}
                   </div>
                 )}
               </div>
