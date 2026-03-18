@@ -164,26 +164,6 @@ function formatPhone(p){
   if(d.length===11)return "+"+d[0]+" ("+d.slice(1,4)+") "+d.slice(4,7)+"-"+d.slice(7);
   return p;
 }
-function usePlacesAutocomplete(inputId, onSelect) {
-  useEffect(()=>{
-    const tryInit=()=>{
-      const input=document.getElementById(inputId);
-      if(!input||!window.google?.maps?.places)return;
-      const ac=new window.google.maps.places.Autocomplete(input,{
-        types:["establishment","geocode"],
-        componentRestrictions:{country:"us"}
-      });
-      ac.addListener("place_changed",()=>{
-        const place=ac.getPlace();
-        if(place.name||place.formatted_address){
-          onSelect(place.name?place.name+(place.formatted_address?", "+place.formatted_address:""):place.formatted_address);
-        }
-      });
-    };
-    const timer=setTimeout(tryInit,500);
-    return()=>clearTimeout(timer);
-  },[inputId]);
-}
 function Nav({user,onLogin,onLogout,setPage,currentPage}){
   return(
     <nav style={{background:G,padding:"14px 32px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100}}>
@@ -747,7 +727,7 @@ function AccountPage({user,setPage,onUpdateUser}){
   const[lastName,setLastName]=useState(nameParts.slice(1).join(" ")||"");
   const[phone,setPhone]=useState(user.phone||"");
   const[city,setCity]=useState(user.city||"");
-  const[homeCourt,setHomeCourt]=useState(user.homeCourt||"");usePlacesAutocomplete("account-home-court",v=>setHomeCourt(v));
+  const[homeCourt,setHomeCourt]=useState(user.homeCourt||"");
   const[saving,setSaving]=useState(false);
   const[saved,setSaved]=useState(false);
   const[error,setError]=useState("");
@@ -1295,7 +1275,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[studentSearch,setStudentSearch]=useState("");
   const[selectedStudent,setSelectedStudent]=useState(null);
   const[editingStudent,setEditingStudent]=useState(false);
-  const[editStudentData,setEditStudentData]=useState({});usePlacesAutocomplete("admin-home-court",v=>setEditStudentData(prev=>({...prev,homeCourt:v})));
+  const[editStudentData,setEditStudentData]=useState({});
   const[showSchedule,setShowSchedule]=useState(false);
   const[earningsRange,setEarningsRange]=useState("month");
   const[financeRange,setFinanceRange]=useState("month");
@@ -1323,16 +1303,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[schedBusyTimes,setSchedBusyTimes]=useState([]);
   const[schedLoadingSlots,setSchedLoadingSlots]=useState(false);
   const[schedSubmitting,setSchedSubmitting]=useState(false);const[customLocation,setCustomLocation]=useState(false);const[schedLocation,setSchedLocation]=useState("");
-  useEffect(()=>{
-    if(!customLocation)return;
-    const timer=setTimeout(()=>{
-      const input=document.getElementById("sched-location-input");
-      if(!input||!window.google?.maps?.places)return;
-      const ac=new window.google.maps.places.Autocomplete(input,{types:["establishment","geocode"],componentRestrictions:{country:"us"}});
-      ac.addListener("place_changed",()=>{const place=ac.getPlace();if(place.formatted_address)setSchedLocation(place.formatted_address);else if(place.name)setSchedLocation(place.name);});
-    },300);
-    return()=>clearTimeout(timer);
-  },[customLocation]);
+  
   const[showAddStudent,setShowAddStudent]=useState(false);
   const[newStudent,setNewStudent]=useState({name:"",email:"",memberType:"public"});
 
