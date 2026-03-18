@@ -1717,7 +1717,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 </div>
                 {customLocation&&(
                   <div style={{marginTop:12}}>
-                    <input id="sched-location-input" value={schedLocation} onChange={e=>setSchedLocation(e.target.value)} placeholder="e.g. 60 Middlefield Rd, Atherton" style={{...inp,marginBottom:0}}/>
+                    <input id="sched-location-input" value={schedLocation} onChange={e=>setSchedLocation(e.target.value)} onKeyDown={e=>e.key==="Enter"&&e.preventDefault()} placeholder="e.g. 60 Middlefield Rd, Atherton" style={{...inp,marginBottom:0}}/>
                   </div>
                 )}
               </div>
