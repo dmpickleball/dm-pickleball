@@ -348,7 +348,7 @@ function PricingPage(){
         <p style={{color:"#6b7280",marginTop:8}}>SF Peninsula, Bay Area</p>
       </div>
       <div style={{display:"grid",gap:16}}>
-        {[["🎯","Private Lesson","1-on-1 personalized coaching","$130/hr"],["👥","Semi-Private","Always 2 students · $70/person","$140/hr total"],["🏆","Group Lesson","3–5 students · split equally","$140/hr total"]].map(([icon,title,desc,price])=>(
+        {[["🎯","Private Lesson","1-on-1 personalized coaching","$120/hr"],["👥","Semi-Private","Always 2 students · $70/person","$140/hr total"],["🏆","Group Lesson","3–5 students · split equally","$140/hr total"]].map(([icon,title,desc,price])=>(
           <div key={title} style={{background:"white",border:"2px solid #e5e7eb",borderRadius:12,padding:"24px 28px",display:"flex",alignItems:"center",gap:20}}>
             <div style={{fontSize:36}}>{icon}</div>
             <div style={{flex:1}}>
@@ -863,7 +863,7 @@ function BookingPage({user,setPage,onAddLesson}){
   const[busyTimes,setBusyTimes]=useState([]);
   const[loadingSlots,setLoadingSlots]=useState(false);
 
-  const PRICES={private:{60:isMenlo?115:130,90:isMenlo?172.50:195},semi:{60:isMenlo?120:140,90:isMenlo?180:210},group:{60:140,90:210}};
+  const PRICES={private:{60:isMenlo?115:120,90:isMenlo?172.50:180},semi:{60:isMenlo?120:140,90:isMenlo?180:210},group:{60:140,90:210}};
   const LESSONS=[{id:"private",icon:"🎯",label:"Private",desc:"1-on-1 coaching"},{id:"semi",icon:"👥",label:"Semi-Private",desc:"Always 2 students"},{id:"group",icon:"🏆",label:"Group",desc:"3-5 students"}];
   const price=lessonType&&duration?PRICES[lessonType][duration]:null;
   const slots=date?getSlots(date,isMenlo?"menlo":"public",duration||60).filter(s=>!busyTimes.some(b=>{const bufA=b.bufferAfter??30;const bufB=b.bufferBefore??30;return s.s<(b.endMins+bufA)&&s.e>(b.startMins-bufB);})):[];
@@ -1097,7 +1097,7 @@ function getRate(type,duration,memberType){
     if(type==="Semi-Private")return duration===90?180:120;
     return duration===90?210:140;
   }
-  if(type==="Private")return duration===90?195:130;
+  if(type==="Private")return duration===90?180:120;
   if(type==="Semi-Private")return duration===90?210:140;
   return duration===90?210:140;
 }
@@ -1330,7 +1330,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   });
 
   const schedIsMenlo=selectedStudent&&mockUsers[selectedStudent]?.memberType==="menlo";
-  const SCHED_PRICES={private:{60:schedIsMenlo?115:130,90:schedIsMenlo?172.50:195},semi:{60:schedIsMenlo?120:140,90:schedIsMenlo?180:210},group:{60:140,90:210}};
+  const SCHED_PRICES={private:{60:schedIsMenlo?115:120,90:schedIsMenlo?172.50:180},semi:{60:schedIsMenlo?120:140,90:schedIsMenlo?180:210},group:{60:140,90:210}};
   const schedSlots=schedDate?getSlots(schedDate,schedIsMenlo?"menlo":"public",schedDuration).filter(s=>!schedBusyTimes.some(b=>{const bufA=b.bufferAfter??30;const bufB=b.bufferBefore??30;return s.s<(b.endMins+bufA)&&s.e>(b.startMins-bufB);})):[];
   const toTime24=(mins)=>{const h=Math.floor(mins/60),m=mins%60;return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");};
   const toTimeStr=(s,e)=>fmt(s)+" - "+fmt(e);
