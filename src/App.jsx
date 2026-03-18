@@ -2006,6 +2006,7 @@ export default function App(){
   const[pendingStudents,setPendingStudents]=useState([]);
   const[mockUsersState,setMockUsersState]=useState({});
   const[dbLoaded,setDbLoaded]=useState(false);
+  const[locations,setLocations]=useState([]);
 
   useEffect(()=>{
     const loadFromSupabase=async()=>{
