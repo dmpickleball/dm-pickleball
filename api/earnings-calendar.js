@@ -50,7 +50,7 @@ function categorizeEvent(summary, location) {
 
   // Private: single name + "pb lesson"
   if (s.includes('pb lesson')) {
-    return { type: 'private', label: 'Private Lesson', rateType: 'per60', rate: 130 };
+    return { type: 'private', label: 'Private Lesson', rateType: 'per60', rate: 120 };
   }
 
   return null;
