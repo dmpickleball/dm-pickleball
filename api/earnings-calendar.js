@@ -71,6 +71,9 @@ export default async function handler(req, res) {
     for (const event of response.data.items || []) {
       const category = categorizeEvent(event.summary, event.location);
       if (!category) continue;
+      // Only count completed events (end time has passed)
+      const eventEnd = new Date(event.end.dateTime || event.end.date);
+      if (eventEnd > new Date()) continue;
       const startDT = event.start.dateTime || event.start.date;
       const endDT = event.end.dateTime || event.end.date;
       const hrs = getDurationHrs(startDT, endDT);
