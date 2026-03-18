@@ -1322,7 +1322,17 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[schedGroupMembers,setSchedGroupMembers]=useState([{name:"",email:""},{name:"",email:""},{name:"",email:""}]);
   const[schedBusyTimes,setSchedBusyTimes]=useState([]);
   const[schedLoadingSlots,setSchedLoadingSlots]=useState(false);
-  const[schedSubmitting,setSchedSubmitting]=useState(false);
+  const[schedSubmitting,setSchedSubmitting]=useState(false);const[customLocation,setCustomLocation]=useState(false);const[schedLocation,setSchedLocation]=useState("");
+  useEffect(()=>{
+    if(!customLocation)return;
+    const timer=setTimeout(()=>{
+      const input=document.getElementById("sched-location-input");
+      if(!input||!window.google?.maps?.places)return;
+      const ac=new window.google.maps.places.Autocomplete(input,{types:["establishment","geocode"],componentRestrictions:{country:"us"}});
+      ac.addListener("place_changed",()=>{const place=ac.getPlace();if(place.formatted_address)setSchedLocation(place.formatted_address);else if(place.name)setSchedLocation(place.name);});
+    },300);
+    return()=>clearTimeout(timer);
+  },[customLocation]);
   const[showAddStudent,setShowAddStudent]=useState(false);
   const[newStudent,setNewStudent]=useState({name:"",email:"",memberType:"public"});
 
@@ -1682,13 +1692,40 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
               </div>
               <div style={{...lbl,marginBottom:12}}>Lesson Type</div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:20}}>
-                {[{id:"private",icon:"🎯",label:"Private",price:SCHED_PRICES["private"][schedDuration]},{id:"semi",icon:"👥",label:"Semi-Private",price:SCHED_PRICES["semi"][schedDuration]},{id:"group",icon:"🏆",label:"Group",price:SCHED_PRICES["group"][schedDuration]}].map(l=>(
+                {[
+                  {id:"private",icon:"🎯",label:"Private",total:SCHED_PRICES["private"][schedDuration],note:""},
+                  {id:"semi",icon:"👥",label:"Semi-Private",total:SCHED_PRICES["semi"][schedDuration],note:"$"+(SCHED_PRICES["semi"][schedDuration]/2)+"/person"},
+                  {id:"group",icon:"🏆",label:"Group",total:SCHED_PRICES["group"][schedDuration],note:"split equally"}
+                ].map(l=>(
                   <div key={l.id} onClick={()=>setSchedLessonType(l.id)} style={{background:schedLessonType===l.id?"#e8f0ee":"white",border:"2px solid "+(schedLessonType===l.id?G:"#e5e7eb"),borderRadius:12,padding:"14px",cursor:"pointer",textAlign:"center"}}>
                     <div style={{fontSize:24,marginBottom:4}}>{l.icon}</div>
                     <div style={{fontWeight:700,fontSize:"0.9rem",color:schedLessonType===l.id?G:"#1a1a1a"}}>{l.label}</div>
-                    <div style={{fontWeight:800,color:G,fontSize:"0.85rem",marginTop:4}}>${l.price}{l.id!=="private"?" /person":""}</div>
+                    <div style={{fontWeight:800,color:G,fontSize:"0.95rem",marginTop:4}}>${l.total} total</div>
+                    {l.note&&<div style={{fontSize:"0.72rem",color:"#9ca3af",marginTop:2}}>{l.note}</div>}
                   </div>
                 ))}
+              </div>
+              <div style={{marginTop:16,background:"#f9f9f6",borderRadius:10,padding:"14px 16px",marginBottom:16}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                  <div>
+                    <div style={{fontWeight:600,fontSize:"0.88rem"}}>Custom Location</div>
+                    <div style={{fontSize:"0.75rem",color:"#6b7280",marginTop:2}}>Override default location for this lesson</div>
+                  </div>
+                  <button onClick={()=>{setCustomLocation(!customLocation);setSchedLocation("");}} style={{background:customLocation?G:"white",color:customLocation?"white":"#374151",border:"1.5px solid "+(customLocation?G:"#e5e7eb"),padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>
+                    {customLocation?"✓ On":"Off"}
+                  </button>
+                </div>
+                {customLocation&&(
+                  <div style={{marginTop:12}}>
+                    <input
+                      id="sched-location-input"
+                      value={schedLocation}
+                      onChange={e=>setSchedLocation(e.target.value)}
+                      placeholder="Search for a location..."
+                      style={{...inp,marginBottom:0}}
+                    />
+                  </div>
+                )}
               </div>
               <button onClick={()=>setScheduleStep(2)} style={{width:"100%",background:G,color:"white",border:"none",padding:"13px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"0.95rem"}}>Next: Date & Time →</button>
             </div>
