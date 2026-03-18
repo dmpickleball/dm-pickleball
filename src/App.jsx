@@ -26,9 +26,9 @@ const STANFORD_BLOCKS = { 2:{start:16*60,end:17*60+30}, 3:{start:12*60,end:13*60
 const PICKUP = {};
 const KNOWN_LOCATIONS = [
   "Andrew Spinas Park, 3003 Bay Rd, Redwood City, CA 94063",
-  "Rick's Home, 60 Middlefield Rd, Atherton, CA 94027",
-  "Ann's Home, 250 Austin Ave, Atherton, CA 94027",
-  "Warren & Tricia's Home, 438 Addison Ave, Palo Alto, CA 94301",
+  "60 Middlefield Rd, Atherton, CA 94027",
+  "250 Austin Ave, Atherton, CA 94027",
+  "438 Addison Ave, Palo Alto, CA 94301",
   "Flood Park, 215 Bay Rd, Menlo Park, CA 94025",
   "Kelly Park, 100 Terminal Ave, Menlo Park, CA 94025",
   "Mitchell Park, 600 E Meadow Dr, Palo Alto, CA 94303",
@@ -1357,7 +1357,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
     const memberNames=schedLessonType==="semi"?[student.name,schedPartner.name]:schedLessonType==="group"?[student.name,...schedGroupMembers.slice(0,schedGroupSize-1).map(m=>m.name)]:[student.name];
     const titleSuffix=schedLessonType==="group"?" pb group lesson":" pb lesson";
     const summary=memberNames.join("/")+titleSuffix;
-    const location=!schedIsMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City, CA 94063, USA":"Stanford Redwood City";
+    const location=customLocation&&schedLocation?schedLocation:(!schedIsMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City, CA 94063, USA":"Menlo Circus Club, 190 Park Ln, Atherton, CA 94027");
     const description="Student: "+student.name+"\nEmail: "+selectedStudent+"\nType: "+lessonLabel+" "+schedDuration+"min\nFocus: "+(schedFocus||"Not specified")+"\nNotes: "+(schedNotes||"None")+"\nLocation: "+location+"\nManage: https://dmpickleball.com";
     let eventId="";
     try{
@@ -1770,8 +1770,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                   <div>⏱ {schedSlot&&toTimeStr(schedSlot.s,schedSlot.e)}</div>
                   <div>🎯 {schedLessonType==="private"?"Private":schedLessonType==="semi"?"Semi-Private":"Group"} · {schedDuration} min</div>
                   {schedFocus&&<div>🏓 {schedFocus}</div>}
-                  <div>💰 ${SCHED_PRICES[schedLessonType][schedDuration]}{schedLessonType!=="private"?" per person":""}</div>
-                  <div>📍 <a href={!schedIsMenlo?"https://maps.google.com/?q=Andrew+Spinas+Park,+3003+Bay+Rd,+Redwood+City,+CA+94063":"https://maps.google.com/?q=Stanford+Redwood+City+Recreation+and+Wellness+Center"} target="_blank" rel="noreferrer" style={{color:G,fontWeight:600}}>{!schedIsMenlo?"Andrew Spinas Park, Redwood City":"Stanford Redwood City"}</a></div>
+                  <div>💰 ${SCHED_PRICES[schedLessonType][schedDuration]} total{schedLessonType==="semi"?" ($"+(SCHED_PRICES[schedLessonType][schedDuration]/2)+"/person)":schedLessonType==="group"?" (split equally)":""}</div>
+                  <div>📍 {customLocation&&schedLocation?schedLocation:(!schedIsMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City":"Menlo Circus Club, Atherton")}</div>
                 </div>
               </div>
               <div style={{display:"flex",gap:10}}>
