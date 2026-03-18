@@ -174,6 +174,67 @@ function formatPhone(p){
   if(d.length===11)return "+"+d[0]+" ("+d.slice(1,4)+") "+d.slice(4,7)+"-"+d.slice(7);
   return p;
 }
+function LocationInput({value, onChange, placeholder, style}){
+  const[query,setQuery]=useState(value||"");
+  const[suggestions,setSuggestions]=useState([]);
+  const[showDropdown,setShowDropdown]=useState(false);
+  const[loading,setLoading]=useState(false);
+  const timerRef=React.useRef(null);
+
+  useEffect(()=>{setQuery(value||"");},[value]);
+
+  const handleChange=(e)=>{
+    const v=e.target.value;
+    setQuery(v);
+    onChange(v);
+    if(timerRef.current)clearTimeout(timerRef.current);
+    if(v.length<2){setSuggestions([]);setShowDropdown(false);return;}
+    timerRef.current=setTimeout(async()=>{
+      setLoading(true);
+      try{
+        const r=await fetch("/api/places-search?query="+encodeURIComponent(v));
+        const data=await r.json();
+        setSuggestions(data.suggestions||[]);
+        setShowDropdown(true);
+      }catch(e){setSuggestions([]);}
+      setLoading(false);
+    },400);
+  };
+
+  const handleSelect=(s)=>{
+    const val=s.name+(s.address?", "+s.address:"");
+    setQuery(val);
+    onChange(val);
+    setSuggestions([]);
+    setShowDropdown(false);
+  };
+
+  return(
+    <div style={{position:"relative"}}>
+      <input
+        value={query}
+        onChange={handleChange}
+        onBlur={()=>setTimeout(()=>setShowDropdown(false),200)}
+        onFocus={()=>suggestions.length>0&&setShowDropdown(true)}
+        placeholder={placeholder||"Search for a location..."}
+        style={{...style,marginBottom:0}}
+      />
+      {loading&&<div style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",fontSize:"0.75rem",color:"#9ca3af"}}>...</div>}
+      {showDropdown&&suggestions.length>0&&(
+        <div style={{position:"absolute",top:"100%",left:0,right:0,background:"white",border:"1.5px solid #e5e7eb",borderRadius:8,boxShadow:"0 4px 16px rgba(0,0,0,0.1)",zIndex:1000,overflow:"hidden"}}>
+          {suggestions.map((s,i)=>(
+            <div key={i} onMouseDown={()=>handleSelect(s)} style={{padding:"10px 14px",cursor:"pointer",borderBottom:i<suggestions.length-1?"1px solid #f3f4f6":"none",fontSize:"0.88rem"}}
+              onMouseEnter={e=>e.currentTarget.style.background="#f9f9f6"}
+              onMouseLeave={e=>e.currentTarget.style.background="white"}>
+              <div style={{fontWeight:600}}>{s.name}</div>
+              <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:1}}>{s.address}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 function Nav({user,onLogin,onLogout,setPage,currentPage}){
   return(
     <nav style={{background:G,padding:"14px 32px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100}}>
@@ -704,7 +765,7 @@ function LoginPage({onLogin,onAdminLogin}){
           <>
             <input style={inp} type="text" placeholder="Full Name (required)" value={name} onChange={e=>setName(e.target.value)}/>
             <input style={inp} type="tel" placeholder="Phone Number (required)" value={phone} onChange={e=>setPhone(e.target.value)}/>
-            <input id="signup-home-court" style={inp} type="text" placeholder="Home Court (optional)" value={homeCourt} onChange={e=>setHomeCourt(e.target.value)}/>
+            <LocationInput value={homeCourt} onChange={v=>setHomeCourt(v)} placeholder="Home Court (optional)" style={inp}/>
             <p style={{fontSize:"0.82rem",color:"#6b7280",marginBottom:16,lineHeight:1.6}}>You will sign in with Google. Please provide your details so David can approve your account.</p>
             <button onClick={()=>{
               if(!name||!phone){setError("Name and phone number are required.");return;}
@@ -808,7 +869,7 @@ function AccountPage({user,setPage,onUpdateUser}){
         </div>
         <div style={{marginBottom:24}}>
           <label style={lbl}>Home Court <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(optional)</span></label>
-          <input id="account-home-court" value={homeCourt} onChange={e=>setHomeCourt(e.target.value)} style={inp} placeholder="e.g. Andrew Spinas Park"/>
+          <LocationInput value={homeCourt} onChange={v=>setHomeCourt(v)} placeholder="e.g. Andrew Spinas Park" style={inp}/>
         </div>
         <button onClick={handleSave} disabled={saving} style={{width:"100%",background:saving?"#9ca3af":G,color:"white",border:"none",padding:"14px",borderRadius:50,fontWeight:700,cursor:saving?"not-allowed":"pointer",fontSize:"1rem"}}>
           {saving?"Saving...":"Save Changes"}
@@ -1194,7 +1255,7 @@ function LocationsTab({locations,setLocations}){
             </div>
             <div>
               <label style={lbl}>Address</label>
-              <input value={newAddress} onChange={e=>setNewAddress(e.target.value)} placeholder="e.g. 800 Middle Ave, Menlo Park, CA 94025" style={{...inp,marginBottom:0}}/>
+              <LocationInput value={newAddress} onChange={v=>setNewAddress(v)} placeholder="e.g. 800 Middle Ave, Menlo Park, CA 94025" style={{...inp,marginBottom:0}}/>
             </div>
           </div>
           <div style={{display:"flex",gap:8}}>
@@ -1212,7 +1273,7 @@ function LocationsTab({locations,setLocations}){
             {editingId===loc.id?(
               <div style={{flex:1,display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
                 <input value={editName} onChange={e=>setEditName(e.target.value)} style={{...inp,marginBottom:0,fontSize:"0.88rem"}} placeholder="Name"/>
-                <input value={editAddress} onChange={e=>setEditAddress(e.target.value)} style={{...inp,marginBottom:0,fontSize:"0.88rem"}} placeholder="Address"/>
+                <LocationInput value={editAddress} onChange={v=>setEditAddress(v)} placeholder="Address" style={{...inp,marginBottom:0,fontSize:"0.88rem"}}/>
               </div>
             ):(
               <div style={{flex:1}}>
@@ -1663,7 +1724,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                       <input value={selectedStudent} disabled style={{...inp,marginBottom:8,fontSize:"0.85rem",background:"#f3f4f6",color:"#9ca3af",cursor:"not-allowed"}}/>
                       <input value={editStudentData.phone||""} onChange={e=>setEditStudentData({...editStudentData,phone:e.target.value})} style={{...inp,marginBottom:8,fontSize:"0.85rem"}} placeholder="Phone Number"/>
                       <input value={editStudentData.city||""} onChange={e=>setEditStudentData({...editStudentData,city:e.target.value})} style={{...inp,marginBottom:8,fontSize:"0.85rem"}} placeholder="City"/>
-                      <input id="admin-home-court" value={editStudentData.homeCourt||""} onChange={e=>setEditStudentData({...editStudentData,homeCourt:e.target.value})} style={{...inp,marginBottom:0,fontSize:"0.85rem"}} placeholder="Home Court"/>
+                      <LocationInput value={editStudentData.homeCourt||""} onChange={v=>setEditStudentData({...editStudentData,homeCourt:v})} placeholder="Home Court" style={{...inp,marginBottom:0,fontSize:"0.85rem"}}/>
                     </div>
                   ):(
                     <div>
