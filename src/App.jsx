@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 // ─── IMAGE PATHS ────────────────────────────────────────────────────────────
 // All images live in /public/images/ — drop your files there with these names:
@@ -179,7 +179,7 @@ function LocationInput({value, onChange, placeholder, style}){
   const[suggestions,setSuggestions]=useState([]);
   const[showDropdown,setShowDropdown]=useState(false);
   const[loading,setLoading]=useState(false);
-  const timerRef=React.useRef(null);
+  const timerRef=useRef(null);
 
   useEffect(()=>{setQuery(value||"");},[value]);
 
