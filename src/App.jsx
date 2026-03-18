@@ -1390,7 +1390,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
   );
 }
 
-function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,onApprove,onDeny,mockUsers,onAddStudent,onAddLesson,onToggleMenlo,onToggleSaturday,onBlockStudent}){
+function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,onApprove,onDeny,mockUsers,onAddStudent,onAddLesson,onToggleMenlo,onToggleSaturday,onBlockStudent,locations,setLocations}){
   const[tab,setTab]=useState(pendingStudents.length>0?"pending":"students");
   const[studentSearch,setStudentSearch]=useState("");
   const[selectedStudent,setSelectedStudent]=useState(null);
@@ -1809,12 +1809,12 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 {customLocation&&(
                   <div style={{marginTop:12}}>
                     {/* Location dropdown */}
-                    <select value={KNOWN_LOCATIONS.includes(schedLocation)?schedLocation:"custom"} onChange={e=>{if(e.target.value!=="custom"){setSchedLocation(e.target.value);}else{setSchedLocation("");}}} style={{...inp,marginBottom:schedLocation&&!KNOWN_LOCATIONS.includes(schedLocation)?8:0}}>
+                    <select value={locations.map(l=>l.name+", "+l.address).includes(schedLocation)?schedLocation:"custom"} onChange={e=>{if(e.target.value!=="custom"){setSchedLocation(e.target.value);}else{setSchedLocation("");}}} style={{...inp,marginBottom:schedLocation&&!locations.map(l=>l.name+", "+l.address).includes(schedLocation)?8:0}}>
                       <option value="">Select a location...</option>
-                      {KNOWN_LOCATIONS.map(l=>(<option key={l} value={l}>{l}</option>))}
+                      {locations.map(l=>(<option key={l.id} value={l.name+", "+l.address}>{l.name}, {l.address}</option>))}
                       <option value="custom">+ Enter custom address</option>
                     </select>
-                    {(!KNOWN_LOCATIONS.includes(schedLocation)&&schedLocation!=="")&&(
+                    {(!locations.map(l=>l.name+", "+l.address).includes(schedLocation)&&schedLocation!=="")&&(
                       <input value={schedLocation} onChange={e=>setSchedLocation(e.target.value)} placeholder="Enter custom address..." style={{...inp,marginBottom:0}}/>
                     )}
                   </div>
@@ -2146,7 +2146,7 @@ export default function App(){
           <button onClick={logout} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.4)",color:"white",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem"}}>Log out</button>
         </div>
       </nav>
-      <AdminPanel allLessons={allLessons} onUpdateLesson={updateLesson} onCancelLesson={adminCancel} pendingStudents={pendingStudents} onApprove={approveStudent} onDeny={denyStudent} mockUsers={mockUsersState} onAddStudent={addStudent} onAddLesson={adminAddLesson} onToggleMenlo={toggleMenlo} onToggleSaturday={toggleSaturday} onBlockStudent={blockStudent}/>
+      <AdminPanel locations={locations} setLocations={setLocations} allLessons={allLessons} onUpdateLesson={updateLesson} onCancelLesson={adminCancel} pendingStudents={pendingStudents} onApprove={approveStudent} onDeny={denyStudent} mockUsers={mockUsersState} onAddStudent={addStudent} onAddLesson={adminAddLesson} onToggleMenlo={toggleMenlo} onToggleSaturday={toggleSaturday} onBlockStudent={blockStudent}/>
     </div>
   );
   return(
