@@ -11,45 +11,39 @@ function getAuth() {
 }
 
 function getDurationHrs(start, end) {
-  const s = new Date(start);
-  const e = new Date(end);
-  return (e - s) / 3600000;
+  return (new Date(end) - new Date(start)) / 3600000;
 }
 
 function categorizeEvent(summary, location) {
   const s = (summary || '').toLowerCase();
   const l = (location || '').toLowerCase();
   const isMenlo = l.includes('190 park') || l.includes('atherton');
-
-  // Skip Menlo for now
   if (isMenlo) return null;
 
-  // Stanford REC classes
   if (s.includes('stanford rec')) {
-    const level = s.includes('beg') && s.includes('int') ? 'Beg-Int' : s.includes('adv') ? 'Int-Adv' : 'Beginner';
-    return { type: 'stanford_rec', label: `Stanford REC (${level})`, rateType: 'hourly', rate: 68 };
+    const level = s.includes('adv') ? 'Int-Adv' : s.includes('int') ? 'Beg-Int' : 'Beginner';
+    return { type: 'stanford_rec', label: 'Stanford REC ('+level+')', rateType: 'hourly', rate: 68 };
   }
 
-  // Stanford open play
   if (s.includes('stanford pb lesson') || s.includes('stanford open play')) {
     return { type: 'stanford_open', label: 'Stanford Open Play', rateType: 'hourly', rate: 68 };
   }
 
-  // Skip non-lesson Stanford events
   if (s.includes('stanford') && !s.includes('pb')) return null;
 
-  // Group lesson: contains "group pb lesson"
+  // Group: "group pb lesson" OR 2+ slashes with "pb lesson"
   if (s.includes('group pb lesson')) {
     return { type: 'group', label: 'Group Lesson', rateType: 'flat', rate: 140 };
   }
 
-  // Semi-private: contains "/" and "pb lesson"
-  if (s.includes('/') && s.includes('pb lesson')) {
-    return { type: 'semi', label: 'Semi-Private Lesson', rateType: 'flat', rate: 140 };
-  }
-
-  // Private: single name + "pb lesson"
   if (s.includes('pb lesson')) {
+    const slashCount = (s.match(/\//g) || []).length;
+    if (slashCount >= 2) {
+      return { type: 'group', label: 'Group Lesson', rateType: 'flat', rate: 140 };
+    }
+    if (slashCount === 1) {
+      return { type: 'semi', label: 'Semi-Private Lesson', rateType: 'flat', rate: 140 };
+    }
     return { type: 'private', label: 'Private Lesson', rateType: 'per60', rate: 120 };
   }
 
@@ -58,13 +52,11 @@ function categorizeEvent(summary, location) {
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
-
   const { start, end, includeStanford } = req.query;
   if (!start || !end) return res.status(400).json({ error: 'start and end dates required' });
 
   try {
     const calendar = google.calendar({ version: 'v3', auth: getAuth() });
-
     const response = await calendar.events.list({
       calendarId: process.env.GOOGLE_CALENDAR_ID,
       timeMin: new Date(start + 'T00:00:00-07:00').toISOString(),
@@ -74,51 +66,25 @@ export default async function handler(req, res) {
     });
 
     const events = [];
-    let totalEarnings = 0;
-    let stanfordEarnings = 0;
-    let stanfordHours = 0;
-    let lessonEarnings = 0;
+    let totalEarnings = 0, stanfordEarnings = 0, stanfordHours = 0, lessonEarnings = 0;
 
     for (const event of response.data.items || []) {
       const category = categorizeEvent(event.summary, event.location);
       if (!category) continue;
-
       const startDT = event.start.dateTime || event.start.date;
       const endDT = event.end.dateTime || event.end.date;
       const hrs = getDurationHrs(startDT, endDT);
-
       let earnings = 0;
-      if (category.rateType === 'hourly') {
-        earnings = Math.round(category.rate * hrs * 100) / 100;
-      } else if (category.rateType === 'per60') {
+      if (category.rateType === 'hourly' || category.rateType === 'per60') {
         earnings = Math.round(category.rate * hrs * 100) / 100;
       } else {
         earnings = category.rate;
       }
-
       const isStanford = category.type === 'stanford_rec' || category.type === 'stanford_open';
-
-      if (isStanford) {
-        stanfordHours += hrs;
-        stanfordEarnings += earnings;
-      } else {
-        lessonEarnings += earnings;
-      }
-
-      if (!isStanford || includeStanford === 'true') {
-        totalEarnings += earnings;
-      }
-
-      events.push({
-        date: startDT.substring(0, 10),
-        summary: event.summary,
-        category: category.label,
-        type: category.type,
-        hours: Math.round(hrs * 100) / 100,
-        earnings,
-        isStanford,
-        location: event.location || '',
-      });
+      if (isStanford) { stanfordHours += hrs; stanfordEarnings += earnings; }
+      else { lessonEarnings += earnings; }
+      if (!isStanford || includeStanford === 'true') totalEarnings += earnings;
+      events.push({ date: startDT.substring(0, 10), summary: event.summary, category: category.label, type: category.type, hours: Math.round(hrs * 100) / 100, earnings, isStanford, location: event.location || '' });
     }
 
     res.status(200).json({
