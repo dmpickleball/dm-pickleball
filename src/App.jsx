@@ -1990,6 +1990,18 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
 
       {tab==="lessons"&&(
         <div>
+          <div style={{borderRadius:12,overflow:"hidden",border:"1.5px solid #e5e7eb",background:"white"}}>
+            <iframe
+              src="https://calendar.google.com/calendar/embed?height=600&wkst=1&ctz=America%2FLos_Angeles&showPrint=0&title&src=ZG1waWNrbGViYWxsQGdtYWlsLmNvbQ&src=ZGF2aWRtb2tibG9ja0BnbWFpbC5jb20&color=%2364c466&color=%23039be5"
+              style={{border:"none",width:"100%",height:"calc(100vh - 280px)",minHeight:500,display:"block"}}
+              frameBorder="0"
+              scrolling="no"
+            />
+          </div>
+        </div>
+      )}
+      {tab==="lessons_old"&&(
+        <div>
           <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}>
             {[["upcoming","Upcoming"],["past","Past"],["cancelled","Cancelled"],["all","All"]].map(([f,label])=>(
               <button key={f} onClick={()=>setLessonFilter(f)} style={{background:lessonFilter===f?G:"white",color:lessonFilter===f?"white":"#374151",border:"1.5px solid "+(lessonFilter===f?G:"#e5e7eb"),padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:lessonFilter===f?700:500}}>
