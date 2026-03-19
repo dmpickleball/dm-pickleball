@@ -1802,8 +1802,12 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                   <div style={{display:"flex",gap:8}}>
                     <button onClick={()=>setConfirmDelete(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Keep it</button>
                     <button onClick={async()=>{
+                      const delLesson=(allLessons[selectedStudent]||[]).find(x=>x.id===l.id);
+                      if(delLesson?.gcalEventId){
+                        try{await fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:delLesson.gcalEventId,mode:"delete"})});}catch(e){}
+                      }
                       await fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})});
-                      onUpdateLesson(selectedStudent,l.id,{status:"deleted"});
+                      setAllLessons(prev=>({...prev,[selectedStudent]:(prev[selectedStudent]||[]).filter(x=>x.id!==l.id)}));
                       setConfirmDelete(null);
                     }} style={{background:"#dc2626",color:"white",border:"none",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>Yes, Delete</button>
                   </div>
