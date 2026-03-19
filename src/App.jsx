@@ -2072,10 +2072,10 @@ export default function App(){
     const loadFromSupabase=async()=>{
       try{
         const [pr,lr,sr,locr]=await Promise.all([
-          fetch("/api/students?action=pending").then(r=>r.json()),
-          fetch("/api/lessons?action=list").then(r=>r.json()),
-          fetch("/api/students?action=list").then(r=>r.json()),
-          fetch("/api/locations?action=list").then(r=>r.json()),
+          fetch("/api/students?action=pending").then(r=>r.json()).catch(()=>({})),
+          fetch("/api/lessons?action=list").then(r=>r.json()).catch(()=>({})),
+          fetch("/api/students?action=list").then(r=>r.json()).catch(()=>({})),
+          fetch("/api/locations?action=list").then(r=>r.json()).catch(()=>({})),
         ]);
         if(pr.requests){
           setPendingStudents(pr.requests.map(r=>({
