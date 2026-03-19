@@ -1248,10 +1248,15 @@ function LocationsTab({locations,setLocations}){
       {adding&&(
         <div style={{background:"#e8f0ee",borderRadius:12,padding:"20px",marginBottom:20,border:"1.5px solid "+G}}>
           <div style={{fontWeight:700,marginBottom:12,color:G}}>Add New Location</div>
-          <div style={{marginBottom:12}}>
-            <label style={lbl}>Search for a location</label>
-            <LocationInput value={newAddress} onChange={(v,s)=>{setNewAddress(v);if(s)setNewName(s.name||v);else setNewName(v);}} placeholder="Type a park, address or place name..." style={{...inp,marginBottom:0}}/>
-            {newName&&newName!==newAddress&&<div style={{fontSize:"0.78rem",color:G,marginTop:4,fontWeight:600}}>📍 {newName}</div>}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+            <div>
+              <label style={lbl}>Search for a location</label>
+              <LocationInput value={newAddress} onChange={(v,s)=>{setNewAddress(v);if(s)setNewName(s.name||v);else setNewName(v);}} placeholder="Type a park or address..." style={{...inp,marginBottom:0}}/>
+            </div>
+            <div>
+              <label style={lbl}>Custom Label <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(optional)</span></label>
+              <input value={newName} onChange={e=>setNewName(e.target.value)} placeholder="e.g. Rick's House" style={{...inp,marginBottom:0}}/>
+            </div>
           </div>
           <div style={{display:"flex",gap:8}}>
             <button onClick={()=>{setAdding(false);setNewName("");setNewAddress("");}} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"8px 20px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}>Cancel</button>
@@ -1266,9 +1271,9 @@ function LocationsTab({locations,setLocations}){
         ):locations.map((loc,i)=>(
           <div key={loc.id} style={{padding:"16px 20px",borderBottom:i<locations.length-1?"1px solid #f3f4f6":"none",display:"flex",alignItems:"center",gap:12}}>
             {editingId===loc.id?(
-              <div style={{flex:1}}>
-                <LocationInput value={editAddress} onChange={(v,s)=>{setEditAddress(v);if(s)setEditName(s.name||v);else setEditName(v);}} placeholder="Search for a location..." style={{...inp,marginBottom:0,fontSize:"0.88rem"}}/>
-                {editName&&editName!==editAddress&&<div style={{fontSize:"0.75rem",color:G,marginTop:3,fontWeight:600}}>📍 {editName}</div>}
+              <div style={{flex:1,display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                <LocationInput value={editAddress} onChange={(v,s)=>{setEditAddress(v);if(s)setEditName(s.name||v);else setEditName(v);}} placeholder="Search or type address..." style={{...inp,marginBottom:0,fontSize:"0.88rem"}}/>
+                <input value={editName} onChange={e=>setEditName(e.target.value)} placeholder="Custom label (e.g. Rick's House)" style={{...inp,marginBottom:0,fontSize:"0.88rem"}}/>
               </div>
             ):(
               <div style={{flex:1}}>
