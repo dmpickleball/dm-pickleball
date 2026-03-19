@@ -1893,7 +1893,6 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                         localStorage.setItem("recentLocations",JSON.stringify(updated));
                       }
                     }} placeholder="Search for a location..." style={inp}/>
-                    )}
                   </div>
                 )}
               </div>
