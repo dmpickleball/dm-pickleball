@@ -1868,14 +1868,30 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 </div>
                 {customLocation&&(
                   <div style={{marginTop:12}}>
-                    {/* Location dropdown */}
-                    <select value={locations.map(l=>l.name+", "+l.address).includes(schedLocation)?schedLocation:"custom"} onChange={e=>{if(e.target.value!=="custom"){setSchedLocation(e.target.value);}else{setSchedLocation("");}}} style={{...inp,marginBottom:schedLocation&&!locations.map(l=>l.name+", "+l.address).includes(schedLocation)?8:0}}>
-                      <option value="">Select a location...</option>
-                      {locations.map(l=>(<option key={l.id} value={l.name+", "+l.address}>{l.name}, {l.address}</option>))}
-                      <option value="custom">+ Enter custom address</option>
-                    </select>
-                    {(!locations.map(l=>l.name+", "+l.address).includes(schedLocation)&&schedLocation!=="")&&(
-                      <input value={schedLocation} onChange={e=>setSchedLocation(e.target.value)} placeholder="Enter custom address..." style={{...inp,marginBottom:0}}/>
+                    {/* Recent locations */}
+                    {JSON.parse(localStorage.getItem("recentLocations")||"[]").slice(0,3).length>0&&(
+                      <div style={{marginBottom:8}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                          <span style={{fontSize:"0.72rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1}}>Recent</span>
+                          <span onClick={()=>{localStorage.removeItem("recentLocations");setSchedLocation("");}} style={{fontSize:"0.72rem",color:"#9ca3af",cursor:"pointer",textDecoration:"underline"}}>Clear</span>
+                        </div>
+                        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                          {JSON.parse(localStorage.getItem("recentLocations")||"[]").slice(0,3).map((loc,i)=>(
+                            <div key={i} onClick={()=>setSchedLocation(loc)} style={{background:schedLocation===loc?"#e8f0ee":"white",border:"1.5px solid "+(schedLocation===loc?"#1a3c34":"#e5e7eb"),padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:schedLocation===loc?700:400,color:schedLocation===loc?"#1a3c34":"#374151"}}>
+                              {loc.length>45?loc.substring(0,45)+"...":loc}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <LocationInput value={schedLocation} onChange={v=>{
+                      setSchedLocation(v);
+                      if(v&&v.length>5){
+                        const recent=JSON.parse(localStorage.getItem("recentLocations")||"[]");
+                        const updated=[v,...recent.filter(r=>r!==v)].slice(0,10);
+                        localStorage.setItem("recentLocations",JSON.stringify(updated));
+                      }
+                    }} placeholder="Search for a location..." style={inp}/>
                     )}
                   </div>
                 )}
