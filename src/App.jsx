@@ -2120,8 +2120,8 @@ export default function App(){
           setAllLessons(lessonsByStudent);
           setMockUsersState(users);
         }
+        if(locr.locations)setLocations(locr.locations);
       }catch(e){console.error("Supabase load error:",e);}
-      if(locr.locations)setLocations(locr.locations);
       setDbLoaded(true);
     };
     loadFromSupabase();
