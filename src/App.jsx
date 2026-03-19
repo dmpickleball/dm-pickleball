@@ -202,9 +202,8 @@ function LocationInput({value, onChange, placeholder, style}){
   };
 
   const handleSelect=(s)=>{
-    const val=s.name+(s.address?", "+s.address:"");
-    setQuery(val);
-    onChange(val,s);
+    setQuery(s.address||s.name);
+    onChange(s.address||s.name,s);
     setSuggestions([]);
     setShowDropdown(false);
   };
