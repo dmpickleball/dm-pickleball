@@ -1469,7 +1469,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[lessonFilter,setLessonFilter]=useState("upcoming");
   const[editingId,setEditingId]=useState(null);
   const[editNotes,setEditNotes]=useState("");
-  const[confirmCancel,setConfirmCancel]=useState(null);
+  const[confirmCancel,setConfirmCancel]=useState(null);const[confirmDelete,setConfirmDelete]=useState(null);
   const[scheduleStep,setScheduleStep]=useState(1);
   const[schedLessonType,setSchedLessonType]=useState("private");
   const[schedDuration,setSchedDuration]=useState(60);
@@ -1781,9 +1781,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                       <button onClick={()=>editingId===l.id?setEditingId(null):(setEditingId(l.id),setEditNotes(l.notes||""))} style={{background:editingId===l.id?"#f3f4f6":G,color:editingId===l.id?"#374151":"white",border:"none",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>
                         {editingId===l.id?"Cancel":"✏️ Notes"}
                       </button>
-                      {!isPast(l.date,l.time)&&(
-                        <button onClick={()=>setConfirmCancel(confirmCancel===l.id?null:l.id)} style={{background:"#fef2f2",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>✕ Cancel</button>
-                      )}
+                      <button onClick={()=>setConfirmCancel(confirmCancel===l.id?null:l.id)} style={{background:"#fef2f2",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>✕ Cancel</button>
+                      <button onClick={()=>setConfirmDelete(confirmDelete===l.id?null:l.id)} style={{background:"#fef2f2",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>🗑 Delete</button>
                     </>
                   )}
                 </div>
@@ -1794,6 +1793,19 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                   <div style={{display:"flex",gap:8}}>
                     <button onClick={()=>setConfirmCancel(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Keep it</button>
                     <button onClick={()=>{onCancelLesson(selectedStudent,l.id);setConfirmCancel(null);}} style={{background:"#dc2626",color:"white",border:"none",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>Yes, Cancel</button>
+                  </div>
+                </div>
+              )}
+              {confirmDelete===l.id&&(
+                <div style={{background:"#fef2f2",borderTop:"1px solid #fca5a5",padding:"12px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+                  <span style={{fontWeight:700,color:"#991b1b",fontSize:"0.88rem"}}>Permanently delete this lesson?</span>
+                  <div style={{display:"flex",gap:8}}>
+                    <button onClick={()=>setConfirmDelete(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Keep it</button>
+                    <button onClick={async()=>{
+                      await fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})});
+                      onUpdateLesson(selectedStudent,l.id,{status:"deleted"});
+                      setConfirmDelete(null);
+                    }} style={{background:"#dc2626",color:"white",border:"none",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>Yes, Delete</button>
                   </div>
                 </div>
               )}

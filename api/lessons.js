@@ -42,5 +42,13 @@ export default async function handler(req, res) {
     return res.status(200).json({ success: true });
   }
 
+  // POST delete lesson
+  if (req.method === 'POST' && action === 'delete') {
+    const { lessonId } = req.body;
+    const { error } = await supabase.from('lessons').delete().eq('id', lessonId);
+    if (error) return res.status(500).json({ error: error.message });
+    return res.status(200).json({ success: true });
+  }
+
   res.status(400).json({ error: 'Invalid action' });
 }
