@@ -186,7 +186,7 @@ function LocationInput({value, onChange, placeholder, style}){
   const handleChange=(e)=>{
     const v=e.target.value;
     setQuery(v);
-    onChange(v);
+    onChange(v,null);
     if(timerRef.current)clearTimeout(timerRef.current);
     if(v.length<2){setSuggestions([]);setShowDropdown(false);return;}
     timerRef.current=setTimeout(async()=>{
@@ -204,7 +204,7 @@ function LocationInput({value, onChange, placeholder, style}){
   const handleSelect=(s)=>{
     const val=s.name+(s.address?", "+s.address:"");
     setQuery(val);
-    onChange(val);
+    onChange(val,s);
     setSuggestions([]);
     setShowDropdown(false);
   };
@@ -1248,15 +1248,10 @@ function LocationsTab({locations,setLocations}){
       {adding&&(
         <div style={{background:"#e8f0ee",borderRadius:12,padding:"20px",marginBottom:20,border:"1.5px solid "+G}}>
           <div style={{fontWeight:700,marginBottom:12,color:G}}>Add New Location</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
-            <div>
-              <label style={lbl}>Location Name</label>
-              <input value={newName} onChange={e=>setNewName(e.target.value)} placeholder="e.g. Nealon Park" style={{...inp,marginBottom:0}}/>
-            </div>
-            <div>
-              <label style={lbl}>Address</label>
-              <LocationInput value={newAddress} onChange={v=>setNewAddress(v)} placeholder="e.g. 800 Middle Ave, Menlo Park, CA 94025" style={{...inp,marginBottom:0}}/>
-            </div>
+          <div style={{marginBottom:12}}>
+            <label style={lbl}>Search for a location</label>
+            <LocationInput value={newAddress} onChange={(v,s)=>{setNewAddress(v);if(s)setNewName(s.name||v);else setNewName(v);}} placeholder="Type a park, address or place name..." style={{...inp,marginBottom:0}}/>
+            {newName&&newName!==newAddress&&<div style={{fontSize:"0.78rem",color:G,marginTop:4,fontWeight:600}}>📍 {newName}</div>}
           </div>
           <div style={{display:"flex",gap:8}}>
             <button onClick={()=>{setAdding(false);setNewName("");setNewAddress("");}} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"8px 20px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}>Cancel</button>
@@ -1271,9 +1266,9 @@ function LocationsTab({locations,setLocations}){
         ):locations.map((loc,i)=>(
           <div key={loc.id} style={{padding:"16px 20px",borderBottom:i<locations.length-1?"1px solid #f3f4f6":"none",display:"flex",alignItems:"center",gap:12}}>
             {editingId===loc.id?(
-              <div style={{flex:1,display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-                <input value={editName} onChange={e=>setEditName(e.target.value)} style={{...inp,marginBottom:0,fontSize:"0.88rem"}} placeholder="Name"/>
-                <LocationInput value={editAddress} onChange={v=>setEditAddress(v)} placeholder="Address" style={{...inp,marginBottom:0,fontSize:"0.88rem"}}/>
+              <div style={{flex:1}}>
+                <LocationInput value={editAddress} onChange={(v,s)=>{setEditAddress(v);if(s)setEditName(s.name||v);else setEditName(v);}} placeholder="Search for a location..." style={{...inp,marginBottom:0,fontSize:"0.88rem"}}/>
+                {editName&&editName!==editAddress&&<div style={{fontSize:"0.75rem",color:G,marginTop:3,fontWeight:600}}>📍 {editName}</div>}
               </div>
             ):(
               <div style={{flex:1}}>
