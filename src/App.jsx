@@ -1782,9 +1782,9 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                         {editingId===l.id?"Cancel":"✏️ Notes"}
                       </button>
                       <button onClick={()=>setConfirmCancel(confirmCancel===l.id?null:l.id)} style={{background:"#fef2f2",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>✕ Cancel</button>
-                      <button onClick={()=>setConfirmDelete(confirmDelete===l.id?null:l.id)} style={{background:"#fef2f2",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>🗑 Delete</button>
                     </>
                   )}
+                  <button onClick={()=>setConfirmDelete(confirmDelete===l.id?null:l.id)} style={{background:"#fef2f2",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>🗑 Delete</button>
                 </div>
               </div>
               {confirmCancel===l.id&&(
