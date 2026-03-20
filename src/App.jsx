@@ -1200,7 +1200,7 @@ function getEarnings(allLessons,mockUsers,range){
 }
 
 function LocationsTab({locations,setLocations}){
-  const[editingId,setEditingId]=useState(null);
+  const[editingId,setEditingId]=useState(null);const[editPriceId,setEditPriceId]=useState(null);const[editPriceVal,setEditPriceVal]=useState("");
   const[editName,setEditName]=useState("");
   const[editAddress,setEditAddress]=useState("");
   const[adding,setAdding]=useState(false);
@@ -1689,7 +1689,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[nialStart,setNialStart]=useState("");
   const[nialEnd,setNialEnd]=useState("");
   const[lessonFilter,setLessonFilter]=useState("upcoming");
-  const[editingId,setEditingId]=useState(null);
+  const[editingId,setEditingId]=useState(null);const[editPriceId,setEditPriceId]=useState(null);const[editPriceVal,setEditPriceVal]=useState("");
   const[editNotes,setEditNotes]=useState("");
   const[confirmCancel,setConfirmCancel]=useState(null);const[confirmDelete,setConfirmDelete]=useState(null);
   const[scheduleStep,setScheduleStep]=useState(1);
@@ -2003,6 +2003,9 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                       <button onClick={()=>editingId===l.id?setEditingId(null):(setEditingId(l.id),setEditNotes(l.notes||""))} style={{background:editingId===l.id?"#f3f4f6":G,color:editingId===l.id?"#374151":"white",border:"none",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>
                         {editingId===l.id?"Cancel":"✏️ Notes"}
                       </button>
+                      <button onClick={()=>{setEditPriceId(editPriceId===l.id?null:l.id);setEditPriceVal(l.customPrice||getRate(l.type,parseInt(l.duration)));}} style={{background:editPriceId===l.id?"#f3f4f6":G,color:editPriceId===l.id?"#374151":"white",border:"none",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>
+                        {editPriceId===l.id?"Cancel":"💰 Price"}
+                      </button>
                       <button onClick={()=>setConfirmCancel(confirmCancel===l.id?null:l.id)} style={{background:"#fef2f2",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>✕ Cancel</button>
                     </>
                   )}
@@ -2033,6 +2036,30 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                         setConfirmDelete(null);
                       }catch(e){console.error("Delete error:",e);setConfirmDelete(null);}
                     }} style={{background:"#dc2626",color:"white",border:"none",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>Yes, Delete</button>
+                  </div>
+                </div>
+              )}
+              {editPriceId===l.id&&(
+                <div style={{borderTop:"1px solid #e5e7eb",padding:"16px 18px",background:"#f9f9f6"}}>
+                  <div style={{fontSize:"0.85rem",fontWeight:600,marginBottom:8,color:"#374151"}}>Override lesson price</div>
+                  <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                    <span style={{fontSize:"1rem",color:"#6b7280"}}>$</span>
+                    <input type="number" value={editPriceVal} onChange={e=>setEditPriceVal(e.target.value)} style={{...inp,marginBottom:0,width:120}} placeholder="0.00"/>
+                    <span style={{fontSize:"0.8rem",color:"#9ca3af"}}>Default: ${getRate(l.type,parseInt(l.duration))}</span>
+                  </div>
+                  <div style={{display:"flex",gap:8,justifyContent:"flex-end",marginTop:12}}>
+                    <button onClick={()=>setEditPriceId(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 18px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}>Cancel</button>
+                    <button onClick={async()=>{
+                      const price=parseFloat(editPriceVal);
+                      await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id,updates:{custom_price:price}})});
+                      onUpdateLesson(selectedStudent,l.id,{customPrice:price});
+                      setEditPriceId(null);
+                    }} style={{background:G,color:"white",border:"none",padding:"7px 18px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>Save Price</button>
+                    {l.customPrice&&<button onClick={async()=>{
+                      await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id,updates:{custom_price:null}})});
+                      onUpdateLesson(selectedStudent,l.id,{customPrice:null});
+                      setEditPriceId(null);
+                    }} style={{background:"white",border:"1.5px solid #e5e7eb",color:"#6b7280",padding:"7px 18px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}>Reset to Default</button>}
                   </div>
                 </div>
               )}
