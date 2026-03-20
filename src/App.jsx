@@ -1189,8 +1189,8 @@ function getEarnings(allLessons,mockUsers,range){
       else if(range==="month"){inRange=d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}
       else{inRange=d.getFullYear()===now.getFullYear();}
       if(!inRange)return;
-      const gross=getRate(l.type,mins,u.memberType);
-      const net=u.memberType==="menlo"?getMenloNet(gross):gross;
+      const gross=l.customPrice!=null?l.customPrice:getRate(l.type,mins,u.memberType);
+      const net=l.customPrice!=null?l.customPrice:(u.memberType==="menlo"?getMenloNet(gross):gross);
       total+=net;
       if(u.memberType==="menlo"){menloGross+=gross;menloNet+=net;}
       rows.push({email,name:u.name||email,date:l.date,type:l.type,duration:l.duration,gross,net,isMenlo:u.memberType==="menlo"});
@@ -1705,7 +1705,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[schedGroupMembers,setSchedGroupMembers]=useState([{name:"",email:""},{name:"",email:""},{name:"",email:""}]);
   const[schedBusyTimes,setSchedBusyTimes]=useState([]);
   const[schedLoadingSlots,setSchedLoadingSlots]=useState(false);
-  const[schedSubmitting,setSchedSubmitting]=useState(false);const[customLocation,setCustomLocation]=useState(false);const[schedLocation,setSchedLocation]=useState("");
+  const[schedSubmitting,setSchedSubmitting]=useState(false);const[schedCustomPrice,setSchedCustomPrice]=useState("");const[customLocation,setCustomLocation]=useState(false);const[schedLocation,setSchedLocation]=useState("");
   
   const[showAddStudent,setShowAddStudent]=useState(false);
   const[newStudent,setNewStudent]=useState({name:"",email:"",memberType:"public"});
@@ -1766,7 +1766,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
     const newLesson={id:Date.now(),date:schedDate,time:timeStr,type:lessonLabel,duration:schedDuration+" min",status:"confirmed",focus:schedFocus,notes:"",photos:[],videos:[],gcalEventId:eventId};
     onAddLesson(selectedStudent,newLesson);
     setShowSchedule(false);
-    setScheduleStep(1);setSchedLessonType("private");setSchedDuration(60);setSchedDate("");setSchedSlot(null);setSchedSlotIdx(-1);setSchedFocus("");setSchedNotes("");setSchedBusyTimes([]);
+    setScheduleStep(1);setSchedLessonType("private");setSchedDuration(60);setSchedDate("");setSchedSlot(null);setSchedSlotIdx(-1);setSchedFocus("");setSchedNotes("");setSchedBusyTimes([]);setSchedCustomPrice("");
     setSchedSubmitting(false);
     alert("Lesson scheduled for "+student.name+"!");
   };
@@ -2123,7 +2123,15 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                   </div>
                 ))}
               </div>
-              <div style={{marginTop:16,background:"#f9f9f6",borderRadius:10,padding:"14px 16px",marginBottom:16}}>
+              <div style={{marginTop:16,marginBottom:16}}>
+                <div style={{fontSize:"0.78rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Custom Price <span style={{fontWeight:400,textTransform:"none",color:"#9ca3af"}}>(optional — leave blank to use default)</span></div>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{color:"#6b7280"}}>$</span>
+                  <input type="number" value={schedCustomPrice} onChange={e=>setSchedCustomPrice(e.target.value)} placeholder={String(SCHED_PRICES[schedLessonType][schedDuration])} style={{...inp,marginBottom:0,width:120}}/>
+                  {schedCustomPrice&&<span style={{fontSize:"0.78rem",color:"#f97316",fontWeight:600}}>Custom: ${schedCustomPrice}</span>}
+                </div>
+              </div>
+              <div style={{marginTop:0,background:"#f9f9f6",borderRadius:10,padding:"14px 16px",marginBottom:16}}>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                   <div>
                     <div style={{fontWeight:600,fontSize:"0.88rem"}}>Custom Location</div>
@@ -2222,7 +2230,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                   <div>⏱ {schedSlot&&toTimeStr(schedSlot.s,schedSlot.e)}</div>
                   <div>🎯 {schedLessonType==="private"?"Private":schedLessonType==="semi"?"Semi-Private":"Group"} · {schedDuration} min</div>
                   {schedFocus&&<div>🏓 {schedFocus}</div>}
-                  <div>💰 ${SCHED_PRICES[schedLessonType][schedDuration]} total{schedLessonType==="semi"?" ($"+(SCHED_PRICES[schedLessonType][schedDuration]/2)+"/person)":schedLessonType==="group"?" (split equally)":""}</div>
+                  <div>💰 {schedCustomPrice?"$"+schedCustomPrice+" (custom)":"$"+SCHED_PRICES[schedLessonType][schedDuration]+" total"}{!schedCustomPrice&&schedLessonType==="semi"?" ($"+(SCHED_PRICES[schedLessonType][schedDuration]/2)+"/person)":!schedCustomPrice&&schedLessonType==="group"?" (split equally)":""}</div>
                   <div>📍 {customLocation&&schedLocation?schedLocation:(!schedIsMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City":"Menlo Circus Club, Atherton")}</div>
                 </div>
               </div>
@@ -2237,10 +2245,10 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
         </div>
       )}
 
-      {tab==="lessons"&&(
+      {tab==="lessons_placeholder"&&(
         <AdminCalendarView/>
       )}
-      {tab==="lessons_old"&&(
+      {tab==="lessons"&&(
         <div>
           <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}>
             {[["upcoming","Upcoming"],["past","Past"],["cancelled","Cancelled"],["all","All"]].map(([f,label])=>(
@@ -2435,7 +2443,8 @@ export default function App(){
   };
   const addLesson=async lesson=>{
     try{
-      const r=await fetch("/api/lessons?action=save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lesson:{...lesson,studentEmail:user.email}})});
+      const r=const finalPrice=schedCustomPrice?parseFloat(schedCustomPrice):null;
+    await fetch("/api/lessons?action=save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lesson:{...lesson,studentEmail:user.email}})});
       const data=await r.json();
       const finalLesson=data.id?{...lesson,id:data.id}:lesson;
       setAllLessons(prev=>({...prev,[user.email]:[...(prev[user.email]||[]),finalLesson]}));
@@ -2473,7 +2482,8 @@ export default function App(){
   const adminAddLesson=async(email,lesson)=>{
     setAllLessons(prev=>({...prev,[email]:[...(prev[email]||[]),lesson]}));
     try{
-      await fetch("/api/lessons?action=save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lesson:{...lesson,studentEmail:email}})});
+      const finalPrice=schedCustomPrice?parseFloat(schedCustomPrice):null;
+    await fetch("/api/lessons?action=save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lesson:{...lesson,studentEmail:email}})});
     }catch(e){console.error("Admin save lesson error:",e);}
   };
   const toggleMenlo=email=>setMockUsersState(prev=>({...prev,[email]:{...prev[email],memberType:prev[email]?.memberType==="menlo"?"public":"menlo"}}));
