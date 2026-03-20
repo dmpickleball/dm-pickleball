@@ -203,7 +203,7 @@ function LocationInput({value, onChange, placeholder, style}){
   };
 
   const handleSelect=(s)=>{
-    const val=s.name&&s.address&&!s.address.startsWith(s.name)?s.name+", "+s.address:s.address||s.name;
+    const val=s.address||s.name;
     setQuery(val);
     onChange(val,s);
     setSuggestions([]);
@@ -1312,6 +1312,8 @@ function LocationsTab({locations,setLocations}){
 function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeStanford,financeData,setFinanceData,financeLoading,setFinanceLoading,allLessons,mockUsers,onExportNial,showNialExport,setShowNialExport,nialStart,setNialStart,nialEnd,setNialEnd}){
   const[showNetStanford,setShowNetStanford]=useState(false);
   const[searchQuery,setSearchQuery]=useState("");
+  const[editFinancePrice,setEditFinancePrice]=useState(null);
+  const[editFinancePriceVal,setEditFinancePriceVal]=useState("");
   const now=new Date();
   const getDateRange=(range)=>{
     const end=new Date();
@@ -1357,9 +1359,12 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
           <button onClick={handleStanfordToggle} style={{background:includeStanford?"#8b5cf6":"white",color:includeStanford?"white":"#374151",border:"1.5px solid "+(includeStanford?"#8b5cf6":"#e5e7eb"),padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:600}}>
             {includeStanford?"✓ Stanford Included":"+ Include Stanford"}
           </button>
-          {includeStanford&&<button onClick={()=>setShowNetStanford(!showNetStanford)} style={{background:showNetStanford?"#7c3aed":"white",color:showNetStanford?"white":"#374151",border:"1.5px solid "+(showNetStanford?"#7c3aed":"#e5e7eb"),padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:600}}>
-            {showNetStanford?"✓ Showing Net (after tax)":"Show Net (after tax)"}
-          </button>}
+          {includeStanford&&(
+            <div style={{display:"flex",background:"#f3f4f6",borderRadius:50,padding:2}}>
+              <button onClick={()=>setShowNetStanford(false)} style={{background:!showNetStanford?"white":"transparent",color:!showNetStanford?"#1a3c34":"#6b7280",border:"none",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:!showNetStanford?700:500,boxShadow:!showNetStanford?"0 1px 4px rgba(0,0,0,0.1)":"none"}}>Gross</button>
+              <button onClick={()=>setShowNetStanford(true)} style={{background:showNetStanford?"white":"transparent",color:showNetStanford?"#7c3aed":"#6b7280",border:"none",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:showNetStanford?700:500,boxShadow:showNetStanford?"0 1px 4px rgba(0,0,0,0.1)":"none"}}>Net (after tax)</button>
+            </div>
+          )}
         </div>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:16,marginBottom:28}}>
@@ -2180,7 +2185,12 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                         </div>
                         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                           {JSON.parse(localStorage.getItem("recentLocations")||"[]").slice(0,3).map((loc,i)=>(
-                            <div key={i} onClick={()=>setSchedLocation(loc)} style={{background:schedLocation===loc?"#e8f0ee":"white",border:"1.5px solid "+(schedLocation===loc?"#1a3c34":"#e5e7eb"),padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:schedLocation===loc?700:400,color:schedLocation===loc?"#1a3c34":"#374151"}}>
+                            <div key={i} onClick={()=>{
+                              setSchedLocation(loc);
+                              const recent=JSON.parse(localStorage.getItem("recentLocations")||"[]");
+                              const deduped=[loc,...recent.filter(r=>r!==loc)].slice(0,10);
+                              localStorage.setItem("recentLocations",JSON.stringify(deduped));
+                            }} style={{background:schedLocation===loc?"#e8f0ee":"white",border:"1.5px solid "+(schedLocation===loc?"#1a3c34":"#e5e7eb"),padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:schedLocation===loc?700:400,color:schedLocation===loc?"#1a3c34":"#374151"}}>
                               {loc.length>45?loc.substring(0,45)+"...":loc}
                             </div>
                           ))}
@@ -2194,7 +2204,14 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                         const updated=[v,...recent.filter(r=>r!==v)].slice(0,10);
                         localStorage.setItem("recentLocations",JSON.stringify(updated));
                       }
-                    }} placeholder="Search for a location..." style={inp}/>
+                    }} placeholder="Search for a location..." style={inp}
+                    onBlur={()=>{
+                      if(schedLocation&&schedLocation.length>10){
+                        const recent=JSON.parse(localStorage.getItem("recentLocations")||"[]");
+                        const deduped=[schedLocation,...recent.filter(r=>r!==schedLocation)].slice(0,10);
+                        localStorage.setItem("recentLocations",JSON.stringify(deduped));
+                      }
+                    }}/>
                   </div>
                 )}
               </div>
