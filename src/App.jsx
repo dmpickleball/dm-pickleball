@@ -1632,18 +1632,30 @@ function AdminCalendarView(){
                 })}
               </div>
             ):(
-              <div>
-                {getEventsForDay(currentDate).length===0?(
-                  <div style={{padding:"40px",textAlign:"center",color:"#9ca3af"}}>No events today.</div>
-                ):getEventsForDay(currentDate).map((e,i)=>(
-                  <div key={i} style={{padding:"14px 20px",borderBottom:"1px solid #f3f4f6",display:"flex",alignItems:"center",gap:12}}>
-                    <div style={{width:4,height:40,borderRadius:2,background:eventColor(e.summary),flexShrink:0}}/>
-                    <div>
-                      <div style={{fontWeight:700,fontSize:"0.95rem"}}>{e.summary}</div>
-                      <div style={{fontSize:"0.82rem",color:"#6b7280",marginTop:2}}>{e.startMins&&toTimeStrGlobal(e.startMins,e.endMins)}{e.location&&" · "+e.location}</div>
-                    </div>
-                  </div>
-                ))}
+              <div style={{display:"grid",gridTemplateColumns:"60px 1fr"}}>
+                <div>
+                  {Array.from({length:currentDate.getDay()===6?4:12},(_,i)=>i+8).map(h=>(
+                    <div key={h} style={{height:60,borderBottom:"1px solid #f3f4f6",padding:"4px 8px",fontSize:"0.7rem",color:"#9ca3af",display:"flex",alignItems:"flex-start"}}>{h>12?h-12:h}{h>=12?"pm":"am"}</div>
+                  ))}
+                </div>
+                <div style={{borderLeft:"1px solid #f3f4f6",position:"relative",minHeight:currentDate.getDay()===6?240:720}}>
+                  {Array.from({length:currentDate.getDay()===6?4:12}).map((_,i)=>(
+                    <div key={i} style={{height:60,borderBottom:"1px solid #f3f4f6"}}/>
+                  ))}
+                  {getEventsForDay(currentDate).map((e,j)=>{
+                    const startH=e.startMins/60;
+                    const endH=e.endMins/60;
+                    const top=Math.max(0,(startH-8)*60);
+                    const height=Math.max(24,(endH-startH)*60);
+                    return(
+                      <div key={j} title={e.summary} style={{position:"absolute",top,left:2,right:2,height,background:eventColor(e.summary),borderRadius:4,padding:"4px 8px",overflow:"hidden",zIndex:1}}>
+                        <div style={{fontSize:"0.78rem",fontWeight:700,color:"white",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.summary}</div>
+                        <div style={{fontSize:"0.7rem",color:"rgba(255,255,255,0.85)"}}>{e.startMins&&toTimeStrGlobal(e.startMins,e.endMins)}</div>
+                        {e.location&&<div style={{fontSize:"0.68rem",color:"rgba(255,255,255,0.75)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>📍 {e.location}</div>}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
