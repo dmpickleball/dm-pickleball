@@ -55,7 +55,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { date, memberType } = req.query;
+  const { date, endDate, memberType, allEvents } = req.query;
   if (!date) return res.status(400).json({ error: 'date required' });
 
   const lessonLocation = memberType === 'menlo'
@@ -65,7 +65,7 @@ export default async function handler(req, res) {
   try {
     const calendar = google.calendar({ version: 'v3', auth: getAuth() });
     const timeMin = new Date(date + 'T00:00:00-07:00').toISOString();
-    const timeMax = new Date(date + 'T23:59:59-07:00').toISOString();
+    const timeMax = new Date((endDate||date) + 'T23:59:59-07:00').toISOString();
 
     const response = await calendar.events.list({
       calendarId: process.env.GOOGLE_CALENDAR_ID,

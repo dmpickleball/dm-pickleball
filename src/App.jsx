@@ -1451,6 +1451,215 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
   );
 }
 
+function AdminCalendarView(){
+  const[view,setView]=useState("week");
+  const[currentDate,setCurrentDate]=useState(new Date());
+  const[events,setEvents]=useState([]);
+  const[loading,setLoading]=useState(false);
+
+  const getDateRange=()=>{
+    if(view==="day"){
+      const d=new Date(currentDate);
+      return{start:toDS(d),end:toDS(d)};
+    } else if(view==="week"){
+      const start=new Date(currentDate);
+      start.setDate(start.getDate()-start.getDay());
+      const end=new Date(start);
+      end.setDate(end.getDate()+6);
+      return{start:toDS(start),end:toDS(end)};
+    } else {
+      const start=new Date(currentDate.getFullYear(),currentDate.getMonth(),1);
+      const end=new Date(currentDate.getFullYear(),currentDate.getMonth()+1,0);
+      return{start:toDS(start),end:toDS(end)};
+    }
+  };
+
+  const loadEvents=async()=>{
+    setLoading(true);
+    const{start,end}=getDateRange();
+    try{
+      const r=await fetch("/api/get-busy-times?date="+start+"&endDate="+end+"&allEvents=true");
+      const data=await r.json();
+      setEvents(data.busy||[]);
+    }catch(e){console.error("Calendar load error:",e);}
+    setLoading(false);
+  };
+
+  useEffect(()=>{loadEvents();},[view,currentDate]);
+
+  const navigate=(dir)=>{
+    const d=new Date(currentDate);
+    if(view==="day")d.setDate(d.getDate()+dir);
+    else if(view==="week")d.setDate(d.getDate()+(dir*7));
+    else d.setMonth(d.getMonth()+dir);
+    setCurrentDate(d);
+  };
+
+  const getTitle=()=>{
+    if(view==="day")return currentDate.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"});
+    if(view==="week"){
+      const start=new Date(currentDate);
+      start.setDate(start.getDate()-start.getDay());
+      const end=new Date(start);end.setDate(end.getDate()+6);
+      return start.toLocaleDateString("en-US",{month:"short",day:"numeric"})+" - "+end.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+    }
+    return currentDate.toLocaleDateString("en-US",{month:"long",year:"numeric"});
+  };
+
+  const eventColor=(summary)=>{
+    const s=(summary||"").toLowerCase();
+    if(s.includes("stanford"))return"#8b5cf6";
+    if(s.includes("group"))return"#f97316";
+    if(s.includes("/"))return"#0ea5e9";
+    if(s.includes("pb lesson"))return"#1a3c34";
+    return"#6b7280";
+  };
+
+  const getDaysInView=()=>{
+    if(view==="day")return[new Date(currentDate)];
+    if(view==="week"){
+      const start=new Date(currentDate);
+      start.setDate(start.getDate()-start.getDay());
+      return Array.from({length:7},(_,i)=>{const d=new Date(start);d.setDate(d.getDate()+i);return d;});
+    }
+    const start=new Date(currentDate.getFullYear(),currentDate.getMonth(),1);
+    const days=[];
+    const firstDay=start.getDay();
+    for(let i=0;i<firstDay;i++){const d=new Date(start);d.setDate(d.getDate()-firstDay+i);days.push(d);}
+    const daysInMonth=new Date(currentDate.getFullYear(),currentDate.getMonth()+1,0).getDate();
+    for(let i=1;i<=daysInMonth;i++){days.push(new Date(currentDate.getFullYear(),currentDate.getMonth(),i));}
+    while(days.length%7!==0){const d=new Date(days[days.length-1]);d.setDate(d.getDate()+1);days.push(d);}
+    return days;
+  };
+
+  const getEventsForDay=(date)=>{
+    const ds=toDS(date);
+    return events.filter(e=>e.start&&e.start.substring(0,10)===ds);
+  };
+
+  const days=getDaysInView();
+  const today=new Date();
+  today.setHours(0,0,0,0);
+
+  return(
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:12}}>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <button onClick={()=>navigate(-1)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 14px",borderRadius:50,cursor:"pointer",fontSize:"1rem"}}>←</button>
+          <button onClick={()=>setCurrentDate(new Date())} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:600}}>Today</button>
+          <button onClick={()=>navigate(1)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 14px",borderRadius:50,cursor:"pointer",fontSize:"1rem"}}>→</button>
+          <span style={{fontWeight:800,fontSize:"1.1rem",color:"#1a1a1a"}}>{getTitle()}</span>
+        </div>
+        <div style={{display:"flex",gap:6}}>
+          {["day","week","month"].map(v=>(
+            <button key={v} onClick={()=>setView(v)} style={{background:view===v?"#1a3c34":"white",color:view===v?"white":"#374151",border:"1.5px solid "+(view===v?"#1a3c34":"#e5e7eb"),padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:view===v?700:500}}>
+              {v.charAt(0).toUpperCase()+v.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {loading?(
+        <div style={{textAlign:"center",padding:"60px",color:"#6b7280"}}>Loading calendar...</div>
+      ):view==="month"?(
+        <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",borderBottom:"1.5px solid #e5e7eb"}}>
+            {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d=>(<div key={d} style={{padding:"10px",textAlign:"center",fontSize:"0.78rem",fontWeight:700,color:"#6b7280",textTransform:"uppercase"}}>{d}</div>))}
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)"}}>
+            {days.map((day,i)=>{
+              const isToday=day.getTime()===today.getTime();
+              const isCurrentMonth=day.getMonth()===currentDate.getMonth();
+              const dayEvents=getEventsForDay(day);
+              return(
+                <div key={i} style={{minHeight:90,padding:"6px",borderRight:i%7!==6?"1px solid #f3f4f6":"none",borderBottom:i<days.length-7?"1px solid #f3f4f6":"none",background:isCurrentMonth?"white":"#f9f9f6"}}>
+                  <div style={{width:26,height:26,borderRadius:"50%",background:isToday?"#1a3c34":"transparent",color:isToday?"white":isCurrentMonth?"#1a1a1a":"#9ca3af",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.82rem",fontWeight:isToday?800:500,marginBottom:4}}>{day.getDate()}</div>
+                  {dayEvents.slice(0,3).map((e,j)=>(
+                    <div key={j} style={{background:eventColor(e.summary),color:"white",borderRadius:4,padding:"2px 6px",fontSize:"0.7rem",fontWeight:600,marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.summary}</div>
+                  ))}
+                  {dayEvents.length>3&&<div style={{fontSize:"0.68rem",color:"#6b7280",marginTop:2}}>+{dayEvents.length-3} more</div>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ):(
+        <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
+          {view==="week"&&(
+            <div style={{display:"grid",gridTemplateColumns:"60px repeat(7,1fr)",borderBottom:"1.5px solid #e5e7eb"}}>
+              <div/>
+              {days.map((day,i)=>{
+                const isToday=day.getTime()===today.getTime();
+                return(
+                  <div key={i} style={{padding:"10px 4px",textAlign:"center",borderLeft:"1px solid #f3f4f6"}}>
+                    <div style={{fontSize:"0.72rem",color:"#6b7280",textTransform:"uppercase",fontWeight:700}}>{day.toLocaleDateString("en-US",{weekday:"short"})}</div>
+                    <div style={{width:30,height:30,borderRadius:"50%",background:isToday?"#1a3c34":"transparent",color:isToday?"white":"#1a1a1a",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.95rem",fontWeight:isToday?800:500,margin:"4px auto 0"}}>{day.getDate()}</div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <div style={{overflowY:"auto",maxHeight:"60vh"}}>
+            {view==="week"?(
+              <div style={{display:"grid",gridTemplateColumns:"60px repeat(7,1fr)"}}>
+                <div>
+                  {Array.from({length:13},(_,i)=>i+7).map(h=>(
+                    <div key={h} style={{height:60,borderBottom:"1px solid #f3f4f6",padding:"4px 8px",fontSize:"0.7rem",color:"#9ca3af",display:"flex",alignItems:"flex-start"}}>{h>12?h-12:h}{h>=12?"pm":"am"}</div>
+                  ))}
+                </div>
+                {days.map((day,di)=>{
+                  const dayEvents=getEventsForDay(day);
+                  return(
+                    <div key={di} style={{borderLeft:"1px solid #f3f4f6",position:"relative",minHeight:780}}>
+                      {Array.from({length:13}).map((_,i)=>(
+                        <div key={i} style={{height:60,borderBottom:"1px solid #f3f4f6"}}/>
+                      ))}
+                      {dayEvents.map((e,j)=>{
+                        const startH=e.startMins/60;
+                        const endH=e.endMins/60;
+                        const top=Math.max(0,(startH-7)*60);
+                        const height=Math.max(20,(endH-startH)*60);
+                        return(
+                          <div key={j} title={e.summary} style={{position:"absolute",top,left:2,right:2,height,background:eventColor(e.summary),borderRadius:4,padding:"3px 5px",overflow:"hidden",zIndex:1}}>
+                            <div style={{fontSize:"0.7rem",fontWeight:700,color:"white",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.summary}</div>
+                            <div style={{fontSize:"0.65rem",color:"rgba(255,255,255,0.85)"}}>{e.startMins&&toTimeStr(e.startMins,e.endMins)}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            ):(
+              <div>
+                {getEventsForDay(currentDate).length===0?(
+                  <div style={{padding:"40px",textAlign:"center",color:"#9ca3af"}}>No events today.</div>
+                ):getEventsForDay(currentDate).map((e,i)=>(
+                  <div key={i} style={{padding:"14px 20px",borderBottom:"1px solid #f3f4f6",display:"flex",alignItems:"center",gap:12}}>
+                    <div style={{width:4,height:40,borderRadius:2,background:eventColor(e.summary),flexShrink:0}}/>
+                    <div>
+                      <div style={{fontWeight:700,fontSize:"0.95rem"}}>{e.summary}</div>
+                      <div style={{fontSize:"0.82rem",color:"#6b7280",marginTop:2}}>{e.startMins&&toTimeStr(e.startMins,e.endMins)}{e.location&&" · "+e.location}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div style={{display:"flex",gap:16,marginTop:12,flexWrap:"wrap"}}>
+        {[["#1a3c34","Private Lesson"],["#0ea5e9","Semi-Private"],["#f97316","Group"],["#8b5cf6","Stanford"],["#6b7280","Other"]].map(([color,label])=>(
+          <div key={label} style={{display:"flex",alignItems:"center",gap:6,fontSize:"0.78rem",color:"#6b7280"}}>
+            <div style={{width:10,height:10,borderRadius:2,background:color}}/>
+            {label}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,onApprove,onDeny,mockUsers,onAddStudent,onAddLesson,onToggleMenlo,onToggleSaturday,onBlockStudent}){
   const[tab,setTab]=useState(pendingStudents.length>0?"pending":"students");
   const[studentSearch,setStudentSearch]=useState("");
@@ -1989,16 +2198,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
       )}
 
       {tab==="lessons"&&(
-        <div>
-          <div style={{borderRadius:12,overflow:"hidden",border:"1.5px solid #e5e7eb",background:"white"}}>
-            <iframe
-              src="https://calendar.google.com/calendar/embed?height=600&wkst=1&ctz=America%2FLos_Angeles&showPrint=0&title&src=ZG1waWNrbGViYWxsQGdtYWlsLmNvbQ&src=ZGF2aWRtb2tibG9ja0BnbWFpbC5jb20&color=%2364c466&color=%23039be5"
-              style={{border:"none",width:"100%",height:"calc(100vh - 280px)",minHeight:500,display:"block"}}
-              frameBorder="0"
-              scrolling="no"
-            />
-          </div>
-        </div>
+        <AdminCalendarView/>
       )}
       {tab==="lessons_old"&&(
         <div>
