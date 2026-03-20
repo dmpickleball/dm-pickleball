@@ -67,6 +67,7 @@ const INIT_PENDING = [];
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
 function toDS(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;}
+function toTimeStrGlobal(s,e){const fmt=m=>{const h=Math.floor(m/60),mn=m%60,ampm=h>=12?"pm":"am",hr=h>12?h-12:h||12;return hr+(mn>0?":"+String(mn).padStart(2,"0"):"")+ampm;};return fmt(s)+" - "+fmt(e);}
 const NOW = new Date();
 const INIT_LESSONS = {
   "student@email.com":[
@@ -1622,7 +1623,7 @@ function AdminCalendarView(){
                         return(
                           <div key={j} title={e.summary} style={{position:"absolute",top,left:2,right:2,height,background:eventColor(e.summary),borderRadius:4,padding:"3px 5px",overflow:"hidden",zIndex:1}}>
                             <div style={{fontSize:"0.7rem",fontWeight:700,color:"white",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.summary}</div>
-                            <div style={{fontSize:"0.65rem",color:"rgba(255,255,255,0.85)"}}>{e.startMins&&toTimeStr(e.startMins,e.endMins)}</div>
+                            <div style={{fontSize:"0.65rem",color:"rgba(255,255,255,0.85)"}}>{e.startMins&&toTimeStrGlobal(e.startMins,e.endMins)}</div>
                           </div>
                         );
                       })}
@@ -1639,7 +1640,7 @@ function AdminCalendarView(){
                     <div style={{width:4,height:40,borderRadius:2,background:eventColor(e.summary),flexShrink:0}}/>
                     <div>
                       <div style={{fontWeight:700,fontSize:"0.95rem"}}>{e.summary}</div>
-                      <div style={{fontSize:"0.82rem",color:"#6b7280",marginTop:2}}>{e.startMins&&toTimeStr(e.startMins,e.endMins)}{e.location&&" · "+e.location}</div>
+                      <div style={{fontSize:"0.82rem",color:"#6b7280",marginTop:2}}>{e.startMins&&toTimeStrGlobal(e.startMins,e.endMins)}{e.location&&" · "+e.location}</div>
                     </div>
                   </div>
                 ))}
