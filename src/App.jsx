@@ -1600,20 +1600,20 @@ function AdminCalendarView(){
               })}
             </div>
           )}
-          <div style={{overflowY:"auto",maxHeight:"60vh"}}>
+          <div style={{overflowY:"visible"}}>
             {view==="week"?(
               <div style={{display:"grid",gridTemplateColumns:"60px repeat(7,1fr)"}}>
                 <div>
                   {Array.from({length:(()=>{const dow=view==="day"?currentDate.getDay():0;return dow===6?4:12;})()},(_,i)=>i+8).map(h=>(
-                    <div key={h} style={{height:60,borderBottom:"1px solid #f3f4f6",padding:"4px 8px",fontSize:"0.7rem",color:"#9ca3af",display:"flex",alignItems:"flex-start"}}>{h>12?h-12:h}{h>=12?"pm":"am"}</div>
+                    <div key={h} style={{height:40,borderBottom:"1px solid #f3f4f6",padding:"3px 8px",fontSize:"0.68rem",color:"#9ca3af",display:"flex",alignItems:"flex-start"}}>{h>12?h-12:h}{h>=12?"pm":"am"}</div>
                   ))}
                 </div>
                 {days.map((day,di)=>{
                   const dayEvents=getEventsForDay(day);
                   return(
-                    <div key={di} style={{borderLeft:"1px solid #f3f4f6",position:"relative",minHeight:(()=>{const dow=day.getDay();return dow===6?240:720;})()}}>
+                    <div key={di} style={{borderLeft:"1px solid #f3f4f6",position:"relative",minHeight:(()=>{const dow=day.getDay();return dow===6?160:480;})()}}}>
                       {Array.from({length:(()=>{const dow=day.getDay();return dow===6?4:12;})()}).map((_,i)=>(
-                        <div key={i} style={{height:60,borderBottom:"1px solid #f3f4f6"}}/>
+                        <div key={i} style={{height:40,borderBottom:"1px solid #f3f4f6"}}/>
                       ))}
                       {dayEvents.map((e,j)=>{
                         const startH=e.startMins/60;
@@ -1635,12 +1635,12 @@ function AdminCalendarView(){
               <div style={{display:"grid",gridTemplateColumns:"60px 1fr"}}>
                 <div>
                   {Array.from({length:currentDate.getDay()===6?4:12},(_,i)=>i+8).map(h=>(
-                    <div key={h} style={{height:60,borderBottom:"1px solid #f3f4f6",padding:"4px 8px",fontSize:"0.7rem",color:"#9ca3af",display:"flex",alignItems:"flex-start"}}>{h>12?h-12:h}{h>=12?"pm":"am"}</div>
+                    <div key={h} style={{height:40,borderBottom:"1px solid #f3f4f6",padding:"3px 8px",fontSize:"0.68rem",color:"#9ca3af",display:"flex",alignItems:"flex-start"}}>{h>12?h-12:h}{h>=12?"pm":"am"}</div>
                   ))}
                 </div>
                 <div style={{borderLeft:"1px solid #f3f4f6",position:"relative",minHeight:currentDate.getDay()===6?240:720}}>
                   {Array.from({length:currentDate.getDay()===6?4:12}).map((_,i)=>(
-                    <div key={i} style={{height:60,borderBottom:"1px solid #f3f4f6"}}/>
+                    <div key={i} style={{height:40,borderBottom:"1px solid #f3f4f6"}}/>
                   ))}
                   {getEventsForDay(currentDate).map((e,j)=>{
                     const startH=e.startMins/60;
