@@ -1310,6 +1310,8 @@ function LocationsTab({locations,setLocations}){
   );
 }
 function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeStanford,financeData,setFinanceData,financeLoading,setFinanceLoading,allLessons,mockUsers,onExportNial,showNialExport,setShowNialExport,nialStart,setNialStart,nialEnd,setNialEnd}){
+  const[showNetStanford,setShowNetStanford]=useState(false);
+  const[searchQuery,setSearchQuery]=useState("");
   const now=new Date();
   const getDateRange=(range)=>{
     const end=new Date();
@@ -1335,8 +1337,8 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
   const handleStanfordToggle=()=>{const next=!includeStanford;setIncludeStanford(next);loadFinances(financeRange,next);};
   const portalEarnings=getEarnings(allLessons,mockUsers,financeRange);
   const typeColors={private:"#1a3c34",semi:"#0ea5e9",group:"#f97316",stanford_rec:"#8b5cf6",stanford_open:"#8b5cf6"};
-  const calendarLessons=(financeData?.events||[]).filter(e=>!e.isStanford);
-  const stanfordEvents=(financeData?.events||[]).filter(e=>e.isStanford);
+  const calendarLessons=(financeData?.events||[]).filter(e=>!e.isStanford&&(!searchQuery||e.summary?.toLowerCase().includes(searchQuery.toLowerCase())||e.category?.toLowerCase().includes(searchQuery.toLowerCase())));
+  const stanfordEvents=(financeData?.events||[]).filter(e=>e.isStanford&&(!searchQuery||e.category?.toLowerCase().includes(searchQuery.toLowerCase())));
   const totalEarnings=(financeData?.lessonEarnings||0)+portalEarnings.total+(includeStanford?(financeData?.stanfordEarnings||0):0);
   return(
     <div>
@@ -1351,9 +1353,14 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
             </button>
           ))}
         </div>
-        <button onClick={handleStanfordToggle} style={{background:includeStanford?"#8b5cf6":"white",color:includeStanford?"white":"#374151",border:"1.5px solid "+(includeStanford?"#8b5cf6":"#e5e7eb"),padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:600}}>
-          {includeStanford?"✓ Stanford Included":"+ Include Stanford"}
-        </button>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          <button onClick={handleStanfordToggle} style={{background:includeStanford?"#8b5cf6":"white",color:includeStanford?"white":"#374151",border:"1.5px solid "+(includeStanford?"#8b5cf6":"#e5e7eb"),padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:600}}>
+            {includeStanford?"✓ Stanford Included":"+ Include Stanford"}
+          </button>
+          {includeStanford&&<button onClick={()=>setShowNetStanford(!showNetStanford)} style={{background:showNetStanford?"#7c3aed":"white",color:showNetStanford?"white":"#374151",border:"1.5px solid "+(showNetStanford?"#7c3aed":"#e5e7eb"),padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:600}}>
+            {showNetStanford?"✓ Showing Net (after tax)":"Show Net (after tax)"}
+          </button>}
+        </div>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:16,marginBottom:28}}>
         <div style={{background:"white",borderRadius:12,padding:"20px",border:"1.5px solid #e5e7eb"}}>
@@ -1393,6 +1400,9 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
           </div>
         </div>
       )}
+      <div style={{marginBottom:16}}>
+        <input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder="Search lessons, students, types..." style={{...inp,marginBottom:0,maxWidth:400}}/>
+      </div>
       {financeLoading?(
         <div style={{textAlign:"center",padding:"40px",color:"#6b7280"}}>Loading financial data...</div>
       ):(
