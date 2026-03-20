@@ -2339,32 +2339,6 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
           mockUsers={mockUsers}
         />
       )}
-      </div>
-          {earnings.rows.length===0
-            ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"32px",textAlign:"center",color:"#9ca3af"}}>No completed lessons this {earningsRange}.</div>
-            :<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
-              <table style={{width:"100%",borderCollapse:"collapse",fontSize:"0.88rem"}}>
-                <thead>
-                  <tr style={{background:"#f9f9f6",borderBottom:"1.5px solid #e5e7eb"}}>
-                    {["Date","Student","Type","Duration","Your Cut"].map(h=>(<th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#6b7280",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {earnings.rows.map((r,i)=>(
-                    <tr key={i} style={{borderBottom:"1px solid #f3f4f6",background:r.isMenlo?"#f0faf5":"white"}}>
-                      <td style={{padding:"12px 16px"}}>{fmtDateShort(r.date)}</td>
-                      <td style={{padding:"12px 16px"}}>{r.name}{r.isMenlo&&<span style={{background:G,color:"white",fontSize:"0.65rem",fontWeight:700,padding:"1px 6px",borderRadius:50,marginLeft:6}}>MCC</span>}</td>
-                      <td style={{padding:"12px 16px"}}>{r.type}</td>
-                      <td style={{padding:"12px 16px"}}>{r.duration}</td>
-                      <td style={{padding:"12px 16px",fontWeight:700,color:G}}>${r.net}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          }
-        </div>
-      )}
     </div>
   );
 }
