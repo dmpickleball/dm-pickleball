@@ -203,7 +203,7 @@ function LocationInput({value, onChange, placeholder, style}){
   };
 
   const handleSelect=(s)=>{
-    const val=s.address||s.name;
+    const val=s.name&&s.address&&!s.address.startsWith(s.name)?s.name+", "+s.address:s.address||s.name;
     setQuery(val);
     onChange(val,s);
     setSuggestions([]);
@@ -1076,7 +1076,7 @@ function BookingPage({user,setPage,onAddLesson}){
                   </div>
               }
             </div>
-          </div>
+          )}
           <div style={{display:"flex",gap:10}}>
             <button onClick={()=>setStep(1)} style={{flex:1,background:"white",border:"1.5px solid #e5e7eb",padding:"14px",borderRadius:50,fontWeight:600,cursor:"pointer",fontSize:"0.95rem"}}>← Back</button>
             <button onClick={()=>setStep(3)} disabled={!step2Done} style={{flex:2,background:step2Done?G:"#e5e7eb",color:step2Done?"white":"#9ca3af",border:"none",padding:"14px",borderRadius:50,fontWeight:700,cursor:step2Done?"pointer":"not-allowed",fontSize:"0.95rem"}}>
@@ -1096,7 +1096,7 @@ function BookingPage({user,setPage,onAddLesson}){
                 <input placeholder="Partner Email (optional — sends calendar invite)" value={partner.email} onChange={e=>setPartner({...partner,email:e.target.value})} style={{...inp,marginBottom:0}}/>
               </div>
             </div>
-          </div>
+          )}
           {lessonType==="group"&&(
             <div style={{marginBottom:20}}>
               <div style={{...lbl,marginBottom:10}}>Group Size</div>
@@ -1112,7 +1112,7 @@ function BookingPage({user,setPage,onAddLesson}){
                 </div>
               ))}
             </div>
-          </div>
+          )}
           <div style={{marginBottom:16}}>
             <div style={{...lbl,marginBottom:6}}>Focus Area <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(optional)</span></div>
             <select value={focus} onChange={e=>setFocus(e.target.value)} style={{...inp,marginBottom:0}}>
@@ -1309,11 +1309,7 @@ function LocationsTab({locations,setLocations}){
     </div>
   );
 }
-function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeStanford,financeData,setFinanceData,financeLoading,setFinanceLoading,allLessons,mockUsers,onExportNial,showNialExport,setShowNialExport,nialStart,setNialStart,nialEnd,setNialEnd}){
-  const[showNetStanford,setShowNetStanford]=useState(false);
-  const[searchQuery,setSearchQuery]=useState("");
-  const[editFinancePrice,setEditFinancePrice]=useState(null);
-  const[editFinancePriceVal,setEditFinancePriceVal]=useState("");
+function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeStanford,financeData,setFinanceData,financeLoading,setFinanceLoading,allLessons,mockUsers}){
   const now=new Date();
   const getDateRange=(range)=>{
     const end=new Date();
@@ -1339,16 +1335,12 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
   const handleStanfordToggle=()=>{const next=!includeStanford;setIncludeStanford(next);loadFinances(financeRange,next);};
   const portalEarnings=getEarnings(allLessons,mockUsers,financeRange);
   const typeColors={private:"#1a3c34",semi:"#0ea5e9",group:"#f97316",stanford_rec:"#8b5cf6",stanford_open:"#8b5cf6"};
-  const calendarLessons=(financeData?.events||[]).filter(e=>!e.isStanford&&(!searchQuery||e.summary?.toLowerCase().includes(searchQuery.toLowerCase())||e.category?.toLowerCase().includes(searchQuery.toLowerCase())));
-  const stanfordEvents=(financeData?.events||[]).filter(e=>e.isStanford&&(!searchQuery||e.category?.toLowerCase().includes(searchQuery.toLowerCase())));
-  const stanfordAmt=showNetStanford?(financeData?.stanfordNetEarnings||0):(financeData?.stanfordEarnings||0);
-  const totalEarnings=(financeData?.lessonEarnings||0)+portalEarnings.total+stanfordAmt;
+  const calendarLessons=(financeData?.events||[]).filter(e=>!e.isStanford);
+  const stanfordEvents=(financeData?.events||[]).filter(e=>e.isStanford);
+  const totalEarnings=(financeData?.lessonEarnings||0)+portalEarnings.total+(includeStanford?(financeData?.stanfordEarnings||0):0);
   return(
     <div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:12}}>
-        <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <button onClick={()=>setShowNialExport(!showNialExport)} style={{background:"#1a1a1a",color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>⬇ Export Nial Report</button>
-        </div>
         <div style={{display:"flex",gap:8}}>
           {["week","month","year"].map(r=>(
             <button key={r} onClick={()=>handleRangeChange(r)} style={{background:financeRange===r?"#1a3c34":"white",color:financeRange===r?"white":"#374151",border:"1.5px solid "+(financeRange===r?"#1a3c34":"#e5e7eb"),padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:financeRange===r?700:500}}>
@@ -1356,15 +1348,9 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
             </button>
           ))}
         </div>
-        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <span style={{fontSize:"0.85rem",fontWeight:600,color:"#8b5cf6"}}>Stanford:</span>
-            <div style={{display:"flex",background:"#f3f4f6",borderRadius:50,padding:2}}>
-              <button onClick={()=>setShowNetStanford(false)} style={{background:!showNetStanford?"white":"transparent",color:!showNetStanford?"#1a3c34":"#6b7280",border:"none",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:!showNetStanford?700:500,boxShadow:!showNetStanford?"0 1px 4px rgba(0,0,0,0.1)":"none"}}>Gross</button>
-              <button onClick={()=>setShowNetStanford(true)} style={{background:showNetStanford?"white":"transparent",color:showNetStanford?"#7c3aed":"#6b7280",border:"none",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:showNetStanford?700:500,boxShadow:showNetStanford?"0 1px 4px rgba(0,0,0,0.1)":"none"}}>Net (after tax)</button>
-            </div>
-          </div>
-        </div>
+        <button onClick={handleStanfordToggle} style={{background:includeStanford?"#8b5cf6":"white",color:includeStanford?"white":"#374151",border:"1.5px solid "+(includeStanford?"#8b5cf6":"#e5e7eb"),padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:600}}>
+          {includeStanford?"✓ Stanford Included":"+ Include Stanford"}
+        </button>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:16,marginBottom:28}}>
         <div style={{background:"white",borderRadius:12,padding:"20px",border:"1.5px solid #e5e7eb"}}>
@@ -1385,27 +1371,10 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
         {includeStanford&&(
           <div style={{background:"#f5f3ff",borderRadius:12,padding:"20px",border:"1.5px solid #8b5cf6"}}>
             <div style={{fontSize:"0.7rem",fontWeight:700,color:"#8b5cf6",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Stanford</div>
-            <div style={{fontSize:"1.8rem",fontWeight:900,color:"#8b5cf6"}}>${showNetStanford?(financeData?.stanfordNetEarnings||0).toFixed(2):(financeData?.stanfordEarnings||0).toFixed(2)}</div>
+            <div style={{fontSize:"1.8rem",fontWeight:900,color:"#8b5cf6"}}>${(financeData?.stanfordEarnings||0).toFixed(2)}</div>
             <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:4}}>{(financeData?.stanfordHours||0).toFixed(1)} hrs</div>
           </div>
         )}
-      </div>
-      {showNialExport&&(
-        <div style={{background:"#f9f9f6",borderRadius:12,padding:"20px 24px",marginBottom:20,border:"1.5px solid #e5e7eb"}}>
-          <div style={{fontWeight:700,fontSize:"0.95rem",marginBottom:4}}>Export Menlo Report for Nial</div>
-          <div style={{fontSize:"0.83rem",color:"#6b7280",marginBottom:16}}>Select date range — shows Date, Member Name, Lesson Type, Duration.</div>
-          <div style={{display:"flex",gap:12,flexWrap:"wrap",alignItems:"flex-end"}}>
-            <div><div style={{fontSize:"0.78rem",fontWeight:700,color:"#6b7280",marginBottom:4}}>Start Date</div><input type="date" value={nialStart} onChange={e=>setNialStart(e.target.value)} style={{...inp,marginBottom:0,width:"auto"}}/></div>
-            <div><div style={{fontSize:"0.78rem",fontWeight:700,color:"#6b7280",marginBottom:4}}>End Date</div><input type="date" value={nialEnd} onChange={e=>setNialEnd(e.target.value)} style={{...inp,marginBottom:0,width:"auto"}}/></div>
-            <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>setShowNialExport(false)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}>Cancel</button>
-              <button onClick={onExportNial} style={{background:G,color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>⬇ Download CSV</button>
-            </div>
-          </div>
-        </div>
-      )}
-      <div style={{marginBottom:16}}>
-        <input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder="Search lessons, students, types..." style={{...inp,marginBottom:0,maxWidth:400}}/>
       </div>
       {financeLoading?(
         <div style={{textAlign:"center",padding:"40px",color:"#6b7280"}}>Loading financial data...</div>
@@ -1431,7 +1400,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                 </table>
               </div>
             </div>
-          </div>
+          )}
           {includeStanford&&stanfordEvents.length>0&&(
             <div style={{marginBottom:24}}>
               <div style={{fontSize:"0.8rem",fontWeight:700,color:"#8b5cf6",textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Stanford Events</div>
@@ -1452,7 +1421,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                 </table>
               </div>
             </div>
-          </div>
+          )}
           {portalEarnings.rows.length>0&&(
             <div>
               <div style={{fontSize:"0.8rem",fontWeight:700,color:"#1a3c34",textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Portal Lessons</div>
@@ -1473,7 +1442,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                 </table>
               </div>
             </div>
-          </div>
+          )}
           {calendarLessons.length===0&&portalEarnings.rows.length===0&&!financeLoading&&(
             <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"40px",textAlign:"center",color:"#9ca3af"}}>No earnings data found for this period.</div>
           )}
@@ -1630,7 +1599,7 @@ function AdminCalendarView(){
                 );
               })}
             </div>
-          </div>
+          )}
           <div style={{overflowY:"visible"}}>
             {view==="week"?(
               <div style={{display:"grid",gridTemplateColumns:"60px repeat(7,1fr)"}}>
@@ -1713,7 +1682,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[showSchedule,setShowSchedule]=useState(false);
   const[earningsRange,setEarningsRange]=useState("month");
   const[financeRange,setFinanceRange]=useState("month");
-  const[includeStanford,setIncludeStanford]=useState(true);
+  const[includeStanford,setIncludeStanford]=useState(false);
   const[financeData,setFinanceData]=useState(null);
   const[financeLoading,setFinanceLoading]=useState(false);
   const[showNialExport,setShowNialExport]=useState(false);
@@ -1877,7 +1846,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
       </div>
 
       <div style={{display:"flex",gap:0,borderBottom:"2px solid #e5e7eb",marginBottom:28,flexWrap:"wrap"}}>
-        {[["pending","Pending"+(pendingStudents.length>0?" ("+pendingStudents.length+")":"")],["students","Students"],["lessons","Lessons"],["finances","Finances"]].map(([t,label])=>(
+        {[["pending","Pending"+(pendingStudents.length>0?" ("+pendingStudents.length+")":"")],["students","Students"],["lessons","Lessons"],["earnings","Earnings"],["finances","Finances"]].map(([t,label])=>(
           <button key={t} onClick={()=>{setTab(t);setSelectedStudent(null);setShowSchedule(false);}}
             style={{background:"none",border:"none",borderBottom:"2px solid "+(tab===t?G:"transparent"),marginBottom:-2,padding:"10px 20px",fontSize:"0.88rem",fontWeight:tab===t?700:500,color:tab===t?G:"#6b7280",cursor:"pointer"}}>
             {label}
@@ -1925,7 +1894,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 <button onClick={()=>{if(!newStudent.name||!newStudent.email){alert("Name and email required.");return;}onAddStudent(newStudent);setNewStudent({name:"",email:"",memberType:"public"});setShowAddStudent(false);}} style={{background:G,color:"white",border:"none",padding:"8px 20px",borderRadius:50,cursor:"pointer",fontWeight:700}}>Add Student</button>
               </div>
             </div>
-          </div>
+          )}
           <div style={{display:"grid",gap:10}}>
             {filteredStudents.map(email=>{
               const u=mockUsers[email]||{};
@@ -2184,12 +2153,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                         </div>
                         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                           {JSON.parse(localStorage.getItem("recentLocations")||"[]").slice(0,3).map((loc,i)=>(
-                            <div key={i} onClick={()=>{
-                              setSchedLocation(loc);
-                              const recent=JSON.parse(localStorage.getItem("recentLocations")||"[]");
-                              const deduped=[loc,...recent.filter(r=>r!==loc)].slice(0,10);
-                              localStorage.setItem("recentLocations",JSON.stringify(deduped));
-                            }} style={{background:schedLocation===loc?"#e8f0ee":"white",border:"1.5px solid "+(schedLocation===loc?"#1a3c34":"#e5e7eb"),padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:schedLocation===loc?700:400,color:schedLocation===loc?"#1a3c34":"#374151"}}>
+                            <div key={i} onClick={()=>setSchedLocation(loc)} style={{background:schedLocation===loc?"#e8f0ee":"white",border:"1.5px solid "+(schedLocation===loc?"#1a3c34":"#e5e7eb"),padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:schedLocation===loc?700:400,color:schedLocation===loc?"#1a3c34":"#374151"}}>
                               {loc.length>45?loc.substring(0,45)+"...":loc}
                             </div>
                           ))}
@@ -2203,20 +2167,13 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                         const updated=[v,...recent.filter(r=>r!==v)].slice(0,10);
                         localStorage.setItem("recentLocations",JSON.stringify(updated));
                       }
-                    }} placeholder="Search for a location..." style={inp}
-                    onBlur={()=>{
-                      if(schedLocation&&schedLocation.length>10){
-                        const recent=JSON.parse(localStorage.getItem("recentLocations")||"[]");
-                        const deduped=[schedLocation,...recent.filter(r=>r!==schedLocation)].slice(0,10);
-                        localStorage.setItem("recentLocations",JSON.stringify(deduped));
-                      }
-                    }}/>
+                    }} placeholder="Search for a location..." style={inp}/>
                   </div>
                 )}
               </div>
               <button onClick={()=>setScheduleStep(2)} style={{width:"100%",background:G,color:"white",border:"none",padding:"13px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"0.95rem"}}>Next: Date & Time →</button>
             </div>
-          </div>
+          )}
 
           {scheduleStep===2&&(
             <div>
@@ -2242,7 +2199,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 <button onClick={()=>setScheduleStep(3)} disabled={!schedDate||!schedSlot} style={{flex:2,background:schedDate&&schedSlot?G:"#e5e7eb",color:schedDate&&schedSlot?"white":"#9ca3af",border:"none",padding:"13px",borderRadius:50,fontWeight:700,cursor:schedDate&&schedSlot?"pointer":"not-allowed"}}>Next →</button>
               </div>
             </div>
-          </div>
+          )}
 
           {scheduleStep===3&&(
             <div>
@@ -2262,7 +2219,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 <button onClick={()=>setScheduleStep(4)} style={{flex:2,background:G,color:"white",border:"none",padding:"13px",borderRadius:50,fontWeight:700,cursor:"pointer"}}>Next: Review →</button>
               </div>
             </div>
-          </div>
+          )}
 
           {scheduleStep===4&&(
             <div>
@@ -2285,7 +2242,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 </button>
               </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
@@ -2346,13 +2303,6 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
 
       {tab==="finances"&&(
         <FinancesTab
-          onExportNial={exportNial}
-          showNialExport={showNialExport}
-          setShowNialExport={setShowNialExport}
-          nialStart={nialStart}
-          setNialStart={setNialStart}
-          nialEnd={nialEnd}
-          setNialEnd={setNialEnd}
           financeRange={financeRange}
           setFinanceRange={setFinanceRange}
           includeStanford={includeStanford}
@@ -2364,6 +2314,34 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
           allLessons={allLessons}
           mockUsers={mockUsers}
         />
+      )}
+      {tab==="earnings"&&(
+        <div>
+          <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:16}}>Earnings — This {earningsRange.charAt(0).toUpperCase()+earningsRange.slice(1)}</div>
+          {earnings.rows.length===0
+            ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"32px",textAlign:"center",color:"#9ca3af"}}>No completed lessons this {earningsRange}.</div>
+            :<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:"0.88rem"}}>
+                <thead>
+                  <tr style={{background:"#f9f9f6",borderBottom:"1.5px solid #e5e7eb"}}>
+                    {["Date","Student","Type","Duration","Your Cut"].map(h=>(<th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#6b7280",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {earnings.rows.map((r,i)=>(
+                    <tr key={i} style={{borderBottom:"1px solid #f3f4f6",background:r.isMenlo?"#f0faf5":"white"}}>
+                      <td style={{padding:"12px 16px"}}>{fmtDateShort(r.date)}</td>
+                      <td style={{padding:"12px 16px"}}>{r.name}{r.isMenlo&&<span style={{background:G,color:"white",fontSize:"0.65rem",fontWeight:700,padding:"1px 6px",borderRadius:50,marginLeft:6}}>MCC</span>}</td>
+                      <td style={{padding:"12px 16px"}}>{r.type}</td>
+                      <td style={{padding:"12px 16px"}}>{r.duration}</td>
+                      <td style={{padding:"12px 16px",fontWeight:700,color:G}}>${r.net}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
       )}
     </div>
   );
