@@ -1076,7 +1076,7 @@ function BookingPage({user,setPage,onAddLesson}){
                   </div>
               }
             </div>
-          )}
+          </div>
           <div style={{display:"flex",gap:10}}>
             <button onClick={()=>setStep(1)} style={{flex:1,background:"white",border:"1.5px solid #e5e7eb",padding:"14px",borderRadius:50,fontWeight:600,cursor:"pointer",fontSize:"0.95rem"}}>← Back</button>
             <button onClick={()=>setStep(3)} disabled={!step2Done} style={{flex:2,background:step2Done?G:"#e5e7eb",color:step2Done?"white":"#9ca3af",border:"none",padding:"14px",borderRadius:50,fontWeight:700,cursor:step2Done?"pointer":"not-allowed",fontSize:"0.95rem"}}>
@@ -1096,7 +1096,7 @@ function BookingPage({user,setPage,onAddLesson}){
                 <input placeholder="Partner Email (optional — sends calendar invite)" value={partner.email} onChange={e=>setPartner({...partner,email:e.target.value})} style={{...inp,marginBottom:0}}/>
               </div>
             </div>
-          )}
+          </div>
           {lessonType==="group"&&(
             <div style={{marginBottom:20}}>
               <div style={{...lbl,marginBottom:10}}>Group Size</div>
@@ -1112,7 +1112,7 @@ function BookingPage({user,setPage,onAddLesson}){
                 </div>
               ))}
             </div>
-          )}
+          </div>
           <div style={{marginBottom:16}}>
             <div style={{...lbl,marginBottom:6}}>Focus Area <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(optional)</span></div>
             <select value={focus} onChange={e=>setFocus(e.target.value)} style={{...inp,marginBottom:0}}>
@@ -1359,12 +1359,11 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <span style={{fontSize:"0.85rem",fontWeight:600,color:"#8b5cf6"}}>Stanford:</span>
-          (
             <div style={{display:"flex",background:"#f3f4f6",borderRadius:50,padding:2}}>
               <button onClick={()=>setShowNetStanford(false)} style={{background:!showNetStanford?"white":"transparent",color:!showNetStanford?"#1a3c34":"#6b7280",border:"none",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:!showNetStanford?700:500,boxShadow:!showNetStanford?"0 1px 4px rgba(0,0,0,0.1)":"none"}}>Gross</button>
               <button onClick={()=>setShowNetStanford(true)} style={{background:showNetStanford?"white":"transparent",color:showNetStanford?"#7c3aed":"#6b7280",border:"none",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:showNetStanford?700:500,boxShadow:showNetStanford?"0 1px 4px rgba(0,0,0,0.1)":"none"}}>Net (after tax)</button>
             </div>
-          )}
+          </div>
         </div>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:16,marginBottom:28}}>
@@ -1432,7 +1431,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                 </table>
               </div>
             </div>
-          )}
+          </div>
           {includeStanford&&stanfordEvents.length>0&&(
             <div style={{marginBottom:24}}>
               <div style={{fontSize:"0.8rem",fontWeight:700,color:"#8b5cf6",textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Stanford Events</div>
@@ -1453,7 +1452,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                 </table>
               </div>
             </div>
-          )}
+          </div>
           {portalEarnings.rows.length>0&&(
             <div>
               <div style={{fontSize:"0.8rem",fontWeight:700,color:"#1a3c34",textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Portal Lessons</div>
@@ -1474,7 +1473,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                 </table>
               </div>
             </div>
-          )}
+          </div>
           {calendarLessons.length===0&&portalEarnings.rows.length===0&&!financeLoading&&(
             <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"40px",textAlign:"center",color:"#9ca3af"}}>No earnings data found for this period.</div>
           )}
@@ -1631,7 +1630,7 @@ function AdminCalendarView(){
                 );
               })}
             </div>
-          )}
+          </div>
           <div style={{overflowY:"visible"}}>
             {view==="week"?(
               <div style={{display:"grid",gridTemplateColumns:"60px repeat(7,1fr)"}}>
@@ -1926,7 +1925,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 <button onClick={()=>{if(!newStudent.name||!newStudent.email){alert("Name and email required.");return;}onAddStudent(newStudent);setNewStudent({name:"",email:"",memberType:"public"});setShowAddStudent(false);}} style={{background:G,color:"white",border:"none",padding:"8px 20px",borderRadius:50,cursor:"pointer",fontWeight:700}}>Add Student</button>
               </div>
             </div>
-          )}
+          </div>
           <div style={{display:"grid",gap:10}}>
             {filteredStudents.map(email=>{
               const u=mockUsers[email]||{};
@@ -2217,7 +2216,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
               </div>
               <button onClick={()=>setScheduleStep(2)} style={{width:"100%",background:G,color:"white",border:"none",padding:"13px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"0.95rem"}}>Next: Date & Time →</button>
             </div>
-          )}
+          </div>
 
           {scheduleStep===2&&(
             <div>
@@ -2243,7 +2242,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 <button onClick={()=>setScheduleStep(3)} disabled={!schedDate||!schedSlot} style={{flex:2,background:schedDate&&schedSlot?G:"#e5e7eb",color:schedDate&&schedSlot?"white":"#9ca3af",border:"none",padding:"13px",borderRadius:50,fontWeight:700,cursor:schedDate&&schedSlot?"pointer":"not-allowed"}}>Next →</button>
               </div>
             </div>
-          )}
+          </div>
 
           {scheduleStep===3&&(
             <div>
@@ -2263,7 +2262,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 <button onClick={()=>setScheduleStep(4)} style={{flex:2,background:G,color:"white",border:"none",padding:"13px",borderRadius:50,fontWeight:700,cursor:"pointer"}}>Next: Review →</button>
               </div>
             </div>
-          )}
+          </div>
 
           {scheduleStep===4&&(
             <div>
@@ -2286,7 +2285,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 </button>
               </div>
             </div>
-          )}
+          </div>
         </div>
       )}
 
