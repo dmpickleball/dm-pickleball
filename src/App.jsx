@@ -1611,7 +1611,7 @@ function AdminCalendarView(){
                 {days.map((day,di)=>{
                   const dayEvents=getEventsForDay(day);
                   return(
-                    <div key={di} style={{borderLeft:"1px solid #f3f4f6",position:"relative",minHeight:(()=>{const dow=day.getDay();return dow===6?160:480;})()}}}>
+                    <div key={di} style={{borderLeft:"1px solid #f3f4f6",position:"relative",minHeight:(()=>{const dow=day.getDay();return dow===6?160:480;})()}}>
                       {Array.from({length:(()=>{const dow=day.getDay();return dow===6?4:12;})()}).map((_,i)=>(
                         <div key={i} style={{height:40,borderBottom:"1px solid #f3f4f6"}}/>
                       ))}
