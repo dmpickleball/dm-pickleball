@@ -1341,7 +1341,8 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
   const typeColors={private:"#1a3c34",semi:"#0ea5e9",group:"#f97316",stanford_rec:"#8b5cf6",stanford_open:"#8b5cf6"};
   const calendarLessons=(financeData?.events||[]).filter(e=>!e.isStanford&&(!searchQuery||e.summary?.toLowerCase().includes(searchQuery.toLowerCase())||e.category?.toLowerCase().includes(searchQuery.toLowerCase())));
   const stanfordEvents=(financeData?.events||[]).filter(e=>e.isStanford&&(!searchQuery||e.category?.toLowerCase().includes(searchQuery.toLowerCase())));
-  const totalEarnings=(financeData?.lessonEarnings||0)+portalEarnings.total+(includeStanford?(financeData?.stanfordEarnings||0):0);
+  const stanfordAmt=showNetStanford?(financeData?.stanfordNetEarnings||0):(financeData?.stanfordEarnings||0);
+  const totalEarnings=(financeData?.lessonEarnings||0)+portalEarnings.total+stanfordAmt;
   return(
     <div>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:12}}>
@@ -1356,10 +1357,9 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
           ))}
         </div>
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-          <button onClick={handleStanfordToggle} style={{background:includeStanford?"#8b5cf6":"white",color:includeStanford?"white":"#374151",border:"1.5px solid "+(includeStanford?"#8b5cf6":"#e5e7eb"),padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:600}}>
-            {includeStanford?"✓ Stanford Included":"+ Include Stanford"}
-          </button>
-          {includeStanford&&(
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:"0.85rem",fontWeight:600,color:"#8b5cf6"}}>Stanford:</span>
+          (
             <div style={{display:"flex",background:"#f3f4f6",borderRadius:50,padding:2}}>
               <button onClick={()=>setShowNetStanford(false)} style={{background:!showNetStanford?"white":"transparent",color:!showNetStanford?"#1a3c34":"#6b7280",border:"none",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:!showNetStanford?700:500,boxShadow:!showNetStanford?"0 1px 4px rgba(0,0,0,0.1)":"none"}}>Gross</button>
               <button onClick={()=>setShowNetStanford(true)} style={{background:showNetStanford?"white":"transparent",color:showNetStanford?"#7c3aed":"#6b7280",border:"none",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:showNetStanford?700:500,boxShadow:showNetStanford?"0 1px 4px rgba(0,0,0,0.1)":"none"}}>Net (after tax)</button>
@@ -1386,7 +1386,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
         {includeStanford&&(
           <div style={{background:"#f5f3ff",borderRadius:12,padding:"20px",border:"1.5px solid #8b5cf6"}}>
             <div style={{fontSize:"0.7rem",fontWeight:700,color:"#8b5cf6",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Stanford</div>
-            <div style={{fontSize:"1.8rem",fontWeight:900,color:"#8b5cf6"}}>${(financeData?.stanfordEarnings||0).toFixed(2)}</div>
+            <div style={{fontSize:"1.8rem",fontWeight:900,color:"#8b5cf6"}}>${showNetStanford?(financeData?.stanfordNetEarnings||0).toFixed(2):(financeData?.stanfordEarnings||0).toFixed(2)}</div>
             <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:4}}>{(financeData?.stanfordHours||0).toFixed(1)} hrs</div>
           </div>
         )}
@@ -1714,7 +1714,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[showSchedule,setShowSchedule]=useState(false);
   const[earningsRange,setEarningsRange]=useState("month");
   const[financeRange,setFinanceRange]=useState("month");
-  const[includeStanford,setIncludeStanford]=useState(false);
+  const[includeStanford,setIncludeStanford]=useState(true);
   const[financeData,setFinanceData]=useState(null);
   const[financeLoading,setFinanceLoading]=useState(false);
   const[showNialExport,setShowNialExport]=useState(false);
