@@ -1906,6 +1906,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[pastRangeStart,setPastRangeStart]=useState("");
   const[pastRangeEnd,setPastRangeEnd]=useState("");
   const[pastShowCancelled,setPastShowCancelled]=useState(true);
+  const[activeMenu,setActiveMenu]=useState(null);
 
   const earnings=getEarnings(allLessons,mockUsers,earningsRange);
   const allStudents=Object.keys(mockUsers);
@@ -1943,12 +1944,24 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   };
 
   useEffect(()=>{
-    fetch("https://api.open-meteo.com/v1/forecast?latitude=37.4853&longitude=-122.2364&current=temperature_2m,weather_code&temperature_unit=fahrenheit&timezone=America/Los_Angeles")
+    // 94303 = Palo Alto / Menlo Park area
+    fetch("https://api.open-meteo.com/v1/forecast?latitude=37.4419&longitude=-122.1430&current=temperature_2m,weather_code&hourly=temperature_2m,weather_code&temperature_unit=fahrenheit&timezone=America/Los_Angeles&forecast_days=2")
       .then(r=>r.json()).then(d=>{
+        const wEmoji=code=>code===0?"☀️":code<=3?"⛅":code<=48?"🌫️":code<=55?"🌦️":code<=65?"🌧️":code<=75?"🌨️":code<=82?"🌦️":"⛈️";
+        const wDesc=code=>code===0?"Clear":code<=3?"Partly Cloudy":code<=48?"Foggy":code<=55?"Drizzle":code<=65?"Rain":code<=75?"Snow":code<=82?"Showers":"Thunderstorms";
         const code=d.current?.weather_code??0;const temp=Math.round(d.current?.temperature_2m??0);
-        const emoji=code===0?"☀️":code<=3?"⛅":code<=48?"🌫️":code<=55?"🌦️":code<=65?"🌧️":code<=75?"🌨️":code<=82?"🌦️":"⛈️";
-        const desc=code===0?"Clear":code<=3?"Partly Cloudy":code<=48?"Foggy":code<=55?"Drizzle":code<=65?"Rain":code<=75?"Snow":code<=82?"Showers":"Thunderstorms";
-        setWeather({temp,emoji,desc});
+        // Build hourly strip: find current hour index and grab next 8 hrs
+        const nowH=new Date().getHours();
+        const times=d.hourly?.time||[];const temps=d.hourly?.temperature_2m||[];const codes=d.hourly?.weather_code||[];
+        const todayStr=toDS(new Date());
+        const hourly=[];
+        for(let i=0;i<times.length&&hourly.length<8;i++){
+          const t=times[i];if(!t.startsWith(todayStr)&&!t.startsWith(toDS(addDays(new Date(),1))))continue;
+          const h=parseInt(t.split("T")[1]);if(t.startsWith(todayStr)&&h<nowH)continue;
+          const isPM=h>=12;const disp=h===0?"12am":h===12?"12pm":h>12?(h-12)+"pm":h+"am";
+          hourly.push({time:disp,temp:Math.round(temps[i]),emoji:wEmoji(codes[i]||0)});
+        }
+        setWeather({temp,emoji:wEmoji(code),desc:wDesc(code),hourly});
       }).catch(()=>{});
   },[]);
   useEffect(()=>{if(tab==="lessons"&&calendarItems.length===0&&!calLoading)fetchCalendarItems();},[tab]);
@@ -2233,35 +2246,41 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
 
           <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Lesson History</div>
           {(allLessons[selectedStudent]||[]).length===0&&<div style={{color:"#9ca3af",fontSize:"0.9rem",textAlign:"center",padding:"32px"}}>No lessons yet.</div>}
-          {(allLessons[selectedStudent]||[]).sort((a,b)=>new Date(b.date)-new Date(a.date)).map(l=>(
-            <div key={l.id} style={{background:"white",borderRadius:12,border:"1.5px solid "+(editingId===l.id?G:"#e5e7eb"),marginBottom:10,overflow:"hidden"}}>
-              <div style={{padding:"14px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
-                <div>
-                  <div style={{fontWeight:700}}>{fmtDateShort(l.date)} · {l.time}</div>
-                  <div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>{l.type} · {l.duration}{l.focus?" · 🎯 "+l.focus:""}</div>
-                  {l.notes&&editingId!==l.id&&<div style={{background:"#f9f9f6",borderRadius:6,padding:"8px 12px",marginTop:8,fontSize:"0.85rem",color:"#374151"}}>{l.notes}</div>}
+          {(allLessons[selectedStudent]||[]).sort((a,b)=>new Date(b.date)-new Date(a.date)).map(l=>{
+            const smk="s_"+l.id;const isMenuOpen=activeMenu===smk;
+            const isCancelled=cancelledStatuses2.includes(l.status);
+            const missingCal=!l.gcalEventId;
+            return(
+            <div key={l.id} style={{background:"white",borderRadius:12,border:"1.5px solid "+(editingId===l.id||editPriceId===l.id?G:"#e5e7eb"),marginBottom:10,overflow:"hidden"}}>
+              {/* Main row */}
+              <div style={{padding:"14px 18px",display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,flexWrap:"wrap"}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:700,fontSize:"0.93rem"}}>{fmtDateShort(l.date)} · {l.time}</div>
+                  <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:2}}>{l.type} · {l.duration}{l.focus?" · 🎯 "+l.focus:""}</div>
+                  {l.customPrice&&<div style={{fontSize:"0.75rem",color:"#0ea5e9",marginTop:2,fontWeight:600}}>💰 Custom: ${l.customPrice}</div>}
+                  {l.notes&&editingId!==l.id&&<div style={{background:"#f9f9f6",borderRadius:6,padding:"7px 10px",marginTop:8,fontSize:"0.82rem",color:"#374151",lineHeight:1.5}}>{l.notes}</div>}
                 </div>
-                <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                  <span style={{background:l.status==="confirmed"?"#e8f0ee":l.status==="late_cancel"?"#fff7ed":l.status==="cancelled_forgiven"?"#f3f4f6":l.status==="cancelled"?"#fef2f2":"#fffbea",color:l.status==="confirmed"?G:l.status==="late_cancel"?"#c2410c":l.status==="cancelled_forgiven"?"#6b7280":l.status==="cancelled"?"#dc2626":"#92400e",padding:"3px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
+                  {missingCal&&!isCancelled&&<span title="No linked Google Calendar event" style={{background:"#fff7ed",color:"#c2410c",border:"1px solid #fed7aa",padding:"2px 7px",borderRadius:50,fontSize:"0.65rem",fontWeight:700}}>⚠️ No Cal</span>}
+                  <span style={{background:l.status==="confirmed"?"#e8f0ee":l.status==="late_cancel"?"#fff7ed":l.status==="cancelled_forgiven"?"#f3f4f6":l.status==="cancelled"?"#fef2f2":"#fffbea",color:l.status==="confirmed"?G:l.status==="late_cancel"?"#c2410c":l.status==="cancelled_forgiven"?"#6b7280":l.status==="cancelled"?"#dc2626":"#92400e",padding:"3px 9px",borderRadius:50,fontSize:"0.72rem",fontWeight:700}}>
                     {l.status==="confirmed"?"✓ Confirmed":l.status==="cancelled"?"✕ Cancelled":l.status==="late_cancel"?"⚠️ Late Cancel":l.status==="cancelled_forgiven"?"✓ Forgiven":"⏳ Pending"}
                   </span>
-                  {l.status==="late_cancel"&&(
-                    <button onClick={()=>onUpdateLesson(selectedStudent,l.id,{status:"cancelled_forgiven"})} style={{background:"white",color:"#6b7280",border:"1.5px solid #d1d5db",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>✓ Forgive</button>
-                  )}
-                  {l.status!=="cancelled"&&l.status!=="late_cancel"&&l.status!=="cancelled_forgiven"&&(
-                    <>
-                      <button onClick={()=>editingId===l.id?setEditingId(null):(setEditingId(l.id),setEditNotes(l.notes||""))} style={{background:editingId===l.id?"#f3f4f6":G,color:editingId===l.id?"#374151":"white",border:"none",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>
-                        {editingId===l.id?"Cancel":"✏️ Notes"}
-                      </button>
-                      <button onClick={()=>{setEditPriceId(editPriceId===l.id?null:l.id);setEditPriceVal(l.customPrice||getRate(l.type,parseInt(l.duration)));}} style={{background:editPriceId===l.id?"#f3f4f6":G,color:editPriceId===l.id?"#374151":"white",border:"none",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>
-                        {editPriceId===l.id?"Cancel":"💰 Price"}
-                      </button>
-                      <button onClick={()=>setConfirmCancel(confirmCancel===l.id?null:l.id)} style={{background:"#fef2f2",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>✕ Cancel</button>
-                    </>
-                  )}
-                  <button onClick={()=>setConfirmDelete(confirmDelete===l.id?null:l.id)} style={{background:"#fef2f2",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>🗑 Delete</button>
+                  {l.status==="late_cancel"&&<button onClick={()=>onUpdateLesson(selectedStudent,l.id,{status:"cancelled_forgiven"})} style={{background:"white",color:"#6b7280",border:"1.5px solid #d1d5db",padding:"4px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:700}}>✓ Forgive</button>}
+                  <button onClick={()=>setActiveMenu(isMenuOpen?null:smk)} style={{background:isMenuOpen?"#f3f4f6":"white",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"5px 10px",cursor:"pointer",fontSize:"1rem",lineHeight:1,color:"#6b7280",fontWeight:700}}>⋯</button>
                 </div>
               </div>
+              {/* ⋯ action menu */}
+              {isMenuOpen&&(
+                <div style={{borderTop:"1px solid #f3f4f6",background:"#fafafa",padding:"10px 18px",display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+                  <button onClick={()=>{setEditingId(editingId===l.id?null:l.id);setEditNotes(l.notes||"");setActiveMenu(null);}} style={{background:G,color:"white",border:"none",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>✏️ Notes</button>
+                  <button onClick={()=>{setEditPriceId(editPriceId===l.id?null:l.id);setEditPriceVal(String(l.customPrice||getRate(l.type,parseInt(l.duration))));setActiveMenu(null);}} style={{background:G,color:"white",border:"none",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>💰 Price</button>
+                  {!isCancelled&&<button onClick={()=>{setConfirmCancel(l.id);setActiveMenu(null);}} style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>✕ Cancel</button>}
+                  <button onClick={()=>{setConfirmDelete(l.id);setActiveMenu(null);}} style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>🗑 Delete</button>
+                  <span style={{flex:1}}/>
+                  <button onClick={()=>setActiveMenu(null)} style={{background:"none",border:"none",color:"#9ca3af",cursor:"pointer",fontSize:"0.8rem"}}>Close</button>
+                </div>
+              )}
+              {/* Cancel confirm */}
               {confirmCancel===l.id&&(
                 <div style={{background:"#fef2f2",borderTop:"1px solid #fca5a5",padding:"12px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
                   <span style={{fontWeight:700,color:"#991b1b",fontSize:"0.88rem"}}>Cancel this lesson?</span>
@@ -2271,48 +2290,40 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                   </div>
                 </div>
               )}
+              {/* Delete confirm */}
               {confirmDelete===l.id&&(
                 <div style={{background:"#fef2f2",borderTop:"1px solid #fca5a5",padding:"12px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
-                  <span style={{fontWeight:700,color:"#991b1b",fontSize:"0.88rem"}}>Permanently delete this lesson?</span>
+                  <span style={{fontWeight:700,color:"#991b1b",fontSize:"0.88rem"}}>Permanently delete?</span>
                   <div style={{display:"flex",gap:8}}>
                     <button onClick={()=>setConfirmDelete(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Keep it</button>
                     <button onClick={async()=>{
                       try{
-                        if(l.gcalEventId){
-                          await fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:l.gcalEventId,mode:"delete"})});
-                        }
+                        if(l.gcalEventId)await fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:l.gcalEventId,mode:"delete"})});
                         await fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})});
                         setAllLessons(prev=>({...prev,[selectedStudent]:(prev[selectedStudent]||[]).filter(x=>x.id!==l.id)}));
                         setConfirmDelete(null);
-                      }catch(e){console.error("Delete error:",e);setConfirmDelete(null);}
+                      }catch(e){console.error(e);setConfirmDelete(null);}
                     }} style={{background:"#dc2626",color:"white",border:"none",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>Yes, Delete</button>
                   </div>
                 </div>
               )}
+              {/* Price editor */}
               {editPriceId===l.id&&(
                 <div style={{borderTop:"1px solid #e5e7eb",padding:"16px 18px",background:"#f9f9f6"}}>
                   <div style={{fontSize:"0.85rem",fontWeight:600,marginBottom:8,color:"#374151"}}>Override lesson price</div>
-                  <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                  <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
                     <span style={{fontSize:"1rem",color:"#6b7280"}}>$</span>
-                    <input type="number" value={editPriceVal} onChange={e=>setEditPriceVal(e.target.value)} style={{...inp,marginBottom:0,width:120}} placeholder="0.00"/>
+                    <input type="number" value={editPriceVal} onChange={e=>setEditPriceVal(e.target.value)} style={{...inp,marginBottom:0,width:100}} placeholder="0.00"/>
                     <span style={{fontSize:"0.8rem",color:"#9ca3af"}}>Default: ${getRate(l.type,parseInt(l.duration))}</span>
                   </div>
-                  <div style={{display:"flex",gap:8,justifyContent:"flex-end",marginTop:12}}>
+                  <div style={{display:"flex",gap:8,justifyContent:"flex-end",marginTop:12,flexWrap:"wrap"}}>
                     <button onClick={()=>setEditPriceId(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 18px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}>Cancel</button>
-                    <button onClick={async()=>{
-                      const price=parseFloat(editPriceVal);
-                      await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id,updates:{custom_price:price}})});
-                      onUpdateLesson(selectedStudent,l.id,{customPrice:price});
-                      setEditPriceId(null);
-                    }} style={{background:G,color:"white",border:"none",padding:"7px 18px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>Save Price</button>
-                    {l.customPrice&&<button onClick={async()=>{
-                      await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id,updates:{custom_price:null}})});
-                      onUpdateLesson(selectedStudent,l.id,{customPrice:null});
-                      setEditPriceId(null);
-                    }} style={{background:"white",border:"1.5px solid #e5e7eb",color:"#6b7280",padding:"7px 18px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}>Reset to Default</button>}
+                    {l.customPrice&&<button onClick={async()=>{await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id,updates:{custom_price:null}})});onUpdateLesson(selectedStudent,l.id,{customPrice:null});setEditPriceId(null);}} style={{background:"white",border:"1.5px solid #e5e7eb",color:"#6b7280",padding:"7px 18px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}>Reset</button>}
+                    <button onClick={async()=>{const price=parseFloat(editPriceVal);await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id,updates:{custom_price:price}})});onUpdateLesson(selectedStudent,l.id,{customPrice:price});setEditPriceId(null);}} style={{background:G,color:"white",border:"none",padding:"7px 18px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>Save Price</button>
                   </div>
                 </div>
               )}
+              {/* Notes editor */}
               {editingId===l.id&&(
                 <div style={{borderTop:"1px solid #e5e7eb",padding:"16px 18px",background:"#f9f9f6"}}>
                   <textarea value={editNotes} onChange={e=>setEditNotes(e.target.value)} placeholder="Add coaching notes..." style={{...inp,height:90,resize:"vertical",fontFamily:"inherit",background:"white"}}/>
@@ -2323,7 +2334,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -2504,42 +2516,76 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
         const pastCount=allLessonsList.filter(l=>isPast(l.date,l.time)||l.status==="completed"||cancelledStatuses2.includes(l.status)).length;
 
         // ── helper: render a portal lesson row ──────────────────────────────
-        const LessonRow=(l)=>(
-          <div key={l.id+l.studentEmail} style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"16px 20px",marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
-            <div style={{display:"flex",alignItems:"center",gap:14}}>
-              <div style={{background:"#e8f0ee",borderRadius:10,padding:"10px 14px",textAlign:"center",minWidth:48}}>
-                <div style={{fontSize:"1.2rem",fontWeight:900,color:G,lineHeight:1}}>{new Date(l.date+"T12:00:00").getDate()}</div>
-                <div style={{fontSize:"0.6rem",fontWeight:700,color:"#6b7280",textTransform:"uppercase"}}>{new Date(l.date+"T12:00:00").toLocaleString("default",{month:"short"})}</div>
-              </div>
-              <div>
-                <div style={{fontWeight:700,fontSize:"0.95rem"}}>{l.studentName}</div>
-                <div style={{fontSize:"0.82rem",color:"#6b7280",marginTop:2}}>{l.type} · {l.duration} · {l.time}</div>
-                {l.focus&&<div style={{fontSize:"0.78rem",color:G,marginTop:2,fontWeight:600}}>🎯 {l.focus}</div>}
-              </div>
-            </div>
-            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-              {l.isMenlo&&<span style={{background:G,color:"white",padding:"2px 8px",borderRadius:50,fontSize:"0.68rem",fontWeight:700}}>MCC</span>}
-              <span style={{background:l.status==="confirmed"?"#e8f0ee":l.status==="late_cancel"?"#fff7ed":l.status==="cancelled_forgiven"?"#f3f4f6":l.status==="cancelled"?"#fef2f2":"#fffbea",color:l.status==="confirmed"?G:l.status==="late_cancel"?"#c2410c":l.status==="cancelled_forgiven"?"#6b7280":l.status==="cancelled"?"#dc2626":"#92400e",padding:"3px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>
-                {l.status==="confirmed"?"✓ Confirmed":l.status==="cancelled"?"✕ Cancelled":l.status==="late_cancel"?"⚠️ Late Cancel":l.status==="cancelled_forgiven"?"✓ Forgiven":"⏳ Pending"}
-              </span>
-              {l.status==="late_cancel"&&<button onClick={()=>onUpdateLesson(l.studentEmail,l.id,{status:"cancelled_forgiven"})} style={{background:"white",color:"#6b7280",border:"1.5px solid #d1d5db",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>✓ Forgive</button>}
-              <button onClick={()=>{setSelectedStudent(l.studentEmail);setTab("students");}} style={{background:"none",border:"1.5px solid #e5e7eb",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:600,color:"#374151"}}>View Student</button>
-              {!cancelledStatuses2.includes(l.status)&&!isPast(l.date,l.time)&&<button onClick={()=>setConfirmCancel(l.id+l.studentEmail)} style={{background:"#fef2f2",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>✕ Cancel</button>}
-              {confirmCancel===l.id+l.studentEmail&&(
-                <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:999}}>
-                  <div style={{background:"white",borderRadius:16,padding:"28px 32px",maxWidth:400,width:"90%",boxShadow:"0 8px 32px rgba(0,0,0,0.2)"}}>
-                    <div style={{fontWeight:800,fontSize:"1rem",marginBottom:8}}>Cancel this lesson?</div>
-                    <div style={{fontSize:"0.88rem",color:"#6b7280",marginBottom:20}}>{l.studentName} · {fmtDateShort(l.date)} · {l.time}</div>
-                    <div style={{display:"flex",gap:10}}>
-                      <button onClick={()=>setConfirmCancel(null)} style={{flex:1,background:"white",border:"1.5px solid #e5e7eb",padding:"10px",borderRadius:50,cursor:"pointer",fontWeight:600}}>Keep it</button>
-                      <button onClick={async()=>{await onCancelLesson(l.studentEmail,l.id);setConfirmCancel(null);}} style={{flex:1,background:"#dc2626",color:"white",border:"none",padding:"10px",borderRadius:50,cursor:"pointer",fontWeight:700}}>Yes, Cancel</button>
-                    </div>
-                  </div>
+        const menuKey=(l)=>l.id+"_"+l.studentEmail;
+        const LessonRow=(l)=>{
+          const mk=menuKey(l);const isMenuOpen=activeMenu===mk;
+          const isCancelled=cancelledStatuses2.includes(l.status);
+          const missingCal=!l.gcalEventId;
+          return(
+          <div key={mk} style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",marginBottom:10,overflow:"hidden"}}>
+            <div style={{padding:"14px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+              {/* Left: date + student info */}
+              <div style={{display:"flex",alignItems:"center",gap:12}}>
+                <div style={{background:"#e8f0ee",borderRadius:10,padding:"9px 12px",textAlign:"center",minWidth:44,flexShrink:0}}>
+                  <div style={{fontSize:"1.1rem",fontWeight:900,color:G,lineHeight:1}}>{new Date(l.date+"T12:00:00").getDate()}</div>
+                  <div style={{fontSize:"0.58rem",fontWeight:700,color:"#6b7280",textTransform:"uppercase"}}>{new Date(l.date+"T12:00:00").toLocaleString("default",{month:"short"})}</div>
                 </div>
-              )}
+                <div>
+                  <div onClick={()=>{setSelectedStudent(l.studentEmail);setTab("students");}} style={{fontWeight:700,fontSize:"0.95rem",cursor:"pointer",color:G,textDecoration:"underline",textDecorationColor:"transparent",transition:"text-decoration-color 0.15s"}} onMouseEnter={e=>e.target.style.textDecorationColor=G} onMouseLeave={e=>e.target.style.textDecorationColor="transparent"}>{l.studentName}</div>
+                  <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:1}}>{l.type} · {l.duration} · {l.time}</div>
+                  {l.focus&&<div style={{fontSize:"0.75rem",color:G,marginTop:1,fontWeight:600}}>🎯 {l.focus}</div>}
+                </div>
+              </div>
+              {/* Right: badges + actions */}
+              <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
+                {missingCal&&!isCancelled&&<span title="This lesson has no linked Google Calendar event" style={{background:"#fff7ed",color:"#c2410c",border:"1px solid #fed7aa",padding:"2px 8px",borderRadius:50,fontSize:"0.68rem",fontWeight:700}}>⚠️ No Cal</span>}
+                {l.isMenlo&&<span style={{background:G,color:"white",padding:"2px 7px",borderRadius:50,fontSize:"0.68rem",fontWeight:700}}>MCC</span>}
+                <span style={{background:l.status==="confirmed"?"#e8f0ee":l.status==="late_cancel"?"#fff7ed":l.status==="cancelled_forgiven"?"#f3f4f6":l.status==="cancelled"?"#fef2f2":"#fffbea",color:l.status==="confirmed"?G:l.status==="late_cancel"?"#c2410c":l.status==="cancelled_forgiven"?"#6b7280":l.status==="cancelled"?"#dc2626":"#92400e",padding:"3px 9px",borderRadius:50,fontSize:"0.72rem",fontWeight:700}}>
+                  {l.status==="confirmed"?"✓ Confirmed":l.status==="cancelled"?"✕ Cancelled":l.status==="late_cancel"?"⚠️ Late Cancel":l.status==="cancelled_forgiven"?"✓ Forgiven":"⏳ Pending"}
+                </span>
+                {l.status==="late_cancel"&&<button onClick={()=>onUpdateLesson(l.studentEmail,l.id,{status:"cancelled_forgiven"})} style={{background:"white",color:"#6b7280",border:"1.5px solid #d1d5db",padding:"4px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:700}}>✓ Forgive</button>}
+                <button onClick={()=>setActiveMenu(isMenuOpen?null:mk)} style={{background:isMenuOpen?"#f3f4f6":"white",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"5px 10px",cursor:"pointer",fontSize:"1rem",lineHeight:1,color:"#6b7280",fontWeight:700}}>⋯</button>
+              </div>
             </div>
+            {/* ⋯ action bar */}
+            {isMenuOpen&&(
+              <div style={{borderTop:"1px solid #f3f4f6",background:"#fafafa",padding:"10px 18px",display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+                {!isCancelled&&!isPast(l.date,l.time)&&<button onClick={()=>{setConfirmCancel(mk);setActiveMenu(null);}} style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>✕ Cancel Lesson</button>}
+                <button onClick={()=>{setConfirmDelete(mk);setActiveMenu(null);}} style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>🗑 Delete Lesson</button>
+                <span style={{flex:1}}/>
+                <button onClick={()=>setActiveMenu(null)} style={{background:"none",border:"none",color:"#9ca3af",cursor:"pointer",fontSize:"0.8rem"}}>Close</button>
+              </div>
+            )}
+            {/* Cancel confirm */}
+            {confirmCancel===mk&&(
+              <div style={{background:"#fef2f2",borderTop:"1px solid #fca5a5",padding:"12px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+                <span style={{fontWeight:700,color:"#991b1b",fontSize:"0.88rem"}}>Cancel this lesson?</span>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={()=>setConfirmCancel(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Keep it</button>
+                  <button onClick={async()=>{await onCancelLesson(l.studentEmail,l.id);setConfirmCancel(null);}} style={{background:"#dc2626",color:"white",border:"none",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>Yes, Cancel</button>
+                </div>
+              </div>
+            )}
+            {/* Delete confirm */}
+            {confirmDelete===mk&&(
+              <div style={{background:"#fef2f2",borderTop:"1px solid #fca5a5",padding:"12px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+                <span style={{fontWeight:700,color:"#991b1b",fontSize:"0.88rem"}}>Permanently delete this lesson?</span>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={()=>setConfirmDelete(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Keep it</button>
+                  <button onClick={async()=>{
+                    try{
+                      if(l.gcalEventId)await fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:l.gcalEventId,mode:"delete"})});
+                      await fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})});
+                      setAllLessons(prev=>({...prev,[l.studentEmail]:(prev[l.studentEmail]||[]).filter(x=>x.id!==l.id)}));
+                      setConfirmDelete(null);
+                    }catch(e){console.error(e);setConfirmDelete(null);}
+                  }} style={{background:"#dc2626",color:"white",border:"none",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>Yes, Delete</button>
+                </div>
+              </div>
+            )}
           </div>
-        );
+          );
+        };
 
         // ── helper: render a calendar event row ──────────────────────────────
         const CalRow=(e,idx)=>{
@@ -2589,18 +2635,32 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
             return(
               <div>
                 {/* Weather + date banner */}
-                <div style={{background:"linear-gradient(135deg,#1a3c34 0%,#2d6a5e 100%)",borderRadius:14,padding:"18px 22px",marginBottom:16,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
-                  <div>
-                    <div style={{color:"rgba(255,255,255,0.7)",fontSize:"0.78rem",fontWeight:600,textTransform:"uppercase",letterSpacing:1}}>Today</div>
-                    <div style={{color:"white",fontWeight:800,fontSize:"1.1rem",marginTop:2}}>{todayFull}</div>
-                  </div>
-                  {weather&&(
-                    <div style={{display:"flex",alignItems:"center",gap:10,background:"rgba(255,255,255,0.12)",borderRadius:12,padding:"10px 18px"}}>
-                      <span style={{fontSize:"2rem"}}>{weather.emoji}</span>
-                      <div>
-                        <div style={{color:"white",fontWeight:800,fontSize:"1.4rem",lineHeight:1}}>{weather.temp}°F</div>
-                        <div style={{color:"rgba(255,255,255,0.75)",fontSize:"0.78rem"}}>{weather.desc}</div>
+                <div style={{background:"linear-gradient(135deg,#1a3c34 0%,#2d6a5e 100%)",borderRadius:14,padding:"18px 22px",marginBottom:16}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12,marginBottom:weather?.hourly?.length?14:0}}>
+                    <div>
+                      <div style={{color:"rgba(255,255,255,0.7)",fontSize:"0.78rem",fontWeight:600,textTransform:"uppercase",letterSpacing:1}}>Today · 94303</div>
+                      <div style={{color:"white",fontWeight:800,fontSize:"1.05rem",marginTop:2}}>{todayFull}</div>
+                    </div>
+                    {weather&&(
+                      <div style={{display:"flex",alignItems:"center",gap:10,background:"rgba(255,255,255,0.12)",borderRadius:12,padding:"10px 18px"}}>
+                        <span style={{fontSize:"2rem"}}>{weather.emoji}</span>
+                        <div>
+                          <div style={{color:"white",fontWeight:800,fontSize:"1.4rem",lineHeight:1}}>{weather.temp}°F</div>
+                          <div style={{color:"rgba(255,255,255,0.75)",fontSize:"0.78rem"}}>{weather.desc}</div>
+                        </div>
                       </div>
+                    )}
+                  </div>
+                  {/* Hourly strip */}
+                  {weather?.hourly?.length>0&&(
+                    <div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:2}}>
+                      {weather.hourly.map((h,i)=>(
+                        <div key={i} style={{background:"rgba(255,255,255,0.1)",borderRadius:10,padding:"7px 10px",textAlign:"center",minWidth:52,flexShrink:0}}>
+                          <div style={{color:"rgba(255,255,255,0.65)",fontSize:"0.65rem",fontWeight:600,marginBottom:3}}>{h.time}</div>
+                          <div style={{fontSize:"1.1rem"}}>{h.emoji}</div>
+                          <div style={{color:"white",fontWeight:700,fontSize:"0.82rem",marginTop:2}}>{h.temp}°</div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
