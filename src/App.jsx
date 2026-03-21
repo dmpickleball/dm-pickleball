@@ -713,6 +713,7 @@ function LoginPage({onLogin,onAdminLogin}){
                 const data=await r.json();
                 if(!data.student){setLoading(false);setError("Your account is not approved yet. Please request access.");setMode("signup");return;}
                 if(!data.student.approved){setLoading(false);setError("Your account is pending approval from David.");return;}
+                if(data.student.deactivated){setLoading(false);setError("This account has been deactivated. Please contact David.");return;}
                 if(data.student.blocked){setLoading(false);setError("Your account has been blocked. Please contact David.");return;}
                 setLoading(false);
                 onLogin({email,name:data.student.name||info.name,memberType:data.student.member_type,approved:true,picture:info.picture,phone:data.student.phone,homeCourt:data.student.home_court,city:data.student.city||""});
@@ -1827,7 +1828,7 @@ function AdminCalendarView(){
     </div>
   );
 }
-function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,onApprove,onDeny,mockUsers,onAddStudent,onAddLesson,onToggleMenlo,onToggleSaturday,onBlockStudent,onDeleteStudent}){
+function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,onApprove,onDeny,mockUsers,onAddStudent,onAddLesson,onToggleMenlo,onToggleSaturday,onBlockStudent,onDeleteStudent,deactivatedStudents,onDeactivateStudent,onReactivateStudent}){
   const[tab,setTab]=useState(pendingStudents.length>0?"pending":"students");
   const[studentSearch,setStudentSearch]=useState("");
   const[selectedStudent,setSelectedStudent]=useState(null);
@@ -1863,6 +1864,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   
   const[showAddStudent,setShowAddStudent]=useState(false);
   const[newStudent,setNewStudent]=useState({name:"",email:"",memberType:"public"});
+  const[showDeactivated,setShowDeactivated]=useState(false);
+  const[deactivatedSearch,setDeactivatedSearch]=useState("");
 
   const earnings=getEarnings(allLessons,mockUsers,earningsRange);
   const allStudents=Object.keys(allLessons);
@@ -2014,10 +2017,17 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
 
       {tab==="students"&&!selectedStudent&&(
         <div>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
+          <div style={{display:"flex",gap:0,marginBottom:16,borderRadius:50,overflow:"hidden",border:"1.5px solid #e5e7eb",alignSelf:"flex-start",width:"fit-content"}}>
+            <button onClick={()=>setShowDeactivated(false)} style={{background:!showDeactivated?G:"white",color:!showDeactivated?"white":"#374151",border:"none",padding:"7px 20px",cursor:"pointer",fontWeight:700,fontSize:"0.82rem"}}>Active ({filteredStudents.length})</button>
+            <button onClick={()=>setShowDeactivated(true)} style={{background:showDeactivated?"#6b7280":"white",color:showDeactivated?"white":"#6b7280",border:"none",padding:"7px 20px",cursor:"pointer",fontWeight:700,fontSize:"0.82rem",borderLeft:"1.5px solid #e5e7eb"}}>Deactivated ({(deactivatedStudents||[]).length})</button>
+          </div>
+          {!showDeactivated&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
             <input placeholder="🔍 Search students..." value={studentSearch} onChange={e=>setStudentSearch(e.target.value)} style={{...inp,marginBottom:0,maxWidth:300,flex:1}}/>
             <button onClick={()=>setShowAddStudent(!showAddStudent)} style={{background:G,color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>+ Add Student</button>
-          </div>
+          </div>}
+          {showDeactivated&&<div style={{marginBottom:16}}>
+            <input placeholder="🔍 Search deactivated..." value={deactivatedSearch} onChange={e=>setDeactivatedSearch(e.target.value)} style={{...inp,marginBottom:0,maxWidth:300}}/>
+          </div>}
           {showAddStudent&&(
             <div style={{background:"#f9f9f6",borderRadius:12,padding:"20px",marginBottom:16,border:"1.5px solid #e5e7eb"}}>
               <div style={{fontWeight:700,marginBottom:12}}>Add Student Manually</div>
@@ -2033,7 +2043,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
               </div>
             </div>
           )}
-          <div style={{display:"grid",gap:10}}>
+          {!showDeactivated&&<div style={{display:"grid",gap:10}}>
             {filteredStudents.map(email=>{
               const u=mockUsers[email]||{};
               const lessons=allLessons[email]||[];
@@ -2062,7 +2072,26 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
               );
             })}
             {filteredStudents.length===0&&<div style={{textAlign:"center",color:"#9ca3af",padding:"40px"}}>No students found.</div>}
-          </div>
+          </div>}
+          {showDeactivated&&(
+            <div style={{display:"grid",gap:10}}>
+              {(deactivatedStudents||[]).filter(s=>(s.name||s.email).toLowerCase().includes(deactivatedSearch.toLowerCase())||s.email.toLowerCase().includes(deactivatedSearch.toLowerCase())).map(s=>(
+                <div key={s.email} style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"16px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8,opacity:0.75}}>
+                  <div style={{display:"flex",alignItems:"center",gap:14}}>
+                    <div style={{width:42,height:42,borderRadius:"50%",overflow:"hidden",background:"#f3f4f6",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:"1rem",color:"#9ca3af"}}>
+                      {s.picture?<img src={s.picture} alt={s.name} style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:"50%",filter:"grayscale(1)"}}/>:(s.name||s.email).charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div style={{fontWeight:700,fontSize:"0.97rem",color:"#6b7280"}}>{s.lastName&&s.firstName?s.lastName+", "+s.firstName:s.name||s.email}</div>
+                      <div style={{fontSize:"0.8rem",color:"#9ca3af",marginTop:2}}>{s.email}</div>
+                    </div>
+                  </div>
+                  <button onClick={async()=>{await onReactivateStudent(s.email);}} style={{background:"white",color:G,border:"1.5px solid "+G,padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>↩ Reactivate</button>
+                </div>
+              ))}
+              {(deactivatedStudents||[]).length===0&&<div style={{textAlign:"center",color:"#9ca3af",padding:"40px"}}>No deactivated accounts.</div>}
+            </div>
+          )}
         </div>
       )}
 
@@ -2120,17 +2149,17 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
               <button onClick={()=>onBlockStudent(selectedStudent)} style={{background:mockUsers[selectedStudent]?.blocked?"#dc2626":"white",color:mockUsers[selectedStudent]?.blocked?"white":"#dc2626",border:"1.5px solid #dc2626",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>
                 {mockUsers[selectedStudent]?.blocked?"Unblock":"Block Student"}
               </button>
-              <button onClick={()=>setConfirmDeleteStudent(true)} style={{background:"white",color:"#dc2626",border:"1.5px solid #dc2626",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>🗑 Delete Account</button>
+              <button onClick={()=>setConfirmDeleteStudent(true)} style={{background:"white",color:"#6b7280",border:"1.5px solid #d1d5db",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>⊘ Deactivate</button>
             </div>
             {confirmDeleteStudent&&(
               <div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:10,padding:"14px 18px",marginTop:10,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
                 <div>
-                  <div style={{fontWeight:700,color:"#991b1b",fontSize:"0.9rem"}}>Permanently delete this student account?</div>
-                  <div style={{fontSize:"0.8rem",color:"#b91c1c",marginTop:3}}>This cannot be undone. All portal data for {mockUsers[selectedStudent]?.name||selectedStudent} will be removed.</div>
+                  <div style={{fontWeight:700,color:"#991b1b",fontSize:"0.9rem"}}>Deactivate this account?</div>
+                  <div style={{fontSize:"0.8rem",color:"#b91c1c",marginTop:3}}>{mockUsers[selectedStudent]?.name||selectedStudent} won't be able to log in. You can reactivate anytime.</div>
                 </div>
                 <div style={{display:"flex",gap:8}}>
-                  <button onClick={()=>setConfirmDeleteStudent(false)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Keep it</button>
-                  <button onClick={async()=>{await onDeleteStudent(selectedStudent);setSelectedStudent(null);setConfirmDeleteStudent(false);}} style={{background:"#dc2626",color:"white",border:"none",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>Yes, Delete</button>
+                  <button onClick={()=>setConfirmDeleteStudent(false)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Cancel</button>
+                  <button onClick={async()=>{await onDeactivateStudent(selectedStudent);setSelectedStudent(null);setConfirmDeleteStudent(false);}} style={{background:"#dc2626",color:"white",border:"none",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>Yes, Deactivate</button>
                 </div>
               </div>
             )}
@@ -2517,17 +2546,19 @@ export default function App(){
   const[allLessons,setAllLessons]=useState({});
   const[pendingStudents,setPendingStudents]=useState([]);
   const[mockUsersState,setMockUsersState]=useState({});
+  const[deactivatedStudents,setDeactivatedStudents]=useState([]);
   const[dbLoaded,setDbLoaded]=useState(false);
   const[locations,setLocations]=useState([]);
 
   useEffect(()=>{
     const loadFromSupabase=async()=>{
       try{
-        const [pr,lr,sr,locr]=await Promise.all([
+        const [pr,lr,sr,locr,dr]=await Promise.all([
           fetch("/api/students?action=pending").then(r=>r.json()).catch(()=>({})),
           fetch("/api/lessons?action=list").then(r=>r.json()).catch(()=>({})),
           fetch("/api/students?action=list").then(r=>r.json()).catch(()=>({})),
           fetch("/api/locations?action=list").then(r=>r.json()).catch(()=>({})),
+          fetch("/api/students?action=list-deactivated").then(r=>r.json()).catch(()=>({})),
         ]);
         if(pr.requests){
           setPendingStudents(pr.requests.map(r=>({
@@ -2574,6 +2605,7 @@ export default function App(){
           setMockUsersState(users);
         }
         if(locr.locations)setLocations(locr.locations);
+        if(dr.students)setDeactivatedStudents(dr.students.map(s=>({email:s.email,name:s.name||s.email,firstName:s.first_name||"",lastName:s.last_name||"",memberType:s.member_type||"public",phone:s.phone||"",city:s.city||"",homeCourt:s.home_court||"",picture:s.picture||""})));
       }catch(e){console.error("Supabase load error:",e);}
       setDbLoaded(true);
     };
@@ -2656,6 +2688,19 @@ export default function App(){
     setMockUsersState(prev=>{const next={...prev};delete next[email];return next;});
     setAllLessons(prev=>{const next={...prev};delete next[email];return next;});
   };
+  const deactivateStudent=async(email)=>{
+    await fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,updates:{deactivated:true}})});
+    const u=mockUsersState[email];
+    if(u)setDeactivatedStudents(prev=>[...prev,{...u,email}]);
+    setMockUsersState(prev=>{const next={...prev};delete next[email];return next;});
+    setAllLessons(prev=>{const next={...prev};delete next[email];return next;});
+  };
+  const reactivateStudent=async(email)=>{
+    await fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,updates:{deactivated:false}})});
+    const s=deactivatedStudents.find(x=>x.email===email);
+    if(s){setMockUsersState(prev=>({...prev,[email]:{name:s.name,firstName:s.firstName,lastName:s.lastName,memberType:s.memberType,approved:true,phone:s.phone,city:s.city,homeCourt:s.homeCourt,picture:s.picture}}));setAllLessons(prev=>({...prev,[email]:[]}));}
+    setDeactivatedStudents(prev=>prev.filter(x=>x.email!==email));
+  };
   const logout=()=>{setUser(null);setIsAdmin(false);setPage("home");};
   if(isAdmin)return(
     <div style={{fontFamily:"Segoe UI,sans-serif",background:"#f4f9f6",minHeight:"100vh"}}>
@@ -2666,7 +2711,7 @@ export default function App(){
           <button onClick={logout} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.4)",color:"white",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem"}}>Log out</button>
         </div>
       </nav>
-      <AdminPanel allLessons={allLessons} onUpdateLesson={updateLesson} onCancelLesson={adminCancel} pendingStudents={pendingStudents} onApprove={approveStudent} onDeny={denyStudent} mockUsers={mockUsersState} onAddStudent={addStudent} onAddLesson={adminAddLesson} onToggleMenlo={toggleMenlo} onToggleSaturday={toggleSaturday} onBlockStudent={blockStudent} onDeleteStudent={deleteStudent}/>
+      <AdminPanel allLessons={allLessons} onUpdateLesson={updateLesson} onCancelLesson={adminCancel} pendingStudents={pendingStudents} onApprove={approveStudent} onDeny={denyStudent} mockUsers={mockUsersState} onAddStudent={addStudent} onAddLesson={adminAddLesson} onToggleMenlo={toggleMenlo} onToggleSaturday={toggleSaturday} onBlockStudent={blockStudent} onDeleteStudent={deleteStudent} deactivatedStudents={deactivatedStudents} onDeactivateStudent={deactivateStudent} onReactivateStudent={reactivateStudent}/>
     </div>
   );
   return(
