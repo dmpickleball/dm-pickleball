@@ -5,7 +5,7 @@ export default async function handler(req, res) {
 
   // GET all approved active students
   if (req.method === 'GET' && action === 'list') {
-    const { data, error } = await supabase.from('students').select('*').eq('approved', true).or('deactivated.is.null,deactivated.eq.false').order('last_name', { ascending: true });
+    const { data, error } = await supabase.from('students').select('*').eq('approved', true).neq('deactivated', true).order('last_name', { ascending: true });
     if (error) return res.status(500).json({ error: error.message });
     return res.status(200).json({ students: data });
   }

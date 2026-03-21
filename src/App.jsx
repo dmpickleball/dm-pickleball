@@ -1078,6 +1078,11 @@ function BookingPage({user,setPage,onAddLesson}){
               }
             </div>
           )}
+          {slot&&date&&(()=>{const lh=Math.floor(slot.s/60),lm=slot.s%60;const lessonDt=new Date(date+"T"+String(lh).padStart(2,"0")+":"+String(lm).padStart(2,"0")+":00");const hrs=(lessonDt-new Date())/(1000*60*60);return hrs<24?(
+            <div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:8,padding:"12px 16px",marginBottom:16,fontSize:"0.85rem",color:"#991b1b",fontWeight:600}}>
+              ⚠️ This slot is within 24 hours. You'll have 15 minutes after booking to cancel if it was accidental — after that, cancellation is closed.
+            </div>
+          ):null;})()}
           <div style={{display:"flex",gap:10}}>
             <button onClick={()=>setStep(1)} style={{flex:1,background:"white",border:"1.5px solid #e5e7eb",padding:"14px",borderRadius:50,fontWeight:600,cursor:"pointer",fontSize:"0.95rem"}}>← Back</button>
             <button onClick={()=>setStep(3)} disabled={!step2Done} style={{flex:2,background:step2Done?G:"#e5e7eb",color:step2Done?"white":"#9ca3af",border:"none",padding:"14px",borderRadius:50,fontWeight:700,cursor:step2Done?"pointer":"not-allowed",fontSize:"0.95rem"}}>
