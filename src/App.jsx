@@ -1521,7 +1521,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
               <div style={{fontSize:"0.8rem",fontWeight:700,color:"#1a3c34",textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Calendar Lessons</div>
               <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:"0.88rem"}}>
-                  <thead><tr style={{background:"#f9f9f6",borderBottom:"1.5px solid #e5e7eb"}}>{["Date","Event","Type","Hours","Earnings",""].map(h=>(<th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#6b7280",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>))}</tr></thead>
+                  <thead><tr style={{background:"#f9f9f6",borderBottom:"1.5px solid #e5e7eb"}}>{["Date","Event","Type","Hours","Earnings"].map(h=>(<th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#6b7280",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>))}</tr></thead>
                   <tbody>
                     {adjustedCalLessons.map((e,i)=>{
                       const calKey=e.date+"|"+e.summary;
@@ -1532,13 +1532,9 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                         <td style={{padding:"12px 16px",maxWidth:180,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.summary}</td>
                         <td style={{padding:"12px 16px"}}><span style={{background:(typeColors[e.type]||"#666")+"22",color:typeColors[e.type]||"#666",padding:"2px 8px",borderRadius:50,fontSize:"0.72rem",fontWeight:700}}>{e.category}</span></td>
                         <td style={{padding:"12px 16px"}}>{e.hours}h</td>
-                        <td style={{padding:"12px 16px",fontWeight:700,color:isOverridden?"#0ea5e9":"#1a3c34"}}>${typeof e.earnings==="number"?e.earnings.toFixed(2):e.earnings}{isOverridden&&<span style={{fontSize:"0.7rem",color:"#0ea5e9",marginLeft:4}}>✎</span>}</td>
-                        <td style={{padding:"8px 12px",textAlign:"right"}}>
-                          <button onClick={()=>{editRowRef.current={...e,isCalendar:true,calKey};setEditPriceVal(String(e.earnings));dialogRef.current?.showModal();}} style={{background:G,color:"white",border:"none",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>Edit</button>
-                        </td>
+                        <td onClick={()=>{editRowRef.current={...e,isCalendar:true,calKey};setEditPriceVal(String(e.earnings));dialogRef.current?.showModal();}} style={{padding:"12px 16px",fontWeight:700,color:isOverridden?"#0ea5e9":"#1a3c34",cursor:"pointer",userSelect:"none"}} title="Click to edit">${typeof e.earnings==="number"?e.earnings.toFixed(2):e.earnings}<span style={{fontSize:"0.7rem",color:isOverridden?"#0ea5e9":"#9ca3af",marginLeft:5,opacity:0.7}}>✎</span></td>
                       </tr>
                     );})}
-
                   </tbody>
                 </table>
               </div>
@@ -1570,20 +1566,19 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
               <div style={{fontSize:"0.8rem",fontWeight:700,color:"#1a3c34",textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Portal Lessons</div>
               <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:"0.88rem"}}>
-                  <thead><tr style={{background:"#f9f9f6",borderBottom:"1.5px solid #e5e7eb"}}>{["Date","Student","Type","Duration","Income",""].map(h=>(<th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#6b7280",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>))}</tr></thead>
+                  <thead><tr style={{background:"#f9f9f6",borderBottom:"1.5px solid #e5e7eb"}}>{["Date","Student","Type","Duration","Income"].map(h=>(<th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#6b7280",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>))}</tr></thead>
                   <tbody>
-                    {portalEarnings.rows.map((r,i)=>(
+                    {portalEarnings.rows.map((r,i)=>{
+                      const isCustom=r.customPrice!=null;
+                      return(
                       <tr key={i} style={{borderBottom:"1px solid #f3f4f6",background:r.isMenlo?"#f0faf5":"white"}}>
                         <td style={{padding:"12px 16px"}}>{fmtDateShort(r.date)}</td>
                         <td style={{padding:"12px 16px"}}>{r.name}{r.isMenlo&&<span style={{background:"#1a3c34",color:"white",fontSize:"0.65rem",fontWeight:700,padding:"1px 6px",borderRadius:50,marginLeft:6}}>MCC</span>}</td>
                         <td style={{padding:"12px 16px"}}>{r.type}</td>
                         <td style={{padding:"12px 16px"}}>{r.duration}</td>
-                        <td style={{padding:"12px 16px",fontWeight:700,color:"#1a3c34"}}>${typeof r.net==="number"?r.net.toFixed(2):r.net}</td>
-                        <td style={{padding:"8px 12px",textAlign:"right"}}>
-                          <button onClick={()=>{editRowRef.current=r;setEditPriceVal(String(r.gross));dialogRef.current?.showModal();}} style={{background:G,color:"white",border:"none",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>Edit</button>
-                        </td>
+                        <td onClick={()=>{editRowRef.current=r;setEditPriceVal(String(r.gross));dialogRef.current?.showModal();}} style={{padding:"12px 16px",fontWeight:700,color:isCustom?"#0ea5e9":"#1a3c34",cursor:"pointer",userSelect:"none"}} title="Click to edit">${typeof r.net==="number"?r.net.toFixed(2):r.net}<span style={{fontSize:"0.7rem",color:isCustom?"#0ea5e9":"#9ca3af",marginLeft:5,opacity:0.7}}>✎</span></td>
                       </tr>
-                    ))}
+                    );})}
                   </tbody>
                 </table>
               </div>
