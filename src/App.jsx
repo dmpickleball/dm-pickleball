@@ -1175,7 +1175,7 @@ function getRate(type,duration,memberType){
 }
 function getMenloNet(gross){return Math.round(gross*0.7*100)/100;}
 function getDurationMins(s){return parseInt(s)||60;}
-function getEarnings(allLessons,mockUsers,range){
+function getEarnings(allLessons,mockUsers,range,customStart,customEnd){
   const now=new Date();
   let total=0,menloGross=0,menloNet=0;
   const rows=[];
@@ -1187,6 +1187,7 @@ function getEarnings(allLessons,mockUsers,range){
       let inRange=false;
       if(range==="week"){const s=new Date(now);s.setDate(now.getDate()-now.getDay());inRange=d>=s&&d<=now;}
       else if(range==="month"){inRange=d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}
+      else if(range==="custom"&&customStart&&customEnd){const s=new Date(customStart+"T00:00:00");const e=new Date(customEnd+"T23:59:59");inRange=d>=s&&d<=e;}
       else{inRange=d.getFullYear()===now.getFullYear();}
       if(!inRange)return;
       const gross=l.customPrice!=null?l.customPrice:getRate(l.type,mins,u.memberType);
@@ -1313,6 +1314,10 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
   const now=new Date();
   const[editRow,setEditRow]=useState(null);
   const[editPriceVal,setEditPriceVal]=useState("");
+  const[customYear,setCustomYear]=useState(now.getFullYear());
+  const[customMonth,setCustomMonth]=useState(now.getMonth()+1);
+  const[customStart,setCustomStart]=useState(null);
+  const[customEnd,setCustomEnd]=useState(null);
   const dialogRef=useRef(null);
   const editRowRef=useRef(null);
   const getDateRange=(range)=>{
@@ -1335,9 +1340,16 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
     setFinanceLoading(false);
   };
   useEffect(()=>{loadFinances(financeRange,includeStanford);},[]);
-  const handleRangeChange=(r)=>{setFinanceRange(r);loadFinances(r,includeStanford);};
-  const handleStanfordToggle=()=>{const next=!includeStanford;setIncludeStanford(next);loadFinances(financeRange,next);};
-  const portalEarnings=getEarnings(allLessons,mockUsers,financeRange);
+  const handleRangeChange=(r)=>{setFinanceRange(r);setCustomStart(null);setCustomEnd(null);loadFinances(r,includeStanford);};
+  const handleStanfordToggle=()=>{const next=!includeStanford;setIncludeStanford(next);if(financeRange==="custom"&&customStart&&customEnd){setFinanceLoading(true);fetch("/api/earnings-calendar?start="+customStart+"&end="+customEnd+"&includeStanford="+(next?"true":"false")).then(r=>r.json()).then(d=>{setFinanceData(d);setFinanceLoading(false);}).catch(()=>setFinanceLoading(false));}else{loadFinances(financeRange,next);}};
+  const loadCustomMonth=(yr,mo,withStanford)=>{
+    const start=yr+"-"+String(mo).padStart(2,"0")+"-01";
+    const lastDay=new Date(yr,mo,0).getDate();
+    const end=yr+"-"+String(mo).padStart(2,"0")+"-"+String(lastDay).padStart(2,"0");
+    setCustomStart(start);setCustomEnd(end);setFinanceRange("custom");setFinanceLoading(true);
+    fetch("/api/earnings-calendar?start="+start+"&end="+end+"&includeStanford="+(withStanford?"true":"false")).then(r=>r.json()).then(d=>{setFinanceData(d);setFinanceLoading(false);}).catch(()=>setFinanceLoading(false));
+  };
+  const portalEarnings=getEarnings(allLessons,mockUsers,financeRange,customStart,customEnd);
   const typeColors={private:"#1a3c34",semi:"#0ea5e9",group:"#f97316",stanford_rec:"#8b5cf6",stanford_open:"#8b5cf6"};
   const calendarLessons=(financeData?.events||[]).filter(e=>!e.isStanford);
   const stanfordEvents=(financeData?.events||[]).filter(e=>e.isStanford);
@@ -1368,12 +1380,18 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
       )}
       {/* Range + Stanford controls */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:12}}>
-        <div style={{display:"flex",gap:8}}>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
           {["week","month","year"].map(r=>(
             <button key={r} onClick={()=>handleRangeChange(r)} style={{background:financeRange===r?"#1a3c34":"white",color:financeRange===r?"white":"#374151",border:"1.5px solid "+(financeRange===r?"#1a3c34":"#e5e7eb"),padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:financeRange===r?700:500}}>
               {r.charAt(0).toUpperCase()+r.slice(1)}
             </button>
           ))}
+          <select value={customMonth} onChange={e=>{const mo=parseInt(e.target.value);setCustomMonth(mo);loadCustomMonth(customYear,mo,includeStanford);}} style={{border:"1.5px solid "+(financeRange==="custom"?"#1a3c34":"#e5e7eb"),borderRadius:50,padding:"7px 14px",fontSize:"0.85rem",cursor:"pointer",fontWeight:financeRange==="custom"?700:500,background:financeRange==="custom"?"#1a3c34":"white",color:financeRange==="custom"?"white":"#374151",appearance:"none",WebkitAppearance:"none"}}>
+            {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m,i)=>(<option key={i} value={i+1}>{m}</option>))}
+          </select>
+          <select value={customYear} onChange={e=>{const yr=parseInt(e.target.value);setCustomYear(yr);loadCustomMonth(yr,customMonth,includeStanford);}} style={{border:"1.5px solid "+(financeRange==="custom"?"#1a3c34":"#e5e7eb"),borderRadius:50,padding:"7px 14px",fontSize:"0.85rem",cursor:"pointer",fontWeight:financeRange==="custom"?700:500,background:financeRange==="custom"?"#1a3c34":"white",color:financeRange==="custom"?"white":"#374151",appearance:"none",WebkitAppearance:"none"}}>
+            {Array.from({length:now.getFullYear()-2023},(_, i)=>2024+i).map(y=>(<option key={y} value={y}>{y}</option>))}
+          </select>
         </div>
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
           {includeStanford&&(
