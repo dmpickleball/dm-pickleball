@@ -44,12 +44,12 @@ function categorizeEvent(summary, location) {
   }
   if (s.includes('stanford') && !s.includes('pb')) return null;
   if (s.includes('group pb lesson')) {
-    return { type: 'group', label: 'Group Lesson', rateType: 'flat', rate: 140 };
+    return { type: 'group', label: 'Group Lesson', rateType: 'per60', rate: 140 };
   }
   if (s.includes('pb lesson')) {
     const slashCount = (s.match(/\//g) || []).length;
-    if (slashCount >= 2) return { type: 'group', label: 'Group Lesson', rateType: 'flat', rate: 140 };
-    if (slashCount === 1) return { type: 'semi', label: 'Semi-Private Lesson', rateType: 'flat', rate: 140 };
+    if (slashCount >= 2) return { type: 'group', label: 'Group Lesson', rateType: 'per60', rate: 140 };
+    if (slashCount === 1) return { type: 'semi', label: 'Semi-Private Lesson', rateType: 'per60', rate: 140 };
     return { type: 'private', label: 'Private Lesson', rateType: 'per60', rate: 120 };
   }
   return null;
