@@ -2749,33 +2749,34 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                       const isWeekday=dow>=1&&dow<=5;
                       const wdShort=d.toLocaleString("default",{weekday:"short"});
                       const allDayItems=[...dayPortal(day).map(l=>({...l,_c:false})),...dayCalItems(day).map((e,i)=>({...e,_c:true,_i:i}))];
-                      // Available booking slots: Mon-Fri, 8am-5pm, not blocked by any event
-                      const availHours=isWeekday?hours.filter(h=>{
-                        if(h>=17)return false;
+                      // Use the real scheduler logic (STANFORD_BLOCKS, Friday morning, today buffer, etc.)
+                      const schedSlotSet=new Set(getSlots(day,'public',60).map(sl=>Math.floor(sl.s/60)));
+                      // Available = schedulable per business rules AND not occupied by any event
+                      const availHours=[...schedSlotSet].filter(h=>{
                         const slotS=h*60,slotE=(h+1)*60;
                         return!allDayItems.some(item=>{const{s,e}=getItemStartEnd(item);if(s===null)return false;const ie=e||(s+60);return s<slotE&&ie>slotS;});
-                      }):[];
+                      });
                       return(
-                        <div key={day} style={{flex:"1 1 0",minWidth:0,borderLeft:di===0?"none":"1px solid #f3f4f6"}}>
+                        <div key={day} style={{flex:"1 1 0",minWidth:0,borderLeft:di===0?"none":"1px solid #e5e7eb"}}>
                           {/* Day header */}
-                          <div style={{height:52,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:isToday?G:isWeekday?"white":"#fafafa",borderBottom:"1px solid #e5e7eb",padding:"4px 2px"}}>
+                          <div style={{height:52,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:isToday?G:isWeekday?"white":"#f4f4f5",borderBottom:"1px solid #e5e7eb",padding:"4px 2px"}}>
                             <div style={{fontSize:"0.6rem",fontWeight:700,color:isToday?"rgba(255,255,255,0.7)":"#9ca3af",textTransform:"uppercase",letterSpacing:"0.04em"}}>{wdShort}</div>
                             <div style={{fontSize:"1.1rem",fontWeight:900,color:isToday?"white":"#374151",lineHeight:1.2}}>{d.getDate()}</div>
                             <div style={{fontSize:"0.55rem",color:isToday?"rgba(255,255,255,0.6)":"#9ca3af"}}>{d.toLocaleString("default",{month:"short"})}</div>
                           </div>
                           {/* Grid body */}
-                          <div style={{position:"relative",height:totalH,background:isWeekday?"white":"#fafafa"}}>
-                            {/* Hour row separators + after-5pm tint */}
-                            {hours.map(h=>(
-                              <div key={h} style={{position:"absolute",top:(h-GRID_S)*HOUR_H,height:HOUR_H,width:"100%",borderBottom:"1px solid "+(h===16?"#e5e7eb":"#f9fafb"),background:h>=17?"rgba(254,243,199,0.35)":"transparent",pointerEvents:"none",zIndex:0}}/>
-                            ))}
+                          <div style={{position:"relative",height:totalH}}>
+                            {/* Hour row backgrounds — gray when not schedulable, white when open */}
+                            {hours.map(h=>{
+                              const isSchedH=h<17&&schedSlotSet.has(h);
+                              const rowBg=h>=17?"rgba(254,243,199,0.4)":isSchedH?"white":"#f4f4f5";
+                              return<div key={h} style={{position:"absolute",top:(h-GRID_S)*HOUR_H,height:HOUR_H,width:"100%",background:rowBg,borderBottom:"1px solid #efefef",pointerEvents:"none",zIndex:0}}/>;
+                            })}
                             {/* 5pm boundary line */}
                             {GRID_E>17&&<div style={{position:"absolute",top:(17-GRID_S)*HOUR_H,left:0,right:0,height:2,background:"#fbbf24",zIndex:3,pointerEvents:"none"}}/>}
-                            {/* Available booking slots (Mon-Fri only) */}
+                            {/* Available booking slots — invisible until hover */}
                             {availHours.map(h=>(
-                              <div key={"av"+h} onClick={()=>setQuickBook({day,startMins:h*60})} title={"Available · "+fmtHour(h)+" – "+fmtHour(h+1)} style={{position:"absolute",top:(h-GRID_S)*HOUR_H+2,height:HOUR_H-4,left:2,right:2,border:"1.5px dashed #86efac",borderRadius:6,background:"rgba(134,239,172,0.07)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1}} onMouseEnter={ev=>ev.currentTarget.style.background="rgba(134,239,172,0.22)"} onMouseLeave={ev=>ev.currentTarget.style.background="rgba(134,239,172,0.07)"}>
-                                <span style={{fontSize:"0.68rem",color:"#16a34a",fontWeight:700,opacity:0.6}}>+</span>
-                              </div>
+                              <div key={"av"+h} onClick={()=>setQuickBook({day,startMins:h*60})} title={"Open · "+fmtHour(h)+" – "+fmtHour(h+1)+" · click to book"} style={{position:"absolute",top:(h-GRID_S)*HOUR_H,height:HOUR_H,left:0,right:0,cursor:"pointer",zIndex:1,transition:"background 0.1s"}} onMouseEnter={ev=>ev.currentTarget.style.background="rgba(22,163,74,0.09)"} onMouseLeave={ev=>ev.currentTarget.style.background="transparent"}/>
                             ))}
                             {/* Event / lesson blocks */}
                             {allDayItems.map((item,i)=>{
