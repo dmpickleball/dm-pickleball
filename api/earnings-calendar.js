@@ -56,6 +56,7 @@ export default async function handler(req, res) {
       timeMax: new Date(end + 'T23:59:59-07:00').toISOString(),
       singleEvents: true,
       orderBy: 'startTime',
+      maxResults: 2500,
     });
 
     const allCalEvents = response.data.items || [];
