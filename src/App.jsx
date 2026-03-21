@@ -1193,7 +1193,7 @@ function getEarnings(allLessons,mockUsers,range){
       const net=l.customPrice!=null?l.customPrice:(u.memberType==="menlo"?getMenloNet(gross):gross);
       total+=net;
       if(u.memberType==="menlo"){menloGross+=gross;menloNet+=net;}
-      rows.push({email,name:u.name||email,date:l.date,type:l.type,duration:l.duration,gross,net,isMenlo:u.memberType==="menlo"});
+      rows.push({email,id:l.id,name:u.name||email,date:l.date,type:l.type,duration:l.duration,gross,net,isMenlo:u.memberType==="menlo"});
     });
   });
   return{total,menloGross,menloNet,rows};
@@ -1309,8 +1309,10 @@ function LocationsTab({locations,setLocations}){
     </div>
   );
 }
-function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeStanford,showNetStanford,setShowNetStanford,financeData,setFinanceData,financeLoading,setFinanceLoading,allLessons,mockUsers,onExportNial,showNialExport,setShowNialExport,nialStart,setNialStart,nialEnd,setNialEnd}){
+function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeStanford,showNetStanford,setShowNetStanford,financeData,setFinanceData,financeLoading,setFinanceLoading,allLessons,mockUsers,onUpdateLesson,onExportNial,showNialExport,setShowNialExport,nialStart,setNialStart,nialEnd,setNialEnd}){
   const now=new Date();
+  const[editPriceId,setEditPriceId]=useState(null);
+  const[editPriceVal,setEditPriceVal]=useState("");
   const getDateRange=(range)=>{
     const end=new Date();
     let start=new Date();
@@ -1337,9 +1339,29 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
   const typeColors={private:"#1a3c34",semi:"#0ea5e9",group:"#f97316",stanford_rec:"#8b5cf6",stanford_open:"#8b5cf6"};
   const calendarLessons=(financeData?.events||[]).filter(e=>!e.isStanford);
   const stanfordEvents=(financeData?.events||[]).filter(e=>e.isStanford);
-  const totalEarnings=(financeData?.lessonEarnings||0)+portalEarnings.total+(includeStanford?(financeData?.stanfordEarnings||0):0);
+  const stanfordAmt=includeStanford?(showNetStanford?(financeData?.stanfordNetEarnings||0):(financeData?.stanfordEarnings||0)):0;
+  const totalEarnings=(financeData?.lessonEarnings||0)+portalEarnings.total+stanfordAmt;
   return(
     <div>
+      {/* Nial Export */}
+      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}>
+        <button onClick={()=>setShowNialExport(!showNialExport)} style={{background:"#1a1a1a",color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>⬇ Export Nial Report</button>
+      </div>
+      {showNialExport&&(
+        <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"20px 24px",marginBottom:24}}>
+          <div style={{fontWeight:700,fontSize:"0.95rem",marginBottom:4}}>Export Menlo Report for Nial</div>
+          <div style={{fontSize:"0.83rem",color:"#6b7280",marginBottom:16}}>Select date range — shows Date, Member Name, Lesson Type, Duration.</div>
+          <div style={{display:"flex",gap:12,flexWrap:"wrap",alignItems:"flex-end"}}>
+            <div><div style={{...lbl,marginBottom:4}}>Start Date</div><input type="date" value={nialStart} onChange={e=>setNialStart(e.target.value)} style={{...inp,marginBottom:0,width:"auto"}}/></div>
+            <div><div style={{...lbl,marginBottom:4}}>End Date</div><input type="date" value={nialEnd} onChange={e=>setNialEnd(e.target.value)} style={{...inp,marginBottom:0,width:"auto"}}/></div>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>setShowNialExport(false)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}>Cancel</button>
+              <button onClick={onExportNial} style={{background:G,color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>⬇ Download CSV</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Range + Stanford controls */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:12}}>
         <div style={{display:"flex",gap:8}}>
           {["week","month","year"].map(r=>(
@@ -1348,10 +1370,18 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
             </button>
           ))}
         </div>
-        <button onClick={handleStanfordToggle} style={{background:includeStanford?"#8b5cf6":"white",color:includeStanford?"white":"#374151",border:"1.5px solid "+(includeStanford?"#8b5cf6":"#e5e7eb"),padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:600}}>
-          {includeStanford?"✓ Stanford Included":"+ Include Stanford"}
-        </button>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          {includeStanford&&(
+            <button onClick={()=>setShowNetStanford(!showNetStanford)} style={{background:showNetStanford?"#6d28d9":"white",color:showNetStanford?"white":"#374151",border:"1.5px solid "+(showNetStanford?"#6d28d9":"#e5e7eb"),padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:600}}>
+              {showNetStanford?"Stanford: Net (after tax)":"Stanford: Gross"}
+            </button>
+          )}
+          <button onClick={handleStanfordToggle} style={{background:includeStanford?"#8b5cf6":"white",color:includeStanford?"white":"#374151",border:"1.5px solid "+(includeStanford?"#8b5cf6":"#e5e7eb"),padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:600}}>
+            {includeStanford?"✓ Stanford Included":"+ Include Stanford"}
+          </button>
+        </div>
       </div>
+      {/* Summary cards */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:16,marginBottom:28}}>
         <div style={{background:"white",borderRadius:12,padding:"20px",border:"1.5px solid #e5e7eb"}}>
           <div style={{fontSize:"0.7rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Total Earnings</div>
@@ -1370,8 +1400,8 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
         </div>
         {includeStanford&&(
           <div style={{background:"#f5f3ff",borderRadius:12,padding:"20px",border:"1.5px solid #8b5cf6"}}>
-            <div style={{fontSize:"0.7rem",fontWeight:700,color:"#8b5cf6",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Stanford</div>
-            <div style={{fontSize:"1.8rem",fontWeight:900,color:"#8b5cf6"}}>${(financeData?.stanfordEarnings||0).toFixed(2)}</div>
+            <div style={{fontSize:"0.7rem",fontWeight:700,color:"#8b5cf6",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Stanford {showNetStanford?"(Net)":"(Gross)"}</div>
+            <div style={{fontSize:"1.8rem",fontWeight:900,color:"#8b5cf6"}}>${stanfordAmt.toFixed(2)}</div>
             <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:4}}>{(financeData?.stanfordHours||0).toFixed(1)} hrs</div>
           </div>
         )}
@@ -1406,7 +1436,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
               <div style={{fontSize:"0.8rem",fontWeight:700,color:"#8b5cf6",textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Stanford Events</div>
               <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:"0.88rem"}}>
-                  <thead><tr style={{background:"#faf5ff",borderBottom:"1.5px solid #e5e7eb"}}>{["Date","Event","Type","Hours","Earnings"].map(h=>(<th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#8b5cf6",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>))}</tr></thead>
+                  <thead><tr style={{background:"#faf5ff",borderBottom:"1.5px solid #e5e7eb"}}>{["Date","Event","Type","Hours",showNetStanford?"Earnings (Net)":"Earnings (Gross)"].map(h=>(<th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#8b5cf6",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>))}</tr></thead>
                   <tbody>
                     {stanfordEvents.map((e,i)=>(
                       <tr key={i} style={{borderBottom:"1px solid #f3f4f6",background:"#faf5ff"}}>
@@ -1414,7 +1444,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                         <td style={{padding:"12px 16px",maxWidth:180,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.summary}</td>
                         <td style={{padding:"12px 16px"}}><span style={{background:"#8b5cf622",color:"#8b5cf6",padding:"2px 8px",borderRadius:50,fontSize:"0.72rem",fontWeight:700}}>{e.category}</span></td>
                         <td style={{padding:"12px 16px"}}>{e.hours}h</td>
-                        <td style={{padding:"12px 16px",fontWeight:700,color:"#8b5cf6"}}>${e.earnings}</td>
+                        <td style={{padding:"12px 16px",fontWeight:700,color:"#8b5cf6"}}>${showNetStanford?(e.netEarnings??e.earnings):e.earnings}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1427,17 +1457,57 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
               <div style={{fontSize:"0.8rem",fontWeight:700,color:"#1a3c34",textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Portal Lessons</div>
               <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:"0.88rem"}}>
-                  <thead><tr style={{background:"#f9f9f6",borderBottom:"1.5px solid #e5e7eb"}}>{["Date","Student","Type","Duration","Your Cut"].map(h=>(<th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#6b7280",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>))}</tr></thead>
+                  <thead><tr style={{background:"#f9f9f6",borderBottom:"1.5px solid #e5e7eb"}}>{["Date","Student","Type","Duration","Income",""].map(h=>(<th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#6b7280",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>))}</tr></thead>
                   <tbody>
-                    {portalEarnings.rows.map((r,i)=>(
-                      <tr key={i} style={{borderBottom:"1px solid #f3f4f6",background:r.isMenlo?"#f0faf5":"white"}}>
-                        <td style={{padding:"12px 16px"}}>{fmtDateShort(r.date)}</td>
-                        <td style={{padding:"12px 16px"}}>{r.name}{r.isMenlo&&<span style={{background:"#1a3c34",color:"white",fontSize:"0.65rem",fontWeight:700,padding:"1px 6px",borderRadius:50,marginLeft:6}}>MCC</span>}</td>
-                        <td style={{padding:"12px 16px"}}>{r.type}</td>
-                        <td style={{padding:"12px 16px"}}>{r.duration}</td>
-                        <td style={{padding:"12px 16px",fontWeight:700,color:"#1a3c34"}}>${r.net}</td>
-                      </tr>
-                    ))}
+                    {portalEarnings.rows.map((r,i)=>{
+                      const rowKey=String(r.email)+"_"+String(r.id);
+                      const isEditing=editPriceId===rowKey;
+                      return(
+                        <>
+                          <tr key={rowKey} style={{borderBottom:isEditing?"none":"1px solid #f3f4f6",background:r.isMenlo?"#f0faf5":"white"}}>
+                            <td style={{padding:"12px 16px"}}>{fmtDateShort(r.date)}</td>
+                            <td style={{padding:"12px 16px"}}>{r.name}{r.isMenlo&&<span style={{background:"#1a3c34",color:"white",fontSize:"0.65rem",fontWeight:700,padding:"1px 6px",borderRadius:50,marginLeft:6}}>MCC</span>}</td>
+                            <td style={{padding:"12px 16px"}}>{r.type}</td>
+                            <td style={{padding:"12px 16px"}}>{r.duration}</td>
+                            <td style={{padding:"12px 16px",fontWeight:700,color:"#1a3c34"}}>${r.net.toFixed(2)}</td>
+                            <td style={{padding:"8px 16px"}}>
+                              <button onClick={()=>{if(isEditing){setEditPriceId(null);}else{setEditPriceId(rowKey);setEditPriceVal(String(r.gross));}}} style={{background:isEditing?"#f3f4f6":G,color:isEditing?"#374151":"white",border:"none",padding:"4px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.75rem",fontWeight:700}}>
+                                {isEditing?"Cancel":"💰 Edit"}
+                              </button>
+                            </td>
+                          </tr>
+                          {isEditing&&(
+                            <tr key={rowKey+"_edit"} style={{borderBottom:"1px solid #f3f4f6"}}>
+                              <td colSpan={6} style={{padding:"16px 20px",background:"#f9f9f6"}}>
+                                <div style={{fontSize:"0.85rem",fontWeight:600,marginBottom:8,color:"#374151"}}>Override lesson income</div>
+                                <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+                                  <span style={{fontSize:"1rem",color:"#6b7280"}}>$</span>
+                                  <input type="number" value={editPriceVal} onChange={e=>setEditPriceVal(e.target.value)} style={{...inp,marginBottom:0,width:120}} placeholder="0.00"/>
+                                  <span style={{fontSize:"0.8rem",color:"#9ca3af"}}>Default: ${getRate(r.type,parseInt(r.duration),r.isMenlo?"menlo":"public").toFixed(2)}</span>
+                                </div>
+                                <div style={{display:"flex",gap:8,marginTop:12}}>
+                                  <button onClick={()=>setEditPriceId(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 18px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}>Cancel</button>
+                                  <button onClick={async()=>{
+                                    const price=parseFloat(editPriceVal);
+                                    if(isNaN(price))return;
+                                    await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:r.id,updates:{custom_price:price}})});
+                                    onUpdateLesson(r.email,r.id,{customPrice:price});
+                                    setEditPriceId(null);
+                                  }} style={{background:G,color:"white",border:"none",padding:"7px 18px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>Save</button>
+                                  {r.gross!==getRate(r.type,parseInt(r.duration),r.isMenlo?"menlo":"public")&&(
+                                    <button onClick={async()=>{
+                                      await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:r.id,updates:{custom_price:null}})});
+                                      onUpdateLesson(r.email,r.id,{customPrice:null});
+                                      setEditPriceId(null);
+                                    }} style={{background:"white",border:"1.5px solid #e5e7eb",color:"#6b7280",padding:"7px 18px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}>Reset to Default</button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -1802,23 +1872,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
           <div style={{fontSize:"0.78rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:4}}>Admin Panel</div>
           <h2 style={{fontWeight:900,fontSize:"1.6rem",color:G}}>David Dashboard</h2>
         </div>
-        <button onClick={()=>setShowNialExport(!showNialExport)} style={{background:"#1a1a1a",color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>⬇ Export Nial Report</button>
       </div>
-
-      {showNialExport&&(
-        <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"20px 24px",marginBottom:24}}>
-          <div style={{fontWeight:700,fontSize:"0.95rem",marginBottom:4}}>Export Menlo Report for Nial</div>
-          <div style={{fontSize:"0.83rem",color:"#6b7280",marginBottom:16}}>Select date range — shows Date, Member Name, Lesson Type, Duration.</div>
-          <div style={{display:"flex",gap:12,flexWrap:"wrap",alignItems:"flex-end"}}>
-            <div><div style={{...lbl,marginBottom:4}}>Start Date</div><input type="date" value={nialStart} onChange={e=>setNialStart(e.target.value)} style={{...inp,marginBottom:0,width:"auto"}}/></div>
-            <div><div style={{...lbl,marginBottom:4}}>End Date</div><input type="date" value={nialEnd} onChange={e=>setNialEnd(e.target.value)} style={{...inp,marginBottom:0,width:"auto"}}/></div>
-            <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>setShowNialExport(false)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}>Cancel</button>
-              <button onClick={exportNial} style={{background:G,color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>⬇ Download CSV</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:16,marginBottom:32}}>
         <div style={{background:"white",borderRadius:12,padding:"20px 24px",border:"1.5px solid #e5e7eb"}}>
@@ -2314,7 +2368,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
           financeLoading={financeLoading}
           setFinanceLoading={setFinanceLoading}
           allLessons={allLessons}
-          mockUsers={mockUsersState}
+          mockUsers={mockUsers}
+          onUpdateLesson={onUpdateLesson}
           onExportNial={exportNial}
           showNialExport={showNialExport}
           setShowNialExport={setShowNialExport}
