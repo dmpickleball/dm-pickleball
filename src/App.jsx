@@ -1872,7 +1872,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[showNialExport,setShowNialExport]=useState(false);
   const[nialStart,setNialStart]=useState("");
   const[nialEnd,setNialEnd]=useState("");
-  const[lessonFilter,setLessonFilter]=useState("upcoming");
+  const[filterCancelled,setFilterCancelled]=useState(false);
   const[editingId,setEditingId]=useState(null);const[editPriceId,setEditPriceId]=useState(null);const[editPriceVal,setEditPriceVal]=useState("");
   const[editNotes,setEditNotes]=useState("");
   const[confirmCancel,setConfirmCancel]=useState(null);const[confirmDelete,setConfirmDelete]=useState(null);const[confirmDeleteStudent,setConfirmDeleteStudent]=useState(false);
@@ -1902,10 +1902,6 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[upcomingView,setUpcomingView]=useState("week");
   const[selectedDay,setSelectedDay]=useState(toDS(new Date()));
   const[calMonth,setCalMonth]=useState(toDS(new Date()).slice(0,7));
-  const[pastSearch,setPastSearch]=useState("");
-  const[pastRangeStart,setPastRangeStart]=useState("");
-  const[pastRangeEnd,setPastRangeEnd]=useState("");
-  const[pastShowCancelled,setPastShowCancelled]=useState(true);
   const[activeMenu,setActiveMenu]=useState(null);
 
   const earnings=getEarnings(allLessons,mockUsers,earningsRange);
@@ -1925,18 +1921,13 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   ).sort((a,b)=>new Date(b.date)-new Date(a.date));
 
   const cancelledStatuses2=["cancelled","late_cancel","cancelled_forgiven"];
-  const filteredLessons=allLessonsList.filter(l=>{
-    if(lessonFilter==="upcoming")return !isPast(l.date,l.time)&&!cancelledStatuses2.includes(l.status);
-    if(lessonFilter==="past")return isPast(l.date,l.time)||l.status==="completed"||cancelledStatuses2.includes(l.status);
-    return true;
-  });
 
   const fetchCalendarItems=async()=>{
     setCalLoading(true);
     try{
-      const today=toDS(new Date());
+      const past=toDS(addDays(new Date(),-180));
       const future=toDS(addDays(new Date(),90));
-      const r=await fetch("/api/earnings-calendar?start="+today+"&end="+future+"&includeFuture=true&includeStanford=false");
+      const r=await fetch("/api/earnings-calendar?start="+past+"&end="+future+"&includeFuture=true&includeStanford=false");
       const d=await r.json();
       setCalendarItems((d.events||[]).filter(e=>!e.isStanford));
     }catch(e){console.error("Cal fetch:",e);setCalendarItems([]);}
@@ -2512,8 +2503,6 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
       )}
       {tab==="lessons"&&(()=>{
         const todayStr=toDS(new Date());
-        const upcomingCount=allLessonsList.filter(l=>!isPast(l.date,l.time)&&!cancelledStatuses2.includes(l.status)).length;
-        const pastCount=allLessonsList.filter(l=>isPast(l.date,l.time)||l.status==="completed"||cancelledStatuses2.includes(l.status)).length;
 
         // ── helper: render a portal lesson row ──────────────────────────────
         const menuKey=(l)=>l.id+"_"+l.studentEmail;
@@ -2608,205 +2597,136 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
           );
         };
 
+        // ── shared helpers ───────────────────────────────────────────────────
+        const weekDays=getWeekDays(selectedDay);
+        const monthGrid=getMonthGrid(calMonth);
+        const dayPortal=(day)=>allLessonsList.filter(l=>l.date===day&&(filterCancelled||!cancelledStatuses2.includes(l.status)));
+        const dayCalItems=(day)=>showCalendar?calendarItems.filter(e=>e.date===day):[];
+        const hasDayActivity=(day)=>dayPortal(day).length>0||dayCalItems(day).length>0;
+        const selPortal=dayPortal(selectedDay);
+        const selCal=dayCalItems(selectedDay);
+        const merged=[...selPortal.map(l=>({...l,_c:false})),...selCal.map((e,i)=>({...e,_c:true,_i:i}))].sort((a,b)=>a.date.localeCompare(b.date));
+        const todayFull=new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"});
+        const dayLabel=(day)=>day===todayStr?"Today":day===toDS(addDays(new Date(),1))?"Tomorrow":day===toDS(addDays(new Date(),-1))?"Yesterday":fmtDate(day);
+
         return(
         <div>
-          {/* ── Main filter tabs ── */}
-          <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}>
-            {[["upcoming","Upcoming",upcomingCount],["past","Past",pastCount],["all","All",allLessonsList.length]].map(([f,label,cnt])=>(
-              <button key={f} onClick={()=>setLessonFilter(f)} style={{background:lessonFilter===f?G:"white",color:lessonFilter===f?"white":"#374151",border:"1.5px solid "+(lessonFilter===f?G:"#e5e7eb"),padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:lessonFilter===f?700:500}}>
-                {label} <span style={{opacity:0.7,fontSize:"0.75rem"}}>({cnt})</span>
-              </button>
-            ))}
+          {/* ── Weather banner (always visible) ───────────────────────── */}
+          <div style={{background:"linear-gradient(135deg,#1a3c34 0%,#2d6a5e 100%)",borderRadius:14,padding:"16px 20px",marginBottom:14}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10,marginBottom:weather?.hourly?.length?12:0}}>
+              <div>
+                <div style={{color:"rgba(255,255,255,0.65)",fontSize:"0.72rem",fontWeight:600,textTransform:"uppercase",letterSpacing:1}}>Today · 94303</div>
+                <div style={{color:"white",fontWeight:800,fontSize:"1rem",marginTop:1}}>{todayFull}</div>
+              </div>
+              {weather&&(
+                <div style={{display:"flex",alignItems:"center",gap:9,background:"rgba(255,255,255,0.12)",borderRadius:10,padding:"8px 16px"}}>
+                  <span style={{fontSize:"1.8rem"}}>{weather.emoji}</span>
+                  <div><div style={{color:"white",fontWeight:800,fontSize:"1.3rem",lineHeight:1}}>{weather.temp}°F</div><div style={{color:"rgba(255,255,255,0.7)",fontSize:"0.75rem"}}>{weather.desc}</div></div>
+                </div>
+              )}
+            </div>
+            {weather?.hourly?.length>0&&(
+              <div style={{display:"flex",gap:5,overflowX:"auto",paddingBottom:1}}>
+                {weather.hourly.map((h,i)=>(
+                  <div key={i} style={{background:"rgba(255,255,255,0.1)",borderRadius:9,padding:"6px 9px",textAlign:"center",minWidth:48,flexShrink:0}}>
+                    <div style={{color:"rgba(255,255,255,0.6)",fontSize:"0.62rem",fontWeight:600,marginBottom:2}}>{h.time}</div>
+                    <div style={{fontSize:"1rem"}}>{h.emoji}</div>
+                    <div style={{color:"white",fontWeight:700,fontSize:"0.8rem",marginTop:1}}>{h.temp}°</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* ══════════════ UPCOMING VIEW ══════════════ */}
-          {lessonFilter==="upcoming"&&(()=>{
-            const weekDays=getWeekDays(selectedDay);
-            const monthGrid=getMonthGrid(calMonth);
-            const dayLessons=(day)=>allLessonsList.filter(l=>l.date===day&&!isPast(l.date,l.time)&&!cancelledStatuses2.includes(l.status));
-            const dayCalItems=(day)=>calendarItems.filter(e=>e.date===day);
-            const hasDayActivity=(day)=>dayLessons(day).length>0||dayCalItems(day).length>0;
-
-            const selPortal=allLessonsList.filter(l=>l.date===selectedDay&&!cancelledStatuses2.includes(l.status));
-            const selCal=calendarItems.filter(e=>e.date===selectedDay);
-            const merged=[...selPortal.map(l=>({...l,_c:false})),...selCal.map((e,i)=>({...e,_c:true,_i:i}))].sort((a,b)=>a.date.localeCompare(b.date));
-
-            const todayFull=new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"});
-            return(
-              <div>
-                {/* Weather + date banner */}
-                <div style={{background:"linear-gradient(135deg,#1a3c34 0%,#2d6a5e 100%)",borderRadius:14,padding:"18px 22px",marginBottom:16}}>
-                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12,marginBottom:weather?.hourly?.length?14:0}}>
-                    <div>
-                      <div style={{color:"rgba(255,255,255,0.7)",fontSize:"0.78rem",fontWeight:600,textTransform:"uppercase",letterSpacing:1}}>Today · 94303</div>
-                      <div style={{color:"white",fontWeight:800,fontSize:"1.05rem",marginTop:2}}>{todayFull}</div>
-                    </div>
-                    {weather&&(
-                      <div style={{display:"flex",alignItems:"center",gap:10,background:"rgba(255,255,255,0.12)",borderRadius:12,padding:"10px 18px"}}>
-                        <span style={{fontSize:"2rem"}}>{weather.emoji}</span>
-                        <div>
-                          <div style={{color:"white",fontWeight:800,fontSize:"1.4rem",lineHeight:1}}>{weather.temp}°F</div>
-                          <div style={{color:"rgba(255,255,255,0.75)",fontSize:"0.78rem"}}>{weather.desc}</div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  {/* Hourly strip */}
-                  {weather?.hourly?.length>0&&(
-                    <div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:2}}>
-                      {weather.hourly.map((h,i)=>(
-                        <div key={i} style={{background:"rgba(255,255,255,0.1)",borderRadius:10,padding:"7px 10px",textAlign:"center",minWidth:52,flexShrink:0}}>
-                          <div style={{color:"rgba(255,255,255,0.65)",fontSize:"0.65rem",fontWeight:600,marginBottom:3}}>{h.time}</div>
-                          <div style={{fontSize:"1.1rem"}}>{h.emoji}</div>
-                          <div style={{color:"white",fontWeight:700,fontSize:"0.82rem",marginTop:2}}>{h.temp}°</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+          {/* ── Controls row: view switcher + filters ──────────────────── */}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:8}}>
+            <div style={{display:"flex",gap:4,background:"#f3f4f6",padding:4,borderRadius:10}}>
+              {[["day","Day"],["week","Week"],["month","Month"]].map(([v,lbl])=>(
+                <button key={v} onClick={()=>{setUpcomingView(v);if(v==="day")setSelectedDay(todayStr);}} style={{background:upcomingView===v?"white":"transparent",color:upcomingView===v?G:"#6b7280",border:"none",padding:"6px 16px",borderRadius:8,cursor:"pointer",fontSize:"0.85rem",fontWeight:upcomingView===v?700:500,boxShadow:upcomingView===v?"0 1px 4px rgba(0,0,0,0.1)":"none",transition:"all 0.15s"}}>{lbl}</button>
+              ))}
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+              {upcomingView==="month"&&(
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <button onClick={()=>{const[y,m]=calMonth.split("-").map(Number);const prev=new Date(y,m-2,1);setCalMonth(toDS(prev).slice(0,7));}} style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"5px 10px",cursor:"pointer",fontWeight:700}}>‹</button>
+                  <span style={{fontWeight:700,fontSize:"0.88rem",color:G,minWidth:88,textAlign:"center"}}>{new Date(calMonth+"-15").toLocaleString("default",{month:"long",year:"numeric"})}</span>
+                  <button onClick={()=>{const[y,m]=calMonth.split("-").map(Number);const next=new Date(y,m,1);setCalMonth(toDS(next).slice(0,7));}} style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"5px 10px",cursor:"pointer",fontWeight:700}}>›</button>
                 </div>
+              )}
+              {/* Filter pills */}
+              <button onClick={()=>setFilterCancelled(p=>!p)} style={{background:filterCancelled?"#fef2f2":"white",color:filterCancelled?"#dc2626":"#6b7280",border:"1.5px solid "+(filterCancelled?"#fca5a5":"#e5e7eb"),padding:"5px 13px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:filterCancelled?700:500}}>
+                {filterCancelled?"✕ Hide Cancelled":"Show Cancelled"}
+              </button>
+              <button onClick={()=>setShowCalendar(p=>!p)} style={{background:showCalendar?"#e8f0ee":"white",color:showCalendar?G:"#6b7280",border:"1.5px solid "+(showCalendar?G:"#e5e7eb"),padding:"5px 13px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:showCalendar?700:500}}>
+                {calLoading?<span style={{display:"inline-block",width:10,height:10,border:"2px solid "+G,borderTop:"2px solid transparent",borderRadius:"50%",animation:"spin 0.7s linear infinite",verticalAlign:"middle",marginRight:4}}/>:"📅 "}{showCalendar?"Cal On":"Cal Off"}
+              </button>
+            </div>
+          </div>
 
-                {/* Day / Week / Month switcher */}
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:8}}>
-                  <div style={{display:"flex",gap:4,background:"#f3f4f6",padding:4,borderRadius:10}}>
-                    {[["day","Day"],["week","Week"],["month","Month"]].map(([v,lbl])=>(
-                      <button key={v} onClick={()=>{setUpcomingView(v);if(v==="day")setSelectedDay(todayStr);}} style={{background:upcomingView===v?"white":"transparent",color:upcomingView===v?G:"#6b7280",border:"none",padding:"6px 16px",borderRadius:8,cursor:"pointer",fontSize:"0.85rem",fontWeight:upcomingView===v?700:500,boxShadow:upcomingView===v?"0 1px 4px rgba(0,0,0,0.1)":"none",transition:"all 0.15s"}}>{lbl}</button>
-                    ))}
-                  </div>
-                  {upcomingView==="month"&&(
-                    <div style={{display:"flex",alignItems:"center",gap:8}}>
-                      <button onClick={()=>{const[y,m]=calMonth.split("-").map(Number);const prev=new Date(y,m-2,1);setCalMonth(toDS(prev).slice(0,7));}} style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"5px 10px",cursor:"pointer",fontWeight:700}}>‹</button>
-                      <span style={{fontWeight:700,fontSize:"0.9rem",color:G,minWidth:90,textAlign:"center"}}>{new Date(calMonth+"-15").toLocaleString("default",{month:"long",year:"numeric"})}</span>
-                      <button onClick={()=>{const[y,m]=calMonth.split("-").map(Number);const next=new Date(y,m,1);setCalMonth(toDS(next).slice(0,7));}} style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"5px 10px",cursor:"pointer",fontWeight:700}}>›</button>
-                    </div>
-                  )}
-                </div>
-
-                {/* DAY view */}
-                {upcomingView==="day"&&(
-                  <div>
-                    <div style={{fontWeight:700,color:"#374151",marginBottom:12,fontSize:"0.88rem"}}>
-                      {selectedDay===todayStr?"Today":""}
-                      {selectedDay===toDS(addDays(new Date(),1))?" Tomorrow":""}
-                      {selectedDay!==todayStr&&selectedDay!==toDS(addDays(new Date(),1))?fmtDate(selectedDay):""}
-                      {" — "}{merged.length} lesson{merged.length!==1?"s":""}
-                    </div>
-                    <div style={{display:"flex",gap:8,marginBottom:16}}>
-                      <button onClick={()=>setSelectedDay(toDS(addDays(new Date(selectedDay+"T12:00:00"),-1)))} style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"5px 12px",cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>‹ Prev</button>
-                      <button onClick={()=>setSelectedDay(todayStr)} style={{background:selectedDay===todayStr?G:"white",color:selectedDay===todayStr?"white":"#374151",border:"1.5px solid "+(selectedDay===todayStr?G:"#e5e7eb"),borderRadius:8,padding:"5px 12px",cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Today</button>
-                      <button onClick={()=>setSelectedDay(toDS(addDays(new Date(selectedDay+"T12:00:00"),1)))} style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"5px 12px",cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Next ›</button>
-                    </div>
-                    {merged.length===0
-                      ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"32px",textAlign:"center",color:"#9ca3af"}}>No lessons on {fmtDateShort(selectedDay)}.</div>
-                      :merged.map((l,i)=>l._c?CalRow(l,i):LessonRow(l))
-                    }
-                  </div>
-                )}
-
-                {/* WEEK view */}
-                {upcomingView==="week"&&(
-                  <div>
-                    {/* Week strip */}
-                    <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4,marginBottom:16}}>
-                      {weekDays.map(day=>{
-                        const d=new Date(day+"T12:00:00");
-                        const isToday=day===todayStr;const isSel=day===selectedDay;
-                        const hasItems=hasDayActivity(day);
-                        return(
-                          <button key={day} onClick={()=>setSelectedDay(day)} style={{background:isSel?G:isToday?"#e8f0ee":"white",color:isSel?"white":isToday?G:"#374151",border:"1.5px solid "+(isSel?G:isToday?G:"#e5e7eb"),borderRadius:10,padding:"8px 4px",cursor:"pointer",textAlign:"center",transition:"all 0.15s"}}>
-                            <div style={{fontSize:"0.65rem",fontWeight:600,opacity:0.75,textTransform:"uppercase"}}>{d.toLocaleString("default",{weekday:"short"})}</div>
-                            <div style={{fontSize:"1.1rem",fontWeight:800,lineHeight:1.2,marginTop:2}}>{d.getDate()}</div>
-                            <div style={{height:5,marginTop:4,display:"flex",justifyContent:"center"}}>
-                              {hasItems&&<span style={{width:5,height:5,borderRadius:"50%",background:isSel?"rgba(255,255,255,0.8)":G,display:"inline-block"}}/>}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {/* Selected day lessons */}
-                    <div style={{fontWeight:700,color:"#374151",marginBottom:10,fontSize:"0.88rem"}}>{fmtDate(selectedDay)} — {merged.length} lesson{merged.length!==1?"s":""}</div>
-                    {merged.length===0
-                      ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"28px",textAlign:"center",color:"#9ca3af"}}>No lessons on {fmtDateShort(selectedDay)}.</div>
-                      :merged.map((l,i)=>l._c?CalRow(l,i):LessonRow(l))
-                    }
-                  </div>
-                )}
-
-                {/* MONTH view */}
-                {upcomingView==="month"&&(
-                  <div>
-                    {/* Calendar grid header */}
-                    <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:4}}>
-                      {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d=>(
-                        <div key={d} style={{textAlign:"center",fontSize:"0.68rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",padding:"4px 0"}}>{d}</div>
-                      ))}
-                    </div>
-                    <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:16}}>
-                      {monthGrid.map((day,i)=>{
-                        if(!day)return<div key={"empty-"+i}/>;
-                        const isToday=day===todayStr;const isSel=day===selectedDay;
-                        const hasItems=hasDayActivity(day);const isPastDay=day<todayStr;
-                        return(
-                          <button key={day} onClick={()=>setSelectedDay(day)} style={{background:isSel?G:isToday?"#e8f0ee":"white",color:isSel?"white":isPastDay?"#d1d5db":isToday?G:"#374151",border:"1.5px solid "+(isSel?G:isToday?G:"#e5e7eb"),borderRadius:8,padding:"6px 4px",cursor:"pointer",textAlign:"center",minHeight:40,transition:"all 0.15s",position:"relative"}}>
-                            <div style={{fontSize:"0.88rem",fontWeight:isSel||isToday?800:400}}>{new Date(day+"T12:00:00").getDate()}</div>
-                            {hasItems&&<span style={{position:"absolute",bottom:3,left:"50%",transform:"translateX(-50%)",width:5,height:5,borderRadius:"50%",background:isSel?"rgba(255,255,255,0.9)":G,display:"block"}}/>}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <div style={{fontWeight:700,color:"#374151",marginBottom:10,fontSize:"0.88rem"}}>{fmtDate(selectedDay)} — {merged.length} lesson{merged.length!==1?"s":""}</div>
-                    {merged.length===0
-                      ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"28px",textAlign:"center",color:"#9ca3af"}}>No lessons on {fmtDateShort(selectedDay)}.</div>
-                      :merged.map((l,i)=>l._c?CalRow(l,i):LessonRow(l))
-                    }
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-
-          {/* ══════════════ PAST VIEW ══════════════ */}
-          {lessonFilter==="past"&&(()=>{
-            const allPast=allLessonsList.filter(l=>isPast(l.date,l.time)||l.status==="completed"||cancelledStatuses2.includes(l.status));
-            const pastFiltered=allPast.filter(l=>{
-              if(!pastShowCancelled&&cancelledStatuses2.includes(l.status))return false;
-              if(pastSearch){const q=pastSearch.toLowerCase();if(!(l.studentName.toLowerCase().includes(q)||l.studentEmail.toLowerCase().includes(q)))return false;}
-              if(pastRangeStart&&l.date<pastRangeStart)return false;
-              if(pastRangeEnd&&l.date>pastRangeEnd)return false;
-              return true;
-            }).sort((a,b)=>new Date(b.date)-new Date(a.date));
-            return(
-              <div>
-                {/* Filters row */}
-                <div style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:12,padding:"14px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
-                  <input value={pastSearch} onChange={e=>setPastSearch(e.target.value)} placeholder="Search by name…" style={{border:"1.5px solid #e5e7eb",borderRadius:8,padding:"7px 12px",fontSize:"0.85rem",outline:"none",flex:"1 1 140px",minWidth:120}}/>
-                  <div style={{display:"flex",alignItems:"center",gap:6}}>
-                    <input type="date" value={pastRangeStart} onChange={e=>setPastRangeStart(e.target.value)} style={{border:"1.5px solid #e5e7eb",borderRadius:8,padding:"6px 10px",fontSize:"0.82rem",outline:"none"}}/>
-                    <span style={{color:"#9ca3af",fontSize:"0.82rem"}}>to</span>
-                    <input type="date" value={pastRangeEnd} onChange={e=>setPastRangeEnd(e.target.value)} style={{border:"1.5px solid #e5e7eb",borderRadius:8,padding:"6px 10px",fontSize:"0.82rem",outline:"none"}}/>
-                    {(pastRangeStart||pastRangeEnd)&&<button onClick={()=>{setPastRangeStart("");setPastRangeEnd("");}} style={{background:"none",border:"none",color:"#9ca3af",cursor:"pointer",fontSize:"0.82rem",padding:"0 4px"}}>✕</button>}
-                  </div>
-                  <label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",fontSize:"0.85rem",color:"#374151",userSelect:"none",whiteSpace:"nowrap"}}>
-                    <div onClick={()=>setPastShowCancelled(p=>!p)} style={{width:32,height:18,background:pastShowCancelled?G:"#d1d5db",borderRadius:50,position:"relative",cursor:"pointer",transition:"background 0.2s"}}>
-                      <span style={{position:"absolute",top:2,left:pastShowCancelled?14:2,width:14,height:14,borderRadius:"50%",background:"white",transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/>
-                    </div>
-                    Show Cancelled
-                  </label>
-                </div>
-                <div style={{fontSize:"0.8rem",color:"#9ca3af",marginBottom:12}}>{pastFiltered.length} lesson{pastFiltered.length!==1?"s":""} found</div>
-                {pastFiltered.length===0
-                  ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"40px",textAlign:"center",color:"#9ca3af"}}>No past lessons found.</div>
-                  :pastFiltered.map(l=>LessonRow(l))
-                }
-              </div>
-            );
-          })()}
-
-          {/* ══════════════ ALL VIEW ══════════════ */}
-          {lessonFilter==="all"&&(
+          {/* ── DAY view ───────────────────────────────────────────────── */}
+          {upcomingView==="day"&&(
             <div>
-              {allLessonsList.length===0
-                ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"40px",textAlign:"center",color:"#9ca3af"}}>No lessons found.</div>
-                :allLessonsList.map(l=>LessonRow(l))
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,flexWrap:"wrap"}}>
+                <button onClick={()=>setSelectedDay(toDS(addDays(new Date(selectedDay+"T12:00:00"),-1)))} style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"5px 11px",cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>‹</button>
+                <button onClick={()=>setSelectedDay(todayStr)} style={{background:selectedDay===todayStr?G:"white",color:selectedDay===todayStr?"white":"#374151",border:"1.5px solid "+(selectedDay===todayStr?G:"#e5e7eb"),borderRadius:8,padding:"5px 12px",cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Today</button>
+                <button onClick={()=>setSelectedDay(toDS(addDays(new Date(selectedDay+"T12:00:00"),1)))} style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"5px 11px",cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>›</button>
+                <span style={{fontWeight:700,color:"#374151",fontSize:"0.9rem"}}>{dayLabel(selectedDay)}</span>
+                <span style={{color:"#9ca3af",fontSize:"0.82rem"}}>— {merged.length} lesson{merged.length!==1?"s":""}</span>
+              </div>
+              {merged.length===0
+                ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"32px",textAlign:"center",color:"#9ca3af"}}>No lessons on {fmtDateShort(selectedDay)}.</div>
+                :merged.map((l,i)=>l._c?CalRow(l,i):LessonRow(l))
+              }
+            </div>
+          )}
+
+          {/* ── WEEK view ──────────────────────────────────────────────── */}
+          {upcomingView==="week"&&(
+            <div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4,marginBottom:14}}>
+                {weekDays.map(day=>{
+                  const d=new Date(day+"T12:00:00");
+                  const isToday=day===todayStr;const isSel=day===selectedDay;const hasItems=hasDayActivity(day);
+                  return(
+                    <button key={day} onClick={()=>setSelectedDay(day)} style={{background:isSel?G:isToday?"#e8f0ee":"white",color:isSel?"white":isToday?G:"#374151",border:"1.5px solid "+(isSel?G:isToday?G:"#e5e7eb"),borderRadius:10,padding:"8px 4px",cursor:"pointer",textAlign:"center",transition:"all 0.15s"}}>
+                      <div style={{fontSize:"0.63rem",fontWeight:600,opacity:0.75,textTransform:"uppercase"}}>{d.toLocaleString("default",{weekday:"short"})}</div>
+                      <div style={{fontSize:"1.1rem",fontWeight:800,lineHeight:1.3,marginTop:2}}>{d.getDate()}</div>
+                      <div style={{height:5,marginTop:3,display:"flex",justifyContent:"center"}}>{hasItems&&<span style={{width:5,height:5,borderRadius:"50%",background:isSel?"rgba(255,255,255,0.8)":G,display:"inline-block"}}/>}</div>
+                    </button>
+                  );
+                })}
+              </div>
+              <div style={{fontWeight:700,color:"#374151",marginBottom:10,fontSize:"0.88rem"}}>{dayLabel(selectedDay)} <span style={{color:"#9ca3af",fontWeight:400,fontSize:"0.82rem"}}>— {merged.length} lesson{merged.length!==1?"s":""}</span></div>
+              {merged.length===0
+                ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"28px",textAlign:"center",color:"#9ca3af"}}>No lessons on {fmtDateShort(selectedDay)}.</div>
+                :merged.map((l,i)=>l._c?CalRow(l,i):LessonRow(l))
+              }
+            </div>
+          )}
+
+          {/* ── MONTH view ─────────────────────────────────────────────── */}
+          {upcomingView==="month"&&(
+            <div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:4}}>
+                {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d=>(<div key={d} style={{textAlign:"center",fontSize:"0.65rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",padding:"3px 0"}}>{d}</div>))}
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:14}}>
+                {monthGrid.map((day,i)=>{
+                  if(!day)return<div key={"e"+i}/>;
+                  const isToday=day===todayStr;const isSel=day===selectedDay;
+                  const hasItems=hasDayActivity(day);const isPastDay=day<todayStr;
+                  return(
+                    <button key={day} onClick={()=>setSelectedDay(day)} style={{background:isSel?G:isToday?"#e8f0ee":"white",color:isSel?"white":isPastDay?"#d1d5db":isToday?G:"#374151",border:"1.5px solid "+(isSel?G:isToday?G:"#e5e7eb"),borderRadius:8,padding:"6px 4px",cursor:"pointer",textAlign:"center",minHeight:38,transition:"all 0.15s",position:"relative"}}>
+                      <div style={{fontSize:"0.85rem",fontWeight:isSel||isToday?800:400}}>{new Date(day+"T12:00:00").getDate()}</div>
+                      {hasItems&&<span style={{position:"absolute",bottom:3,left:"50%",transform:"translateX(-50%)",width:5,height:5,borderRadius:"50%",background:isSel?"rgba(255,255,255,0.9)":G,display:"block"}}/>}
+                    </button>
+                  );
+                })}
+              </div>
+              <div style={{fontWeight:700,color:"#374151",marginBottom:10,fontSize:"0.88rem"}}>{dayLabel(selectedDay)} <span style={{color:"#9ca3af",fontWeight:400,fontSize:"0.82rem"}}>— {merged.length} lesson{merged.length!==1?"s":""}</span></div>
+              {merged.length===0
+                ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"28px",textAlign:"center",color:"#9ca3af"}}>No lessons on {fmtDateShort(selectedDay)}.</div>
+                :merged.map((l,i)=>l._c?CalRow(l,i):LessonRow(l))
               }
             </div>
           )}
