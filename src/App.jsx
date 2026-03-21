@@ -1460,19 +1460,18 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                   <thead><tr style={{background:"#f9f9f6",borderBottom:"1.5px solid #e5e7eb"}}>{["Date","Student","Type","Duration","Income",""].map(h=>(<th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#6b7280",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>))}</tr></thead>
                   <tbody>
                     {portalEarnings.rows.map((r,i)=>{
-                      const rowKey=String(r.email)+"_"+String(r.id)+"_"+i;
-                      const isEditing=editPriceId===rowKey;
+                      const isEditing=editPriceId===i;
                       const defaultRate=getRate(r.type,parseInt(r.duration),r.isMenlo?"menlo":"public");
                       return(
-                        <Fragment key={rowKey}>
+                        <Fragment key={i}>
                           <tr style={{borderBottom:isEditing?"none":"1px solid #f3f4f6",background:r.isMenlo?"#f0faf5":"white"}}>
                             <td style={{padding:"12px 16px"}}>{fmtDateShort(r.date)}</td>
                             <td style={{padding:"12px 16px"}}>{r.name}{r.isMenlo&&<span style={{background:"#1a3c34",color:"white",fontSize:"0.65rem",fontWeight:700,padding:"1px 6px",borderRadius:50,marginLeft:6}}>MCC</span>}</td>
                             <td style={{padding:"12px 16px"}}>{r.type}</td>
                             <td style={{padding:"12px 16px"}}>{r.duration}</td>
-                            <td style={{padding:"12px 16px",fontWeight:700,color:"#1a3c34"}}>${r.net.toFixed(2)}</td>
+                            <td style={{padding:"12px 16px",fontWeight:700,color:"#1a3c34"}}>${typeof r.net==="number"?r.net.toFixed(2):r.net}</td>
                             <td style={{padding:"8px 12px",textAlign:"right"}}>
-                              <button onClick={()=>{if(isEditing){setEditPriceId(null);}else{setEditPriceId(rowKey);setEditPriceVal(String(r.gross));}}} title="Edit price" style={{background:isEditing?"#f3f4f6":"white",color:isEditing?"#dc2626":"#6b7280",border:"1.5px solid "+(isEditing?"#fca5a5":"#e5e7eb"),padding:"4px 10px",borderRadius:6,cursor:"pointer",fontSize:"0.85rem",lineHeight:1}}>
+                              <button onClick={()=>{if(isEditing){setEditPriceId(null);}else{setEditPriceId(i);setEditPriceVal(String(r.gross));}}} title="Edit price" style={{background:isEditing?"#f3f4f6":"white",color:isEditing?"#dc2626":"#6b7280",border:"1.5px solid "+(isEditing?"#fca5a5":"#e5e7eb"),padding:"4px 10px",borderRadius:6,cursor:"pointer",fontSize:"0.85rem",lineHeight:1}}>
                                 {isEditing?"✕":"✏️"}
                               </button>
                             </td>
@@ -2469,7 +2468,8 @@ export default function App(){
                 partnerEmail:l.partner_email||"",
                 groupEmails:l.group_emails||[],
                 members:l.members||[],
-                createdAt:l.created_at||""
+                createdAt:l.created_at||"",
+                customPrice:l.custom_price??null
               });
             });
           }

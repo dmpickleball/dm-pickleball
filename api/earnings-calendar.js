@@ -17,18 +17,6 @@ function getDurationHrs(start, end) {
 const STANFORD_TAX_RATE = 0.1441;
 const STANFORD_HOURLY = 68;
 
-function getStanfordHoursForWeek(weekEvents) {
-  const hasThursdayRec = weekEvents.some(e => {
-    const d = new Date(e.start.dateTime || e.start.date);
-    return d.getDay() === 4 && (e.summary||'').toLowerCase().includes('stanford rec');
-  });
-  if (hasThursdayRec) {
-    return { hours: 9.14, isRecQuarter: true };
-  } else {
-    return { hours: 4.98, isRecQuarter: false };
-  }
-}
-
 function categorizeEvent(summary, location) {
   const s = (summary || '').toLowerCase();
   const l = (location || '').toLowerCase();
@@ -55,14 +43,6 @@ function categorizeEvent(summary, location) {
   return null;
 }
 
-function getWeekKey(dateStr) {
-  const d = new Date(dateStr + 'T12:00:00');
-  const day = d.getDay();
-  const sunday = new Date(d);
-  sunday.setDate(d.getDate() - day);
-  return sunday.toISOString().substring(0, 10);
-}
-
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
   const { start, end, includeStanford } = req.query;
@@ -80,20 +60,8 @@ export default async function handler(req, res) {
 
     const allCalEvents = response.data.items || [];
 
-    // Group Stanford events by week
-    const stanfordByWeek = {};
-    allCalEvents.forEach(e => {
-      if ((e.summary||'').toLowerCase().includes('stanford')) {
-        const startDT = e.start.dateTime || e.start.date;
-        const weekKey = getWeekKey(startDT.substring(0, 10));
-        if (!stanfordByWeek[weekKey]) stanfordByWeek[weekKey] = [];
-        stanfordByWeek[weekKey].push(e);
-      }
-    });
-
     const events = [];
     let totalEarnings = 0, stanfordEarnings = 0, stanfordHours = 0, stanfordNetEarnings = 0, lessonEarnings = 0;
-    const processedStanfordWeeks = new Set();
 
     for (const event of allCalEvents) {
       const category = categorizeEvent(event.summary, event.location);
@@ -104,28 +72,23 @@ export default async function handler(req, res) {
       const isStanford = category.type === 'stanford_rec' || category.type === 'stanford_open';
 
       if (isStanford) {
-        const weekKey = getWeekKey(startDT.substring(0, 10));
-        if (!processedStanfordWeeks.has(weekKey) && stanfordByWeek[weekKey]) {
-          processedStanfordWeeks.add(weekKey);
-          const { hours, isRecQuarter } = getStanfordHoursForWeek(stanfordByWeek[weekKey]);
-          const gross = Math.round(hours * STANFORD_HOURLY * 100) / 100;
-          const net = Math.round(gross * (1 - STANFORD_TAX_RATE) * 100) / 100;
-          stanfordHours += hours;
-          stanfordEarnings += gross;
-          stanfordNetEarnings += net;
-          if (includeStanford === 'true') totalEarnings += gross;
-          events.push({
-            date: weekKey,
-            summary: 'Stanford Week (' + (isRecQuarter ? 'Rec Quarter' : 'Open Play Only') + ')',
-            category: isRecQuarter ? 'Stanford Rec Quarter' : 'Stanford Open Play',
-            type: 'stanford_week',
-            hours: Math.round(hours * 100) / 100,
-            earnings: gross,
-            netEarnings: net,
-            isStanford: true,
-            isRecQuarter,
-          });
-        }
+        const hrs = getDurationHrs(startDT, endDT);
+        const gross = Math.round(hrs * STANFORD_HOURLY * 100) / 100;
+        const net = Math.round(gross * (1 - STANFORD_TAX_RATE) * 100) / 100;
+        stanfordHours += hrs;
+        stanfordEarnings += gross;
+        stanfordNetEarnings += net;
+        if (includeStanford === 'true') totalEarnings += gross;
+        events.push({
+          date: startDT.substring(0, 10),
+          summary: event.summary,
+          category: category.label,
+          type: category.type,
+          hours: Math.round(hrs * 100) / 100,
+          earnings: gross,
+          netEarnings: net,
+          isStanford: true,
+        });
       } else {
         const hrs = getDurationHrs(startDT, endDT);
         let earnings = 0;
