@@ -1309,7 +1309,7 @@ function LocationsTab({locations,setLocations}){
     </div>
   );
 }
-function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeStanford,financeData,setFinanceData,financeLoading,setFinanceLoading,allLessons,mockUsers}){
+function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeStanford,showNetStanford,setShowNetStanford,financeData,setFinanceData,financeLoading,setFinanceLoading,allLessons,mockUsers,onExportNial,showNialExport,setShowNialExport,nialStart,setNialStart,nialEnd,setNialEnd}){
   const now=new Date();
   const getDateRange=(range)=>{
     const end=new Date();
@@ -2307,12 +2307,21 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
           setFinanceRange={setFinanceRange}
           includeStanford={includeStanford}
           setIncludeStanford={setIncludeStanford}
+          showNetStanford={showNetStanford}
+          setShowNetStanford={setShowNetStanford}
           financeData={financeData}
           setFinanceData={setFinanceData}
           financeLoading={financeLoading}
           setFinanceLoading={setFinanceLoading}
           allLessons={allLessons}
-          mockUsers={mockUsers}
+          mockUsers={mockUsersState}
+          onExportNial={exportNial}
+          showNialExport={showNialExport}
+          setShowNialExport={setShowNialExport}
+          nialStart={nialStart}
+          setNialStart={setNialStart}
+          nialEnd={nialEnd}
+          setNialEnd={setNialEnd}
         />
       )}
       {tab==="earnings"&&(
