@@ -2754,12 +2754,12 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                     {/* Time axis */}
                     <div style={{width:42,flexShrink:0,borderRight:"1px solid #f3f4f6",paddingTop:52,background:"#fafafa"}}>
                       {hours.map(h=>(
-                        <div key={h} style={{height:HOUR_H,display:"flex",alignItems:"flex-start",justifyContent:"flex-end",paddingRight:6}}>
-                          <span style={{marginTop:-9,color:(h===17&&GRID_E>17)?"#f59e0b":"#9ca3af",fontSize:"0.6rem",fontWeight:700,whiteSpace:"nowrap"}}>{fmtHour(h)}</span>
+                        <div key={h} style={{position:"relative",height:HOUR_H}}>
+                          <span style={{position:"absolute",top:0,right:6,transform:"translateY(-50%)",color:(h===17&&GRID_E>17)?"#f59e0b":"#9ca3af",fontSize:"0.6rem",fontWeight:700,whiteSpace:"nowrap"}}>{fmtHour(h)}</span>
                         </div>
                       ))}
-                      <div style={{height:0,display:"flex",alignItems:"flex-start",justifyContent:"flex-end",paddingRight:6}}>
-                        <span style={{marginTop:-9,color:"#9ca3af",fontSize:"0.6rem",fontWeight:700,whiteSpace:"nowrap"}}>{fmtHour(GRID_E)}</span>
+                      <div style={{position:"relative",height:0}}>
+                        <span style={{position:"absolute",top:0,right:6,transform:"translateY(-50%)",color:"#9ca3af",fontSize:"0.6rem",fontWeight:700,whiteSpace:"nowrap"}}>{fmtHour(GRID_E)}</span>
                       </div>
                     </div>
                     {/* 7 day columns */}
@@ -2794,16 +2794,15 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                           </div>
                           {/* Grid body */}
                           <div style={{position:"relative",height:totalH}}>
-                            {/* Hour rows — interactive for available slots; event blocks (zIndex:2) sit above so hover can't bleed */}
+                            {/* Hour row backgrounds — no border so event blocks align pixel-perfectly */}
                             {hours.map(h=>{
                               const isSchedH=h<17&&schedSlotSet.has(h);
                               const isAvailH=availHoursSet.has(h);
                               const rowBg=h>=17?"rgba(254,243,199,0.4)":isSchedH?"white":"#f4f4f5";
-                              const is5pmBorder=h===16&&GRID_E>17;
                               return(
                                 <div
                                   key={h}
-                                  style={{position:"absolute",top:(h-GRID_S)*HOUR_H,height:HOUR_H,width:"100%",background:rowBg,borderBottom:is5pmBorder?"2px solid #fbbf24":"1px solid #e5e7eb",zIndex:0,cursor:isAvailH?"pointer":"default",transition:isAvailH?"background 0.12s":"none"}}
+                                  style={{position:"absolute",top:(h-GRID_S)*HOUR_H,height:HOUR_H,width:"100%",background:rowBg,zIndex:0,cursor:isAvailH?"pointer":"default",transition:isAvailH?"background 0.12s":"none"}}
                                   onClick={isAvailH?()=>setQuickBook({day,startMins:h*60}):undefined}
                                   onMouseEnter={isAvailH?(ev)=>{ev.currentTarget.style.background="rgba(22,163,74,0.10)"}:undefined}
                                   onMouseLeave={isAvailH?(ev)=>{ev.currentTarget.style.background=rowBg}:undefined}
@@ -2811,6 +2810,14 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                                 />
                               );
                             })}
+                            {/* Grid lines as separate 1px divs at exact pixel positions — always aligned with time axis */}
+                            {hours.map(h=>(
+                              <div key={"gl"+h} style={{position:"absolute",top:(h-GRID_S)*HOUR_H,left:0,right:0,height:1,background:"#e5e7eb",zIndex:1,pointerEvents:"none"}}/>
+                            ))}
+                            {/* 5pm boundary line */}
+                            {GRID_E>17&&<div style={{position:"absolute",top:(17-GRID_S)*HOUR_H,left:0,right:0,height:2,background:"#fbbf24",zIndex:1,pointerEvents:"none"}}/>}
+                            {/* Bottom grid line */}
+                            <div style={{position:"absolute",top:totalH,left:0,right:0,height:1,background:"#e5e7eb",zIndex:1,pointerEvents:"none"}}/>
                             {/* Event / lesson blocks */}
                             {allDayItems.map((item,i)=>{
                               const{s,e}=getItemStartEnd(item);
