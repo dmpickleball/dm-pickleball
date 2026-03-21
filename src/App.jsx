@@ -2522,7 +2522,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 </div>
                 <div>
                   <div onClick={()=>{setSelectedStudent(l.studentEmail);setTab("students");}} style={{fontWeight:700,fontSize:"0.95rem",cursor:"pointer",color:G,textDecoration:"underline",textDecorationColor:"transparent",transition:"text-decoration-color 0.15s"}} onMouseEnter={e=>e.target.style.textDecorationColor=G} onMouseLeave={e=>e.target.style.textDecorationColor="transparent"}>{l.studentName}</div>
-                  <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:1}}>{l.type} · {l.duration} · {l.time}</div>
+                  {l.time&&<div style={{fontSize:"0.85rem",fontWeight:700,color:"#374151",marginTop:2}}>🕐 {l.time}</div>}
+                  <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:1}}>{l.type}{l.duration?" · "+l.duration:""}</div>
                   {l.focus&&<div style={{fontSize:"0.75rem",color:G,marginTop:1,fontWeight:600}}>🎯 {l.focus}</div>}
                 </div>
               </div>
