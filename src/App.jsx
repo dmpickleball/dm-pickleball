@@ -1181,7 +1181,7 @@ function getEarnings(allLessons,mockUsers,range){
   const rows=[];
   Object.entries(allLessons).forEach(([email,lessons])=>{
     const u=mockUsers[email]||{memberType:"public"};
-    lessons.filter(l=>l.status!=="cancelled"&&(isPast(l.date,l.time)||l.status==="completed")).forEach(l=>{
+    lessons.filter(l=>l.status!=="cancelled"&&(new Date(l.date+"T23:59:59")<now||l.status==="completed")).forEach(l=>{
       const d=new Date(l.date+"T12:00:00");
       const mins=getDurationMins(l.duration);
       let inRange=false;
