@@ -45,7 +45,7 @@ function categorizeEvent(summary, location) {
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
-  const { start, end, includeStanford } = req.query;
+  const { start, end, includeStanford, includeFuture } = req.query;
   if (!start || !end) return res.status(400).json({ error: 'start and end dates required' });
 
   try {
@@ -69,7 +69,7 @@ export default async function handler(req, res) {
       if (!category) continue;
       const startDT = event.start.dateTime || event.start.date;
       const endDT = event.end.dateTime || event.end.date;
-      if (new Date(endDT) > new Date()) continue;
+      if (!includeFuture && new Date(endDT) > new Date()) continue;
       const isStanford = category.type === 'stanford_rec' || category.type === 'stanford_open';
 
       if (isStanford) {
