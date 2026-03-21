@@ -2694,31 +2694,62 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
           {upcomingView==="week"&&(
             <div>
               {/* Week nav */}
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14,flexWrap:"wrap"}}>
                 <button onClick={()=>setSelectedDay(toDS(addDays(new Date(weekDays[0]+"T12:00:00"),-7)))} style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"5px 12px",cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>‹ Prev</button>
                 <button onClick={()=>setSelectedDay(todayStr)} style={{background:weekDays.includes(todayStr)?G:"white",color:weekDays.includes(todayStr)?"white":"#374151",border:"1.5px solid "+(weekDays.includes(todayStr)?G:"#e5e7eb"),borderRadius:8,padding:"5px 12px",cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>This Week</button>
                 <button onClick={()=>setSelectedDay(toDS(addDays(new Date(weekDays[0]+"T12:00:00"),7)))} style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"5px 12px",cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>Next ›</button>
                 <span style={{color:"#6b7280",fontSize:"0.85rem",fontWeight:600}}>{fmtDateShort(weekDays[0])} – {fmtDateShort(weekDays[6])}</span>
               </div>
-              {/* All 7 days */}
-              {weekDays.map(day=>{
-                const isToday=day===todayStr;
-                const d=new Date(day+"T12:00:00");
-                const dayItems=[...dayPortal(day).map(l=>({...l,_c:false})),...dayCalItems(day).map((e,i)=>({...e,_c:true,_i:i}))];
-                const wdLabel=d.toLocaleString("default",{weekday:"long"});
-                const dtLabel=d.toLocaleString("default",{month:"short",day:"numeric"});
-                return(
-                  <div key={day} style={{marginBottom:dayItems.length>0?20:6}}>
-                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:dayItems.length>0?8:0,padding:"5px 10px",borderRadius:8,background:isToday?"#e8f0ee":"#f9fafb",border:"1px solid "+(isToday?G+"44":"#e5e7eb")}}>
-                      <span style={{fontWeight:800,fontSize:"0.85rem",color:isToday?G:"#374151"}}>{wdLabel}</span>
-                      <span style={{fontSize:"0.8rem",color:"#9ca3af"}}>{dtLabel}</span>
-                      {isToday&&<span style={{background:G,color:"white",padding:"1px 7px",borderRadius:50,fontSize:"0.65rem",fontWeight:700,marginLeft:2}}>Today</span>}
-                      <span style={{marginLeft:"auto",color:"#9ca3af",fontSize:"0.78rem"}}>{dayItems.length>0?dayItems.length+" item"+(dayItems.length!==1?"s":""):"No lessons"}</span>
-                    </div>
-                    {dayItems.map((l,i)=>l._c?CalRow(l,i):LessonRow(l))}
-                  </div>
-                );
-              })}
+              {/* 7-column horizontal layout — scrolls on mobile */}
+              <div style={{overflowX:"auto",paddingBottom:8,WebkitOverflowScrolling:"touch"}}>
+                <div style={{display:"flex",gap:8,minWidth:700}}>
+                  {weekDays.map(day=>{
+                    const isToday=day===todayStr;
+                    const d=new Date(day+"T12:00:00");
+                    const dayItems=[...dayPortal(day).map(l=>({...l,_c:false})),...dayCalItems(day).map((e,i)=>({...e,_c:true,_i:i}))];
+                    const wdShort=d.toLocaleString("default",{weekday:"short"});
+                    const dtLabel=d.toLocaleString("default",{month:"short",day:"numeric"});
+                    return(
+                      <div key={day} style={{flex:"1 1 0",minWidth:0,display:"flex",flexDirection:"column"}}>
+                        {/* Day header */}
+                        <div style={{background:isToday?G:"#f3f4f6",borderRadius:8,padding:"7px 6px",textAlign:"center",marginBottom:6,border:"1.5px solid "+(isToday?G:"#e5e7eb")}}>
+                          <div style={{fontSize:"0.65rem",fontWeight:700,color:isToday?"rgba(255,255,255,0.75)":"#9ca3af",textTransform:"uppercase",letterSpacing:"0.04em"}}>{wdShort}</div>
+                          <div style={{fontSize:"1.05rem",fontWeight:900,color:isToday?"white":isToday?"white":"#374151",lineHeight:1.2,marginTop:1}}>{d.getDate()}</div>
+                          <div style={{fontSize:"0.6rem",color:isToday?"rgba(255,255,255,0.65)":"#9ca3af",marginTop:1}}>{d.toLocaleString("default",{month:"short"})}</div>
+                          {dayItems.length>0&&<div style={{marginTop:4,fontSize:"0.62rem",fontWeight:700,color:isToday?"rgba(255,255,255,0.85)":"#6b7280"}}>{dayItems.length} item{dayItems.length!==1?"s":""}</div>}
+                        </div>
+                        {/* Lesson cards for this day — compact column variant */}
+                        {dayItems.length===0
+                          ?<div style={{background:"#f9fafb",border:"1.5px dashed #e5e7eb",borderRadius:8,padding:"14px 6px",textAlign:"center",color:"#d1d5db",fontSize:"0.72rem"}}>—</div>
+                          :dayItems.map((l,i)=>{
+                            if(l._c){
+                              const isStanford2=l.isStanford||((l.summary||"").toLowerCase().includes("stanford"));
+                              return(
+                                <div key={"wc"+i} style={{background:isStanford2?"#fdf8ff":"#fafffe",border:"1.5px solid "+(isStanford2?"#e9d5ff":"#d1fae5"),borderRadius:8,padding:"8px 8px",marginBottom:5,fontSize:"0.75rem"}}>
+                                  <div style={{fontWeight:700,color:isStanford2?"#4c1d95":"#065f46",marginBottom:2,lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{l.summary}</div>
+                                  <span style={{background:isStanford2?"#ede9fe":"#d1fae5",color:isStanford2?"#5b21b6":"#065f46",padding:"1px 6px",borderRadius:50,fontSize:"0.62rem",fontWeight:700}}>{isStanford2?"🎓 Stanford":"📅 Cal"}</span>
+                                </div>
+                              );
+                            }
+                            const isCancelled=cancelledStatuses2.includes(l.status);
+                            const missingCal=!l.gcalEventId;
+                            return(
+                              <div key={"wl"+i} style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"8px 8px",marginBottom:5,fontSize:"0.75rem"}}>
+                                {missingCal&&!isCancelled&&<div style={{background:"#fff7ed",color:"#c2410c",borderRadius:4,padding:"1px 5px",fontSize:"0.6rem",fontWeight:700,marginBottom:3,display:"inline-block"}}>⚠️ No Cal</div>}
+                                <div style={{fontWeight:700,color:G,marginBottom:2,lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{l.studentName}</div>
+                                <div style={{color:"#6b7280",fontSize:"0.7rem",marginBottom:3}}>{l.type}{l.time?" · "+l.time:""}</div>
+                                <span style={{background:l.status==="confirmed"?"#e8f0ee":l.status==="cancelled"||l.status==="late_cancel"?"#fef2f2":"#fffbea",color:l.status==="confirmed"?G:l.status==="cancelled"||l.status==="late_cancel"?"#dc2626":"#92400e",padding:"1px 6px",borderRadius:50,fontSize:"0.62rem",fontWeight:700}}>
+                                  {l.status==="confirmed"?"✓":l.status==="cancelled"?"✕":l.status==="late_cancel"?"⚠️":"⏳"} {l.status==="confirmed"?"Confirmed":l.status==="cancelled"?"Cancelled":l.status==="late_cancel"?"Late Cancel":l.status==="cancelled_forgiven"?"Forgiven":"Pending"}
+                                </span>
+                              </div>
+                            );
+                          })
+                        }
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
 
