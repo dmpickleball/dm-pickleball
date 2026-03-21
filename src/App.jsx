@@ -2737,7 +2737,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                               <div key={"wl"+i} style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"8px 8px",marginBottom:5,fontSize:"0.75rem"}}>
                                 {missingCal&&!isCancelled&&<div style={{background:"#fff7ed",color:"#c2410c",borderRadius:4,padding:"1px 5px",fontSize:"0.6rem",fontWeight:700,marginBottom:3,display:"inline-block"}}>⚠️ No Cal</div>}
                                 <div style={{fontWeight:700,color:G,marginBottom:2,lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{l.studentName}</div>
-                                <div style={{color:"#6b7280",fontSize:"0.7rem",marginBottom:3}}>{l.type}{l.time?" · "+l.time:""}</div>
+                                {l.time&&<div style={{color:"#374151",fontSize:"0.72rem",fontWeight:700,marginBottom:2}}>🕐 {l.time}</div>}
+                                <div style={{color:"#9ca3af",fontSize:"0.68rem",marginBottom:4}}>{l.type}{l.duration?" · "+l.duration:""}</div>
                                 <span style={{background:l.status==="confirmed"?"#e8f0ee":l.status==="cancelled"||l.status==="late_cancel"?"#fef2f2":"#fffbea",color:l.status==="confirmed"?G:l.status==="cancelled"||l.status==="late_cancel"?"#dc2626":"#92400e",padding:"1px 6px",borderRadius:50,fontSize:"0.62rem",fontWeight:700}}>
                                   {l.status==="confirmed"?"✓":l.status==="cancelled"?"✕":l.status==="late_cancel"?"⚠️":"⏳"} {l.status==="confirmed"?"Confirmed":l.status==="cancelled"?"Cancelled":l.status==="late_cancel"?"Late Cancel":l.status==="cancelled_forgiven"?"Forgiven":"Pending"}
                                 </span>
