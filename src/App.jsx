@@ -1374,7 +1374,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20,flexWrap:"wrap",gap:12}}>
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
           <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-            <select value={financeView} onChange={e=>{const v=e.target.value;setFinanceView(v);const r=computeRange(v,selectedDay,weekOffset,viewMonth,viewYear,viewYearOnly);loadData(r.start,r.end,includeStanford);}} style={{border:"2px solid #1a3c34",borderRadius:50,padding:"8px 20px",fontSize:"0.9rem",fontWeight:700,background:"#1a3c34",color:"white",cursor:"pointer",appearance:"none",WebkitAppearance:"none"}}>
+            <select value={financeView} onChange={e=>{const v=e.target.value;setFinanceView(v);const r=computeRange(v,selectedDay,weekOffset,viewMonth,viewYear,viewYearOnly);loadData(r.start,r.end,includeStanford);}} style={{border:"1.5px solid #d1d5db",borderRadius:8,padding:"8px 14px",fontSize:"0.88rem",fontWeight:600,background:"white",color:"#374151",cursor:"pointer"}}>
               <option value="day">Day</option>
               <option value="week">Week</option>
               <option value="month">Month</option>
@@ -1386,16 +1386,16 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
             {financeView==="week"&&(()=>{const sd=new Date(viewRange.start+"T12:00:00");const ed=new Date(viewRange.end+"T12:00:00");const lbl=MON[sd.getMonth()]+" "+sd.getDate()+(sd.getFullYear()!==ed.getFullYear()?" "+sd.getFullYear():"")+' – '+MON[ed.getMonth()]+" "+ed.getDate()+", "+ed.getFullYear();return(<div style={{display:"flex",alignItems:"center",gap:8}}><button onClick={()=>{const o=weekOffset-1;setWeekOffset(o);const r=computeRange("week",selectedDay,o,viewMonth,viewYear,viewYearOnly);loadData(r.start,r.end,includeStanford);}} style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:"50%",width:34,height:34,cursor:"pointer",fontWeight:700,fontSize:"1.1rem",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>‹</button><span style={{fontSize:"0.88rem",fontWeight:600,color:"#374151",minWidth:180,textAlign:"center"}}>{lbl}</span><button onClick={()=>{const o=weekOffset+1;setWeekOffset(o);const r=computeRange("week",selectedDay,o,viewMonth,viewYear,viewYearOnly);loadData(r.start,r.end,includeStanford);}} style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:"50%",width:34,height:34,cursor:"pointer",fontWeight:700,fontSize:"1.1rem",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>›</button></div>);})()}
             {financeView==="month"&&(
               <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                <select value={viewMonth} onChange={e=>{const mo=parseInt(e.target.value);setViewMonth(mo);const r=computeRange("month",selectedDay,weekOffset,mo,viewYear,viewYearOnly);loadData(r.start,r.end,includeStanford);}} style={{border:"1.5px solid #e5e7eb",borderRadius:50,padding:"7px 16px",fontSize:"0.85rem",cursor:"pointer",background:"white"}}>
+                <select value={viewMonth} onChange={e=>{const mo=parseInt(e.target.value);setViewMonth(mo);const r=computeRange("month",selectedDay,weekOffset,mo,viewYear,viewYearOnly);loadData(r.start,r.end,includeStanford);}} style={{border:"1.5px solid #d1d5db",borderRadius:8,padding:"7px 12px",fontSize:"0.85rem",cursor:"pointer",background:"white",color:"#374151"}}>
                   {MONFULL.map((m,i)=>(<option key={i} value={i+1}>{m}</option>))}
                 </select>
-                <select value={viewYear} onChange={e=>{const yr=parseInt(e.target.value);setViewYear(yr);const r=computeRange("month",selectedDay,weekOffset,viewMonth,yr,viewYearOnly);loadData(r.start,r.end,includeStanford);}} style={{border:"1.5px solid #e5e7eb",borderRadius:50,padding:"7px 16px",fontSize:"0.85rem",cursor:"pointer",background:"white"}}>
+                <select value={viewYear} onChange={e=>{const yr=parseInt(e.target.value);setViewYear(yr);const r=computeRange("month",selectedDay,weekOffset,viewMonth,yr,viewYearOnly);loadData(r.start,r.end,includeStanford);}} style={{border:"1.5px solid #d1d5db",borderRadius:8,padding:"7px 12px",fontSize:"0.85rem",cursor:"pointer",background:"white",color:"#374151"}}>
                   {Array.from({length:now.getFullYear()-2023},(_,i)=>2024+i).map(y=>(<option key={y} value={y}>{y}</option>))}
                 </select>
               </div>
             )}
             {financeView==="year"&&(
-              <select value={viewYearOnly} onChange={e=>{const yr=parseInt(e.target.value);setViewYearOnly(yr);const r=computeRange("year",selectedDay,weekOffset,viewMonth,viewYear,yr);loadData(r.start,r.end,includeStanford);}} style={{border:"1.5px solid #e5e7eb",borderRadius:50,padding:"7px 16px",fontSize:"0.85rem",cursor:"pointer",background:"white"}}>
+              <select value={viewYearOnly} onChange={e=>{const yr=parseInt(e.target.value);setViewYearOnly(yr);const r=computeRange("year",selectedDay,weekOffset,viewMonth,viewYear,yr);loadData(r.start,r.end,includeStanford);}} style={{border:"1.5px solid #d1d5db",borderRadius:8,padding:"7px 12px",fontSize:"0.85rem",cursor:"pointer",background:"white",color:"#374151"}}>
                 {Array.from({length:now.getFullYear()-2023},(_,i)=>2024+i).map(y=>(<option key={y} value={y}>{y}</option>))}
               </select>
             )}
@@ -1441,7 +1441,47 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
         <div style={{textAlign:"center",padding:"40px",color:"#6b7280"}}>Loading financial data...</div>
       ):(
         <>
-          {calendarLessons.length>0&&(
+          {financeView==="year"&&(financeData?.events||[]).length>0&&(
+            <div style={{marginBottom:24}}>
+              <div style={{fontSize:"0.8rem",fontWeight:700,color:"#1a3c34",textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Monthly Breakdown — {viewYearOnly}</div>
+              <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
+                <table style={{width:"100%",borderCollapse:"collapse",fontSize:"0.88rem"}}>
+                  <thead><tr style={{background:"#f9f9f6",borderBottom:"1.5px solid #e5e7eb"}}>{["Month","Lessons","Hrs",includeStanford?"Stanford":"","Total"].filter(Boolean).map(h=>(<th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#6b7280",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>))}</tr></thead>
+                  <tbody>
+                    {MONFULL.map((m,i)=>{
+                      const moStr=String(i+1).padStart(2,"0");
+                      const prefix=viewYearOnly+"-"+moStr;
+                      const mLessons=adjustedCalLessons.filter(e=>e.date.startsWith(prefix));
+                      const mStanford=stanfordEvents.filter(e=>e.date.startsWith(prefix));
+                      const lessonTotal=mLessons.reduce((s,e)=>s+e.earnings,0);
+                      const stanfordTotal=includeStanford?mStanford.reduce((s,e)=>s+(showNetStanford?(e.netEarnings??e.earnings):e.earnings),0):0;
+                      const stanfordHrs=mStanford.reduce((s,e)=>s+(e.hours||0),0);
+                      const lessonHrs=mLessons.reduce((s,e)=>s+(e.hours||0),0);
+                      const rowTotal=lessonTotal+stanfordTotal;
+                      if(rowTotal===0)return null;
+                      return(
+                        <tr key={i} style={{borderBottom:"1px solid #f3f4f6"}}>
+                          <td style={{padding:"12px 16px",fontWeight:600}}>{m}</td>
+                          <td style={{padding:"12px 16px"}}>{mLessons.length>0?<span>${lessonTotal.toFixed(2)}<span style={{color:"#9ca3af",fontSize:"0.78rem",marginLeft:4}}>({mLessons.length})</span></span>:<span style={{color:"#d1d5db"}}>—</span>}</td>
+                          <td style={{padding:"12px 16px",color:"#6b7280"}}>{(lessonHrs+(includeStanford?stanfordHrs:0)).toFixed(1)}h</td>
+                          {includeStanford&&<td style={{padding:"12px 16px",color:"#8b5cf6"}}>{mStanford.length>0?<span>${stanfordTotal.toFixed(2)}<span style={{fontSize:"0.78rem",marginLeft:4,color:"#a78bfa"}}>({mStanford.length})</span></span>:<span style={{color:"#d1d5db"}}>—</span>}</td>}
+                          <td style={{padding:"12px 16px",fontWeight:700,color:"#1a3c34"}}>${rowTotal.toFixed(2)}</td>
+                        </tr>
+                      );
+                    })}
+                    <tr style={{borderTop:"2px solid #e5e7eb",background:"#f9f9f6"}}>
+                      <td style={{padding:"12px 16px",fontWeight:800}}>Total</td>
+                      <td style={{padding:"12px 16px",fontWeight:700}}>${adjustedLessonEarnings.toFixed(2)}</td>
+                      <td style={{padding:"12px 16px",color:"#6b7280",fontWeight:600}}>{(adjustedCalLessons.reduce((s,e)=>s+(e.hours||0),0)+(includeStanford?stanfordEvents.reduce((s,e)=>s+(e.hours||0),0):0)).toFixed(1)}h</td>
+                      {includeStanford&&<td style={{padding:"12px 16px",fontWeight:700,color:"#8b5cf6"}}>${stanfordAmt.toFixed(2)}</td>}
+                      <td style={{padding:"12px 16px",fontWeight:800,color:"#1a3c34"}}>${totalEarnings.toFixed(2)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          {financeView!=="year"&&calendarLessons.length>0&&(
             <div style={{marginBottom:24}}>
               <div style={{fontSize:"0.8rem",fontWeight:700,color:"#1a3c34",textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Calendar Lessons</div>
               <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
@@ -1469,7 +1509,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
               </div>
             </div>
           )}
-          {includeStanford&&stanfordEvents.length>0&&(
+          {financeView!=="year"&&includeStanford&&stanfordEvents.length>0&&(
             <div style={{marginBottom:24}}>
               <div style={{fontSize:"0.8rem",fontWeight:700,color:"#8b5cf6",textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Stanford Events</div>
               <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
