@@ -1469,7 +1469,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                         <td style={{padding:"12px 16px"}}>{r.duration}</td>
                         <td style={{padding:"12px 16px",fontWeight:700,color:"#1a3c34"}}>${typeof r.net==="number"?r.net.toFixed(2):r.net}</td>
                         <td style={{padding:"8px 12px",textAlign:"right"}}>
-                          <button onClick={()=>{editRowRef.current=r;setEditPriceVal(String(r.gross));dialogRef.current?.showModal();}} title="Edit price" style={{background:"white",color:"#6b7280",border:"1.5px solid #e5e7eb",padding:"4px 10px",borderRadius:6,cursor:"pointer",fontSize:"0.85rem",lineHeight:1}}>✏️</button>
+                          <button onClick={()=>{editRowRef.current=r;setEditPriceVal(String(r.gross));dialogRef.current?.showModal();}} style={{background:G,color:"white",border:"none",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>Edit</button>
                         </td>
                       </tr>
                     ))}
