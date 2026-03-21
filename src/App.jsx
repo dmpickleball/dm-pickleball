@@ -262,12 +262,13 @@ function Nav({user,onLogin,onLogout,setPage,currentPage}){
 function LessonCard({lesson,isHistory,onCancel}){
   const[expanded,setExpanded]=useState(false);
   const[confirmCancel,setConfirmCancel]=useState(false);
-  const deadline=!isHistory?getCancelDeadline(lesson.date,lesson.time):null;
-  const cancellable=!isHistory&&canCancel(lesson.date,lesson.time,lesson.createdAt);const withinGrace=!isHistory&&!canCancel(lesson.date,lesson.time)&&canCancel(lesson.date,lesson.time,lesson.createdAt);
-  const closed=!isHistory&&!cancellable;
+  const isCancelled=["cancelled","late_cancel","cancelled_forgiven"].includes(lesson.status);
+  const deadline=!isHistory&&!isCancelled?getCancelDeadline(lesson.date,lesson.time):null;
+  const cancellable=!isHistory&&!isCancelled&&canCancel(lesson.date,lesson.time,lesson.createdAt);const withinGrace=!isHistory&&!isCancelled&&!canCancel(lesson.date,lesson.time)&&canCancel(lesson.date,lesson.time,lesson.createdAt);
+  const closed=!isHistory&&!isCancelled&&!cancellable;
   const dateObj=new Date(lesson.date+"T12:00:00");
   return(
-    <div style={{background:"white",borderRadius:12,border:`1.5px solid ${expanded?G:"#e5e7eb"}`,overflow:"hidden",marginBottom:12}}>
+    <div style={{background:"white",borderRadius:12,border:`1.5px solid ${expanded?G:isCancelled?"#fca5a5":"#e5e7eb"}`,overflow:"hidden",marginBottom:12,opacity:isCancelled?0.85:1}}>
       {confirmCancel&&(
         <div style={{background:"#fef2f2",borderBottom:"1px solid #fca5a5",padding:"14px 20px"}}>
           <div style={{fontWeight:700,color:"#991b1b",marginBottom:8,fontSize:"0.9rem"}}>Cancel this lesson?</div>
@@ -278,17 +279,24 @@ function LessonCard({lesson,isHistory,onCancel}){
           </div>
         </div>
       )}
-      <div onClick={()=>isHistory&&setExpanded(!expanded)} style={{padding:"16px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:isHistory?"pointer":"default"}}>
+      <div onClick={()=>(isHistory||isCancelled)&&setExpanded(!expanded)} style={{padding:"16px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:(isHistory||isCancelled)?"pointer":"default"}}>
         <div style={{display:"flex",alignItems:"center",gap:16}}>
-          <div style={{background:isHistory?"#e8f0ee":lesson.status==="confirmed"?"#e8f0ee":"#fffbea",border:`1.5px solid ${isHistory?G:lesson.status==="confirmed"?G:Y}`,borderRadius:10,padding:"10px 14px",textAlign:"center",minWidth:56}}>
-            <div style={{fontSize:"1.3rem",fontWeight:900,color:isHistory?G:lesson.status==="confirmed"?G:"#92400e",lineHeight:1}}>{dateObj.getDate()}</div>
+          <div style={{background:isCancelled?"#fef2f2":isHistory?"#e8f0ee":lesson.status==="confirmed"?"#e8f0ee":"#fffbea",border:`1.5px solid ${isCancelled?"#fca5a5":isHistory?G:lesson.status==="confirmed"?G:Y}`,borderRadius:10,padding:"10px 14px",textAlign:"center",minWidth:56}}>
+            <div style={{fontSize:"1.3rem",fontWeight:900,color:isCancelled?"#dc2626":isHistory?G:lesson.status==="confirmed"?G:"#92400e",lineHeight:1}}>{dateObj.getDate()}</div>
             <div style={{fontSize:"0.65rem",fontWeight:700,color:"#6b7280",textTransform:"uppercase"}}>{dateObj.toLocaleString("default",{month:"short"})}</div>
           </div>
           <div>
             <div style={{fontWeight:700,fontSize:"0.97rem"}}>{lesson.type} · {lesson.duration}</div>
             <div style={{fontSize:"0.85rem",color:"#6b7280",marginTop:2}}>⏱ {lesson.time}</div>
             {lesson.focus&&<div style={{fontSize:"0.8rem",color:G,marginTop:3,fontWeight:600}}>🎯 {lesson.focus}</div>}
-            {!isHistory&&(
+            {isCancelled&&(
+              <div style={{marginTop:5}}>
+                <span style={{background:lesson.status==="late_cancel"?"#fff7ed":lesson.status==="cancelled_forgiven"?"#f3f4f6":"#fef2f2",color:lesson.status==="late_cancel"?"#c2410c":lesson.status==="cancelled_forgiven"?"#6b7280":"#dc2626",padding:"2px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>
+                  {lesson.status==="late_cancel"?"⚠️ Cancelled (late)":lesson.status==="cancelled_forgiven"?"✓ Cancelled (forgiven)":"✕ Cancelled"}
+                </span>
+              </div>
+            )}
+            {!isHistory&&!isCancelled&&(
               <div style={{marginTop:5,display:"flex",flexWrap:"wrap",gap:6,alignItems:"center"}}>
                 <span style={{background:lesson.status==="confirmed"?"#e8f0ee":"#fffbea",color:lesson.status==="confirmed"?G:"#92400e",padding:"2px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>
                   {lesson.status==="confirmed"?"✓ Confirmed":"⏳ Pending"}
@@ -303,16 +311,16 @@ function LessonCard({lesson,isHistory,onCancel}){
           </div>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
-          {isHistory&&(
+          {(isHistory||isCancelled)&&(
             <>
-              {lesson.notes&&<span style={{fontSize:"0.75rem",background:"#e8f0ee",color:G,padding:"3px 10px",borderRadius:50,fontWeight:600}}>📝</span>}
-              {lesson.photos?.length>0&&<span style={{fontSize:"0.75rem",background:"#e8f0ee",color:G,padding:"3px 10px",borderRadius:50,fontWeight:600}}>🖼 {lesson.photos.length}</span>}
-              {lesson.videos?.length>0&&<span style={{fontSize:"0.75rem",background:"#e8f0ee",color:G,padding:"3px 10px",borderRadius:50,fontWeight:600}}>🎬 {lesson.videos.length}</span>}
-              {!lesson.notes&&!lesson.photos?.length&&!lesson.videos?.length&&<span style={{fontSize:"0.75rem",color:"#9ca3af",fontStyle:"italic"}}>No notes yet</span>}
-              <span style={{color:G,fontSize:"1.1rem"}}>{expanded?"▲":"▼"}</span>
+              {!isCancelled&&lesson.notes&&<span style={{fontSize:"0.75rem",background:"#e8f0ee",color:G,padding:"3px 10px",borderRadius:50,fontWeight:600}}>📝</span>}
+              {!isCancelled&&lesson.photos?.length>0&&<span style={{fontSize:"0.75rem",background:"#e8f0ee",color:G,padding:"3px 10px",borderRadius:50,fontWeight:600}}>🖼 {lesson.photos.length}</span>}
+              {!isCancelled&&lesson.videos?.length>0&&<span style={{fontSize:"0.75rem",background:"#e8f0ee",color:G,padding:"3px 10px",borderRadius:50,fontWeight:600}}>🎬 {lesson.videos.length}</span>}
+              {!isCancelled&&!lesson.notes&&!lesson.photos?.length&&!lesson.videos?.length&&<span style={{fontSize:"0.75rem",color:"#9ca3af",fontStyle:"italic"}}>No notes yet</span>}
+              <span style={{color:isCancelled?"#dc2626":G,fontSize:"1.1rem"}}>{expanded?"▲":"▼"}</span>
             </>
           )}
-          {!isHistory&&(
+          {!isHistory&&!isCancelled&&(
             <button onClick={e=>{e.stopPropagation();if(cancellable)setConfirmCancel(true);}}
               style={{background:closed?"#f3f4f6":"#fef2f2",color:closed?"#9ca3af":"#dc2626",border:`1.5px solid ${closed?"#e5e7eb":"#fca5a5"}`,padding:"6px 14px",borderRadius:50,fontSize:"0.8rem",fontWeight:600,cursor:closed?"not-allowed":"pointer"}}>
               {closed?"Closed":"✕ Cancel"}
@@ -320,7 +328,7 @@ function LessonCard({lesson,isHistory,onCancel}){
           )}
         </div>
       </div>
-      {isHistory&&expanded&&(
+      {(isHistory||isCancelled)&&expanded&&(
         <div style={{borderTop:"1px solid #e5e7eb",padding:"20px"}}>
           {lesson.notes
             ?<div style={{marginBottom:16}}><div style={{...lbl,marginBottom:8}}>📝 Coaching Notes from David</div><div style={{background:"#f9f9f6",borderRadius:8,padding:"14px 16px",fontSize:"0.9rem",color:"#374151",lineHeight:1.75}}>{lesson.notes}</div></div>
@@ -882,8 +890,9 @@ function AccountPage({user,setPage,onUpdateUser}){
 }
 
 function Dashboard({user,setPage,lessons,onCancel}){
-  const upcoming=lessons.filter(l=>!isPast(l.date,l.time)&&l.status!=="cancelled");
-  const history=lessons.filter(l=>isPast(l.date,l.time)||l.status==="completed");
+  const cancelledStatuses=["cancelled","late_cancel","cancelled_forgiven"];
+  const upcoming=lessons.filter(l=>!isPast(l.date,l.time)&&!cancelledStatuses.includes(l.status));
+  const history=lessons.filter(l=>isPast(l.date,l.time)||l.status==="completed"||cancelledStatuses.includes(l.status));
   return(
     <div style={{maxWidth:700,margin:"0 auto",padding:"48px 24px"}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:32,flexWrap:"wrap",gap:12}}>
@@ -906,6 +915,7 @@ function Dashboard({user,setPage,lessons,onCancel}){
       </div>
       <div>
         <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Lesson History ({history.length}) · Click to expand</div>
+
         {history.length===0
           ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"32px",textAlign:"center",color:"#9ca3af"}}>No past lessons yet.</div>
           :history.map(l=><LessonCard key={l.id} lesson={l} isHistory={true} onCancel={onCancel}/>)
@@ -1169,11 +1179,19 @@ function BookingPage({user,setPage,onAddLesson}){
             );
           })()}
           <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>setStep(3)} style={{flex:1,background:"white",border:"1.5px solid #e5e7eb",padding:"14px",borderRadius:50,fontWeight:600,cursor:"pointer",fontSize:"0.95rem"}}>← Back</button>
-            <button onClick={handleBook} disabled={submitting} style={{flex:2,background:submitting?"#9ca3af":G,color:"white",border:"none",padding:"14px",borderRadius:50,fontWeight:700,cursor:submitting?"not-allowed":"pointer",fontSize:"0.95rem"}}>
-              {submitting?"Booking...":"Confirm Booking ✓"}
+            <button onClick={()=>setStep(3)} disabled={submitting} style={{flex:1,background:"white",border:"1.5px solid #e5e7eb",padding:"14px",borderRadius:50,fontWeight:600,cursor:submitting?"not-allowed":"pointer",fontSize:"0.95rem",opacity:submitting?0.5:1}}>← Back</button>
+            <button onClick={handleBook} disabled={submitting} style={{flex:2,background:G,color:"white",border:"none",padding:"14px",borderRadius:50,fontWeight:700,cursor:submitting?"not-allowed":"pointer",fontSize:"0.95rem",opacity:submitting?0.7:1}}>
+              {submitting?"Confirming...":"Confirm Booking ✓"}
             </button>
           </div>
+          {submitting&&(
+            <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(255,255,255,0.85)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",zIndex:9999,backdropFilter:"blur(4px)"}}>
+              <div style={{width:48,height:48,border:"5px solid #e8f0ee",borderTop:"5px solid "+G,borderRadius:"50%",animation:"spin 0.9s linear infinite",marginBottom:20}}/>
+              <div style={{fontWeight:700,fontSize:"1.1rem",color:G}}>Booking your lesson...</div>
+              <div style={{fontSize:"0.88rem",color:"#6b7280",marginTop:8}}>Setting up your calendar event, hang tight!</div>
+              <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -2715,9 +2733,9 @@ export default function App(){
   const deactivateStudent=async(email)=>{
     await fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,updates:{deactivated:true}})});
     const u=mockUsersState[email];
-    if(u)setDeactivatedStudents(prev=>[...prev,{...u,email}]);
+    if(u)setDeactivatedStudents(prev=>[...prev,{...u,email,lessons:allLessons[email]||[]}]);
     setMockUsersState(prev=>{const next={...prev};delete next[email];return next;});
-    setAllLessons(prev=>{const next={...prev};delete next[email];return next;});
+    // Keep allLessons intact — lesson history is preserved
   };
   const reactivateStudent=async(email)=>{
     await fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,updates:{deactivated:false}})});
