@@ -46,6 +46,9 @@ function categorizeEvent(summary, location) {
     if (slashCount === 1) return { type: 'semi', label: 'Semi-Private Lesson', rateType: 'per60', rate: 140 };
     return { type: 'private', label: 'Private Lesson', rateType: 'per60', rate: 120 };
   }
+  if (s.includes('pickup')) {
+    return { type: 'pickup', label: 'Pickup Buffer', rateType: 'none', rate: 0 };
+  }
   return null;
 }
 
@@ -76,6 +79,23 @@ export default async function handler(req, res) {
       const startDT = event.start.dateTime || event.start.date;
       const endDT = event.end.dateTime || event.end.date;
       if (!includeFuture && new Date(endDT) > new Date()) continue;
+      // Pickup/buffer events — show on calendar, no earnings
+      if (category.type === 'pickup') {
+        events.push({
+          date: startDT.substring(0, 10),
+          summary: event.summary,
+          category: 'Pickup Buffer',
+          type: 'pickup',
+          hours: Math.round(getDurationHrs(startDT, endDT) * 100) / 100,
+          earnings: 0,
+          isStanford: false,
+          isPickup: true,
+          startTime: fmtTime(startDT),
+          endTime: fmtTime(endDT),
+        });
+        continue;
+      }
+
       const isStanford = category.type === 'stanford_rec' || category.type === 'stanford_open';
 
       if (isStanford) {
