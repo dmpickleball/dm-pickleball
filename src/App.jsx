@@ -2599,7 +2599,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 </div>
                 <div>
                   <div style={{fontWeight:700,fontSize:"0.95rem",color:titleColor}}>{e.summary}</div>
-                  <div style={{fontSize:"0.82rem",color:"#6b7280",marginTop:2}}>{e.category}{e.hours?" · "+e.hours+"h":""}</div>
+                  {e.startTime&&<div style={{fontSize:"0.85rem",fontWeight:700,color:"#374151",marginTop:2}}>🕐 {e.startTime}{e.endTime?" – "+e.endTime:""}</div>}
+                  <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:1}}>{e.category}{e.hours?" · "+e.hours+"h":""}</div>
                   {e.location&&<div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:2}}>📍 {e.location.split(",")[0]}</div>}
                 </div>
               </div>
@@ -2728,6 +2729,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                               return(
                                 <div key={"wc"+i} style={{background:isStanford2?"#fdf8ff":"#fafffe",border:"1.5px solid "+(isStanford2?"#e9d5ff":"#d1fae5"),borderRadius:8,padding:"8px 8px",marginBottom:5,fontSize:"0.75rem"}}>
                                   <div style={{fontWeight:700,color:isStanford2?"#4c1d95":"#065f46",marginBottom:2,lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{l.summary}</div>
+                                  {l.startTime&&<div style={{color:"#374151",fontSize:"0.72rem",fontWeight:700,marginBottom:3}}>🕐 {l.startTime}{l.endTime?" – "+l.endTime:""}</div>}
                                   <span style={{background:isStanford2?"#ede9fe":"#d1fae5",color:isStanford2?"#5b21b6":"#065f46",padding:"1px 6px",borderRadius:50,fontSize:"0.62rem",fontWeight:700}}>{isStanford2?"🎓 Stanford":"📅 Cal"}</span>
                                 </div>
                               );

@@ -14,6 +14,12 @@ function getDurationHrs(start, end) {
   return (new Date(end) - new Date(start)) / 3600000;
 }
 
+function fmtTime(dt) {
+  if (!dt || !dt.includes('T')) return '';
+  const d = new Date(dt);
+  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' });
+}
+
 const STANFORD_TAX_RATE = 0.1441;
 const STANFORD_HOURLY = 68;
 
@@ -89,6 +95,8 @@ export default async function handler(req, res) {
           earnings: gross,
           netEarnings: net,
           isStanford: true,
+          startTime: fmtTime(startDT),
+          endTime: fmtTime(endDT),
         });
       } else {
         const hrs = getDurationHrs(startDT, endDT);
@@ -109,6 +117,8 @@ export default async function handler(req, res) {
           earnings,
           isStanford: false,
           location: event.location || '',
+          startTime: fmtTime(startDT),
+          endTime: fmtTime(endDT),
         });
       }
     }
