@@ -1459,58 +1459,54 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:"0.88rem"}}>
                   <thead><tr style={{background:"#f9f9f6",borderBottom:"1.5px solid #e5e7eb"}}>{["Date","Student","Type","Duration","Income",""].map(h=>(<th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#6b7280",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>))}</tr></thead>
                   <tbody>
-                    {portalEarnings.rows.map((r,i)=>{
-                      const isEditing=editPriceId===i;
-                      const defaultRate=getRate(r.type,parseInt(r.duration),r.isMenlo?"menlo":"public");
-                      return(
-                        <Fragment key={i}>
-                          <tr style={{borderBottom:isEditing?"none":"1px solid #f3f4f6",background:r.isMenlo?"#f0faf5":"white"}}>
-                            <td style={{padding:"12px 16px"}}>{fmtDateShort(r.date)}</td>
-                            <td style={{padding:"12px 16px"}}>{r.name}{r.isMenlo&&<span style={{background:"#1a3c34",color:"white",fontSize:"0.65rem",fontWeight:700,padding:"1px 6px",borderRadius:50,marginLeft:6}}>MCC</span>}</td>
-                            <td style={{padding:"12px 16px"}}>{r.type}</td>
-                            <td style={{padding:"12px 16px"}}>{r.duration}</td>
-                            <td style={{padding:"12px 16px",fontWeight:700,color:"#1a3c34"}}>${typeof r.net==="number"?r.net.toFixed(2):r.net}</td>
-                            <td style={{padding:"8px 12px",textAlign:"right"}}>
-                              <button onClick={()=>{if(isEditing){setEditPriceId(null);}else{setEditPriceId(i);setEditPriceVal(String(r.gross));}}} title="Edit price" style={{background:isEditing?"#f3f4f6":"white",color:isEditing?"#dc2626":"#6b7280",border:"1.5px solid "+(isEditing?"#fca5a5":"#e5e7eb"),padding:"4px 10px",borderRadius:6,cursor:"pointer",fontSize:"0.85rem",lineHeight:1}}>
-                                {isEditing?"✕":"✏️"}
-                              </button>
-                            </td>
-                          </tr>
-                          {isEditing&&(
-                            <tr style={{borderBottom:"1px solid #f3f4f6"}}>
-                              <td colSpan={6} style={{padding:"16px 20px",background:"#f9f9f6"}}>
-                                <div style={{fontSize:"0.85rem",fontWeight:600,marginBottom:8,color:"#374151"}}>Override lesson income</div>
-                                <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-                                  <span style={{fontSize:"1rem",color:"#6b7280"}}>$</span>
-                                  <input type="number" value={editPriceVal} onChange={e=>setEditPriceVal(e.target.value)} style={{...inp,marginBottom:0,width:120}} placeholder="0.00"/>
-                                  <span style={{fontSize:"0.8rem",color:"#9ca3af"}}>Default: ${defaultRate.toFixed(2)}</span>
-                                </div>
-                                <div style={{display:"flex",gap:8,marginTop:12}}>
-                                  <button onClick={()=>setEditPriceId(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 18px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}>Cancel</button>
-                                  <button onClick={async()=>{
-                                    const price=parseFloat(editPriceVal);
-                                    if(isNaN(price))return;
-                                    await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:r.id,updates:{custom_price:price}})});
-                                    onUpdateLesson(r.email,r.id,{customPrice:price});
-                                    setEditPriceId(null);
-                                  }} style={{background:G,color:"white",border:"none",padding:"7px 18px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>Save</button>
-                                  {r.gross!==defaultRate&&(
-                                    <button onClick={async()=>{
-                                      await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:r.id,updates:{custom_price:null}})});
-                                      onUpdateLesson(r.email,r.id,{customPrice:null});
-                                      setEditPriceId(null);
-                                    }} style={{background:"white",border:"1.5px solid #e5e7eb",color:"#6b7280",padding:"7px 18px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}>Reset to Default</button>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          )}
-                        </Fragment>
-                      );
-                    })}
+                    {portalEarnings.rows.map((r,i)=>(
+                      <tr key={i} style={{borderBottom:"1px solid #f3f4f6",background:editPriceId===i?"#f0f9ff":r.isMenlo?"#f0faf5":"white"}}>
+                        <td style={{padding:"12px 16px"}}>{fmtDateShort(r.date)}</td>
+                        <td style={{padding:"12px 16px"}}>{r.name}{r.isMenlo&&<span style={{background:"#1a3c34",color:"white",fontSize:"0.65rem",fontWeight:700,padding:"1px 6px",borderRadius:50,marginLeft:6}}>MCC</span>}</td>
+                        <td style={{padding:"12px 16px"}}>{r.type}</td>
+                        <td style={{padding:"12px 16px"}}>{r.duration}</td>
+                        <td style={{padding:"12px 16px",fontWeight:700,color:"#1a3c34"}}>${typeof r.net==="number"?r.net.toFixed(2):r.net}</td>
+                        <td style={{padding:"8px 12px",textAlign:"right"}}>
+                          <button onClick={()=>{if(editPriceId===i){setEditPriceId(null);}else{setEditPriceId(i);setEditPriceVal(String(r.gross));}}} title="Edit price" style={{background:editPriceId===i?"#fef2f2":"white",color:editPriceId===i?"#dc2626":"#6b7280",border:"1.5px solid "+(editPriceId===i?"#fca5a5":"#e5e7eb"),padding:"4px 10px",borderRadius:6,cursor:"pointer",fontSize:"0.85rem",lineHeight:1}}>
+                            {editPriceId===i?"✕":"✏️"}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
+              {editPriceId!==null&&portalEarnings.rows[editPriceId]&&(()=>{
+                const r=portalEarnings.rows[editPriceId];
+                const defaultRate=getRate(r.type,parseInt(r.duration),r.isMenlo?"menlo":"public");
+                return(
+                  <div style={{background:"#f0f9ff",border:"1.5px solid #bae6fd",borderTop:"none",borderRadius:"0 0 12px 12px",padding:"16px 20px"}}>
+                    <div style={{fontSize:"0.85rem",fontWeight:700,marginBottom:10,color:"#0369a1"}}>Edit income — {r.name}, {fmtDateShort(r.date)}</div>
+                    <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+                      <span style={{fontSize:"1rem",color:"#6b7280"}}>$</span>
+                      <input type="number" value={editPriceVal} onChange={e=>setEditPriceVal(e.target.value)} style={{...inp,marginBottom:0,width:130}} placeholder="0.00" autoFocus/>
+                      <span style={{fontSize:"0.8rem",color:"#9ca3af"}}>Default: ${defaultRate.toFixed(2)}</span>
+                    </div>
+                    <div style={{display:"flex",gap:8,marginTop:12,flexWrap:"wrap"}}>
+                      <button onClick={()=>setEditPriceId(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 18px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}>Cancel</button>
+                      <button onClick={async()=>{
+                        const price=parseFloat(editPriceVal);
+                        if(isNaN(price))return;
+                        await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:r.id,updates:{custom_price:price}})});
+                        onUpdateLesson(r.email,r.id,{customPrice:price});
+                        setEditPriceId(null);
+                      }} style={{background:G,color:"white",border:"none",padding:"7px 18px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>Save</button>
+                      {r.gross!==defaultRate&&(
+                        <button onClick={async()=>{
+                          await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:r.id,updates:{custom_price:null}})});
+                          onUpdateLesson(r.email,r.id,{customPrice:null});
+                          setEditPriceId(null);
+                        }} style={{background:"white",border:"1.5px solid #e5e7eb",color:"#6b7280",padding:"7px 18px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}>Reset to Default</button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
           {calendarLessons.length===0&&portalEarnings.rows.length===0&&!financeLoading&&(
