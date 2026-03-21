@@ -1903,6 +1903,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[selectedDay,setSelectedDay]=useState(toDS(new Date()));
   const[calMonth,setCalMonth]=useState(toDS(new Date()).slice(0,7));
   const[activeMenu,setActiveMenu]=useState(null);
+  const[monthDayPopover,setMonthDayPopover]=useState(null);
 
   const earnings=getEarnings(allLessons,mockUsers,earningsRange);
   const allStudents=Object.keys(mockUsers);
@@ -1927,9 +1928,9 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
     try{
       const past=toDS(addDays(new Date(),-180));
       const future=toDS(addDays(new Date(),90));
-      const r=await fetch("/api/earnings-calendar?start="+past+"&end="+future+"&includeFuture=true&includeStanford=false");
+      const r=await fetch("/api/earnings-calendar?start="+past+"&end="+future+"&includeFuture=true&includeStanford=true");
       const d=await r.json();
-      setCalendarItems((d.events||[]).filter(e=>!e.isStanford));
+      setCalendarItems(d.events||[]);
     }catch(e){console.error("Cal fetch:",e);setCalendarItems([]);}
     setCalLoading(false);
   };
@@ -2579,20 +2580,29 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
         // ── helper: render a calendar event row ──────────────────────────────
         const CalRow=(e,idx)=>{
           const d=new Date(e.date+"T12:00:00");
+          const isStanford=e.isStanford||((e.summary||"").toLowerCase().includes("stanford"));
+          const rowBg=isStanford?"#fdf8ff":"#fafffe";
+          const rowBorder=isStanford?"#e9d5ff":"#d1fae5";
+          const dateBg=isStanford?"#ede9fe":"#d1fae5";
+          const dateColor=isStanford?"#5b21b6":"#065f46";
+          const titleColor=isStanford?"#4c1d95":"#1a3c34";
+          const badgeBg=isStanford?"#ede9fe":"#d1fae5";
+          const badgeColor=isStanford?"#5b21b6":"#065f46";
+          const badgeLabel=isStanford?"🎓 Stanford":"📅 Calendar";
           return(
-            <div key={"cal-"+idx} style={{background:"#fafffe",borderRadius:12,border:"1.5px solid #d1fae5",padding:"16px 20px",marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+            <div key={"cal-"+idx} style={{background:rowBg,borderRadius:12,border:"1.5px solid "+rowBorder,padding:"16px 20px",marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
               <div style={{display:"flex",alignItems:"center",gap:14}}>
-                <div style={{background:"#d1fae5",borderRadius:10,padding:"10px 14px",textAlign:"center",minWidth:48}}>
-                  <div style={{fontSize:"1.2rem",fontWeight:900,color:"#065f46",lineHeight:1}}>{d.getDate()}</div>
+                <div style={{background:dateBg,borderRadius:10,padding:"10px 14px",textAlign:"center",minWidth:48}}>
+                  <div style={{fontSize:"1.2rem",fontWeight:900,color:dateColor,lineHeight:1}}>{d.getDate()}</div>
                   <div style={{fontSize:"0.6rem",fontWeight:700,color:"#6b7280",textTransform:"uppercase"}}>{d.toLocaleString("default",{month:"short"})}</div>
                 </div>
                 <div>
-                  <div style={{fontWeight:700,fontSize:"0.95rem",color:"#1a3c34"}}>{e.summary}</div>
+                  <div style={{fontWeight:700,fontSize:"0.95rem",color:titleColor}}>{e.summary}</div>
                   <div style={{fontSize:"0.82rem",color:"#6b7280",marginTop:2}}>{e.category}{e.hours?" · "+e.hours+"h":""}</div>
                   {e.location&&<div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:2}}>📍 {e.location.split(",")[0]}</div>}
                 </div>
               </div>
-              <span style={{background:"#d1fae5",color:"#065f46",padding:"3px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>📅 Calendar</span>
+              <span style={{background:badgeBg,color:badgeColor,padding:"3px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>{badgeLabel}</span>
             </div>
           );
         };
@@ -2683,24 +2693,32 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
           {/* ── WEEK view ──────────────────────────────────────────────── */}
           {upcomingView==="week"&&(
             <div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4,marginBottom:14}}>
-                {weekDays.map(day=>{
-                  const d=new Date(day+"T12:00:00");
-                  const isToday=day===todayStr;const isSel=day===selectedDay;const hasItems=hasDayActivity(day);
-                  return(
-                    <button key={day} onClick={()=>setSelectedDay(day)} style={{background:isSel?G:isToday?"#e8f0ee":"white",color:isSel?"white":isToday?G:"#374151",border:"1.5px solid "+(isSel?G:isToday?G:"#e5e7eb"),borderRadius:10,padding:"8px 4px",cursor:"pointer",textAlign:"center",transition:"all 0.15s"}}>
-                      <div style={{fontSize:"0.63rem",fontWeight:600,opacity:0.75,textTransform:"uppercase"}}>{d.toLocaleString("default",{weekday:"short"})}</div>
-                      <div style={{fontSize:"1.1rem",fontWeight:800,lineHeight:1.3,marginTop:2}}>{d.getDate()}</div>
-                      <div style={{height:5,marginTop:3,display:"flex",justifyContent:"center"}}>{hasItems&&<span style={{width:5,height:5,borderRadius:"50%",background:isSel?"rgba(255,255,255,0.8)":G,display:"inline-block"}}/>}</div>
-                    </button>
-                  );
-                })}
+              {/* Week nav */}
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+                <button onClick={()=>setSelectedDay(toDS(addDays(new Date(weekDays[0]+"T12:00:00"),-7)))} style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"5px 12px",cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>‹ Prev</button>
+                <button onClick={()=>setSelectedDay(todayStr)} style={{background:weekDays.includes(todayStr)?G:"white",color:weekDays.includes(todayStr)?"white":"#374151",border:"1.5px solid "+(weekDays.includes(todayStr)?G:"#e5e7eb"),borderRadius:8,padding:"5px 12px",cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>This Week</button>
+                <button onClick={()=>setSelectedDay(toDS(addDays(new Date(weekDays[0]+"T12:00:00"),7)))} style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"5px 12px",cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>Next ›</button>
+                <span style={{color:"#6b7280",fontSize:"0.85rem",fontWeight:600}}>{fmtDateShort(weekDays[0])} – {fmtDateShort(weekDays[6])}</span>
               </div>
-              <div style={{fontWeight:700,color:"#374151",marginBottom:10,fontSize:"0.88rem"}}>{dayLabel(selectedDay)} <span style={{color:"#9ca3af",fontWeight:400,fontSize:"0.82rem"}}>— {merged.length} lesson{merged.length!==1?"s":""}</span></div>
-              {merged.length===0
-                ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"28px",textAlign:"center",color:"#9ca3af"}}>No lessons on {fmtDateShort(selectedDay)}.</div>
-                :merged.map((l,i)=>l._c?CalRow(l,i):LessonRow(l))
-              }
+              {/* All 7 days */}
+              {weekDays.map(day=>{
+                const isToday=day===todayStr;
+                const d=new Date(day+"T12:00:00");
+                const dayItems=[...dayPortal(day).map(l=>({...l,_c:false})),...dayCalItems(day).map((e,i)=>({...e,_c:true,_i:i}))];
+                const wdLabel=d.toLocaleString("default",{weekday:"long"});
+                const dtLabel=d.toLocaleString("default",{month:"short",day:"numeric"});
+                return(
+                  <div key={day} style={{marginBottom:dayItems.length>0?20:6}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:dayItems.length>0?8:0,padding:"5px 10px",borderRadius:8,background:isToday?"#e8f0ee":"#f9fafb",border:"1px solid "+(isToday?G+"44":"#e5e7eb")}}>
+                      <span style={{fontWeight:800,fontSize:"0.85rem",color:isToday?G:"#374151"}}>{wdLabel}</span>
+                      <span style={{fontSize:"0.8rem",color:"#9ca3af"}}>{dtLabel}</span>
+                      {isToday&&<span style={{background:G,color:"white",padding:"1px 7px",borderRadius:50,fontSize:"0.65rem",fontWeight:700,marginLeft:2}}>Today</span>}
+                      <span style={{marginLeft:"auto",color:"#9ca3af",fontSize:"0.78rem"}}>{dayItems.length>0?dayItems.length+" item"+(dayItems.length!==1?"s":""):"No lessons"}</span>
+                    </div>
+                    {dayItems.map((l,i)=>l._c?CalRow(l,i):LessonRow(l))}
+                  </div>
+                );
+              })}
             </div>
           )}
 
@@ -2710,20 +2728,45 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
               <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:4}}>
                 {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d=>(<div key={d} style={{textAlign:"center",fontSize:"0.65rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",padding:"3px 0"}}>{d}</div>))}
               </div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:14}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:8}}>
                 {monthGrid.map((day,i)=>{
-                  if(!day)return<div key={"e"+i}/>;
-                  const isToday=day===todayStr;const isSel=day===selectedDay;
-                  const hasItems=hasDayActivity(day);const isPastDay=day<todayStr;
+                  if(!day)return<div key={"e"+i} style={{minHeight:72}}/>;
+                  const isToday=day===todayStr;const isSel=day===selectedDay||monthDayPopover===day;
+                  const isPastDay=day<todayStr;
+                  const dayPortalItems=dayPortal(day);
+                  const dayCalEvts=dayCalItems(day);
+                  const allDayItems=[...dayPortalItems,...dayCalEvts];
+                  const SHOW_MAX=2;
+                  const overflow=allDayItems.length>SHOW_MAX?allDayItems.length-SHOW_MAX:0;
+                  const shown=allDayItems.slice(0,SHOW_MAX);
                   return(
-                    <button key={day} onClick={()=>setSelectedDay(day)} style={{background:isSel?G:isToday?"#e8f0ee":"white",color:isSel?"white":isPastDay?"#d1d5db":isToday?G:"#374151",border:"1.5px solid "+(isSel?G:isToday?G:"#e5e7eb"),borderRadius:8,padding:"6px 4px",cursor:"pointer",textAlign:"center",minHeight:38,transition:"all 0.15s",position:"relative"}}>
-                      <div style={{fontSize:"0.85rem",fontWeight:isSel||isToday?800:400}}>{new Date(day+"T12:00:00").getDate()}</div>
-                      {hasItems&&<span style={{position:"absolute",bottom:3,left:"50%",transform:"translateX(-50%)",width:5,height:5,borderRadius:"50%",background:isSel?"rgba(255,255,255,0.9)":G,display:"block"}}/>}
-                    </button>
+                    <div key={day} onClick={()=>{setSelectedDay(day);setMonthDayPopover(null);}} style={{background:isSel?G:isToday?"#e8f0ee":"white",color:isSel?"white":isPastDay?"#6b7280":isToday?G:"#374151",border:"1.5px solid "+(isSel?G:isToday?G:"#e5e7eb"),borderRadius:8,padding:"5px 4px 4px",cursor:"pointer",minHeight:72,transition:"all 0.15s",position:"relative",overflow:"hidden",display:"flex",flexDirection:"column"}}>
+                      <div style={{fontSize:"0.82rem",fontWeight:isSel||isToday?800:500,textAlign:"center",marginBottom:3}}>{new Date(day+"T12:00:00").getDate()}</div>
+                      <div style={{display:"flex",flexDirection:"column",gap:2,flex:1}}>
+                        {shown.map((item,ti)=>{
+                          const isStanfordItem=item.isStanford||((item.summary||"").toLowerCase().includes("stanford"));
+                          const isCal=!item.studentEmail;
+                          const tagBg=isSel?"rgba(255,255,255,0.25)":isStanfordItem?"#ede9fe":isCal?"#d1fae5":"#e8f0ee";
+                          const tagColor=isSel?"white":isStanfordItem?"#5b21b6":isCal?"#065f46":G;
+                          const label=item.studentName||(item.summary||"").split(" ").slice(0,3).join(" ");
+                          return(
+                            <div key={ti} style={{background:tagBg,color:tagColor,borderRadius:4,padding:"1px 4px",fontSize:"0.6rem",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",lineHeight:1.4}} title={item.studentName||item.summary}>{label}</div>
+                          );
+                        })}
+                        {overflow>0&&(
+                          <div onClick={(ev)=>{ev.stopPropagation();setSelectedDay(day);setMonthDayPopover(p=>p===day?null:day);}} style={{fontSize:"0.6rem",color:isSel?"rgba(255,255,255,0.8)":"#6b7280",fontWeight:700,textAlign:"center",marginTop:1,cursor:"pointer"}}>+{overflow} more</div>
+                        )}
+                      </div>
+                    </div>
                   );
                 })}
               </div>
-              <div style={{fontWeight:700,color:"#374151",marginBottom:10,fontSize:"0.88rem"}}>{dayLabel(selectedDay)} <span style={{color:"#9ca3af",fontWeight:400,fontSize:"0.82rem"}}>— {merged.length} lesson{merged.length!==1?"s":""}</span></div>
+              {/* Popover / selected day detail */}
+              <div style={{fontWeight:700,color:"#374151",marginBottom:10,fontSize:"0.88rem",display:"flex",alignItems:"center",gap:8}}>
+                {dayLabel(selectedDay)}
+                <span style={{color:"#9ca3af",fontWeight:400,fontSize:"0.82rem"}}>— {merged.length} item{merged.length!==1?"s":""}</span>
+                {monthDayPopover&&<button onClick={()=>setMonthDayPopover(null)} style={{marginLeft:"auto",background:"none",border:"none",color:"#9ca3af",cursor:"pointer",fontSize:"0.8rem"}}>✕ Close</button>}
+              </div>
               {merged.length===0
                 ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"28px",textAlign:"center",color:"#9ca3af"}}>No lessons on {fmtDateShort(selectedDay)}.</div>
                 :merged.map((l,i)=>l._c?CalRow(l,i):LessonRow(l))
