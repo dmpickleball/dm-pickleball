@@ -1314,42 +1314,34 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
   const now=new Date();
   const[editRow,setEditRow]=useState(null);
   const[editPriceVal,setEditPriceVal]=useState("");
-  const[customYear,setCustomYear]=useState(now.getFullYear());
-  const[customMonth,setCustomMonth]=useState(now.getMonth()+1);
-  const[customStart,setCustomStart]=useState(null);
-  const[customEnd,setCustomEnd]=useState(null);
+  const fmtD=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  const[financeView,setFinanceView]=useState("month");
+  const[selectedDay,setSelectedDay]=useState(fmtD(now));
+  const[weekOffset,setWeekOffset]=useState(0);
+  const[viewMonth,setViewMonth]=useState(now.getMonth()+1);
+  const[viewYear,setViewYear]=useState(now.getFullYear());
+  const[viewYearOnly,setViewYearOnly]=useState(now.getFullYear());
   const dialogRef=useRef(null);
   const editRowRef=useRef(null);
-  const getDateRange=(range)=>{
-    const end=new Date();
-    let start=new Date();
-    if(range==="week"){start.setDate(now.getDate()-now.getDay());}
-    else if(range==="month"){start=new Date(now.getFullYear(),now.getMonth(),1);}
-    else if(range==="year"){start=new Date(now.getFullYear(),0,1);}
-    const fmt=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
-    return{start:fmt(start),end:fmt(end)};
+  const computeRange=(view,day,offset,mo,yr,yrOnly)=>{
+    if(view==="day")return{start:day,end:day};
+    if(view==="week"){const base=new Date();const ws=new Date(base);ws.setDate(base.getDate()-base.getDay()+offset*7);const we=new Date(ws);we.setDate(ws.getDate()+6);return{start:fmtD(ws),end:fmtD(we)};}
+    if(view==="month"){const last=new Date(yr,mo,0).getDate();return{start:yr+"-"+String(mo).padStart(2,"0")+"-01",end:yr+"-"+String(mo).padStart(2,"0")+"-"+String(last).padStart(2,"0")};}
+    return{start:yrOnly+"-01-01",end:yrOnly+"-12-31"};
   };
-  const loadFinances=async(range,withStanford)=>{
+  const loadData=async(start,end,withStanford)=>{
     setFinanceLoading(true);
-    const{start,end}=getDateRange(range);
-    try{
-      const r=await fetch("/api/earnings-calendar?start="+start+"&end="+end+"&includeStanford="+(withStanford?"true":"false"));
-      const data=await r.json();
-      setFinanceData(data);
-    }catch(e){console.error("Finance load error:",e);}
+    try{const r=await fetch("/api/earnings-calendar?start="+start+"&end="+end+"&includeStanford="+(withStanford?"true":"false"));const data=await r.json();setFinanceData(data);}
+    catch(e){console.error("Finance load error:",e);}
     setFinanceLoading(false);
   };
-  useEffect(()=>{loadFinances(financeRange,includeStanford);},[]);
-  const handleRangeChange=(r)=>{setFinanceRange(r);setCustomStart(null);setCustomEnd(null);loadFinances(r,includeStanford);};
-  const handleStanfordToggle=()=>{const next=!includeStanford;setIncludeStanford(next);if(financeRange==="custom"&&customStart&&customEnd){setFinanceLoading(true);fetch("/api/earnings-calendar?start="+customStart+"&end="+customEnd+"&includeStanford="+(next?"true":"false")).then(r=>r.json()).then(d=>{setFinanceData(d);setFinanceLoading(false);}).catch(()=>setFinanceLoading(false));}else{loadFinances(financeRange,next);}};
-  const loadCustomMonth=(yr,mo,withStanford)=>{
-    const start=yr+"-"+String(mo).padStart(2,"0")+"-01";
-    const lastDay=new Date(yr,mo,0).getDate();
-    const end=yr+"-"+String(mo).padStart(2,"0")+"-"+String(lastDay).padStart(2,"0");
-    setCustomStart(start);setCustomEnd(end);setFinanceRange("custom");setFinanceLoading(true);
-    fetch("/api/earnings-calendar?start="+start+"&end="+end+"&includeStanford="+(withStanford?"true":"false")).then(r=>r.json()).then(d=>{setFinanceData(d);setFinanceLoading(false);}).catch(()=>setFinanceLoading(false));
-  };
-  const portalEarnings=getEarnings(allLessons,mockUsers,financeRange,customStart,customEnd);
+  const viewRange=computeRange(financeView,selectedDay,weekOffset,viewMonth,viewYear,viewYearOnly);
+  useEffect(()=>{loadData(viewRange.start,viewRange.end,includeStanford);},[]);
+  const handleStanfordToggle=()=>{const next=!includeStanford;setIncludeStanford(next);loadData(viewRange.start,viewRange.end,next);};
+  const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const MONFULL=["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const viewLabel=financeView==="day"?new Date(selectedDay+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):financeView==="week"?(()=>{const sd=new Date(viewRange.start+"T12:00:00");const ed=new Date(viewRange.end+"T12:00:00");return"Week of "+MON[sd.getMonth()]+" "+sd.getDate()+", "+sd.getFullYear();})():financeView==="month"?MONFULL[viewMonth-1]+" "+viewYear:String(viewYearOnly);
+  const portalEarnings=getEarnings(allLessons,mockUsers,"custom",viewRange.start,viewRange.end);
   const typeColors={private:"#1a3c34",semi:"#0ea5e9",group:"#f97316",stanford_rec:"#8b5cf6",stanford_open:"#8b5cf6"};
   const calendarLessons=(financeData?.events||[]).filter(e=>!e.isStanford);
   const stanfordEvents=(financeData?.events||[]).filter(e=>e.isStanford);
@@ -1379,19 +1371,35 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
         </div>
       )}
       {/* Range + Stanford controls */}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:12}}>
-        <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
-          {["week","month","year"].map(r=>(
-            <button key={r} onClick={()=>handleRangeChange(r)} style={{background:financeRange===r?"#1a3c34":"white",color:financeRange===r?"white":"#374151",border:"1.5px solid "+(financeRange===r?"#1a3c34":"#e5e7eb"),padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:financeRange===r?700:500}}>
-              {r.charAt(0).toUpperCase()+r.slice(1)}
-            </button>
-          ))}
-          <select value={customMonth} onChange={e=>{const mo=parseInt(e.target.value);setCustomMonth(mo);loadCustomMonth(customYear,mo,includeStanford);}} style={{border:"1.5px solid "+(financeRange==="custom"?"#1a3c34":"#e5e7eb"),borderRadius:50,padding:"7px 14px",fontSize:"0.85rem",cursor:"pointer",fontWeight:financeRange==="custom"?700:500,background:financeRange==="custom"?"#1a3c34":"white",color:financeRange==="custom"?"white":"#374151",appearance:"none",WebkitAppearance:"none"}}>
-            {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m,i)=>(<option key={i} value={i+1}>{m}</option>))}
-          </select>
-          <select value={customYear} onChange={e=>{const yr=parseInt(e.target.value);setCustomYear(yr);loadCustomMonth(yr,customMonth,includeStanford);}} style={{border:"1.5px solid "+(financeRange==="custom"?"#1a3c34":"#e5e7eb"),borderRadius:50,padding:"7px 14px",fontSize:"0.85rem",cursor:"pointer",fontWeight:financeRange==="custom"?700:500,background:financeRange==="custom"?"#1a3c34":"white",color:financeRange==="custom"?"white":"#374151",appearance:"none",WebkitAppearance:"none"}}>
-            {Array.from({length:now.getFullYear()-2023},(_, i)=>2024+i).map(y=>(<option key={y} value={y}>{y}</option>))}
-          </select>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20,flexWrap:"wrap",gap:12}}>
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+            <select value={financeView} onChange={e=>{const v=e.target.value;setFinanceView(v);const r=computeRange(v,selectedDay,weekOffset,viewMonth,viewYear,viewYearOnly);loadData(r.start,r.end,includeStanford);}} style={{border:"2px solid #1a3c34",borderRadius:50,padding:"8px 20px",fontSize:"0.9rem",fontWeight:700,background:"#1a3c34",color:"white",cursor:"pointer",appearance:"none",WebkitAppearance:"none"}}>
+              <option value="day">Day</option>
+              <option value="week">Week</option>
+              <option value="month">Month</option>
+              <option value="year">Year</option>
+            </select>
+            {financeView==="day"&&(
+              <input type="date" value={selectedDay} onChange={e=>{setSelectedDay(e.target.value);loadData(e.target.value,e.target.value,includeStanford);}} style={{border:"1.5px solid #e5e7eb",borderRadius:50,padding:"7px 16px",fontSize:"0.85rem",cursor:"pointer",background:"white"}}/>
+            )}
+            {financeView==="week"&&(()=>{const sd=new Date(viewRange.start+"T12:00:00");const ed=new Date(viewRange.end+"T12:00:00");const lbl=MON[sd.getMonth()]+" "+sd.getDate()+(sd.getFullYear()!==ed.getFullYear()?" "+sd.getFullYear():"")+' – '+MON[ed.getMonth()]+" "+ed.getDate()+", "+ed.getFullYear();return(<div style={{display:"flex",alignItems:"center",gap:8}}><button onClick={()=>{const o=weekOffset-1;setWeekOffset(o);const r=computeRange("week",selectedDay,o,viewMonth,viewYear,viewYearOnly);loadData(r.start,r.end,includeStanford);}} style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:"50%",width:34,height:34,cursor:"pointer",fontWeight:700,fontSize:"1.1rem",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>‹</button><span style={{fontSize:"0.88rem",fontWeight:600,color:"#374151",minWidth:180,textAlign:"center"}}>{lbl}</span><button onClick={()=>{const o=weekOffset+1;setWeekOffset(o);const r=computeRange("week",selectedDay,o,viewMonth,viewYear,viewYearOnly);loadData(r.start,r.end,includeStanford);}} style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:"50%",width:34,height:34,cursor:"pointer",fontWeight:700,fontSize:"1.1rem",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>›</button></div>);})()}
+            {financeView==="month"&&(
+              <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                <select value={viewMonth} onChange={e=>{const mo=parseInt(e.target.value);setViewMonth(mo);const r=computeRange("month",selectedDay,weekOffset,mo,viewYear,viewYearOnly);loadData(r.start,r.end,includeStanford);}} style={{border:"1.5px solid #e5e7eb",borderRadius:50,padding:"7px 16px",fontSize:"0.85rem",cursor:"pointer",background:"white"}}>
+                  {MONFULL.map((m,i)=>(<option key={i} value={i+1}>{m}</option>))}
+                </select>
+                <select value={viewYear} onChange={e=>{const yr=parseInt(e.target.value);setViewYear(yr);const r=computeRange("month",selectedDay,weekOffset,viewMonth,yr,viewYearOnly);loadData(r.start,r.end,includeStanford);}} style={{border:"1.5px solid #e5e7eb",borderRadius:50,padding:"7px 16px",fontSize:"0.85rem",cursor:"pointer",background:"white"}}>
+                  {Array.from({length:now.getFullYear()-2023},(_,i)=>2024+i).map(y=>(<option key={y} value={y}>{y}</option>))}
+                </select>
+              </div>
+            )}
+            {financeView==="year"&&(
+              <select value={viewYearOnly} onChange={e=>{const yr=parseInt(e.target.value);setViewYearOnly(yr);const r=computeRange("year",selectedDay,weekOffset,viewMonth,viewYear,yr);loadData(r.start,r.end,includeStanford);}} style={{border:"1.5px solid #e5e7eb",borderRadius:50,padding:"7px 16px",fontSize:"0.85rem",cursor:"pointer",background:"white"}}>
+                {Array.from({length:now.getFullYear()-2023},(_,i)=>2024+i).map(y=>(<option key={y} value={y}>{y}</option>))}
+              </select>
+            )}
+          </div>
         </div>
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
           {includeStanford&&(
@@ -1409,7 +1417,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
         <div style={{background:"white",borderRadius:12,padding:"20px",border:"1.5px solid #e5e7eb"}}>
           <div style={{fontSize:"0.7rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Total Earnings</div>
           <div style={{fontSize:"1.8rem",fontWeight:900,color:"#1a3c34"}}>${totalEarnings.toFixed(2)}</div>
-          <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:4}}>This {financeRange}</div>
+          <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:4}}>{viewLabel}</div>
         </div>
         <div style={{background:"white",borderRadius:12,padding:"20px",border:"1.5px solid #e5e7eb"}}>
           <div style={{fontSize:"0.7rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Portal Lessons</div>
