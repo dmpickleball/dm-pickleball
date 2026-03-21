@@ -1905,6 +1905,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[activeMenu,setActiveMenu]=useState(null);
   const[monthDayPopover,setMonthDayPopover]=useState(null);
   const[quickBook,setQuickBook]=useState(null);
+  const[weekBusyMap,setWeekBusyMap]=useState({});
+  const[weekBusyLoading,setWeekBusyLoading]=useState(false);
 
   const earnings=getEarnings(allLessons,mockUsers,earningsRange);
   const allStudents=Object.keys(mockUsers);
@@ -1958,6 +1960,25 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
       }).catch(()=>{});
   },[]);
   useEffect(()=>{if(tab==="lessons"&&calendarItems.length===0&&!calLoading)fetchCalendarItems();},[tab]);
+  useEffect(()=>{
+    if(tab!=="lessons"||upcomingView!=="week")return;
+    const days=getWeekDays(selectedDay);
+    const weekStart=days[0];const weekEnd=days[6];
+    setWeekBusyLoading(true);
+    fetch("/api/get-busy-times?date="+weekStart+"&endDate="+weekEnd)
+      .then(r=>r.json())
+      .then(d=>{
+        const map={};
+        (d.busy||[]).forEach(b=>{
+          const dk=b.start.substring(0,10);
+          if(!map[dk])map[dk]=[];
+          map[dk].push(b);
+        });
+        setWeekBusyMap(map);
+      })
+      .catch(()=>{})
+      .finally(()=>setWeekBusyLoading(false));
+  },[tab,upcomingView,selectedDay]);
 
   const getWeekDays=(ref)=>{const d=new Date(ref+"T12:00:00");const dow=d.getDay();const mon=new Date(d);mon.setDate(d.getDate()-(dow===0?6:dow-1));return Array.from({length:7},(_,i)=>{const x=new Date(mon);x.setDate(mon.getDate()+i);return toDS(x);});};
   const getMonthGrid=(ym)=>{const[y,m]=ym.split("-").map(Number);const first=new Date(y,m-1,1);const last=new Date(y,m,0);const pad=first.getDay();const days=Array(pad).fill(null);for(let d=1;d<=last.getDate();d++)days.push(toDS(new Date(y,m-1,d)));while(days.length%7!==0)days.push(null);return days;};
@@ -2734,7 +2755,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                     <div style={{width:42,flexShrink:0,borderRight:"1px solid #f3f4f6",paddingTop:52,background:"#fafafa"}}>
                       {hours.map(h=>(
                         <div key={h} style={{height:HOUR_H,display:"flex",alignItems:"flex-start",justifyContent:"flex-end",paddingRight:6}}>
-                          <span style={{marginTop:-9,color:"#9ca3af",fontSize:"0.6rem",fontWeight:700,whiteSpace:"nowrap"}}>{fmtHour(h)}</span>
+                          <span style={{marginTop:-9,color:(h===17&&GRID_E>17)?"#f59e0b":"#9ca3af",fontSize:"0.6rem",fontWeight:700,whiteSpace:"nowrap"}}>{fmtHour(h)}</span>
                         </div>
                       ))}
                       <div style={{height:0,display:"flex",alignItems:"flex-start",justifyContent:"flex-end",paddingRight:6}}>
@@ -2749,13 +2770,20 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                       const isWeekday=dow>=1&&dow<=5;
                       const wdShort=d.toLocaleString("default",{weekday:"short"});
                       const allDayItems=[...dayPortal(day).map(l=>({...l,_c:false})),...dayCalItems(day).map((e,i)=>({...e,_c:true,_i:i}))];
-                      // Use the real scheduler logic (STANFORD_BLOCKS, Friday morning, today buffer, etc.)
-                      const schedSlotSet=new Set(getSlots(day,'public',60).map(sl=>Math.floor(sl.s/60)));
-                      // Available = schedulable per business rules AND not occupied by any event
-                      const availHours=[...schedSlotSet].filter(h=>{
+                      // Real availability: scheduler business rules filtered by ALL Google Calendar busy times
+                      const busyForDay=weekBusyMap[day]||[];
+                      const schedSlots=getSlots(day,'public',60).filter(sl=>{
+                        return!busyForDay.some(b=>{
+                          const bufA=b.bufferAfter||0;const bufB=b.bufferBefore||0;
+                          return sl.s<(b.endMins+bufA)&&sl.e>(b.startMins-bufB);
+                        });
+                      });
+                      const schedSlotSet=new Set(schedSlots.map(sl=>Math.floor(sl.s/60)));
+                      // Available = schedulable AND not occupied by portal/cal items
+                      const availHoursSet=new Set(schedSlots.map(sl=>Math.floor(sl.s/60)).filter(h=>{
                         const slotS=h*60,slotE=(h+1)*60;
                         return!allDayItems.some(item=>{const{s,e}=getItemStartEnd(item);if(s===null)return false;const ie=e||(s+60);return s<slotE&&ie>slotS;});
-                      });
+                      }));
                       return(
                         <div key={day} style={{flex:"1 1 0",minWidth:0,borderLeft:di===0?"none":"1px solid #e5e7eb"}}>
                           {/* Day header */}
@@ -2766,18 +2794,23 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                           </div>
                           {/* Grid body */}
                           <div style={{position:"relative",height:totalH}}>
-                            {/* Hour row backgrounds — gray when not schedulable, white when open */}
+                            {/* Hour rows — interactive for available slots; event blocks (zIndex:2) sit above so hover can't bleed */}
                             {hours.map(h=>{
                               const isSchedH=h<17&&schedSlotSet.has(h);
+                              const isAvailH=availHoursSet.has(h);
                               const rowBg=h>=17?"rgba(254,243,199,0.4)":isSchedH?"white":"#f4f4f5";
-                              return<div key={h} style={{position:"absolute",top:(h-GRID_S)*HOUR_H,height:HOUR_H,width:"100%",background:rowBg,borderBottom:"1px solid #efefef",pointerEvents:"none",zIndex:0}}/>;
+                              const is5pmBorder=h===16&&GRID_E>17;
+                              return(
+                                <div
+                                  key={h}
+                                  style={{position:"absolute",top:(h-GRID_S)*HOUR_H,height:HOUR_H,width:"100%",background:rowBg,borderBottom:is5pmBorder?"2px solid #fbbf24":"1px solid #e5e7eb",zIndex:0,cursor:isAvailH?"pointer":"default",transition:isAvailH?"background 0.12s":"none"}}
+                                  onClick={isAvailH?()=>setQuickBook({day,startMins:h*60}):undefined}
+                                  onMouseEnter={isAvailH?(ev)=>{ev.currentTarget.style.background="rgba(22,163,74,0.10)"}:undefined}
+                                  onMouseLeave={isAvailH?(ev)=>{ev.currentTarget.style.background=rowBg}:undefined}
+                                  title={isAvailH?"Open · "+fmtHour(h)+" – "+fmtHour(h+1)+" · click to book":undefined}
+                                />
+                              );
                             })}
-                            {/* 5pm boundary line */}
-                            {GRID_E>17&&<div style={{position:"absolute",top:(17-GRID_S)*HOUR_H,left:0,right:0,height:2,background:"#fbbf24",zIndex:3,pointerEvents:"none"}}/>}
-                            {/* Available booking slots — invisible until hover */}
-                            {availHours.map(h=>(
-                              <div key={"av"+h} onClick={()=>setQuickBook({day,startMins:h*60})} title={"Open · "+fmtHour(h)+" – "+fmtHour(h+1)+" · click to book"} style={{position:"absolute",top:(h-GRID_S)*HOUR_H,height:HOUR_H,left:0,right:0,cursor:"pointer",zIndex:1,transition:"background 0.1s"}} onMouseEnter={ev=>ev.currentTarget.style.background="rgba(22,163,74,0.09)"} onMouseLeave={ev=>ev.currentTarget.style.background="transparent"}/>
-                            ))}
                             {/* Event / lesson blocks */}
                             {allDayItems.map((item,i)=>{
                               const{s,e}=getItemStartEnd(item);
