@@ -2751,15 +2751,16 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 {/* Time grid — horizontally scrollable on mobile */}
                 <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch",paddingBottom:4,borderRadius:10,border:"1px solid #e5e7eb",background:"white"}}>
                   <div style={{display:"flex",minWidth:620}}>
-                    {/* Time axis */}
-                    <div style={{width:42,flexShrink:0,borderRight:"1px solid #f3f4f6",paddingTop:52,background:"#fafafa"}}>
-                      {hours.map(h=>(
-                        <div key={h} style={{position:"relative",height:HOUR_H}}>
-                          <span style={{position:"absolute",top:0,right:6,transform:"translateY(-50%)",color:(h===17&&GRID_E>17)?"#f59e0b":"#9ca3af",fontSize:"0.6rem",fontWeight:700,whiteSpace:"nowrap"}}>{fmtHour(h)}</span>
-                        </div>
-                      ))}
-                      <div style={{position:"relative",height:0}}>
-                        <span style={{position:"absolute",top:0,right:6,transform:"translateY(-50%)",color:"#9ca3af",fontSize:"0.6rem",fontWeight:700,whiteSpace:"nowrap"}}>{fmtHour(GRID_E)}</span>
+                    {/* Time axis — labels use the same absolute coordinate system as grid lines */}
+                    <div style={{width:42,flexShrink:0,borderRight:"1px solid #f3f4f6",background:"#fafafa"}}>
+                      {/* Header spacer — exactly matches day column header height */}
+                      <div style={{height:52}}/>
+                      {/* Label layer: position:relative + height:totalH mirrors the grid body exactly */}
+                      <div style={{position:"relative",height:totalH}}>
+                        {hours.map(h=>(
+                          <span key={h} style={{position:"absolute",top:(h-GRID_S)*HOUR_H,right:6,transform:"translateY(-50%)",color:(h===17&&GRID_E>17)?"#f59e0b":"#9ca3af",fontSize:"0.6rem",fontWeight:700,whiteSpace:"nowrap"}}>{fmtHour(h)}</span>
+                        ))}
+                        <span style={{position:"absolute",top:totalH,right:6,transform:"translateY(-50%)",color:"#9ca3af",fontSize:"0.6rem",fontWeight:700,whiteSpace:"nowrap"}}>{fmtHour(GRID_E)}</span>
                       </div>
                     </div>
                     {/* 7 day columns */}
