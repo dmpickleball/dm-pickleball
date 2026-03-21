@@ -1149,9 +1149,20 @@ function BookingPage({user,setPage,onAddLesson}){
               {lessonType==="group"&&<div>👥 Group: {[user.name,...groupMembers.slice(0,groupSize-1).map(m=>m.name)].join(", ")}</div>}
             </div>
           </div>
-          <div style={{background:"#fffbea",border:"1.5px solid #f4c430",borderRadius:8,padding:"10px 16px",marginBottom:20,fontSize:"0.85rem",color:"#7a5800"}}>
-            ⚠️ Cancellation Policy: Please cancel at least 24 hours before your lesson.
-          </div>
+          {(()=>{
+            const lh=Math.floor((slot?.s||0)/60),lm=(slot?.s||0)%60;
+            const lessonDt=new Date(date+"T"+String(lh).padStart(2,"0")+":"+String(lm).padStart(2,"0")+":00");
+            const within24=slot&&date&&((lessonDt-new Date())/(1000*60*60))<24;
+            return within24?(
+              <div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:8,padding:"12px 16px",marginBottom:20,fontSize:"0.85rem",color:"#991b1b",fontWeight:600}}>
+                ⚠️ This lesson is within 24 hours. You'll have 15 minutes after booking to cancel if it was accidental — after that, cancellation is closed.
+              </div>
+            ):(
+              <div style={{background:"#fffbea",border:"1.5px solid #f4c430",borderRadius:8,padding:"10px 16px",marginBottom:20,fontSize:"0.85rem",color:"#7a5800"}}>
+                ⚠️ Cancellation Policy: Please cancel at least 24 hours before your lesson.
+              </div>
+            );
+          })()}
           <div style={{display:"flex",gap:10}}>
             <button onClick={()=>setStep(3)} style={{flex:1,background:"white",border:"1.5px solid #e5e7eb",padding:"14px",borderRadius:50,fontWeight:600,cursor:"pointer",fontSize:"0.95rem"}}>← Back</button>
             <button onClick={handleBook} disabled={submitting} style={{flex:2,background:submitting?"#9ca3af":G,color:"white",border:"none",padding:"14px",borderRadius:50,fontWeight:700,cursor:submitting?"not-allowed":"pointer",fontSize:"0.95rem"}}>
@@ -1182,7 +1193,7 @@ function getEarnings(allLessons,mockUsers,range,customStart,customEnd){
   const rows=[];
   Object.entries(allLessons).forEach(([email,lessons])=>{
     const u=mockUsers[email]||{memberType:"public"};
-    lessons.filter(l=>l.status!=="cancelled"&&(new Date(l.date+"T23:59:59")<now||l.status==="completed")).forEach(l=>{
+    lessons.filter(l=>l.status!=="cancelled"&&l.status!=="cancelled_forgiven"&&(l.status==="late_cancel"||new Date(l.date+"T23:59:59")<now||l.status==="completed")).forEach(l=>{
       const d=new Date(l.date+"T12:00:00");
       const mins=getDurationMins(l.duration);
       let inRange=false;
@@ -1937,7 +1948,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
     Object.entries(allLessons).forEach(([email,lessons])=>{
       const u=mockUsers[email]||{};
       if(u.memberType!=="menlo")return;
-      lessons.filter(l=>l.status!=="cancelled"&&(isPast(l.date,l.time)||l.status==="completed")).forEach(l=>{
+      lessons.filter(l=>l.status!=="cancelled"&&l.status!=="cancelled_forgiven"&&(l.status==="late_cancel"||isPast(l.date,l.time)||l.status==="completed")).forEach(l=>{
         const d=new Date(l.date+"T12:00:00");
         if(d<start||d>end)return;
         const mins=parseInt(l.duration)||60;
@@ -2176,10 +2187,13 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                   {l.notes&&editingId!==l.id&&<div style={{background:"#f9f9f6",borderRadius:6,padding:"8px 12px",marginTop:8,fontSize:"0.85rem",color:"#374151"}}>{l.notes}</div>}
                 </div>
                 <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                  <span style={{background:l.status==="confirmed"?"#e8f0ee":l.status==="cancelled"?"#fef2f2":"#fffbea",color:l.status==="confirmed"?G:l.status==="cancelled"?"#dc2626":"#92400e",padding:"3px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>
-                    {l.status==="confirmed"?"✓ Confirmed":l.status==="cancelled"?"✕ Cancelled":"⏳ Pending"}
+                  <span style={{background:l.status==="confirmed"?"#e8f0ee":l.status==="late_cancel"?"#fff7ed":l.status==="cancelled_forgiven"?"#f3f4f6":l.status==="cancelled"?"#fef2f2":"#fffbea",color:l.status==="confirmed"?G:l.status==="late_cancel"?"#c2410c":l.status==="cancelled_forgiven"?"#6b7280":l.status==="cancelled"?"#dc2626":"#92400e",padding:"3px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>
+                    {l.status==="confirmed"?"✓ Confirmed":l.status==="cancelled"?"✕ Cancelled":l.status==="late_cancel"?"⚠️ Late Cancel":l.status==="cancelled_forgiven"?"✓ Forgiven":"⏳ Pending"}
                   </span>
-                  {l.status!=="cancelled"&&(
+                  {l.status==="late_cancel"&&(
+                    <button onClick={()=>onUpdateLesson(selectedStudent,l.id,{status:"cancelled_forgiven"})} style={{background:"white",color:"#6b7280",border:"1.5px solid #d1d5db",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>✓ Forgive</button>
+                  )}
+                  {l.status!=="cancelled"&&l.status!=="late_cancel"&&l.status!=="cancelled_forgiven"&&(
                     <>
                       <button onClick={()=>editingId===l.id?setEditingId(null):(setEditingId(l.id),setEditNotes(l.notes||""))} style={{background:editingId===l.id?"#f3f4f6":G,color:editingId===l.id?"#374151":"white",border:"none",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>
                         {editingId===l.id?"Cancel":"✏️ Notes"}
@@ -2455,11 +2469,14 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                   {l.isMenlo&&<span style={{background:G,color:"white",padding:"2px 8px",borderRadius:50,fontSize:"0.68rem",fontWeight:700}}>MCC</span>}
-                  <span style={{background:l.status==="confirmed"?"#e8f0ee":l.status==="cancelled"?"#fef2f2":"#fffbea",color:l.status==="confirmed"?G:l.status==="cancelled"?"#dc2626":"#92400e",padding:"3px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>
-                    {l.status==="confirmed"?"✓ Confirmed":l.status==="cancelled"?"✕ Cancelled":"⏳ Pending"}
+                  <span style={{background:l.status==="confirmed"?"#e8f0ee":l.status==="late_cancel"?"#fff7ed":l.status==="cancelled_forgiven"?"#f3f4f6":l.status==="cancelled"?"#fef2f2":"#fffbea",color:l.status==="confirmed"?G:l.status==="late_cancel"?"#c2410c":l.status==="cancelled_forgiven"?"#6b7280":l.status==="cancelled"?"#dc2626":"#92400e",padding:"3px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>
+                    {l.status==="confirmed"?"✓ Confirmed":l.status==="cancelled"?"✕ Cancelled":l.status==="late_cancel"?"⚠️ Late Cancel":l.status==="cancelled_forgiven"?"✓ Forgiven":"⏳ Pending"}
                   </span>
+                  {l.status==="late_cancel"&&(
+                    <button onClick={()=>onUpdateLesson(l.studentEmail,l.id,{status:"cancelled_forgiven"})} style={{background:"white",color:"#6b7280",border:"1.5px solid #d1d5db",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>✓ Forgive</button>
+                  )}
                   <button onClick={()=>{setSelectedStudent(l.studentEmail);setTab("students");}} style={{background:"none",border:"1.5px solid #e5e7eb",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:600,color:"#374151"}}>View Student</button>
-                  {l.status!=="cancelled"&&!isPast(l.date,l.time)&&(
+                  {l.status!=="cancelled"&&l.status!=="late_cancel"&&l.status!=="cancelled_forgiven"&&!isPast(l.date,l.time)&&(
                     <button onClick={()=>setConfirmCancel(l.id+l.studentEmail)} style={{background:"#fef2f2",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>✕ Cancel</button>
                   )}
                   {confirmCancel===l.id+l.studentEmail&&(
@@ -2623,8 +2640,9 @@ export default function App(){
     try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:"dmpickleball@gmail.com",_subject:"Lesson Cancelled: "+user.name+" - "+fmtDateShort(lesson.date),message:user.name+" has cancelled their lesson on "+fmtDateShort(lesson.date)+" at "+lesson.time+"."})});}catch(e){}
     if(lesson.partnerEmail){try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:lesson.partnerEmail,_subject:"Lesson Cancelled - "+fmtDateShort(lesson.date),message:"Hi,\n\n"+cancelMsg})});}catch(e){}}
     if(lesson.groupEmails){lesson.groupEmails.forEach(async email=>{if(email){try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email,_subject:"Lesson Cancelled - "+fmtDateShort(lesson.date),message:"Hi,\n\n"+cancelMsg})});}catch(e){}}});}
-    setAllLessons(prev=>({...prev,[user.email]:prev[user.email].map(l=>l.id===id?{...l,status:"cancelled"}:l)}));
-    try{await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:id,updates:{status:"cancelled",cancelled_by:"student",cancelled_at:new Date().toISOString()}})});}catch(e){console.error("Update lesson status error:",e);}
+    const cancelNow=new Date();const lDeadline=new Date(getLessonStart(lesson.date,lesson.time).getTime()-24*60*60*1000);const withinGrace=lesson.createdAt&&((cancelNow-new Date(lesson.createdAt))/60000)<15;const cancelStatus=(!withinGrace&&cancelNow>lDeadline)?"late_cancel":"cancelled";
+    setAllLessons(prev=>({...prev,[user.email]:prev[user.email].map(l=>l.id===id?{...l,status:cancelStatus}:l)}));
+    try{await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:id,updates:{status:cancelStatus,cancelled_by:"student",cancelled_at:cancelNow.toISOString()}})});}catch(e){console.error("Update lesson status error:",e);}
   };
   const adminCancel=async(email,id)=>{
     const lesson=(allLessons[email]||[]).find(l=>l.id===id);
@@ -2633,8 +2651,9 @@ export default function App(){
         await fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:lesson.gcalEventId})});
       }catch(e){console.error("Admin GCal cancel failed:",e);}
     }
-    setAllLessons(prev=>({...prev,[email]:prev[email].map(l=>l.id===id?{...l,status:"cancelled"}:l)}));
-    try{await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:id,updates:{status:"cancelled",cancelled_by:"admin",cancelled_at:new Date().toISOString()}})});}catch(e){console.error("Update lesson status error:",e);}
+    const cancelNow2=new Date();const lDeadline2=new Date(getLessonStart(lesson.date,lesson.time).getTime()-24*60*60*1000);const withinGrace2=lesson.createdAt&&((cancelNow2-new Date(lesson.createdAt))/60000)<15;const cancelStatus2=(!withinGrace2&&cancelNow2>lDeadline2)?"late_cancel":"cancelled";
+    setAllLessons(prev=>({...prev,[email]:prev[email].map(l=>l.id===id?{...l,status:cancelStatus2}:l)}));
+    try{await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:id,updates:{status:cancelStatus2,cancelled_by:"admin",cancelled_at:cancelNow2.toISOString()}})});}catch(e){console.error("Update lesson status error:",e);}
   };
   const addLesson=async lesson=>{
     try{
