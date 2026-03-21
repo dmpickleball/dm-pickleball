@@ -1341,8 +1341,11 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
   const typeColors={private:"#1a3c34",semi:"#0ea5e9",group:"#f97316",stanford_rec:"#8b5cf6",stanford_open:"#8b5cf6"};
   const calendarLessons=(financeData?.events||[]).filter(e=>!e.isStanford);
   const stanfordEvents=(financeData?.events||[]).filter(e=>e.isStanford);
+  const[calOverrides,setCalOverrides]=useState(()=>{try{return JSON.parse(localStorage.getItem("calPriceOverrides")||"{}")}catch{return{}}});
+  const adjustedCalLessons=calendarLessons.map(e=>{const k=e.date+"|"+e.summary;return calOverrides[k]!=null?{...e,earnings:calOverrides[k]}:e;});
+  const adjustedLessonEarnings=adjustedCalLessons.reduce((s,e)=>s+e.earnings,0);
   const stanfordAmt=includeStanford?(showNetStanford?(financeData?.stanfordNetEarnings||0):(financeData?.stanfordEarnings||0)):0;
-  const totalEarnings=(financeData?.lessonEarnings||0)+portalEarnings.total+stanfordAmt;
+  const totalEarnings=adjustedLessonEarnings+portalEarnings.total+stanfordAmt;
   return(
     <div>
       {/* Nial Export */}
@@ -1397,7 +1400,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
         </div>
         <div style={{background:"white",borderRadius:12,padding:"20px",border:"1.5px solid #e5e7eb"}}>
           <div style={{fontSize:"0.7rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Calendar Lessons</div>
-          <div style={{fontSize:"1.8rem",fontWeight:900,color:"#1a3c34"}}>${(financeData?.lessonEarnings||0).toFixed(2)}</div>
+          <div style={{fontSize:"1.8rem",fontWeight:900,color:"#1a3c34"}}>${adjustedLessonEarnings.toFixed(2)}</div>
           <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:4}}>{calendarLessons.length} lessons</div>
         </div>
         {includeStanford&&(
@@ -1417,17 +1420,24 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
               <div style={{fontSize:"0.8rem",fontWeight:700,color:"#1a3c34",textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Calendar Lessons</div>
               <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:"0.88rem"}}>
-                  <thead><tr style={{background:"#f9f9f6",borderBottom:"1.5px solid #e5e7eb"}}>{["Date","Event","Type","Hours","Earnings"].map(h=>(<th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#6b7280",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>))}</tr></thead>
+                  <thead><tr style={{background:"#f9f9f6",borderBottom:"1.5px solid #e5e7eb"}}>{["Date","Event","Type","Hours","Earnings",""].map(h=>(<th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#6b7280",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>))}</tr></thead>
                   <tbody>
-                    {calendarLessons.map((e,i)=>(
+                    {adjustedCalLessons.map((e,i)=>{
+                      const calKey=e.date+"|"+e.summary;
+                      const isOverridden=calOverrides[calKey]!=null;
+                      return(
                       <tr key={i} style={{borderBottom:"1px solid #f3f4f6"}}>
                         <td style={{padding:"12px 16px"}}>{fmtDateShort(e.date)}</td>
                         <td style={{padding:"12px 16px",maxWidth:180,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.summary}</td>
                         <td style={{padding:"12px 16px"}}><span style={{background:(typeColors[e.type]||"#666")+"22",color:typeColors[e.type]||"#666",padding:"2px 8px",borderRadius:50,fontSize:"0.72rem",fontWeight:700}}>{e.category}</span></td>
                         <td style={{padding:"12px 16px"}}>{e.hours}h</td>
-                        <td style={{padding:"12px 16px",fontWeight:700,color:"#1a3c34"}}>${e.earnings}</td>
+                        <td style={{padding:"12px 16px",fontWeight:700,color:isOverridden?"#0ea5e9":"#1a3c34"}}>${typeof e.earnings==="number"?e.earnings.toFixed(2):e.earnings}{isOverridden&&<span style={{fontSize:"0.7rem",color:"#0ea5e9",marginLeft:4}}>✎</span>}</td>
+                        <td style={{padding:"8px 12px",textAlign:"right"}}>
+                          <button onClick={()=>{editRowRef.current={...e,isCalendar:true,calKey};setEditPriceVal(String(e.earnings));dialogRef.current?.showModal();}} style={{background:G,color:"white",border:"none",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>Edit</button>
+                        </td>
                       </tr>
-                    ))}
+                    );})}
+
                   </tbody>
                 </table>
               </div>
@@ -1480,12 +1490,12 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
           )}
           <dialog ref={dialogRef} onClick={e=>{if(e.target===dialogRef.current)dialogRef.current.close();}} style={{border:"none",borderRadius:16,padding:"28px 32px",maxWidth:420,width:"90%",boxShadow:"0 8px 40px rgba(0,0,0,0.25)"}}>
             <div style={{fontWeight:800,fontSize:"1.05rem",marginBottom:4}}>Edit Lesson Income</div>
-            <div style={{fontSize:"0.85rem",color:"#6b7280",marginBottom:20}}>{editRowRef.current?.name} · {editRowRef.current?fmtDateShort(editRowRef.current.date):""} · {editRowRef.current?.duration}</div>
+            <div style={{fontSize:"0.85rem",color:"#6b7280",marginBottom:20}}>{editRowRef.current?.isCalendar?editRowRef.current?.summary:editRowRef.current?.name} · {editRowRef.current?fmtDateShort(editRowRef.current.date):""} · {editRowRef.current?.isCalendar?(editRowRef.current?.hours+"h"):editRowRef.current?.duration}</div>
             <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
               <span style={{fontSize:"1.1rem",color:"#6b7280",fontWeight:600}}>$</span>
               <input type="number" value={editPriceVal} onChange={e=>setEditPriceVal(e.target.value)} style={{...inp,marginBottom:0,fontSize:"1.1rem",fontWeight:700}} placeholder="0.00"/>
             </div>
-            {editRowRef.current&&<div style={{fontSize:"0.8rem",color:"#9ca3af",marginBottom:20}}>Default: ${getRate(editRowRef.current.type,parseInt(editRowRef.current.duration),editRowRef.current.isMenlo?"menlo":"public").toFixed(2)}</div>}
+            {editRowRef.current&&!editRowRef.current.isCalendar&&<div style={{fontSize:"0.8rem",color:"#9ca3af",marginBottom:20}}>Default: ${getRate(editRowRef.current.type,parseInt(editRowRef.current.duration),editRowRef.current.isMenlo?"menlo":"public").toFixed(2)}</div>}
             <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
               <button onClick={()=>dialogRef.current?.close()} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.88rem"}}>Cancel</button>
               <button onClick={async()=>{
@@ -1493,16 +1503,29 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                 if(!r)return;
                 const price=parseFloat(editPriceVal);
                 if(isNaN(price))return;
-                await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:r.id,updates:{custom_price:price}})});
-                onUpdateLesson(r.email,r.id,{customPrice:price});
+                if(r.isCalendar){
+                  const newOv={...calOverrides,[r.calKey]:price};
+                  setCalOverrides(newOv);
+                  localStorage.setItem("calPriceOverrides",JSON.stringify(newOv));
+                }else{
+                  await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:r.id,updates:{custom_price:price}})});
+                  onUpdateLesson(r.email,r.id,{customPrice:price});
+                }
                 dialogRef.current?.close();
               }} style={{background:G,color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.88rem"}}>Save</button>
-              {editRowRef.current&&editRowRef.current.gross!==getRate(editRowRef.current.type,parseInt(editRowRef.current.duration),editRowRef.current.isMenlo?"menlo":"public")&&(
+              {editRowRef.current&&(editRowRef.current.isCalendar?calOverrides[editRowRef.current.calKey]!=null:editRowRef.current.gross!==getRate(editRowRef.current.type,parseInt(editRowRef.current.duration),editRowRef.current.isMenlo?"menlo":"public"))&&(
                 <button onClick={async()=>{
                   const r=editRowRef.current;
                   if(!r)return;
-                  await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:r.id,updates:{custom_price:null}})});
-                  onUpdateLesson(r.email,r.id,{customPrice:null});
+                  if(r.isCalendar){
+                    const newOv={...calOverrides};
+                    delete newOv[r.calKey];
+                    setCalOverrides(newOv);
+                    localStorage.setItem("calPriceOverrides",JSON.stringify(newOv));
+                  }else{
+                    await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:r.id,updates:{custom_price:null}})});
+                    onUpdateLesson(r.email,r.id,{customPrice:null});
+                  }
                   dialogRef.current?.close();
                 }} style={{background:"white",border:"1.5px solid #e5e7eb",color:"#6b7280",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.88rem"}}>Reset to Default</button>
               )}
