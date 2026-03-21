@@ -1902,7 +1902,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[deactivatedSearch,setDeactivatedSearch]=useState("");
 
   const earnings=getEarnings(allLessons,mockUsers,earningsRange);
-  const allStudents=Object.keys(allLessons);
+  const allStudents=Object.keys(mockUsers);
   const sortedStudents=[...allStudents].sort((a,b)=>{
     const aLast=(mockUsers[a]?.name||a).split(" ").slice(-1)[0].toLowerCase();
     const bLast=(mockUsers[b]?.name||b).split(" ").slice(-1)[0].toLowerCase();
