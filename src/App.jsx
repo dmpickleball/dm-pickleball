@@ -1313,6 +1313,8 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
   const now=new Date();
   const[editRow,setEditRow]=useState(null);
   const[editPriceVal,setEditPriceVal]=useState("");
+  const dialogRef=useRef(null);
+  const editRowRef=useRef(null);
   const getDateRange=(range)=>{
     const end=new Date();
     let start=new Date();
@@ -1467,7 +1469,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                         <td style={{padding:"12px 16px"}}>{r.duration}</td>
                         <td style={{padding:"12px 16px",fontWeight:700,color:"#1a3c34"}}>${typeof r.net==="number"?r.net.toFixed(2):r.net}</td>
                         <td style={{padding:"8px 12px",textAlign:"right"}}>
-                          <button onClick={()=>{setEditRow(r);setEditPriceVal(String(r.gross));}} title="Edit price" style={{background:"white",color:"#6b7280",border:"1.5px solid #e5e7eb",padding:"4px 10px",borderRadius:6,cursor:"pointer",fontSize:"0.85rem",lineHeight:1}}>✏️</button>
+                          <button onClick={()=>{editRowRef.current=r;setEditPriceVal(String(r.gross));dialogRef.current?.showModal();}} title="Edit price" style={{background:"white",color:"#6b7280",border:"1.5px solid #e5e7eb",padding:"4px 10px",borderRadius:6,cursor:"pointer",fontSize:"0.85rem",lineHeight:1}}>✏️</button>
                         </td>
                       </tr>
                     ))}
@@ -1476,36 +1478,36 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
               </div>
             </div>
           )}
-          {editRow&&(
-            <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.45)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setEditRow(null)}>
-              <div style={{background:"white",borderRadius:16,padding:"28px 32px",maxWidth:420,width:"90%",boxShadow:"0 8px 40px rgba(0,0,0,0.18)"}} onClick={e=>e.stopPropagation()}>
-                <div style={{fontWeight:800,fontSize:"1.05rem",marginBottom:4}}>Edit Lesson Income</div>
-                <div style={{fontSize:"0.85rem",color:"#6b7280",marginBottom:20}}>{editRow.name} · {fmtDateShort(editRow.date)} · {editRow.duration}</div>
-                <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
-                  <span style={{fontSize:"1.1rem",color:"#6b7280",fontWeight:600}}>$</span>
-                  <input type="number" value={editPriceVal} onChange={e=>setEditPriceVal(e.target.value)} style={{...inp,marginBottom:0,fontSize:"1.1rem",fontWeight:700}} placeholder="0.00" autoFocus/>
-                </div>
-                <div style={{fontSize:"0.8rem",color:"#9ca3af",marginBottom:20}}>Default: ${getRate(editRow.type,parseInt(editRow.duration),editRow.isMenlo?"menlo":"public").toFixed(2)}</div>
-                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                  <button onClick={()=>setEditRow(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.88rem"}}>Cancel</button>
-                  <button onClick={async()=>{
-                    const price=parseFloat(editPriceVal);
-                    if(isNaN(price))return;
-                    await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:editRow.id,updates:{custom_price:price}})});
-                    onUpdateLesson(editRow.email,editRow.id,{customPrice:price});
-                    setEditRow(null);
-                  }} style={{background:G,color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.88rem"}}>Save</button>
-                  {editRow.gross!==getRate(editRow.type,parseInt(editRow.duration),editRow.isMenlo?"menlo":"public")&&(
-                    <button onClick={async()=>{
-                      await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:editRow.id,updates:{custom_price:null}})});
-                      onUpdateLesson(editRow.email,editRow.id,{customPrice:null});
-                      setEditRow(null);
-                    }} style={{background:"white",border:"1.5px solid #e5e7eb",color:"#6b7280",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.88rem"}}>Reset to Default</button>
-                  )}
-                </div>
-              </div>
+          <dialog ref={dialogRef} onClick={e=>{if(e.target===dialogRef.current)dialogRef.current.close();}} style={{border:"none",borderRadius:16,padding:"28px 32px",maxWidth:420,width:"90%",boxShadow:"0 8px 40px rgba(0,0,0,0.25)"}}>
+            <div style={{fontWeight:800,fontSize:"1.05rem",marginBottom:4}}>Edit Lesson Income</div>
+            <div style={{fontSize:"0.85rem",color:"#6b7280",marginBottom:20}}>{editRowRef.current?.name} · {editRowRef.current?fmtDateShort(editRowRef.current.date):""} · {editRowRef.current?.duration}</div>
+            <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
+              <span style={{fontSize:"1.1rem",color:"#6b7280",fontWeight:600}}>$</span>
+              <input type="number" value={editPriceVal} onChange={e=>setEditPriceVal(e.target.value)} style={{...inp,marginBottom:0,fontSize:"1.1rem",fontWeight:700}} placeholder="0.00"/>
             </div>
-          )}
+            {editRowRef.current&&<div style={{fontSize:"0.8rem",color:"#9ca3af",marginBottom:20}}>Default: ${getRate(editRowRef.current.type,parseInt(editRowRef.current.duration),editRowRef.current.isMenlo?"menlo":"public").toFixed(2)}</div>}
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              <button onClick={()=>dialogRef.current?.close()} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.88rem"}}>Cancel</button>
+              <button onClick={async()=>{
+                const r=editRowRef.current;
+                if(!r)return;
+                const price=parseFloat(editPriceVal);
+                if(isNaN(price))return;
+                await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:r.id,updates:{custom_price:price}})});
+                onUpdateLesson(r.email,r.id,{customPrice:price});
+                dialogRef.current?.close();
+              }} style={{background:G,color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.88rem"}}>Save</button>
+              {editRowRef.current&&editRowRef.current.gross!==getRate(editRowRef.current.type,parseInt(editRowRef.current.duration),editRowRef.current.isMenlo?"menlo":"public")&&(
+                <button onClick={async()=>{
+                  const r=editRowRef.current;
+                  if(!r)return;
+                  await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:r.id,updates:{custom_price:null}})});
+                  onUpdateLesson(r.email,r.id,{customPrice:null});
+                  dialogRef.current?.close();
+                }} style={{background:"white",border:"1.5px solid #e5e7eb",color:"#6b7280",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.88rem"}}>Reset to Default</button>
+              )}
+            </div>
+          </dialog>
           {calendarLessons.length===0&&portalEarnings.rows.length===0&&!financeLoading&&(
             <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"40px",textAlign:"center",color:"#9ca3af"}}>No earnings data found for this period.</div>
           )}
