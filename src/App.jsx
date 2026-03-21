@@ -1827,7 +1827,7 @@ function AdminCalendarView(){
     </div>
   );
 }
-function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,onApprove,onDeny,mockUsers,onAddStudent,onAddLesson,onToggleMenlo,onToggleSaturday,onBlockStudent}){
+function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,onApprove,onDeny,mockUsers,onAddStudent,onAddLesson,onToggleMenlo,onToggleSaturday,onBlockStudent,onDeleteStudent}){
   const[tab,setTab]=useState(pendingStudents.length>0?"pending":"students");
   const[studentSearch,setStudentSearch]=useState("");
   const[selectedStudent,setSelectedStudent]=useState(null);
@@ -1845,7 +1845,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[lessonFilter,setLessonFilter]=useState("upcoming");
   const[editingId,setEditingId]=useState(null);const[editPriceId,setEditPriceId]=useState(null);const[editPriceVal,setEditPriceVal]=useState("");
   const[editNotes,setEditNotes]=useState("");
-  const[confirmCancel,setConfirmCancel]=useState(null);const[confirmDelete,setConfirmDelete]=useState(null);
+  const[confirmCancel,setConfirmCancel]=useState(null);const[confirmDelete,setConfirmDelete]=useState(null);const[confirmDeleteStudent,setConfirmDeleteStudent]=useState(false);
   const[scheduleStep,setScheduleStep]=useState(1);
   const[schedLessonType,setSchedLessonType]=useState("private");
   const[schedDuration,setSchedDuration]=useState(60);
@@ -2040,7 +2040,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
               const upcoming=lessons.filter(l=>!isPast(l.date,l.time)&&l.status!=="cancelled");
               const completed=lessons.filter(l=>isPast(l.date,l.time)||l.status==="completed");
               return(
-                <div key={email} onClick={()=>{setSelectedStudent(email);setEditingStudent(false);setEditStudentData({});}} style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"16px 20px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8,transition:"all 0.15s"}}
+                <div key={email} onClick={()=>{setSelectedStudent(email);setEditingStudent(false);setEditStudentData({});setConfirmDeleteStudent(false);}} style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"16px 20px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8,transition:"all 0.15s"}}
                   onMouseEnter={e=>e.currentTarget.style.borderColor=G}
                   onMouseLeave={e=>e.currentTarget.style.borderColor="#e5e7eb"}>
                   <div style={{display:"flex",alignItems:"center",gap:14}}>
@@ -2068,7 +2068,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
 
       {tab==="students"&&selectedStudent&&!showSchedule&&(
         <div>
-          <button onClick={()=>{setSelectedStudent(null);setEditingStudent(false);setEditStudentData({});}} style={{background:"none",border:"none",color:G,fontWeight:700,cursor:"pointer",fontSize:"0.88rem",marginBottom:20,padding:0}}>← Back to Students</button>
+          <button onClick={()=>{setSelectedStudent(null);setEditingStudent(false);setEditStudentData({});setConfirmDeleteStudent(false);}} style={{background:"none",border:"none",color:G,fontWeight:700,cursor:"pointer",fontSize:"0.88rem",marginBottom:20,padding:0}}>← Back to Students</button>
           <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"24px",marginBottom:20}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12,marginBottom:20}}>
               <div style={{display:"flex",alignItems:"center",gap:16}}>
@@ -2120,7 +2120,20 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
               <button onClick={()=>onBlockStudent(selectedStudent)} style={{background:mockUsers[selectedStudent]?.blocked?"#dc2626":"white",color:mockUsers[selectedStudent]?.blocked?"white":"#dc2626",border:"1.5px solid #dc2626",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>
                 {mockUsers[selectedStudent]?.blocked?"Unblock":"Block Student"}
               </button>
+              <button onClick={()=>setConfirmDeleteStudent(true)} style={{background:"white",color:"#dc2626",border:"1.5px solid #dc2626",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>🗑 Delete Account</button>
             </div>
+            {confirmDeleteStudent&&(
+              <div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:10,padding:"14px 18px",marginTop:10,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+                <div>
+                  <div style={{fontWeight:700,color:"#991b1b",fontSize:"0.9rem"}}>Permanently delete this student account?</div>
+                  <div style={{fontSize:"0.8rem",color:"#b91c1c",marginTop:3}}>This cannot be undone. All portal data for {mockUsers[selectedStudent]?.name||selectedStudent} will be removed.</div>
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={()=>setConfirmDeleteStudent(false)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Keep it</button>
+                  <button onClick={async()=>{await onDeleteStudent(selectedStudent);setSelectedStudent(null);setConfirmDeleteStudent(false);}} style={{background:"#dc2626",color:"white",border:"none",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>Yes, Delete</button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Lesson History</div>
@@ -2638,6 +2651,11 @@ export default function App(){
   const toggleMenlo=email=>setMockUsersState(prev=>({...prev,[email]:{...prev[email],memberType:prev[email]?.memberType==="menlo"?"public":"menlo"}}));
   const toggleSaturday=email=>setMockUsersState(prev=>({...prev,[email]:{...prev[email],saturdayEnabled:!prev[email]?.saturdayEnabled}}));
   const blockStudent=email=>setMockUsersState(prev=>({...prev,[email]:{...prev[email],blocked:!prev[email]?.blocked}}));
+  const deleteStudent=async(email)=>{
+    await fetch("/api/students?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email})});
+    setMockUsersState(prev=>{const next={...prev};delete next[email];return next;});
+    setAllLessons(prev=>{const next={...prev};delete next[email];return next;});
+  };
   const logout=()=>{setUser(null);setIsAdmin(false);setPage("home");};
   if(isAdmin)return(
     <div style={{fontFamily:"Segoe UI,sans-serif",background:"#f4f9f6",minHeight:"100vh"}}>
@@ -2648,7 +2666,7 @@ export default function App(){
           <button onClick={logout} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.4)",color:"white",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem"}}>Log out</button>
         </div>
       </nav>
-      <AdminPanel allLessons={allLessons} onUpdateLesson={updateLesson} onCancelLesson={adminCancel} pendingStudents={pendingStudents} onApprove={approveStudent} onDeny={denyStudent} mockUsers={mockUsersState} onAddStudent={addStudent} onAddLesson={adminAddLesson} onToggleMenlo={toggleMenlo} onToggleSaturday={toggleSaturday} onBlockStudent={blockStudent}/>
+      <AdminPanel allLessons={allLessons} onUpdateLesson={updateLesson} onCancelLesson={adminCancel} pendingStudents={pendingStudents} onApprove={approveStudent} onDeny={denyStudent} mockUsers={mockUsersState} onAddStudent={addStudent} onAddLesson={adminAddLesson} onToggleMenlo={toggleMenlo} onToggleSaturday={toggleSaturday} onBlockStudent={blockStudent} onDeleteStudent={deleteStudent}/>
     </div>
   );
   return(

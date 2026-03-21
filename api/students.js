@@ -54,6 +54,15 @@ export default async function handler(req, res) {
     return res.status(200).json({ success: true });
   }
 
+  // POST delete student
+  if (req.method === 'POST' && action === 'delete') {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'email required' });
+    const { error } = await supabase.from('students').delete().eq('email', email.toLowerCase());
+    if (error) return res.status(500).json({ error: error.message });
+    return res.status(200).json({ success: true });
+  }
+
   // GET pending requests
   if (req.method === 'GET' && action === 'pending') {
     const { data, error } = await supabase.from('access_requests').select('*').eq('status', 'pending').order('requested_at', { ascending: true });
