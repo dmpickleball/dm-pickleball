@@ -1895,9 +1895,17 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[newStudent,setNewStudent]=useState({name:"",email:"",memberType:"public"});
   const[showDeactivated,setShowDeactivated]=useState(false);
   const[deactivatedSearch,setDeactivatedSearch]=useState("");
-  const[showCalendar,setShowCalendar]=useState(false);
+  const[showCalendar,setShowCalendar]=useState(true);
   const[calendarItems,setCalendarItems]=useState([]);
   const[calLoading,setCalLoading]=useState(false);
+  const[weather,setWeather]=useState(null);
+  const[upcomingView,setUpcomingView]=useState("week");
+  const[selectedDay,setSelectedDay]=useState(toDS(new Date()));
+  const[calMonth,setCalMonth]=useState(toDS(new Date()).slice(0,7));
+  const[pastSearch,setPastSearch]=useState("");
+  const[pastRangeStart,setPastRangeStart]=useState("");
+  const[pastRangeEnd,setPastRangeEnd]=useState("");
+  const[pastShowCancelled,setPastShowCancelled]=useState(true);
 
   const earnings=getEarnings(allLessons,mockUsers,earningsRange);
   const allStudents=Object.keys(mockUsers);
@@ -1918,8 +1926,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const cancelledStatuses2=["cancelled","late_cancel","cancelled_forgiven"];
   const filteredLessons=allLessonsList.filter(l=>{
     if(lessonFilter==="upcoming")return !isPast(l.date,l.time)&&!cancelledStatuses2.includes(l.status);
-    if(lessonFilter==="past")return (isPast(l.date,l.time)||l.status==="completed")&&!cancelledStatuses2.includes(l.status);
-    if(lessonFilter==="cancelled")return cancelledStatuses2.includes(l.status);
+    if(lessonFilter==="past")return isPast(l.date,l.time)||l.status==="completed"||cancelledStatuses2.includes(l.status);
     return true;
   });
 
@@ -1934,6 +1941,20 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
     }catch(e){console.error("Cal fetch:",e);setCalendarItems([]);}
     setCalLoading(false);
   };
+
+  useEffect(()=>{
+    fetch("https://api.open-meteo.com/v1/forecast?latitude=37.4853&longitude=-122.2364&current=temperature_2m,weather_code&temperature_unit=fahrenheit&timezone=America/Los_Angeles")
+      .then(r=>r.json()).then(d=>{
+        const code=d.current?.weather_code??0;const temp=Math.round(d.current?.temperature_2m??0);
+        const emoji=code===0?"☀️":code<=3?"⛅":code<=48?"🌫️":code<=55?"🌦️":code<=65?"🌧️":code<=75?"🌨️":code<=82?"🌦️":"⛈️";
+        const desc=code===0?"Clear":code<=3?"Partly Cloudy":code<=48?"Foggy":code<=55?"Drizzle":code<=65?"Rain":code<=75?"Snow":code<=82?"Showers":"Thunderstorms";
+        setWeather({temp,emoji,desc});
+      }).catch(()=>{});
+  },[]);
+  useEffect(()=>{if(tab==="lessons"&&calendarItems.length===0&&!calLoading)fetchCalendarItems();},[tab]);
+
+  const getWeekDays=(ref)=>{const d=new Date(ref+"T12:00:00");const dow=d.getDay();const mon=new Date(d);mon.setDate(d.getDate()-(dow===0?6:dow-1));return Array.from({length:7},(_,i)=>{const x=new Date(mon);x.setDate(mon.getDate()+i);return toDS(x);});};
+  const getMonthGrid=(ym)=>{const[y,m]=ym.split("-").map(Number);const first=new Date(y,m-1,1);const last=new Date(y,m,0);const pad=first.getDay();const days=Array(pad).fill(null);for(let d=1;d<=last.getDate();d++)days.push(toDS(new Date(y,m-1,d)));while(days.length%7!==0)days.push(null);return days;};
 
   const schedIsMenlo=selectedStudent&&mockUsers[selectedStudent]?.memberType==="menlo";
   const SCHED_PRICES={private:{60:schedIsMenlo?115:120,90:schedIsMenlo?172.50:180},semi:{60:schedIsMenlo?120:140,90:schedIsMenlo?180:210},group:{60:140,90:210}};
@@ -2478,124 +2499,257 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
         <AdminCalendarView/>
       )}
       {tab==="lessons"&&(()=>{
+        const todayStr=toDS(new Date());
         const upcomingCount=allLessonsList.filter(l=>!isPast(l.date,l.time)&&!cancelledStatuses2.includes(l.status)).length;
-        const pastCount=allLessonsList.filter(l=>(isPast(l.date,l.time)||l.status==="completed")&&!cancelledStatuses2.includes(l.status)).length;
-        const cancelledCount=allLessonsList.filter(l=>cancelledStatuses2.includes(l.status)).length;
-        // Merge calendar items when toggle is on and filter is upcoming
-        const showCal=showCalendar&&lessonFilter==="upcoming";
-        const calEntries=showCal?calendarItems.map(e=>({
-          _isCalendar:true,
-          date:e.date,
-          summary:e.summary,
-          category:e.category,
-          type:e.type,
-          hours:e.hours,
-          earnings:e.earnings,
-          location:e.location,
-        })):[];
-        // Merge and sort upcoming portal + calendar
-        const portalRows=filteredLessons.map(l=>({...l,_isCalendar:false}));
-        const mergedRows=showCal
-          ?[...portalRows,...calEntries].sort((a,b)=>new Date(a.date)-new Date(b.date))
-          :portalRows.sort((a,b)=>lessonFilter==="upcoming"?new Date(a.date)-new Date(b.date):new Date(b.date)-new Date(a.date));
-        return(
-        <div>
-          {/* Header row: filter pills left, calendar toggle right */}
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap",gap:10}}>
-            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-              {[["upcoming","Upcoming",upcomingCount],["past","Past",pastCount],["cancelled","Cancelled",cancelledCount],["all","All",allLessonsList.length]].map(([f,label,cnt])=>(
-                <button key={f} onClick={()=>setLessonFilter(f)} style={{background:lessonFilter===f?G:"white",color:lessonFilter===f?"white":"#374151",border:"1.5px solid "+(lessonFilter===f?G:"#e5e7eb"),padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:lessonFilter===f?700:500}}>
-                  {label} <span style={{opacity:0.7,fontSize:"0.75rem"}}>({cnt})</span>
-                </button>
-              ))}
+        const pastCount=allLessonsList.filter(l=>isPast(l.date,l.time)||l.status==="completed"||cancelledStatuses2.includes(l.status)).length;
+
+        // ── helper: render a portal lesson row ──────────────────────────────
+        const LessonRow=(l)=>(
+          <div key={l.id+l.studentEmail} style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"16px 20px",marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+            <div style={{display:"flex",alignItems:"center",gap:14}}>
+              <div style={{background:"#e8f0ee",borderRadius:10,padding:"10px 14px",textAlign:"center",minWidth:48}}>
+                <div style={{fontSize:"1.2rem",fontWeight:900,color:G,lineHeight:1}}>{new Date(l.date+"T12:00:00").getDate()}</div>
+                <div style={{fontSize:"0.6rem",fontWeight:700,color:"#6b7280",textTransform:"uppercase"}}>{new Date(l.date+"T12:00:00").toLocaleString("default",{month:"short"})}</div>
+              </div>
+              <div>
+                <div style={{fontWeight:700,fontSize:"0.95rem"}}>{l.studentName}</div>
+                <div style={{fontSize:"0.82rem",color:"#6b7280",marginTop:2}}>{l.type} · {l.duration} · {l.time}</div>
+                {l.focus&&<div style={{fontSize:"0.78rem",color:G,marginTop:2,fontWeight:600}}>🎯 {l.focus}</div>}
+              </div>
             </div>
-            {/* Calendar toggle — only meaningful on upcoming */}
-            <button onClick={async()=>{
-              const next=!showCalendar;
-              setShowCalendar(next);
-              if(next&&calendarItems.length===0)await fetchCalendarItems();
-            }} style={{display:"flex",alignItems:"center",gap:8,background:showCalendar?"#e8f0ee":"white",color:showCalendar?G:"#6b7280",border:"1.5px solid "+(showCalendar?G:"#e5e7eb"),padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:showCalendar?700:500,transition:"all 0.15s"}}>
-              {calLoading?<span style={{display:"inline-block",width:12,height:12,border:"2px solid "+G,borderTop:"2px solid transparent",borderRadius:"50%",animation:"spin 0.7s linear infinite"}}/>:"📅"}
-              <span>Calendar {showCalendar?"On":"Off"}</span>
-              <span style={{display:"inline-block",width:28,height:16,background:showCalendar?G:"#d1d5db",borderRadius:50,position:"relative",flexShrink:0,transition:"background 0.2s"}}>
-                <span style={{display:"inline-block",width:12,height:12,background:"white",borderRadius:"50%",position:"absolute",top:2,left:showCalendar?14:2,transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/>
+            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+              {l.isMenlo&&<span style={{background:G,color:"white",padding:"2px 8px",borderRadius:50,fontSize:"0.68rem",fontWeight:700}}>MCC</span>}
+              <span style={{background:l.status==="confirmed"?"#e8f0ee":l.status==="late_cancel"?"#fff7ed":l.status==="cancelled_forgiven"?"#f3f4f6":l.status==="cancelled"?"#fef2f2":"#fffbea",color:l.status==="confirmed"?G:l.status==="late_cancel"?"#c2410c":l.status==="cancelled_forgiven"?"#6b7280":l.status==="cancelled"?"#dc2626":"#92400e",padding:"3px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>
+                {l.status==="confirmed"?"✓ Confirmed":l.status==="cancelled"?"✕ Cancelled":l.status==="late_cancel"?"⚠️ Late Cancel":l.status==="cancelled_forgiven"?"✓ Forgiven":"⏳ Pending"}
               </span>
-            </button>
-          </div>
-
-          {/* Calendar banner info */}
-          {showCalendar&&lessonFilter!=="upcoming"&&(
-            <div style={{background:"#f0f9ff",border:"1.5px solid #bae6fd",borderRadius:10,padding:"10px 16px",marginBottom:16,fontSize:"0.83rem",color:"#0369a1",display:"flex",alignItems:"center",gap:8}}>
-              📅 Calendar events are shown when viewing <strong>Upcoming</strong> lessons.
-            </div>
-          )}
-
-          {mergedRows.length===0
-            ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"40px",textAlign:"center",color:"#9ca3af"}}>No lessons found.</div>
-            :mergedRows.map((l,idx)=>{
-              if(l._isCalendar){
-                // Calendar-only event row
-                const d=new Date(l.date+"T12:00:00");
-                return(
-                  <div key={"cal-"+idx} style={{background:"#fafffe",borderRadius:12,border:"1.5px solid #d1fae5",padding:"16px 20px",marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8,opacity:0.92}}>
-                    <div style={{display:"flex",alignItems:"center",gap:14}}>
-                      <div style={{background:"#d1fae5",borderRadius:10,padding:"10px 14px",textAlign:"center",minWidth:48}}>
-                        <div style={{fontSize:"1.2rem",fontWeight:900,color:"#065f46",lineHeight:1}}>{d.getDate()}</div>
-                        <div style={{fontSize:"0.6rem",fontWeight:700,color:"#6b7280",textTransform:"uppercase"}}>{d.toLocaleString("default",{month:"short"})}</div>
-                      </div>
-                      <div>
-                        <div style={{fontWeight:700,fontSize:"0.95rem",color:"#1a3c34"}}>{l.summary}</div>
-                        <div style={{fontSize:"0.82rem",color:"#6b7280",marginTop:2}}>{l.category}{l.hours?" · "+l.hours+"h":""}</div>
-                        {l.location&&<div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:2}}>📍 {l.location.split(",")[0]}</div>}
-                      </div>
+              {l.status==="late_cancel"&&<button onClick={()=>onUpdateLesson(l.studentEmail,l.id,{status:"cancelled_forgiven"})} style={{background:"white",color:"#6b7280",border:"1.5px solid #d1d5db",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>✓ Forgive</button>}
+              <button onClick={()=>{setSelectedStudent(l.studentEmail);setTab("students");}} style={{background:"none",border:"1.5px solid #e5e7eb",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:600,color:"#374151"}}>View Student</button>
+              {!cancelledStatuses2.includes(l.status)&&!isPast(l.date,l.time)&&<button onClick={()=>setConfirmCancel(l.id+l.studentEmail)} style={{background:"#fef2f2",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>✕ Cancel</button>}
+              {confirmCancel===l.id+l.studentEmail&&(
+                <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:999}}>
+                  <div style={{background:"white",borderRadius:16,padding:"28px 32px",maxWidth:400,width:"90%",boxShadow:"0 8px 32px rgba(0,0,0,0.2)"}}>
+                    <div style={{fontWeight:800,fontSize:"1rem",marginBottom:8}}>Cancel this lesson?</div>
+                    <div style={{fontSize:"0.88rem",color:"#6b7280",marginBottom:20}}>{l.studentName} · {fmtDateShort(l.date)} · {l.time}</div>
+                    <div style={{display:"flex",gap:10}}>
+                      <button onClick={()=>setConfirmCancel(null)} style={{flex:1,background:"white",border:"1.5px solid #e5e7eb",padding:"10px",borderRadius:50,cursor:"pointer",fontWeight:600}}>Keep it</button>
+                      <button onClick={async()=>{await onCancelLesson(l.studentEmail,l.id);setConfirmCancel(null);}} style={{flex:1,background:"#dc2626",color:"white",border:"none",padding:"10px",borderRadius:50,cursor:"pointer",fontWeight:700}}>Yes, Cancel</button>
                     </div>
-                    <span style={{background:"#d1fae5",color:"#065f46",padding:"3px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>📅 Calendar</span>
-                  </div>
-                );
-              }
-              // Portal lesson row
-              return(
-              <div key={l.id+l.studentEmail} style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"16px 20px",marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
-                <div style={{display:"flex",alignItems:"center",gap:14}}>
-                  <div style={{background:"#e8f0ee",borderRadius:10,padding:"10px 14px",textAlign:"center",minWidth:48}}>
-                    <div style={{fontSize:"1.2rem",fontWeight:900,color:G,lineHeight:1}}>{new Date(l.date+"T12:00:00").getDate()}</div>
-                    <div style={{fontSize:"0.6rem",fontWeight:700,color:"#6b7280",textTransform:"uppercase"}}>{new Date(l.date+"T12:00:00").toLocaleString("default",{month:"short"})}</div>
-                  </div>
-                  <div>
-                    <div style={{fontWeight:700,fontSize:"0.95rem"}}>{l.studentName}</div>
-                    <div style={{fontSize:"0.82rem",color:"#6b7280",marginTop:2}}>{l.type} · {l.duration} · {l.time}</div>
-                    {l.focus&&<div style={{fontSize:"0.78rem",color:G,marginTop:2,fontWeight:600}}>🎯 {l.focus}</div>}
                   </div>
                 </div>
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  {l.isMenlo&&<span style={{background:G,color:"white",padding:"2px 8px",borderRadius:50,fontSize:"0.68rem",fontWeight:700}}>MCC</span>}
-                  <span style={{background:l.status==="confirmed"?"#e8f0ee":l.status==="late_cancel"?"#fff7ed":l.status==="cancelled_forgiven"?"#f3f4f6":l.status==="cancelled"?"#fef2f2":"#fffbea",color:l.status==="confirmed"?G:l.status==="late_cancel"?"#c2410c":l.status==="cancelled_forgiven"?"#6b7280":l.status==="cancelled"?"#dc2626":"#92400e",padding:"3px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>
-                    {l.status==="confirmed"?"✓ Confirmed":l.status==="cancelled"?"✕ Cancelled":l.status==="late_cancel"?"⚠️ Late Cancel":l.status==="cancelled_forgiven"?"✓ Forgiven":"⏳ Pending"}
-                  </span>
-                  {l.status==="late_cancel"&&(
-                    <button onClick={()=>onUpdateLesson(l.studentEmail,l.id,{status:"cancelled_forgiven"})} style={{background:"white",color:"#6b7280",border:"1.5px solid #d1d5db",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>✓ Forgive</button>
-                  )}
-                  <button onClick={()=>{setSelectedStudent(l.studentEmail);setTab("students");}} style={{background:"none",border:"1.5px solid #e5e7eb",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:600,color:"#374151"}}>View Student</button>
-                  {!cancelledStatuses2.includes(l.status)&&!isPast(l.date,l.time)&&(
-                    <button onClick={()=>setConfirmCancel(l.id+l.studentEmail)} style={{background:"#fef2f2",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>✕ Cancel</button>
-                  )}
-                  {confirmCancel===l.id+l.studentEmail&&(
-                    <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.4)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:999}}>
-                      <div style={{background:"white",borderRadius:16,padding:"28px 32px",maxWidth:400,width:"90%",boxShadow:"0 8px 32px rgba(0,0,0,0.2)"}}>
-                        <div style={{fontWeight:800,fontSize:"1rem",marginBottom:8}}>Cancel this lesson?</div>
-                        <div style={{fontSize:"0.88rem",color:"#6b7280",marginBottom:20}}>{l.studentName} · {fmtDateShort(l.date)} · {l.time}</div>
-                        <div style={{display:"flex",gap:10}}>
-                          <button onClick={()=>setConfirmCancel(null)} style={{flex:1,background:"white",border:"1.5px solid #e5e7eb",padding:"10px",borderRadius:50,cursor:"pointer",fontWeight:600}}>Keep it</button>
-                          <button onClick={async()=>{await onCancelLesson(l.studentEmail,l.id);setConfirmCancel(null);}} style={{flex:1,background:"#dc2626",color:"white",border:"none",padding:"10px",borderRadius:50,cursor:"pointer",fontWeight:700}}>Yes, Cancel</button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+              )}
+            </div>
+          </div>
+        );
+
+        // ── helper: render a calendar event row ──────────────────────────────
+        const CalRow=(e,idx)=>{
+          const d=new Date(e.date+"T12:00:00");
+          return(
+            <div key={"cal-"+idx} style={{background:"#fafffe",borderRadius:12,border:"1.5px solid #d1fae5",padding:"16px 20px",marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+              <div style={{display:"flex",alignItems:"center",gap:14}}>
+                <div style={{background:"#d1fae5",borderRadius:10,padding:"10px 14px",textAlign:"center",minWidth:48}}>
+                  <div style={{fontSize:"1.2rem",fontWeight:900,color:"#065f46",lineHeight:1}}>{d.getDate()}</div>
+                  <div style={{fontSize:"0.6rem",fontWeight:700,color:"#6b7280",textTransform:"uppercase"}}>{d.toLocaleString("default",{month:"short"})}</div>
+                </div>
+                <div>
+                  <div style={{fontWeight:700,fontSize:"0.95rem",color:"#1a3c34"}}>{e.summary}</div>
+                  <div style={{fontSize:"0.82rem",color:"#6b7280",marginTop:2}}>{e.category}{e.hours?" · "+e.hours+"h":""}</div>
+                  {e.location&&<div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:2}}>📍 {e.location.split(",")[0]}</div>}
                 </div>
               </div>
-              );
-            })
-          }
+              <span style={{background:"#d1fae5",color:"#065f46",padding:"3px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>📅 Calendar</span>
+            </div>
+          );
+        };
+
+        return(
+        <div>
+          {/* ── Main filter tabs ── */}
+          <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}>
+            {[["upcoming","Upcoming",upcomingCount],["past","Past",pastCount],["all","All",allLessonsList.length]].map(([f,label,cnt])=>(
+              <button key={f} onClick={()=>setLessonFilter(f)} style={{background:lessonFilter===f?G:"white",color:lessonFilter===f?"white":"#374151",border:"1.5px solid "+(lessonFilter===f?G:"#e5e7eb"),padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:lessonFilter===f?700:500}}>
+                {label} <span style={{opacity:0.7,fontSize:"0.75rem"}}>({cnt})</span>
+              </button>
+            ))}
+          </div>
+
+          {/* ══════════════ UPCOMING VIEW ══════════════ */}
+          {lessonFilter==="upcoming"&&(()=>{
+            const weekDays=getWeekDays(selectedDay);
+            const monthGrid=getMonthGrid(calMonth);
+            const dayLessons=(day)=>allLessonsList.filter(l=>l.date===day&&!isPast(l.date,l.time)&&!cancelledStatuses2.includes(l.status));
+            const dayCalItems=(day)=>calendarItems.filter(e=>e.date===day);
+            const hasDayActivity=(day)=>dayLessons(day).length>0||dayCalItems(day).length>0;
+
+            const selPortal=allLessonsList.filter(l=>l.date===selectedDay&&!cancelledStatuses2.includes(l.status));
+            const selCal=calendarItems.filter(e=>e.date===selectedDay);
+            const merged=[...selPortal.map(l=>({...l,_c:false})),...selCal.map((e,i)=>({...e,_c:true,_i:i}))].sort((a,b)=>a.date.localeCompare(b.date));
+
+            const todayFull=new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"});
+            return(
+              <div>
+                {/* Weather + date banner */}
+                <div style={{background:"linear-gradient(135deg,#1a3c34 0%,#2d6a5e 100%)",borderRadius:14,padding:"18px 22px",marginBottom:16,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+                  <div>
+                    <div style={{color:"rgba(255,255,255,0.7)",fontSize:"0.78rem",fontWeight:600,textTransform:"uppercase",letterSpacing:1}}>Today</div>
+                    <div style={{color:"white",fontWeight:800,fontSize:"1.1rem",marginTop:2}}>{todayFull}</div>
+                  </div>
+                  {weather&&(
+                    <div style={{display:"flex",alignItems:"center",gap:10,background:"rgba(255,255,255,0.12)",borderRadius:12,padding:"10px 18px"}}>
+                      <span style={{fontSize:"2rem"}}>{weather.emoji}</span>
+                      <div>
+                        <div style={{color:"white",fontWeight:800,fontSize:"1.4rem",lineHeight:1}}>{weather.temp}°F</div>
+                        <div style={{color:"rgba(255,255,255,0.75)",fontSize:"0.78rem"}}>{weather.desc}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Day / Week / Month switcher */}
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:8}}>
+                  <div style={{display:"flex",gap:4,background:"#f3f4f6",padding:4,borderRadius:10}}>
+                    {[["day","Day"],["week","Week"],["month","Month"]].map(([v,lbl])=>(
+                      <button key={v} onClick={()=>{setUpcomingView(v);if(v==="day")setSelectedDay(todayStr);}} style={{background:upcomingView===v?"white":"transparent",color:upcomingView===v?G:"#6b7280",border:"none",padding:"6px 16px",borderRadius:8,cursor:"pointer",fontSize:"0.85rem",fontWeight:upcomingView===v?700:500,boxShadow:upcomingView===v?"0 1px 4px rgba(0,0,0,0.1)":"none",transition:"all 0.15s"}}>{lbl}</button>
+                    ))}
+                  </div>
+                  {upcomingView==="month"&&(
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <button onClick={()=>{const[y,m]=calMonth.split("-").map(Number);const prev=new Date(y,m-2,1);setCalMonth(toDS(prev).slice(0,7));}} style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"5px 10px",cursor:"pointer",fontWeight:700}}>‹</button>
+                      <span style={{fontWeight:700,fontSize:"0.9rem",color:G,minWidth:90,textAlign:"center"}}>{new Date(calMonth+"-15").toLocaleString("default",{month:"long",year:"numeric"})}</span>
+                      <button onClick={()=>{const[y,m]=calMonth.split("-").map(Number);const next=new Date(y,m,1);setCalMonth(toDS(next).slice(0,7));}} style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"5px 10px",cursor:"pointer",fontWeight:700}}>›</button>
+                    </div>
+                  )}
+                </div>
+
+                {/* DAY view */}
+                {upcomingView==="day"&&(
+                  <div>
+                    <div style={{fontWeight:700,color:"#374151",marginBottom:12,fontSize:"0.88rem"}}>
+                      {selectedDay===todayStr?"Today":""}
+                      {selectedDay===toDS(addDays(new Date(),1))?" Tomorrow":""}
+                      {selectedDay!==todayStr&&selectedDay!==toDS(addDays(new Date(),1))?fmtDate(selectedDay):""}
+                      {" — "}{merged.length} lesson{merged.length!==1?"s":""}
+                    </div>
+                    <div style={{display:"flex",gap:8,marginBottom:16}}>
+                      <button onClick={()=>setSelectedDay(toDS(addDays(new Date(selectedDay+"T12:00:00"),-1)))} style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"5px 12px",cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>‹ Prev</button>
+                      <button onClick={()=>setSelectedDay(todayStr)} style={{background:selectedDay===todayStr?G:"white",color:selectedDay===todayStr?"white":"#374151",border:"1.5px solid "+(selectedDay===todayStr?G:"#e5e7eb"),borderRadius:8,padding:"5px 12px",cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Today</button>
+                      <button onClick={()=>setSelectedDay(toDS(addDays(new Date(selectedDay+"T12:00:00"),1)))} style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"5px 12px",cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Next ›</button>
+                    </div>
+                    {merged.length===0
+                      ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"32px",textAlign:"center",color:"#9ca3af"}}>No lessons on {fmtDateShort(selectedDay)}.</div>
+                      :merged.map((l,i)=>l._c?CalRow(l,i):LessonRow(l))
+                    }
+                  </div>
+                )}
+
+                {/* WEEK view */}
+                {upcomingView==="week"&&(
+                  <div>
+                    {/* Week strip */}
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4,marginBottom:16}}>
+                      {weekDays.map(day=>{
+                        const d=new Date(day+"T12:00:00");
+                        const isToday=day===todayStr;const isSel=day===selectedDay;
+                        const hasItems=hasDayActivity(day);
+                        return(
+                          <button key={day} onClick={()=>setSelectedDay(day)} style={{background:isSel?G:isToday?"#e8f0ee":"white",color:isSel?"white":isToday?G:"#374151",border:"1.5px solid "+(isSel?G:isToday?G:"#e5e7eb"),borderRadius:10,padding:"8px 4px",cursor:"pointer",textAlign:"center",transition:"all 0.15s"}}>
+                            <div style={{fontSize:"0.65rem",fontWeight:600,opacity:0.75,textTransform:"uppercase"}}>{d.toLocaleString("default",{weekday:"short"})}</div>
+                            <div style={{fontSize:"1.1rem",fontWeight:800,lineHeight:1.2,marginTop:2}}>{d.getDate()}</div>
+                            <div style={{height:5,marginTop:4,display:"flex",justifyContent:"center"}}>
+                              {hasItems&&<span style={{width:5,height:5,borderRadius:"50%",background:isSel?"rgba(255,255,255,0.8)":G,display:"inline-block"}}/>}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {/* Selected day lessons */}
+                    <div style={{fontWeight:700,color:"#374151",marginBottom:10,fontSize:"0.88rem"}}>{fmtDate(selectedDay)} — {merged.length} lesson{merged.length!==1?"s":""}</div>
+                    {merged.length===0
+                      ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"28px",textAlign:"center",color:"#9ca3af"}}>No lessons on {fmtDateShort(selectedDay)}.</div>
+                      :merged.map((l,i)=>l._c?CalRow(l,i):LessonRow(l))
+                    }
+                  </div>
+                )}
+
+                {/* MONTH view */}
+                {upcomingView==="month"&&(
+                  <div>
+                    {/* Calendar grid header */}
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:4}}>
+                      {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d=>(
+                        <div key={d} style={{textAlign:"center",fontSize:"0.68rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",padding:"4px 0"}}>{d}</div>
+                      ))}
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:16}}>
+                      {monthGrid.map((day,i)=>{
+                        if(!day)return<div key={"empty-"+i}/>;
+                        const isToday=day===todayStr;const isSel=day===selectedDay;
+                        const hasItems=hasDayActivity(day);const isPastDay=day<todayStr;
+                        return(
+                          <button key={day} onClick={()=>setSelectedDay(day)} style={{background:isSel?G:isToday?"#e8f0ee":"white",color:isSel?"white":isPastDay?"#d1d5db":isToday?G:"#374151",border:"1.5px solid "+(isSel?G:isToday?G:"#e5e7eb"),borderRadius:8,padding:"6px 4px",cursor:"pointer",textAlign:"center",minHeight:40,transition:"all 0.15s",position:"relative"}}>
+                            <div style={{fontSize:"0.88rem",fontWeight:isSel||isToday?800:400}}>{new Date(day+"T12:00:00").getDate()}</div>
+                            {hasItems&&<span style={{position:"absolute",bottom:3,left:"50%",transform:"translateX(-50%)",width:5,height:5,borderRadius:"50%",background:isSel?"rgba(255,255,255,0.9)":G,display:"block"}}/>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div style={{fontWeight:700,color:"#374151",marginBottom:10,fontSize:"0.88rem"}}>{fmtDate(selectedDay)} — {merged.length} lesson{merged.length!==1?"s":""}</div>
+                    {merged.length===0
+                      ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"28px",textAlign:"center",color:"#9ca3af"}}>No lessons on {fmtDateShort(selectedDay)}.</div>
+                      :merged.map((l,i)=>l._c?CalRow(l,i):LessonRow(l))
+                    }
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* ══════════════ PAST VIEW ══════════════ */}
+          {lessonFilter==="past"&&(()=>{
+            const allPast=allLessonsList.filter(l=>isPast(l.date,l.time)||l.status==="completed"||cancelledStatuses2.includes(l.status));
+            const pastFiltered=allPast.filter(l=>{
+              if(!pastShowCancelled&&cancelledStatuses2.includes(l.status))return false;
+              if(pastSearch){const q=pastSearch.toLowerCase();if(!(l.studentName.toLowerCase().includes(q)||l.studentEmail.toLowerCase().includes(q)))return false;}
+              if(pastRangeStart&&l.date<pastRangeStart)return false;
+              if(pastRangeEnd&&l.date>pastRangeEnd)return false;
+              return true;
+            }).sort((a,b)=>new Date(b.date)-new Date(a.date));
+            return(
+              <div>
+                {/* Filters row */}
+                <div style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:12,padding:"14px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+                  <input value={pastSearch} onChange={e=>setPastSearch(e.target.value)} placeholder="Search by name…" style={{border:"1.5px solid #e5e7eb",borderRadius:8,padding:"7px 12px",fontSize:"0.85rem",outline:"none",flex:"1 1 140px",minWidth:120}}/>
+                  <div style={{display:"flex",alignItems:"center",gap:6}}>
+                    <input type="date" value={pastRangeStart} onChange={e=>setPastRangeStart(e.target.value)} style={{border:"1.5px solid #e5e7eb",borderRadius:8,padding:"6px 10px",fontSize:"0.82rem",outline:"none"}}/>
+                    <span style={{color:"#9ca3af",fontSize:"0.82rem"}}>to</span>
+                    <input type="date" value={pastRangeEnd} onChange={e=>setPastRangeEnd(e.target.value)} style={{border:"1.5px solid #e5e7eb",borderRadius:8,padding:"6px 10px",fontSize:"0.82rem",outline:"none"}}/>
+                    {(pastRangeStart||pastRangeEnd)&&<button onClick={()=>{setPastRangeStart("");setPastRangeEnd("");}} style={{background:"none",border:"none",color:"#9ca3af",cursor:"pointer",fontSize:"0.82rem",padding:"0 4px"}}>✕</button>}
+                  </div>
+                  <label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",fontSize:"0.85rem",color:"#374151",userSelect:"none",whiteSpace:"nowrap"}}>
+                    <div onClick={()=>setPastShowCancelled(p=>!p)} style={{width:32,height:18,background:pastShowCancelled?G:"#d1d5db",borderRadius:50,position:"relative",cursor:"pointer",transition:"background 0.2s"}}>
+                      <span style={{position:"absolute",top:2,left:pastShowCancelled?14:2,width:14,height:14,borderRadius:"50%",background:"white",transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/>
+                    </div>
+                    Show Cancelled
+                  </label>
+                </div>
+                <div style={{fontSize:"0.8rem",color:"#9ca3af",marginBottom:12}}>{pastFiltered.length} lesson{pastFiltered.length!==1?"s":""} found</div>
+                {pastFiltered.length===0
+                  ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"40px",textAlign:"center",color:"#9ca3af"}}>No past lessons found.</div>
+                  :pastFiltered.map(l=>LessonRow(l))
+                }
+              </div>
+            );
+          })()}
+
+          {/* ══════════════ ALL VIEW ══════════════ */}
+          {lessonFilter==="all"&&(
+            <div>
+              {allLessonsList.length===0
+                ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"40px",textAlign:"center",color:"#9ca3af"}}>No lessons found.</div>
+                :allLessonsList.map(l=>LessonRow(l))
+              }
+            </div>
+          )}
         </div>
         );
       })()}
