@@ -15,7 +15,7 @@ const DAVID_PHOTO  = "/images/david.jpg";         // was: 1773178886822_IMG_2962
 // 3. Replace mvzwanal below with your actual ID
 const FORMSPREE_ID = "mvzwanal";
 const GOOGLE_CLIENT_ID    = "708565807163-uu8teuc876ufboujut8vhdo34ro27v8s.apps.googleusercontent.com";
-const MICROSOFT_CLIENT_ID = ""; // Set up at portal.azure.com → App registrations
+const MICROSOFT_CLIENT_ID = "87bf204b-1326-4fa8-a616-3d5088714a4a";
 const YAHOO_CLIENT_ID     = ""; // Set up at developer.yahoo.com → My Apps
 
 
