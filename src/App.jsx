@@ -2841,7 +2841,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                               else{bg=isCancelled?"#fef2f2":"#e8f0ee";bd=isCancelled?"#fca5a5":G;tc=isCancelled?"#dc2626":G;lbl=item.studentName;}
                               timeStr=isPortal?item.time:(item.startTime+(item.endTime?" – "+item.endTime:""));
                               return(
-                                <div key={"ev"+i} style={{position:"absolute",top:Math.max(0,top)+1,left:2,right:2,height:ht,background:bg,border:"1.5px solid "+bd,borderRadius:6,padding:"3px 5px",overflow:"hidden",zIndex:2}}>
+                                <div key={"ev"+i} style={{position:"absolute",top:Math.max(0,top),left:2,right:2,height:ht,boxSizing:"border-box",background:bg,border:"1.5px solid "+bd,borderRadius:6,padding:"3px 5px",overflow:"hidden",zIndex:2}}>
                                   <div style={{fontSize:"0.64rem",fontWeight:700,color:tc,lineHeight:1.3,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{lbl}</div>
                                   {ht>28&&<div style={{fontSize:"0.58rem",color:tc,opacity:0.75,marginTop:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{timeStr}</div>}
                                 </div>
