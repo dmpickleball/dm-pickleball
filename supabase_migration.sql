@@ -16,7 +16,12 @@ ALTER TABLE access_requests
 ALTER TABLE students
   ADD COLUMN IF NOT EXISTS comm_email   TEXT NOT NULL DEFAULT '',
   ADD COLUMN IF NOT EXISTS skill_level  TEXT NOT NULL DEFAULT '',
-  ADD COLUMN IF NOT EXISTS dupr_rating  TEXT NOT NULL DEFAULT '';
+  ADD COLUMN IF NOT EXISTS dupr_rating  TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS auth_provider TEXT NOT NULL DEFAULT 'google';
+
+-- 3. access_requests: also track which provider they used
+ALTER TABLE access_requests
+  ADD COLUMN IF NOT EXISTS auth_provider TEXT NOT NULL DEFAULT 'google';
 
 -- Backfill first_name / last_name in students from existing name column
 -- (already present from previous migration, but just in case)

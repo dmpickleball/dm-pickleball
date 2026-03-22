@@ -14,7 +14,12 @@ const DAVID_PHOTO  = "/images/david.jpg";         // was: 1773178886822_IMG_2962
 // 2. Create a new form → copy the form ID (looks like "xrgvkpqz")
 // 3. Replace mvzwanal below with your actual ID
 const FORMSPREE_ID = "mvzwanal";
-const GOOGLE_CLIENT_ID = "708565807163-uu8teuc876ufboujut8vhdo34ro27v8s.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID    = "708565807163-uu8teuc876ufboujut8vhdo34ro27v8s.apps.googleusercontent.com";
+const APPLE_SERVICE_ID    = ""; // Set up at developer.apple.com → Certificates → Identifiers → Services IDs
+const MICROSOFT_CLIENT_ID = ""; // Set up at portal.azure.com → App registrations
+const YAHOO_CLIENT_ID     = ""; // Set up at developer.yahoo.com → My Apps
+
+function decodeJWT(token){try{const b64=token.split(".")[1].replace(/-/g,"+").replace(/_/g,"/");return JSON.parse(atob(b64));}catch(e){return null;}}
 
 // ─── THEME ───────────────────────────────────────────────────────────────────
 const G = "#1a3c34", Y = "#c0c0c0";
@@ -697,8 +702,19 @@ const USAPA_RATINGS=[
   {value:"5.5+",label:"5.5+",desc:"Professional / elite competitive"},
 ];
 
+// ─── Provider icon SVGs ───────────────────────────────────────────────────────
+const PROV_ICONS={
+  google:<svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>,
+  apple:<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>,
+  microsoft:<svg width="20" height="20" viewBox="0 0 24 24"><rect x="1" y="1" width="10" height="10" fill="#F25022"/><rect x="13" y="1" width="10" height="10" fill="#7FBA00"/><rect x="1" y="13" width="10" height="10" fill="#00A4EF"/><rect x="13" y="13" width="10" height="10" fill="#FFB900"/></svg>,
+  yahoo:<svg width="20" height="20" viewBox="0 0 24 24" fill="#6001D2"><path d="M0 4h5.5l3.5 6.5L12.5 4H18L10 16.5V22H7V16.5Z"/><circle cx="19" cy="19" r="3"/></svg>,
+};
+const PROV_LABELS={google:"Google",apple:"Apple",microsoft:"Microsoft",yahoo:"Yahoo"};
+const PROV_COLORS={google:"#4285F4",apple:"#000000",microsoft:"#00A4EF",yahoo:"#6001D2"};
+
 function LoginPage({onLogin,onAdminLogin}){
-  const[mode,setMode]=useState("login");
+  const[loadingProv,setLoadingProv]=useState(null);
+  const[providerInfo,setProviderInfo]=useState(null);
   const[firstName,setFirstName]=useState("");
   const[lastName,setLastName]=useState("");
   const[commEmail,setCommEmail]=useState("");
@@ -709,48 +725,61 @@ function LoginPage({onLogin,onAdminLogin}){
   const[duprRating,setDuprRating]=useState("");
   const[error,setError]=useState("");
   const[signedUp,setSignedUp]=useState(false);
-  const[loading,setLoading]=useState(false);
+
+  const handleAuthResult=async(provKey,info)=>{
+    const email=(info.email||"").toLowerCase();
+    if(!email){setLoadingProv(null);setError("Could not get email from "+PROV_LABELS[provKey]+". Please try another option.");return;}
+    window._pendingEmail=email;
+    try{
+      const r=await fetch("/api/students?action=get&email="+encodeURIComponent(email));
+      const data=await r.json();
+      if(!data.student){
+        setProviderInfo({...info,email,provider:provKey});
+        setFirstName(info.firstName||"");
+        setLastName(info.lastName||"");
+        setCommEmail(email);
+        setLoadingProv(null);
+        return;
+      }
+      if(!data.student.approved){setLoadingProv(null);setError("Your account is pending approval from David.");return;}
+      if(data.student.deactivated){setLoadingProv(null);setError("This account has been deactivated. Please contact David.");return;}
+      if(data.student.blocked){setLoadingProv(null);setError("Your account has been blocked. Please contact David.");return;}
+      setLoadingProv(null);
+      onLogin({email,name:data.student.name||(info.firstName+" "+info.lastName).trim(),firstName:data.student.first_name||info.firstName||"",lastName:data.student.last_name||info.lastName||"",commEmail:data.student.comm_email||"",memberType:data.student.member_type,approved:true,picture:info.picture||data.student.picture||"",phone:data.student.phone||"",homeCourt:data.student.home_court||"",city:data.student.city||"",skillLevel:data.student.skill_level||"",duprRating:data.student.dupr_rating||""});
+      fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,updates:{picture:info.picture||"",auth_provider:provKey}})}).catch(()=>{});
+    }catch(e){setLoadingProv(null);setError("Login failed. Please try again.");}
+  };
+
+  const openPopup=(url,name)=>window.open(url,name,"width=520,height=650,scrollbars=yes,resizable=yes");
 
   const handleGoogleLogin=()=>{
-    setLoading(true);
-    const params=new URLSearchParams({
-      client_id:GOOGLE_CLIENT_ID,
-      redirect_uri:window.location.origin,
-      response_type:"token",
-      scope:"email profile",
-      prompt:"select_account",
-    });
-    const popup=window.open("https://accounts.google.com/o/oauth2/v2/auth?"+params.toString(),"google-login","width=500,height=600,scrollbars=yes");
-    const timer=setInterval(()=>{
-      try{
-        if(popup.closed){clearInterval(timer);setLoading(false);return;}
-        const url=popup.location.href;
-        if(url.includes(window.location.origin)&&url.includes("access_token")){
-          clearInterval(timer);
-          const hash=new URLSearchParams(url.split("#")[1]);
-          const token=hash.get("access_token");
-          popup.close();
-          fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+token}})
-            .then(r=>r.json())
-            .then(async info=>{
-              const email=info.email.toLowerCase();window._pendingEmail=email;
-              try{
-                const r=await fetch("/api/students?action=get&email="+encodeURIComponent(email));
-                const data=await r.json();
-                if(!data.student){setLoading(false);setError("Your account is not approved yet. Please request access.");setMode("signup");return;}
-                if(!data.student.approved){setLoading(false);setError("Your account is pending approval from David.");return;}
-                if(data.student.deactivated){setLoading(false);setError("This account has been deactivated. Please contact David.");return;}
-                if(data.student.blocked){setLoading(false);setError("Your account has been blocked. Please contact David.");return;}
-                setLoading(false);
-                onLogin({email,name:data.student.name||info.name,firstName:data.student.first_name||"",lastName:data.student.last_name||"",commEmail:data.student.comm_email||"",memberType:data.student.member_type,approved:true,picture:info.picture,phone:data.student.phone,homeCourt:data.student.home_court,city:data.student.city||"",skillLevel:data.student.skill_level||"",duprRating:data.student.dupr_rating||""});
-                fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,updates:{picture:info.picture}})}).catch(()=>{});
-              }catch(e){setLoading(false);setError("Login failed. Please try again.");}
-            })
-            .catch(()=>{setLoading(false);setError("Google login failed. Please try again.");});
-        }
-      }catch(e){}
-    },500);
+    setLoadingProv("google");setError("");
+    const popup=openPopup("https://accounts.google.com/o/oauth2/v2/auth?"+new URLSearchParams({client_id:GOOGLE_CLIENT_ID,redirect_uri:window.location.origin,response_type:"token",scope:"email profile",prompt:"select_account"}).toString(),"glogin");
+    const t=setInterval(async()=>{try{if(popup.closed){clearInterval(t);setLoadingProv(null);return;}const url=popup.location.href;if(url.includes(window.location.origin)&&url.includes("access_token")){clearInterval(t);popup.close();const token=new URLSearchParams(url.split("#")[1]).get("access_token");const info=await(await fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+token}})).json();await handleAuthResult("google",{email:info.email,firstName:info.given_name||"",lastName:info.family_name||"",picture:info.picture||""});}}catch(e){}},500);
   };
+
+  const handleMicrosoftLogin=()=>{
+    if(!MICROSOFT_CLIENT_ID){setError("Microsoft sign-in is not yet configured. See PROVIDER_SETUP.md.");return;}
+    setLoadingProv("microsoft");setError("");
+    const popup=openPopup("https://login.microsoftonline.com/common/oauth2/v2.0/authorize?"+new URLSearchParams({client_id:MICROSOFT_CLIENT_ID,redirect_uri:window.location.origin,response_type:"token",scope:"openid profile email User.Read",prompt:"select_account"}).toString(),"mslogin");
+    const t=setInterval(async()=>{try{if(popup.closed){clearInterval(t);setLoadingProv(null);return;}const url=popup.location.href;if(url.includes(window.location.origin)&&url.includes("access_token")){clearInterval(t);popup.close();const token=new URLSearchParams(url.split("#")[1]).get("access_token");const info=await(await fetch("https://graph.microsoft.com/v1.0/me",{headers:{Authorization:"Bearer "+token}})).json();await handleAuthResult("microsoft",{email:info.mail||info.userPrincipalName||"",firstName:info.givenName||"",lastName:info.surname||"",picture:""});}}catch(e){}},500);
+  };
+
+  const handleAppleLogin=()=>{
+    if(!APPLE_SERVICE_ID){setError("Apple sign-in is not yet configured. See PROVIDER_SETUP.md.");return;}
+    setLoadingProv("apple");setError("");
+    const popup=openPopup("https://appleid.apple.com/auth/authorize?"+new URLSearchParams({client_id:APPLE_SERVICE_ID,redirect_uri:window.location.origin,response_type:"code id_token",response_mode:"fragment",scope:"name email",state:"ap"+(Date.now())}).toString(),"aplogin");
+    const t=setInterval(async()=>{try{if(popup.closed){clearInterval(t);setLoadingProv(null);return;}const url=popup.location.href;if(url.includes(window.location.origin)&&(url.includes("id_token")||url.includes("code="))){clearInterval(t);const hash=new URLSearchParams(url.split("#")[1]);popup.close();const payload=hash.get("id_token")?decodeJWT(hash.get("id_token")):null;const email=payload?.email||"";let firstName="",lastName="";try{const u=JSON.parse(decodeURIComponent(hash.get("user")||"{}"));firstName=u?.name?.firstName||"";lastName=u?.name?.lastName||"";}catch(e){}await handleAuthResult("apple",{email,firstName,lastName,picture:""});}}catch(e){}},500);
+  };
+
+  const handleYahooLogin=()=>{
+    if(!YAHOO_CLIENT_ID){setError("Yahoo sign-in is not yet configured. See PROVIDER_SETUP.md.");return;}
+    setLoadingProv("yahoo");setError("");
+    const popup=openPopup("https://api.login.yahoo.com/oauth2/request_auth?"+new URLSearchParams({client_id:YAHOO_CLIENT_ID,redirect_uri:window.location.origin,response_type:"token",scope:"openid profile email"}).toString(),"yhlogin");
+    const t=setInterval(async()=>{try{if(popup.closed){clearInterval(t);setLoadingProv(null);return;}const url=popup.location.href;if(url.includes(window.location.origin)&&url.includes("access_token")){clearInterval(t);popup.close();const token=new URLSearchParams(url.split("#")[1]).get("access_token");const info=await(await fetch("https://api.login.yahoo.com/openid/v1/userinfo",{headers:{Authorization:"Bearer "+token}})).json();await handleAuthResult("yahoo",{email:info.email||"",firstName:info.given_name||"",lastName:info.family_name||"",picture:info.picture||""});}}catch(e){}},500);
+  };
+
+  const HANDLERS={google:handleGoogleLogin,apple:handleAppleLogin,microsoft:handleMicrosoftLogin,yahoo:handleYahooLogin};
 
   if(signedUp)return(
     <div style={{maxWidth:440,margin:"80px auto",padding:"0 24px",textAlign:"center"}}>
@@ -758,7 +787,7 @@ function LoginPage({onLogin,onAdminLogin}){
         <div style={{fontSize:48,marginBottom:16}}>🎾</div>
         <h2 style={{color:G,marginBottom:10}}>Request Received!</h2>
         <p style={{color:"#6b7280",lineHeight:1.7}}>Thanks <strong>{firstName}</strong>! David will review your request and reach out once approved.</p>
-        <button onClick={()=>{setMode("login");setSignedUp(false);setError("");}} style={{marginTop:20,background:G,color:"white",border:"none",padding:"11px 28px",borderRadius:50,cursor:"pointer",fontWeight:700}}>Back to Login</button>
+        <button onClick={()=>{setProviderInfo(null);setSignedUp(false);setError("");}} style={{marginTop:20,background:G,color:"white",border:"none",padding:"11px 28px",borderRadius:50,cursor:"pointer",fontWeight:700}}>Back to Sign In</button>
       </div>
     </div>
   );
@@ -768,89 +797,64 @@ function LoginPage({onLogin,onAdminLogin}){
       <div style={{background:"white",borderRadius:16,padding:"36px 32px",boxShadow:"0 4px 24px rgba(0,0,0,0.08)"}}>
         <div style={{textAlign:"center",marginBottom:28}}>
           <div style={{fontSize:36,marginBottom:8}}>🏓</div>
-          <h2 style={{fontWeight:900,color:G}}>{mode==="login"?"Student Login":"Request Access"}</h2>
-          <p style={{color:"#6b7280",fontSize:"0.88rem",marginTop:6}}>{mode==="login"?"Sign in with your Google account":"Fill in your details to request access"}</p>
+          <h2 style={{fontWeight:900,color:G}}>{providerInfo?"Request Access":"Sign In"}</h2>
+          <p style={{color:"#6b7280",fontSize:"0.88rem",marginTop:6}}>{providerInfo?"Fill in your details to request access":"Sign in or request access to your account"}</p>
         </div>
         {error&&<div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:8,padding:"10px 14px",color:"#991b1b",fontSize:"0.88rem",marginBottom:16}}>{error}</div>}
-        {mode==="login"?(
-          <>
-            <button onClick={handleGoogleLogin} disabled={loading}
-              style={{width:"100%",background:loading?"#f3f4f6":"white",color:"#374151",border:"1.5px solid #e5e7eb",padding:"13px 20px",borderRadius:50,fontWeight:700,cursor:loading?"not-allowed":"pointer",fontSize:"0.95rem",display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:16}}>
-              {loading?(
-                <span>Connecting...</span>
-              ):(
-                <>
-                  <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-                  Sign in with Google
-                </>
-              )}
-            </button>
-            <div style={{textAlign:"center",fontSize:"0.85rem",color:"#6b7280"}}>
-              Don't have access? <span onClick={()=>{setMode("signup");setError("");}} style={{color:G,fontWeight:700,cursor:"pointer"}}>Request it here</span>
-            </div>
-          </>
+        {!providerInfo?(
+          <div style={{display:"flex",flexDirection:"column",gap:12}}>
+            {["google","apple","microsoft","yahoo"].map(pk=>(
+              <button key={pk} onClick={HANDLERS[pk]} disabled={!!loadingProv}
+                style={{width:"100%",background:loadingProv===pk?"#f3f4f6":"white",color:"#374151",border:"1.5px solid #e5e7eb",padding:"13px 20px",borderRadius:50,fontWeight:700,cursor:loadingProv?"not-allowed":"pointer",fontSize:"0.95rem",display:"flex",alignItems:"center",justifyContent:"center",gap:10,transition:"border-color 0.12s",opacity:loadingProv&&loadingProv!==pk?0.5:1}}
+                onMouseEnter={e=>{if(!loadingProv)e.currentTarget.style.borderColor=PROV_COLORS[pk];}}
+                onMouseLeave={e=>{e.currentTarget.style.borderColor="#e5e7eb";}}>
+                {loadingProv===pk?<span style={{color:"#6b7280"}}>Connecting…</span>:<>{PROV_ICONS[pk]}<span>Continue with {PROV_LABELS[pk]}</span></>}
+              </button>
+            ))}
+            <p style={{textAlign:"center",fontSize:"0.78rem",color:"#9ca3af",marginTop:4,lineHeight:1.6}}>New students: sign in above — if you don't have an account yet, we'll walk you through requesting access.</p>
+          </div>
         ):(
           <>
-            {/* Name row */}
+            <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#f0fdf4",border:"1.5px solid #86efac",borderRadius:10,marginBottom:18}}>
+              {PROV_ICONS[providerInfo.provider]}
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:700,fontSize:"0.82rem",color:"#166534"}}>Verified with {PROV_LABELS[providerInfo.provider]}</div>
+                <div style={{fontSize:"0.78rem",color:"#15803d",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{providerInfo.email}</div>
+              </div>
+              <button onClick={()=>{setProviderInfo(null);setError("");setFirstName("");setLastName("");setCommEmail("");setPhone("");setHomeCourt("");setSkillLevel("");setUseDupr(false);setDuprRating("");}} style={{background:"none",border:"none",color:"#6b7280",cursor:"pointer",fontSize:"0.78rem",fontWeight:600,whiteSpace:"nowrap"}}>✕ Change</button>
+            </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
               <input style={{...inp,marginBottom:0}} type="text" placeholder="First Name *" value={firstName} onChange={e=>setFirstName(e.target.value)}/>
               <input style={{...inp,marginBottom:0}} type="text" placeholder="Last Name *" value={lastName} onChange={e=>setLastName(e.target.value)}/>
             </div>
-            {/* Communication email */}
             <input style={inp} type="email" placeholder="Communication Email *" value={commEmail} onChange={e=>setCommEmail(e.target.value)}/>
-            <div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:-10,marginBottom:14,paddingLeft:2}}>Lesson confirmations & reminders will be sent here (separate from your Google login)</div>
+            <div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:-10,marginBottom:14,paddingLeft:2}}>Where lesson confirmations & reminders will be sent — editable any time</div>
             <input style={inp} type="tel" placeholder="Phone Number *" value={phone} onChange={e=>setPhone(e.target.value)}/>
             <LocationInput value={homeCourt} onChange={v=>setHomeCourt(v)} placeholder="Home Court (optional)" style={inp}/>
-            {/* Skill Rating — required: pick one */}
             <div style={{marginBottom:14}}>
               <div style={{fontSize:"0.78rem",fontWeight:700,color:"#374151",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Skill Rating <span style={{color:"#dc2626"}}>*</span></div>
-              {/* USAPA select */}
-              <select
-                value={skillLevel}
-                onChange={e=>setSkillLevel(e.target.value)}
-                disabled={useDupr}
-                style={{...inp,marginBottom:0,color:(!skillLevel||useDupr)?"#9ca3af":"#111827",opacity:useDupr?0.45:1,cursor:useDupr?"not-allowed":"pointer"}}
-              >
+              <select value={skillLevel} onChange={e=>setSkillLevel(e.target.value)} disabled={useDupr}
+                style={{...inp,marginBottom:0,color:(!skillLevel||useDupr)?"#9ca3af":"#111827",opacity:useDupr?0.45:1,cursor:useDupr?"not-allowed":"pointer"}}>
                 <option value="">Select rating…</option>
                 {USAPA_RATINGS.map(r=><option key={r.value} value={r.value}>{r.label} – {r.desc}</option>)}
               </select>
-              <div style={{display:"flex",alignItems:"center",margin:"10px 0 0",gap:0}}>
-                <div style={{flex:1,height:1,background:"#d1d5db"}}/>
-                <span style={{padding:"0 12px",fontSize:"0.78rem",color:"#9ca3af",fontWeight:600}}>OR</span>
-                <div style={{flex:1,height:1,background:"#d1d5db"}}/>
+              <div style={{display:"flex",alignItems:"center",margin:"10px 0 0"}}>
+                <div style={{flex:1,height:1,background:"#d1d5db"}}/><span style={{padding:"0 12px",fontSize:"0.78rem",color:"#9ca3af",fontWeight:600}}>OR</span><div style={{flex:1,height:1,background:"#d1d5db"}}/>
               </div>
-              {/* DUPR option */}
               <div style={{marginTop:10,padding:"12px 14px",background:useDupr?"#f0f4ff":"#f9fafb",borderRadius:10,border:useDupr?"1.5px solid #1b2a6b":"1.5px solid #e5e7eb",transition:"all 0.15s"}}>
                 <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",userSelect:"none"}}>
-                  <input
-                    type="checkbox"
-                    checked={useDupr}
-                    onChange={e=>{setUseDupr(e.target.checked);if(!e.target.checked)setDuprRating("");}}
-                    style={{width:17,height:17,accentColor:"#1b2a6b",cursor:"pointer"}}
-                  />
-                  <span style={{display:"flex",alignItems:"center",gap:8}}>
-                    <svg width="52" height="18" viewBox="0 0 520 180" xmlns="http://www.w3.org/2000/svg"><path d="M0 0h80q55 0 55 55v70q0 55-55 55H0Z" fill="#0a1551"/><path d="M25 25h40q30 0 30 30v70q0 30-30 30H25Z" fill="white"/><path d="M115 0h70v130q0 50-50 50h-20V155h15q25 0 25-25V0h-40Z" fill="#0a1551"/><path d="M225 0h60q50 0 50 50v30q0 50-50 50h-60Zm25 25v80h30q25 0 25-25V50q0-25-25-25Z" fill="#0a1551"/><path d="M350 0h60q50 0 50 50v10q0 35-25 45l30 75h-28l-27-70h-35v70h-25Zm25 25v60h30q25 0 25-20V45q0-20-25-20Z" fill="#0a1551"/></svg>
-                    <span style={{fontWeight:600,fontSize:"0.88rem",color:"#1b2a6b"}}>I have a DUPR rating</span>
-                  </span>
+                  <input type="checkbox" checked={useDupr} onChange={e=>{setUseDupr(e.target.checked);if(!e.target.checked)setDuprRating("");}} style={{width:17,height:17,accentColor:"#1b2a6b",cursor:"pointer"}}/>
+                  <span style={{fontWeight:700,fontSize:"0.9rem",color:"#1b2a6b",letterSpacing:1.5,fontFamily:"Arial,sans-serif"}}>DUPR</span>
+                  <span style={{fontWeight:600,fontSize:"0.88rem",color:"#374151"}}>I have a DUPR rating</span>
                 </label>
                 {useDupr&&(
                   <div style={{marginTop:10}}>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="2"
-                      max="8"
-                      placeholder="Enter your DUPR rating (e.g. 4.25)"
-                      value={duprRating}
-                      onChange={e=>setDuprRating(e.target.value)}
-                      style={{...inp,marginBottom:4}}
-                    />
-                    <div style={{fontSize:"0.73rem",color:"#9ca3af"}}>You can link your DUPR account after registration to keep your rating synced automatically.</div>
+                    <input type="number" step="0.01" min="2" max="8" placeholder="Enter your DUPR rating (e.g. 4.25)" value={duprRating} onChange={e=>setDuprRating(e.target.value)} style={{...inp,marginBottom:4}}/>
+                    <div style={{fontSize:"0.73rem",color:"#9ca3af"}}>You can link your DUPR account after registration to sync your rating automatically.</div>
                   </div>
                 )}
               </div>
             </div>
-            <p style={{fontSize:"0.82rem",color:"#6b7280",marginBottom:16,lineHeight:1.6}}>You will sign in with Google. Please provide your details so David can approve your account.</p>
             <button onClick={()=>{
               if(!firstName||!lastName){setError("First and last name are required.");return;}
               if(!commEmail||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(commEmail)){setError("A valid communication email is required.");return;}
@@ -858,22 +862,17 @@ function LoginPage({onLogin,onAdminLogin}){
               if(!useDupr&&!skillLevel){setError("Please select a skill rating or enter your DUPR rating.");return;}
               if(useDupr&&!duprRating){setError("Please enter your DUPR rating.");return;}
               const fullName=firstName.trim()+" "+lastName.trim();
-              fetch("/api/students?action=request",{
-                method:"POST",
-                headers:{"Content-Type":"application/json"},
-                body:JSON.stringify({email:window._pendingEmail||"",name:fullName,firstName:firstName.trim(),lastName:lastName.trim(),commEmail:commEmail.trim().toLowerCase(),phone,homeCourt,skillLevel:useDupr?"":skillLevel,duprRating:useDupr?duprRating:""})
+              fetch("/api/students?action=request",{method:"POST",headers:{"Content-Type":"application/json"},
+                body:JSON.stringify({email:providerInfo.email,name:fullName,firstName:firstName.trim(),lastName:lastName.trim(),commEmail:commEmail.trim().toLowerCase(),phone,homeCourt,skillLevel:useDupr?"":skillLevel,duprRating:useDupr?duprRating:"",authProvider:providerInfo.provider})
               }).then(r=>r.json()).then(data=>{
                 if(data.error==="already_exists"){setError("You already have an account. Please sign in.");return;}
                 if(data.error==="already_requested"){setError("You already have a pending request. David will be in touch.");return;}
-                fetch("https://formspree.io/f/"+FORMSPREE_ID,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:"dmpickleball@gmail.com",_subject:"New access request: "+fullName,message:fullName+" has requested access.\nGoogle Email: "+(window._pendingEmail||"")+"\nComm Email: "+commEmail+"\nPhone: "+phone+"\nHome Court: "+(homeCourt||"Not specified")+"\nSkill: "+(useDupr?"DUPR "+duprRating:skillLevel||"Not specified")+"\n\nApprove at: https://dmpickleball.com/admin"})}).catch(()=>{});
+                fetch("https://formspree.io/f/"+FORMSPREE_ID,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:"dmpickleball@gmail.com",_subject:"New access request: "+fullName,message:fullName+" has requested access.\nProvider: "+PROV_LABELS[providerInfo.provider]+"\nLogin Email: "+providerInfo.email+"\nComm Email: "+commEmail+"\nPhone: "+phone+"\nHome Court: "+(homeCourt||"Not specified")+"\nSkill: "+(useDupr?"DUPR "+duprRating:skillLevel||"Not specified")+"\n\nApprove at: https://dmpickleball.com/admin"})}).catch(()=>{});
                 setSignedUp(true);
               }).catch(()=>setSignedUp(true));
-            }} style={{width:"100%",background:G,color:"white",border:"none",padding:14,borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem",marginBottom:16}}>
+            }} style={{width:"100%",background:G,color:"white",border:"none",padding:14,borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem"}}>
               Request Access →
             </button>
-            <div style={{textAlign:"center",fontSize:"0.85rem",color:"#6b7280"}}>
-              Already approved? <span onClick={()=>{setMode("login");setError("");}} style={{color:G,fontWeight:700,cursor:"pointer"}}>Sign in</span>
-            </div>
           </>
         )}
       </div>

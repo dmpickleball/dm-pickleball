@@ -37,7 +37,7 @@ export default async function handler(req, res) {
 
   // POST request access
   if (req.method === 'POST' && action === 'request') {
-    const { email, name, firstName, lastName, commEmail, phone, homeCourt, skillLevel, duprRating } = req.body;
+    const { email, name, firstName, lastName, commEmail, phone, homeCourt, skillLevel, duprRating, authProvider } = req.body;
     if (!email || !name || !phone) return res.status(400).json({ error: 'Missing required fields' });
     const { data: existing } = await supabase.from('students').select('email').eq('email', email.toLowerCase()).single();
     if (existing) return res.status(400).json({ error: 'already_exists' });
@@ -53,6 +53,7 @@ export default async function handler(req, res) {
       home_court: homeCourt || '',
       skill_level: skillLevel || '',
       dupr_rating: duprRating || '',
+      auth_provider: authProvider || 'google',
     });
     if (error) return res.status(500).json({ error: error.message });
     return res.status(200).json({ success: true });
