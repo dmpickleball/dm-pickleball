@@ -1,22 +1,7 @@
 # Setting Up Sign-In Providers
 
-The app already has Google working. Follow these steps to activate Apple, Microsoft, and Yahoo.
-After adding a Client ID, set it in `src/App.jsx` near the top (look for `APPLE_SERVICE_ID`, `MICROSOFT_CLIENT_ID`, `YAHOO_CLIENT_ID`).
-
----
-
-## Apple Sign In
-
-1. Go to [developer.apple.com](https://developer.apple.com) → Account → Certificates, Identifiers & Profiles
-2. Click **Identifiers** → **+** → choose **Services IDs** → Continue
-3. Fill in Description (e.g. "DM Pickleball Web") and Identifier (e.g. `com.dmpickleball.web`)
-4. Enable **Sign In with Apple** → Configure
-5. Add your domain: `dmpickleball.com`
-6. Add Return URL: `https://dmpickleball.com` (must be HTTPS, exact match)
-7. Save → Register
-8. Copy the **Identifier** (e.g. `com.dmpickleball.web`) → paste as `APPLE_SERVICE_ID` in App.jsx
-
-**Note:** Apple only sends the user's name on the very first sign-in. After that, the name won't come through automatically — the student will just fill it in on the registration form.
+Google is already working. Follow these steps to activate Microsoft and Yahoo.
+After getting a Client ID, paste it into `src/App.jsx` near the top (look for `MICROSOFT_CLIENT_ID` and `YAHOO_CLIENT_ID`).
 
 ---
 
