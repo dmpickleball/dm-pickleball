@@ -801,54 +801,62 @@ function LoginPage({onLogin,onAdminLogin}){
             <div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:-10,marginBottom:14,paddingLeft:2}}>Lesson confirmations & reminders will be sent here (separate from your Google login)</div>
             <input style={inp} type="tel" placeholder="Phone Number *" value={phone} onChange={e=>setPhone(e.target.value)}/>
             <LocationInput value={homeCourt} onChange={v=>setHomeCourt(v)} placeholder="Home Court (optional)" style={inp}/>
-            {/* Skill Level */}
+            {/* Skill Rating — required: pick one */}
             <div style={{marginBottom:14}}>
-              <div style={{fontSize:"0.78rem",fontWeight:700,color:"#374151",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Skill Level (optional)</div>
+              <div style={{fontSize:"0.78rem",fontWeight:700,color:"#374151",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Skill Rating <span style={{color:"#dc2626"}}>*</span></div>
+              {/* USAPA select */}
               <select
                 value={skillLevel}
                 onChange={e=>setSkillLevel(e.target.value)}
                 disabled={useDupr}
                 style={{...inp,marginBottom:0,color:(!skillLevel||useDupr)?"#9ca3af":"#111827",opacity:useDupr?0.45:1,cursor:useDupr?"not-allowed":"pointer"}}
               >
-                <option value="">Select USAPA rating…</option>
+                <option value="">Select rating…</option>
                 {USAPA_RATINGS.map(r=><option key={r.value} value={r.value}>{r.label} – {r.desc}</option>)}
               </select>
-            </div>
-            {/* DUPR checkbox */}
-            <div style={{marginBottom:14,padding:"12px 14px",background:"#f9fafb",borderRadius:10,border:"1.5px solid #e5e7eb"}}>
-              <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",userSelect:"none"}}>
-                <input
-                  type="checkbox"
-                  checked={useDupr}
-                  onChange={e=>{setUseDupr(e.target.checked);if(!e.target.checked)setDuprRating("");}}
-                  style={{width:17,height:17,accentColor:"#111827",cursor:"pointer"}}
-                />
-                <span style={{display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{background:"#111827",color:"white",fontWeight:900,fontSize:"0.78rem",letterSpacing:1.5,padding:"2px 8px",borderRadius:4,fontFamily:"Arial,sans-serif"}}>DUPR</span>
-                  <span style={{fontWeight:600,fontSize:"0.88rem",color:"#374151"}}>I have a DUPR rating</span>
-                </span>
-              </label>
-              {useDupr&&(
-                <div style={{marginTop:10}}>
+              <div style={{display:"flex",alignItems:"center",margin:"10px 0 0",gap:0}}>
+                <div style={{flex:1,height:1,background:"#d1d5db"}}/>
+                <span style={{padding:"0 12px",fontSize:"0.78rem",color:"#9ca3af",fontWeight:600}}>OR</span>
+                <div style={{flex:1,height:1,background:"#d1d5db"}}/>
+              </div>
+              {/* DUPR option */}
+              <div style={{marginTop:10,padding:"12px 14px",background:useDupr?"#f0f4ff":"#f9fafb",borderRadius:10,border:useDupr?"1.5px solid #1b2a6b":"1.5px solid #e5e7eb",transition:"all 0.15s"}}>
+                <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",userSelect:"none"}}>
                   <input
-                    type="number"
-                    step="0.01"
-                    min="2"
-                    max="8"
-                    placeholder="Enter your DUPR rating (e.g. 4.25)"
-                    value={duprRating}
-                    onChange={e=>setDuprRating(e.target.value)}
-                    style={{...inp,marginBottom:4}}
+                    type="checkbox"
+                    checked={useDupr}
+                    onChange={e=>{setUseDupr(e.target.checked);if(!e.target.checked)setDuprRating("");}}
+                    style={{width:17,height:17,accentColor:"#1b2a6b",cursor:"pointer"}}
                   />
-                  <div style={{fontSize:"0.73rem",color:"#9ca3af"}}>You can link your DUPR account after registration to keep your rating synced automatically.</div>
-                </div>
-              )}
+                  <span style={{display:"flex",alignItems:"center",gap:8}}>
+                    <svg width="52" height="18" viewBox="0 0 520 180" xmlns="http://www.w3.org/2000/svg"><path d="M0 0h80q55 0 55 55v70q0 55-55 55H0Z" fill="#0a1551"/><path d="M25 25h40q30 0 30 30v70q0 30-30 30H25Z" fill="white"/><path d="M115 0h70v130q0 50-50 50h-20V155h15q25 0 25-25V0h-40Z" fill="#0a1551"/><path d="M225 0h60q50 0 50 50v30q0 50-50 50h-60Zm25 25v80h30q25 0 25-25V50q0-25-25-25Z" fill="#0a1551"/><path d="M350 0h60q50 0 50 50v10q0 35-25 45l30 75h-28l-27-70h-35v70h-25Zm25 25v60h30q25 0 25-20V45q0-20-25-20Z" fill="#0a1551"/></svg>
+                    <span style={{fontWeight:600,fontSize:"0.88rem",color:"#1b2a6b"}}>I have a DUPR rating</span>
+                  </span>
+                </label>
+                {useDupr&&(
+                  <div style={{marginTop:10}}>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="2"
+                      max="8"
+                      placeholder="Enter your DUPR rating (e.g. 4.25)"
+                      value={duprRating}
+                      onChange={e=>setDuprRating(e.target.value)}
+                      style={{...inp,marginBottom:4}}
+                    />
+                    <div style={{fontSize:"0.73rem",color:"#9ca3af"}}>You can link your DUPR account after registration to keep your rating synced automatically.</div>
+                  </div>
+                )}
+              </div>
             </div>
             <p style={{fontSize:"0.82rem",color:"#6b7280",marginBottom:16,lineHeight:1.6}}>You will sign in with Google. Please provide your details so David can approve your account.</p>
             <button onClick={()=>{
               if(!firstName||!lastName){setError("First and last name are required.");return;}
               if(!commEmail||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(commEmail)){setError("A valid communication email is required.");return;}
               if(!phone){setError("Phone number is required.");return;}
+              if(!useDupr&&!skillLevel){setError("Please select a skill rating or enter your DUPR rating.");return;}
+              if(useDupr&&!duprRating){setError("Please enter your DUPR rating.");return;}
               const fullName=firstName.trim()+" "+lastName.trim();
               fetch("/api/students?action=request",{
                 method:"POST",
@@ -964,7 +972,7 @@ function AccountPage({user,setPage,onUpdateUser}){
             <div style={{fontSize:"0.78rem",fontWeight:700,color:"#374151",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Skill Rating</div>
             {user.duprRating?(
               <div style={{display:"flex",alignItems:"center",gap:10}}>
-                <span style={{background:"#111827",color:"white",fontWeight:900,fontSize:"0.78rem",letterSpacing:1.5,padding:"2px 8px",borderRadius:4}}>DUPR</span>
+                <span style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"0.78rem",letterSpacing:1.5,padding:"2px 8px",borderRadius:4}}>DUPR</span>
                 <span style={{fontWeight:700,fontSize:"1rem"}}>{user.duprRating}</span>
                 <span style={{fontSize:"0.78rem",color:"#6b7280",marginLeft:4}}>· Contact David to update</span>
               </div>
@@ -2199,7 +2207,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 {student.phone&&<div style={{fontSize:"0.83rem",color:"#6b7280"}}>📱 {student.phone}{student.homeCourt?" · 🏓 "+student.homeCourt:""}</div>}
                 {(student.skillLevel||student.duprRating)&&(
                   <div style={{marginTop:4,display:"flex",alignItems:"center",gap:6}}>
-                    {student.duprRating?(<><span style={{background:"#111827",color:"white",fontWeight:900,fontSize:"0.72rem",letterSpacing:1,padding:"1px 6px",borderRadius:3}}>DUPR</span><span style={{fontSize:"0.83rem",fontWeight:700}}>{student.duprRating}</span></>):(<span style={{fontSize:"0.83rem",fontWeight:600,color:"#374151"}}>USAPA {student.skillLevel}</span>)}
+                    {student.duprRating?(<><span style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"0.72rem",letterSpacing:1,padding:"1px 6px",borderRadius:3}}>DUPR</span><span style={{fontSize:"0.83rem",fontWeight:700}}>{student.duprRating}</span></>):(<span style={{fontSize:"0.83rem",fontWeight:600,color:"#374151"}}>USAPA {student.skillLevel}</span>)}
                   </div>
                 )}
                 <div style={{marginTop:12,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
@@ -2330,7 +2338,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                       {mockUsers[selectedStudent]?.phone&&<div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>📱 {formatPhone(mockUsers[selectedStudent].phone)}</div>}
                       {mockUsers[selectedStudent]?.city&&<div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>📍 {mockUsers[selectedStudent].city}</div>}
                       {mockUsers[selectedStudent]?.homeCourt&&<div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>🏓 {mockUsers[selectedStudent].homeCourt}</div>}
-                      {mockUsers[selectedStudent]?.duprRating&&<div style={{fontSize:"0.83rem",marginTop:2,display:"flex",alignItems:"center",gap:5}}><span style={{background:"#111827",color:"white",fontWeight:900,fontSize:"0.7rem",letterSpacing:1,padding:"1px 5px",borderRadius:3}}>DUPR</span><span style={{fontWeight:700}}>{mockUsers[selectedStudent].duprRating}</span></div>}
+                      {mockUsers[selectedStudent]?.duprRating&&<div style={{fontSize:"0.83rem",marginTop:2,display:"flex",alignItems:"center",gap:5}}><span style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"0.7rem",letterSpacing:1,padding:"1px 5px",borderRadius:3}}>DUPR</span><span style={{fontWeight:700}}>{mockUsers[selectedStudent].duprRating}</span></div>}
                       {!mockUsers[selectedStudent]?.duprRating&&mockUsers[selectedStudent]?.skillLevel&&<div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>⭐ USAPA {mockUsers[selectedStudent].skillLevel}</div>}
                     </div>
                   )}
