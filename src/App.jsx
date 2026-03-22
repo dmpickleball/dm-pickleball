@@ -16,7 +16,7 @@ const DAVID_PHOTO  = "/images/david.jpg";         // was: 1773178886822_IMG_2962
 const FORMSPREE_ID = "mvzwanal";
 const GOOGLE_CLIENT_ID    = "708565807163-uu8teuc876ufboujut8vhdo34ro27v8s.apps.googleusercontent.com";
 const MICROSOFT_CLIENT_ID = "87bf204b-1326-4fa8-a616-3d5088714a4a";
-const YAHOO_CLIENT_ID     = "dj0yJmk9dEVscmI2TzNha0JVJmQ9WVdrOU5XOWFUMGo5WjBNbWNHbzlNQT09JnM9Y29uc3VtZXJzZWNyZXQmc3Y5MCZ4PTUy";
+const YAHOO_CLIENT_ID     = "dj0yJmk9dEVscml2TzNha0JVJmQ9WVdrOU5XOWFUMG95WjBNbWNHbzlNQT09JnM9Y29uc3VtZXJzZWNyZXQmc3Y9MCZ4PTUy";
 
 
 // ─── THEME ───────────────────────────────────────────────────────────────────
