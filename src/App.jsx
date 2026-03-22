@@ -2828,7 +2828,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                               if(s===null)return null;
                               const ie=e||(s+60);
                               const top=(s-GRID_S*60)/60*HOUR_H;
-                              const ht=Math.max((ie-s)/60*HOUR_H-2,22);
+                              const ht=Math.max((ie-s)/60*HOUR_H,16);
                               if(top>=totalH||top+ht<=0)return null;
                               const isPickupItem=item.isPickup;
                               const isStanfordItem=item.isStanford||((item.summary||"").toLowerCase().includes("stanford"));
