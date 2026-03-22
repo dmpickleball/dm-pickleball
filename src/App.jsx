@@ -765,14 +765,17 @@ function LoginPage({onLogin,onAdminLogin}){
   const handleYahooLogin=()=>{
     if(!YAHOO_CLIENT_ID){setError("Yahoo sign-in is not yet configured. See PROVIDER_SETUP.md.");return;}
     setLoadingProv("yahoo");setError("");
-    // Generate PKCE code verifier
+    // Open popup immediately (must be synchronous during user click)
+    const popup=openPopup("about:blank","yhlogin");
+    if(!popup){setLoadingProv(null);setError("Popup was blocked. Please allow popups for dmpickleball.com and try again.");return;}
+    // Generate PKCE code verifier synchronously
     const arr=new Uint8Array(32);crypto.getRandomValues(arr);
     const codeVerifier=btoa(String.fromCharCode(...arr)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=/g,"");
-    // Generate code challenge (SHA-256)
+    // Generate code challenge (SHA-256) then navigate popup
     crypto.subtle.digest("SHA-256",new TextEncoder().encode(codeVerifier)).then(hash=>{
       const codeChallenge=btoa(String.fromCharCode(...new Uint8Array(hash))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=/g,"");
       const redirectUri=window.location.origin;
-      const popup=openPopup("https://api.login.yahoo.com/oauth2/request_auth?"+new URLSearchParams({client_id:YAHOO_CLIENT_ID,redirect_uri:redirectUri,response_type:"code",scope:"openid profile email",code_challenge:codeChallenge,code_challenge_method:"S256"}).toString(),"yhlogin");
+      popup.location.href="https://api.login.yahoo.com/oauth2/request_auth?"+new URLSearchParams({client_id:YAHOO_CLIENT_ID,redirect_uri:redirectUri,response_type:"code",scope:"openid profile email",code_challenge:codeChallenge,code_challenge_method:"S256"}).toString();
       const t=setInterval(async()=>{try{if(popup.closed){clearInterval(t);setLoadingProv(null);return;}const url=popup.location.href;if(url.includes(redirectUri)&&url.includes("code=")){clearInterval(t);popup.close();const code=new URLSearchParams(url.split("?")[1]).get("code");const tokenRes=await fetch("/api/yahoo-token",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code,codeVerifier,redirectUri})});const tokenData=await tokenRes.json();if(!tokenData.access_token){setLoadingProv(null);setError("Yahoo token error: "+(tokenData.error||JSON.stringify(tokenData)));return;}const info=await(await fetch("https://api.login.yahoo.com/openid/v1/userinfo",{headers:{Authorization:"Bearer "+tokenData.access_token}})).json();await handleAuthResult("yahoo",{email:info.email||"",firstName:info.given_name||"",lastName:info.family_name||"",picture:info.picture||""});}}catch(e){clearInterval(t);setLoadingProv(null);setError("Yahoo sign-in failed: "+e.message);}},500);
     });
   };
