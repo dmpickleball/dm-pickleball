@@ -1889,6 +1889,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[schedGroupMembers,setSchedGroupMembers]=useState([{name:"",email:""},{name:"",email:""},{name:"",email:""}]);
   const[schedBusyTimes,setSchedBusyTimes]=useState([]);
   const[schedLoadingSlots,setSchedLoadingSlots]=useState(false);
+  const[schedQuickMins,setSchedQuickMins]=useState(null); // target startMins pre-filled from week view click
   const[schedSubmitting,setSchedSubmitting]=useState(false);const[schedCustomPrice,setSchedCustomPrice]=useState("");const[customLocation,setCustomLocation]=useState(false);const[schedLocation,setSchedLocation]=useState("");
   
   const[showAddStudent,setShowAddStudent]=useState(false);
@@ -2019,7 +2020,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
     const newLesson={id:Date.now(),date:schedDate,time:timeStr,type:lessonLabel,duration:schedDuration+" min",status:"confirmed",focus:schedFocus,notes:"",photos:[],videos:[],gcalEventId:eventId,customPrice:finalPrice};
     onAddLesson(selectedStudent,newLesson);
     setShowSchedule(false);
-    setScheduleStep(1);setSchedLessonType("private");setSchedDuration(60);setSchedDate("");setSchedSlot(null);setSchedSlotIdx(-1);setSchedFocus("");setSchedNotes("");setSchedBusyTimes([]);setSchedCustomPrice("");
+    setScheduleStep(1);setSchedLessonType("private");setSchedDuration(60);setSchedDate("");setSchedSlot(null);setSchedSlotIdx(-1);setSchedFocus("");setSchedNotes("");setSchedBusyTimes([]);setSchedCustomPrice("");setSchedQuickMins(null);
     setSchedSubmitting(false);
     alert("Lesson scheduled for "+student.name+"!");
   };
@@ -2448,7 +2449,17 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                   </div>
                 )}
               </div>
-              <button onClick={()=>setScheduleStep(2)} style={{width:"100%",background:G,color:"white",border:"none",padding:"13px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"0.95rem"}}>Next: Date & Time →</button>
+              <button onClick={()=>{
+                setScheduleStep(2);
+                // If launched from week-view quick-book, auto-select the pre-filled slot
+                if(schedQuickMins!==null&&schedDate&&schedBusyTimes!==undefined){
+                  const isMenlo=selectedStudent&&mockUsers[selectedStudent]?.memberType==="menlo";
+                  const slots=getSlots(schedDate,isMenlo?"menlo":"public",schedDuration).filter(sl=>!schedBusyTimes.some(b=>{const bufA=b.bufferAfter??30;const bufB=b.bufferBefore??30;return sl.s<(b.endMins+bufA)&&sl.e>(b.startMins-bufB);}));
+                  const idx=slots.findIndex(sl=>sl.s===schedQuickMins);
+                  if(idx>=0){setSchedSlot(slots[idx]);setSchedSlotIdx(idx);}
+                  setSchedQuickMins(null);
+                }
+              }} style={{width:"100%",background:G,color:"white",border:"none",padding:"13px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"0.95rem"}}>Next: Date & Time →</button>
             </div>
           )}
 
@@ -2746,25 +2757,21 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                         const em=ev.target.value;
                         const day=quickBook.day;
                         const startMins=quickBook.startMins;
-                        const isMenlo=mockUsers[em]?.memberType==="menlo";
-                        // Navigate to student + open schedule flow at step 2 with date pre-filled
+                        // Open at step 1 so lesson type/duration can be chosen first
+                        // Date is pre-filled; busy times pre-fetched in background;
+                        // slot auto-selects when "Next: Date & Time →" is clicked
                         setSelectedStudent(em);
                         setSchedDate(day);
-                        setScheduleStep(2);
+                        setSchedQuickMins(startMins);
+                        setScheduleStep(1);
                         setShowSchedule(true);
                         setTab("students");
                         setQuickBook(null);
-                        // Pre-fetch busy times then auto-select the clicked slot
+                        // Pre-fetch busy times in background so step 2 is instant
                         setSchedLoadingSlots(true);
                         fetch("/api/get-busy-times?date="+day)
                           .then(r=>r.json())
-                          .then(d=>{
-                            const busy=d.busy||[];
-                            setSchedBusyTimes(busy);
-                            const slots=getSlots(day,isMenlo?"menlo":"public",60).filter(sl=>!busy.some(b=>{const bufA=b.bufferAfter??30;const bufB=b.bufferBefore??30;return sl.s<(b.endMins+bufA)&&sl.e>(b.startMins-bufB);}));
-                            const idx=slots.findIndex(sl=>sl.s===startMins);
-                            if(idx>=0){setSchedSlot(slots[idx]);setSchedSlotIdx(idx);}
-                          })
+                          .then(d=>setSchedBusyTimes(d.busy||[]))
                           .catch(()=>setSchedBusyTimes([]))
                           .finally(()=>setSchedLoadingSlots(false));
                       }
