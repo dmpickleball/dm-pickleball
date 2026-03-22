@@ -2755,12 +2755,15 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                     <div style={{width:42,flexShrink:0,borderRight:"1px solid #f3f4f6",background:"#fafafa"}}>
                       {/* Header spacer: same height + borderBottom as day column header so grid bodies start at identical y */}
                       <div style={{height:52,borderBottom:"1px solid #e5e7eb",boxSizing:"border-box"}}/>
-                      {/* Label layer mirrors grid body exactly */}
+                      {/* Label layer mirrors grid body exactly.
+                          Labels sit ABOVE their grid line (Google/Apple Calendar convention).
+                          top = gridLineY - 1  +  translateY(-100%) = label bottom 1px above the line.
+                          No percentage-of-font-height math → zero sub-pixel drift. */}
                       <div style={{position:"relative",height:totalH}}>
                         {hours.map(h=>(
-                          <div key={h} style={{position:"absolute",top:(h-GRID_S)*HOUR_H,right:6,lineHeight:1,transform:"translateY(-50%)",color:(h===17&&GRID_E>17)?"#f59e0b":"#9ca3af",fontSize:"0.6rem",fontWeight:700,whiteSpace:"nowrap"}}>{fmtHour(h)}</div>
+                          <div key={h} style={{position:"absolute",top:(h-GRID_S)*HOUR_H-1,right:5,lineHeight:1,transform:"translateY(-100%)",color:(h===17&&GRID_E>17)?"#f59e0b":"#9ca3af",fontSize:"0.6rem",fontWeight:700,whiteSpace:"nowrap"}}>{fmtHour(h)}</div>
                         ))}
-                        <div style={{position:"absolute",top:totalH,right:6,lineHeight:1,transform:"translateY(-50%)",color:"#9ca3af",fontSize:"0.6rem",fontWeight:700,whiteSpace:"nowrap"}}>{fmtHour(GRID_E)}</div>
+                        <div style={{position:"absolute",top:totalH-1,right:5,lineHeight:1,transform:"translateY(-100%)",color:"#9ca3af",fontSize:"0.6rem",fontWeight:700,whiteSpace:"nowrap"}}>{fmtHour(GRID_E)}</div>
                       </div>
                     </div>
                     {/* 7 day columns */}
