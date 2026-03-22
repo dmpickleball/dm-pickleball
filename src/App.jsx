@@ -2751,16 +2751,16 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 {/* Time grid — horizontally scrollable on mobile */}
                 <div style={{overflowX:"auto",WebkitOverflowScrolling:"touch",paddingBottom:4,borderRadius:10,border:"1px solid #e5e7eb",background:"white"}}>
                   <div style={{display:"flex",minWidth:620}}>
-                    {/* Time axis — labels use the same absolute coordinate system as grid lines */}
+                    {/* Time axis — labels share exact coordinate system with grid lines */}
                     <div style={{width:42,flexShrink:0,borderRight:"1px solid #f3f4f6",background:"#fafafa"}}>
-                      {/* Header spacer — exactly matches day column header height */}
-                      <div style={{height:52}}/>
-                      {/* Label layer: position:relative + height:totalH mirrors the grid body exactly */}
+                      {/* Header spacer: same height + borderBottom as day column header so grid bodies start at identical y */}
+                      <div style={{height:52,borderBottom:"1px solid #e5e7eb",boxSizing:"border-box"}}/>
+                      {/* Label layer mirrors grid body exactly */}
                       <div style={{position:"relative",height:totalH}}>
                         {hours.map(h=>(
-                          <span key={h} style={{position:"absolute",top:(h-GRID_S)*HOUR_H,right:6,transform:"translateY(-50%)",color:(h===17&&GRID_E>17)?"#f59e0b":"#9ca3af",fontSize:"0.6rem",fontWeight:700,whiteSpace:"nowrap"}}>{fmtHour(h)}</span>
+                          <div key={h} style={{position:"absolute",top:(h-GRID_S)*HOUR_H,right:6,lineHeight:1,transform:"translateY(-50%)",color:(h===17&&GRID_E>17)?"#f59e0b":"#9ca3af",fontSize:"0.6rem",fontWeight:700,whiteSpace:"nowrap"}}>{fmtHour(h)}</div>
                         ))}
-                        <span style={{position:"absolute",top:totalH,right:6,transform:"translateY(-50%)",color:"#9ca3af",fontSize:"0.6rem",fontWeight:700,whiteSpace:"nowrap"}}>{fmtHour(GRID_E)}</span>
+                        <div style={{position:"absolute",top:totalH,right:6,lineHeight:1,transform:"translateY(-50%)",color:"#9ca3af",fontSize:"0.6rem",fontWeight:700,whiteSpace:"nowrap"}}>{fmtHour(GRID_E)}</div>
                       </div>
                     </div>
                     {/* 7 day columns */}
@@ -2788,7 +2788,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                       return(
                         <div key={day} style={{flex:"1 1 0",minWidth:0,borderLeft:di===0?"none":"1px solid #e5e7eb"}}>
                           {/* Day header */}
-                          <div style={{height:52,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:isToday?G:isWeekday?"white":"#f4f4f5",borderBottom:"1px solid #e5e7eb",padding:"4px 2px"}}>
+                          <div style={{height:52,boxSizing:"border-box",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:isToday?G:isWeekday?"white":"#f4f4f5",borderBottom:"1px solid #e5e7eb",padding:"4px 2px"}}>
                             <div style={{fontSize:"0.6rem",fontWeight:700,color:isToday?"rgba(255,255,255,0.7)":"#9ca3af",textTransform:"uppercase",letterSpacing:"0.04em"}}>{wdShort}</div>
                             <div style={{fontSize:"1.1rem",fontWeight:900,color:isToday?"white":"#374151",lineHeight:1.2}}>{d.getDate()}</div>
                             <div style={{fontSize:"0.55rem",color:isToday?"rgba(255,255,255,0.6)":"#9ca3af"}}>{d.toLocaleString("default",{month:"short"})}</div>
