@@ -684,11 +684,29 @@ function AdminLoginPage({onAdminLogin}){
     </div>
   );
 }
+const USAPA_RATINGS=[
+  {value:"1.0",label:"1.0",desc:"New to pickleball"},
+  {value:"1.5",label:"1.5",desc:"Learning basics, limited experience"},
+  {value:"2.0",label:"2.0",desc:"Developing strokes, short rallies"},
+  {value:"2.5",label:"2.5",desc:"Consistent medium-paced rallies"},
+  {value:"3.0",label:"3.0",desc:"Consistent groundstrokes, developing strategy"},
+  {value:"3.5",label:"3.5",desc:"More consistent, improving shot placement"},
+  {value:"4.0",label:"4.0",desc:"Powerful shots, advanced strategy, tournament-tested"},
+  {value:"4.5",label:"4.5",desc:"Strong player, competing at high level"},
+  {value:"5.0",label:"5.0",desc:"Tournament-level, mastered power & spin"},
+  {value:"5.5+",label:"5.5+",desc:"Professional / elite competitive"},
+];
+
 function LoginPage({onLogin,onAdminLogin}){
   const[mode,setMode]=useState("login");
-  const[name,setName]=useState("");
+  const[firstName,setFirstName]=useState("");
+  const[lastName,setLastName]=useState("");
+  const[commEmail,setCommEmail]=useState("");
   const[phone,setPhone]=useState("");
   const[homeCourt,setHomeCourt]=useState("");
+  const[skillLevel,setSkillLevel]=useState("");
+  const[useDupr,setUseDupr]=useState(false);
+  const[duprRating,setDuprRating]=useState("");
   const[error,setError]=useState("");
   const[signedUp,setSignedUp]=useState(false);
   const[loading,setLoading]=useState(false);
@@ -724,7 +742,7 @@ function LoginPage({onLogin,onAdminLogin}){
                 if(data.student.deactivated){setLoading(false);setError("This account has been deactivated. Please contact David.");return;}
                 if(data.student.blocked){setLoading(false);setError("Your account has been blocked. Please contact David.");return;}
                 setLoading(false);
-                onLogin({email,name:data.student.name||info.name,memberType:data.student.member_type,approved:true,picture:info.picture,phone:data.student.phone,homeCourt:data.student.home_court,city:data.student.city||""});
+                onLogin({email,name:data.student.name||info.name,firstName:data.student.first_name||"",lastName:data.student.last_name||"",commEmail:data.student.comm_email||"",memberType:data.student.member_type,approved:true,picture:info.picture,phone:data.student.phone,homeCourt:data.student.home_court,city:data.student.city||"",skillLevel:data.student.skill_level||"",duprRating:data.student.dupr_rating||""});
                 fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,updates:{picture:info.picture}})}).catch(()=>{});
               }catch(e){setLoading(false);setError("Login failed. Please try again.");}
             })
@@ -739,7 +757,7 @@ function LoginPage({onLogin,onAdminLogin}){
       <div style={{background:"white",borderRadius:16,padding:40,boxShadow:"0 4px 24px rgba(0,0,0,0.08)"}}>
         <div style={{fontSize:48,marginBottom:16}}>🎾</div>
         <h2 style={{color:G,marginBottom:10}}>Request Received!</h2>
-        <p style={{color:"#6b7280",lineHeight:1.7}}>Thanks <strong>{name}</strong>! David will review your request and reach out once approved.</p>
+        <p style={{color:"#6b7280",lineHeight:1.7}}>Thanks <strong>{firstName}</strong>! David will review your request and reach out once approved.</p>
         <button onClick={()=>{setMode("login");setSignedUp(false);setError("");}} style={{marginTop:20,background:G,color:"white",border:"none",padding:"11px 28px",borderRadius:50,cursor:"pointer",fontWeight:700}}>Back to Login</button>
       </div>
     </div>
@@ -773,20 +791,73 @@ function LoginPage({onLogin,onAdminLogin}){
           </>
         ):(
           <>
-            <input style={inp} type="text" placeholder="Full Name (required)" value={name} onChange={e=>setName(e.target.value)}/>
-            <input style={inp} type="tel" placeholder="Phone Number (required)" value={phone} onChange={e=>setPhone(e.target.value)}/>
+            {/* Name row */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
+              <input style={{...inp,marginBottom:0}} type="text" placeholder="First Name *" value={firstName} onChange={e=>setFirstName(e.target.value)}/>
+              <input style={{...inp,marginBottom:0}} type="text" placeholder="Last Name *" value={lastName} onChange={e=>setLastName(e.target.value)}/>
+            </div>
+            {/* Communication email */}
+            <input style={inp} type="email" placeholder="Communication Email *" value={commEmail} onChange={e=>setCommEmail(e.target.value)}/>
+            <div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:-10,marginBottom:14,paddingLeft:2}}>Lesson confirmations & reminders will be sent here (separate from your Google login)</div>
+            <input style={inp} type="tel" placeholder="Phone Number *" value={phone} onChange={e=>setPhone(e.target.value)}/>
             <LocationInput value={homeCourt} onChange={v=>setHomeCourt(v)} placeholder="Home Court (optional)" style={inp}/>
+            {/* Skill Level */}
+            <div style={{marginBottom:14}}>
+              <div style={{fontSize:"0.78rem",fontWeight:700,color:"#374151",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Skill Level (optional)</div>
+              <select
+                value={skillLevel}
+                onChange={e=>setSkillLevel(e.target.value)}
+                disabled={useDupr}
+                style={{...inp,marginBottom:0,color:(!skillLevel||useDupr)?"#9ca3af":"#111827",opacity:useDupr?0.45:1,cursor:useDupr?"not-allowed":"pointer"}}
+              >
+                <option value="">Select USAPA rating…</option>
+                {USAPA_RATINGS.map(r=><option key={r.value} value={r.value}>{r.label} – {r.desc}</option>)}
+              </select>
+            </div>
+            {/* DUPR checkbox */}
+            <div style={{marginBottom:14,padding:"12px 14px",background:"#f9fafb",borderRadius:10,border:"1.5px solid #e5e7eb"}}>
+              <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",userSelect:"none"}}>
+                <input
+                  type="checkbox"
+                  checked={useDupr}
+                  onChange={e=>{setUseDupr(e.target.checked);if(!e.target.checked)setDuprRating("");}}
+                  style={{width:17,height:17,accentColor:"#111827",cursor:"pointer"}}
+                />
+                <span style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{background:"#111827",color:"white",fontWeight:900,fontSize:"0.78rem",letterSpacing:1.5,padding:"2px 8px",borderRadius:4,fontFamily:"Arial,sans-serif"}}>DUPR</span>
+                  <span style={{fontWeight:600,fontSize:"0.88rem",color:"#374151"}}>I have a DUPR rating</span>
+                </span>
+              </label>
+              {useDupr&&(
+                <div style={{marginTop:10}}>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="2"
+                    max="8"
+                    placeholder="Enter your DUPR rating (e.g. 4.25)"
+                    value={duprRating}
+                    onChange={e=>setDuprRating(e.target.value)}
+                    style={{...inp,marginBottom:4}}
+                  />
+                  <div style={{fontSize:"0.73rem",color:"#9ca3af"}}>You can link your DUPR account after registration to keep your rating synced automatically.</div>
+                </div>
+              )}
+            </div>
             <p style={{fontSize:"0.82rem",color:"#6b7280",marginBottom:16,lineHeight:1.6}}>You will sign in with Google. Please provide your details so David can approve your account.</p>
             <button onClick={()=>{
-              if(!name||!phone){setError("Name and phone number are required.");return;}
+              if(!firstName||!lastName){setError("First and last name are required.");return;}
+              if(!commEmail||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(commEmail)){setError("A valid communication email is required.");return;}
+              if(!phone){setError("Phone number is required.");return;}
+              const fullName=firstName.trim()+" "+lastName.trim();
               fetch("/api/students?action=request",{
                 method:"POST",
                 headers:{"Content-Type":"application/json"},
-                body:JSON.stringify({email:window._pendingEmail||"",name,phone,homeCourt})
+                body:JSON.stringify({email:window._pendingEmail||"",name:fullName,firstName:firstName.trim(),lastName:lastName.trim(),commEmail:commEmail.trim().toLowerCase(),phone,homeCourt,skillLevel:useDupr?"":skillLevel,duprRating:useDupr?duprRating:""})
               }).then(r=>r.json()).then(data=>{
                 if(data.error==="already_exists"){setError("You already have an account. Please sign in.");return;}
                 if(data.error==="already_requested"){setError("You already have a pending request. David will be in touch.");return;}
-                fetch("https://formspree.io/f/"+FORMSPREE_ID,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:"dmpickleball@gmail.com",_subject:"New access request: "+name,message:name+" has requested access.\nEmail: "+(window._pendingEmail||"")+"\nPhone: "+phone+"\nHome Court: "+(homeCourt||"Not specified")+"\n\nApprove at: https://dmpickleball.com/admin"})}).catch(()=>{});
+                fetch("https://formspree.io/f/"+FORMSPREE_ID,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:"dmpickleball@gmail.com",_subject:"New access request: "+fullName,message:fullName+" has requested access.\nGoogle Email: "+(window._pendingEmail||"")+"\nComm Email: "+commEmail+"\nPhone: "+phone+"\nHome Court: "+(homeCourt||"Not specified")+"\nSkill: "+(useDupr?"DUPR "+duprRating:skillLevel||"Not specified")+"\n\nApprove at: https://dmpickleball.com/admin"})}).catch(()=>{});
                 setSignedUp(true);
               }).catch(()=>setSignedUp(true));
             }} style={{width:"100%",background:G,color:"white",border:"none",padding:14,borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem",marginBottom:16}}>
@@ -804,8 +875,9 @@ function LoginPage({onLogin,onAdminLogin}){
 
 function AccountPage({user,setPage,onUpdateUser}){
   const nameParts=(user.name||"").split(" ");
-  const[firstName,setFirstName]=useState(nameParts[0]||"");
-  const[lastName,setLastName]=useState(nameParts.slice(1).join(" ")||"");
+  const[firstName,setFirstName]=useState(user.firstName||nameParts[0]||"");
+  const[lastName,setLastName]=useState(user.lastName||nameParts.slice(1).join(" ")||"");
+  const[commEmail,setCommEmail]=useState(user.commEmail||"");
   const[phone,setPhone]=useState(user.phone||"");
   const[city,setCity]=useState(user.city||"");
   const[homeCourt,setHomeCourt]=useState(user.homeCourt||"");
@@ -815,17 +887,18 @@ function AccountPage({user,setPage,onUpdateUser}){
 
   const handleSave=async()=>{
     if(!firstName||!lastName){setError("First and last name are required.");return;}
+    if(commEmail&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(commEmail)){setError("Please enter a valid communication email.");return;}
     setSaving(true);setError("");
     const fullName=firstName.trim()+" "+lastName.trim();
     try{
       const r=await fetch("/api/students?action=update",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({email:user.email,updates:{name:fullName,first_name:firstName.trim(),last_name:lastName.trim(),phone,city,home_court:homeCourt}})
+        body:JSON.stringify({email:user.email,updates:{name:fullName,first_name:firstName.trim(),last_name:lastName.trim(),comm_email:commEmail.trim().toLowerCase(),phone,city,home_court:homeCourt}})
       });
       const data=await r.json();
       if(data.success){
-        onUpdateUser({...user,name:fullName,firstName:firstName.trim(),lastName:lastName.trim(),phone,city,homeCourt});
+        onUpdateUser({...user,name:fullName,firstName:firstName.trim(),lastName:lastName.trim(),commEmail:commEmail.trim().toLowerCase(),phone,city,homeCourt});
         setSaved(true);
         setTimeout(()=>setSaved(false),3000);
       }else{setError("Failed to save. Please try again.");}
@@ -865,9 +938,14 @@ function AccountPage({user,setPage,onUpdateUser}){
           </div>
         </div>
         <div style={{marginBottom:16,marginTop:16}}>
-          <label style={lbl}>Email</label>
+          <label style={lbl}>Google Login Email</label>
           <input value={user.email} disabled style={{...inp,background:"#f3f4f6",color:"#9ca3af",cursor:"not-allowed"}}/>
-          <div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:4}}>Managed by Google — cannot be changed here.</div>
+          <div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:4}}>Managed by Google — used to sign in only.</div>
+        </div>
+        <div style={{marginBottom:16}}>
+          <label style={lbl}>Communication Email <span style={{color:"#dc2626"}}>*</span></label>
+          <input value={commEmail} onChange={e=>setCommEmail(e.target.value)} style={inp} placeholder="Where to send lesson confirmations & reminders" type="email"/>
+          <div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:-10,marginBottom:4}}>All lesson notifications will be sent here.</div>
         </div>
         <div style={{marginBottom:16}}>
           <label style={lbl}>Phone Number <span style={{color:"#dc2626"}}>*</span></label>
@@ -881,6 +959,24 @@ function AccountPage({user,setPage,onUpdateUser}){
           <label style={lbl}>Home Court <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(optional)</span></label>
           <LocationInput value={homeCourt} onChange={v=>setHomeCourt(v)} placeholder="e.g. Andrew Spinas Park" style={inp}/>
         </div>
+        {(user.skillLevel||user.duprRating)&&(
+          <div style={{marginBottom:24,padding:"12px 14px",background:"#f9fafb",borderRadius:10,border:"1.5px solid #e5e7eb"}}>
+            <div style={{fontSize:"0.78rem",fontWeight:700,color:"#374151",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Skill Rating</div>
+            {user.duprRating?(
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <span style={{background:"#111827",color:"white",fontWeight:900,fontSize:"0.78rem",letterSpacing:1.5,padding:"2px 8px",borderRadius:4}}>DUPR</span>
+                <span style={{fontWeight:700,fontSize:"1rem"}}>{user.duprRating}</span>
+                <span style={{fontSize:"0.78rem",color:"#6b7280",marginLeft:4}}>· Contact David to update</span>
+              </div>
+            ):(
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontWeight:700,fontSize:"1rem"}}>USAPA {user.skillLevel}</span>
+                <span style={{fontSize:"0.78rem",color:"#6b7280"}}>· {(USAPA_RATINGS.find(r=>r.value===user.skillLevel)||{}).desc||""}</span>
+              </div>
+            )}
+            <div style={{fontSize:"0.73rem",color:"#9ca3af",marginTop:6}}>To update your rating, contact David.</div>
+          </div>
+        )}
         <button onClick={handleSave} disabled={saving} style={{width:"100%",background:saving?"#9ca3af":G,color:"white",border:"none",padding:"14px",borderRadius:50,fontWeight:700,cursor:saving?"not-allowed":"pointer",fontSize:"1rem"}}>
           {saving?"Saving...":"Save Changes"}
         </button>
@@ -2098,9 +2194,15 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
             ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"40px",textAlign:"center",color:"#9ca3af"}}>No pending requests right now.</div>
             :pendingStudents.map(student=>(
               <div key={student.id} style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"20px 24px",marginBottom:12}}>
-                <div style={{fontWeight:700,fontSize:"0.97rem"}}>{student.name}</div>
-                <div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2,marginBottom:12}}>{student.email} · Requested {student.requestedAt}</div>
-                <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+                <div style={{fontWeight:700,fontSize:"0.97rem"}}>{student.firstName&&student.lastName?student.lastName+", "+student.firstName:student.name}</div>
+                <div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>Google: {student.email}{student.commEmail&&student.commEmail!==student.email?" · Comm: "+student.commEmail:""}</div>
+                {student.phone&&<div style={{fontSize:"0.83rem",color:"#6b7280"}}>📱 {student.phone}{student.homeCourt?" · 🏓 "+student.homeCourt:""}</div>}
+                {(student.skillLevel||student.duprRating)&&(
+                  <div style={{marginTop:4,display:"flex",alignItems:"center",gap:6}}>
+                    {student.duprRating?(<><span style={{background:"#111827",color:"white",fontWeight:900,fontSize:"0.72rem",letterSpacing:1,padding:"1px 6px",borderRadius:3}}>DUPR</span><span style={{fontSize:"0.83rem",fontWeight:700}}>{student.duprRating}</span></>):(<span style={{fontSize:"0.83rem",fontWeight:600,color:"#374151"}}>USAPA {student.skillLevel}</span>)}
+                  </div>
+                )}
+                <div style={{marginTop:12,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
                   <span style={{fontSize:"0.78rem",fontWeight:600,color:"#6b7280"}}>Approve as:</span>
                   {["public","menlo"].map(type=>(<button key={type} onClick={()=>onApprove(student,type)} style={{background:type==="menlo"?G:"#1a1a1a",color:"white",border:"none",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>✓ {type==="menlo"?"Menlo Club":"General"}</button>))}
                   <button onClick={()=>onDeny(student.id)} style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>✕ Deny</button>
@@ -2207,18 +2309,29 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                         <input value={editStudentData.firstName||""} onChange={e=>setEditStudentData({...editStudentData,firstName:e.target.value})} style={{...inp,marginBottom:0,fontWeight:700}} placeholder="First Name"/>
                         <input value={editStudentData.lastName||""} onChange={e=>setEditStudentData({...editStudentData,lastName:e.target.value})} style={{...inp,marginBottom:0,fontWeight:700}} placeholder="Last Name"/>
                       </div>
-                      <input value={selectedStudent} disabled style={{...inp,marginBottom:8,fontSize:"0.85rem",background:"#f3f4f6",color:"#9ca3af",cursor:"not-allowed"}}/>
+                      <input value={selectedStudent} disabled style={{...inp,marginBottom:8,fontSize:"0.85rem",background:"#f3f4f6",color:"#9ca3af",cursor:"not-allowed"}} title="Google login email — cannot be changed"/>
+                      <input value={editStudentData.commEmail||""} onChange={e=>setEditStudentData({...editStudentData,commEmail:e.target.value})} style={{...inp,marginBottom:8,fontSize:"0.85rem"}} placeholder="Communication Email" type="email"/>
                       <input value={editStudentData.phone||""} onChange={e=>setEditStudentData({...editStudentData,phone:e.target.value})} style={{...inp,marginBottom:8,fontSize:"0.85rem"}} placeholder="Phone Number"/>
                       <input value={editStudentData.city||""} onChange={e=>setEditStudentData({...editStudentData,city:e.target.value})} style={{...inp,marginBottom:8,fontSize:"0.85rem"}} placeholder="City"/>
-                      <LocationInput value={editStudentData.homeCourt||""} onChange={v=>setEditStudentData({...editStudentData,homeCourt:v})} placeholder="Home Court" style={{...inp,marginBottom:0,fontSize:"0.85rem"}}/>
+                      <LocationInput value={editStudentData.homeCourt||""} onChange={v=>setEditStudentData({...editStudentData,homeCourt:v})} placeholder="Home Court" style={{...inp,marginBottom:8,fontSize:"0.85rem"}}/>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                        <select value={editStudentData.skillLevel||""} onChange={e=>setEditStudentData({...editStudentData,skillLevel:e.target.value})} disabled={!!(editStudentData.duprRating)} style={{...inp,marginBottom:0,fontSize:"0.82rem",opacity:editStudentData.duprRating?0.45:1}}>
+                          <option value="">USAPA Rating…</option>
+                          {USAPA_RATINGS.map(r=><option key={r.value} value={r.value}>{r.label} – {r.desc}</option>)}
+                        </select>
+                        <input value={editStudentData.duprRating||""} onChange={e=>setEditStudentData({...editStudentData,duprRating:e.target.value,skillLevel:e.target.value?"":editStudentData.skillLevel})} style={{...inp,marginBottom:0,fontSize:"0.85rem"}} placeholder="DUPR Rating (e.g. 4.25)" type="number" step="0.01" min="2" max="8"/>
+                      </div>
                     </div>
                   ):(
                     <div>
                       <div style={{fontWeight:800,fontSize:"1.1rem"}}>{mockUsers[selectedStudent]?.lastName&&mockUsers[selectedStudent]?.firstName?mockUsers[selectedStudent].lastName+", "+mockUsers[selectedStudent].firstName:mockUsers[selectedStudent]?.name||selectedStudent}</div>
                       <div style={{fontSize:"0.85rem",color:"#6b7280",marginTop:2}}>{selectedStudent}</div>
+                      {mockUsers[selectedStudent]?.commEmail&&<div style={{fontSize:"0.83rem",color:"#374151",marginTop:2}}>✉️ {mockUsers[selectedStudent].commEmail}</div>}
                       {mockUsers[selectedStudent]?.phone&&<div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>📱 {formatPhone(mockUsers[selectedStudent].phone)}</div>}
                       {mockUsers[selectedStudent]?.city&&<div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>📍 {mockUsers[selectedStudent].city}</div>}
                       {mockUsers[selectedStudent]?.homeCourt&&<div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>🏓 {mockUsers[selectedStudent].homeCourt}</div>}
+                      {mockUsers[selectedStudent]?.duprRating&&<div style={{fontSize:"0.83rem",marginTop:2,display:"flex",alignItems:"center",gap:5}}><span style={{background:"#111827",color:"white",fontWeight:900,fontSize:"0.7rem",letterSpacing:1,padding:"1px 5px",borderRadius:3}}>DUPR</span><span style={{fontWeight:700}}>{mockUsers[selectedStudent].duprRating}</span></div>}
+                      {!mockUsers[selectedStudent]?.duprRating&&mockUsers[selectedStudent]?.skillLevel&&<div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>⭐ USAPA {mockUsers[selectedStudent].skillLevel}</div>}
                     </div>
                   )}
                 </div>
@@ -2228,12 +2341,12 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                   <>
                     <button onClick={()=>setEditingStudent(false)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.82rem"}}>Cancel</button>
                     <button onClick={()=>{const fullName=(editStudentData.firstName+" "+editStudentData.lastName).trim()||editStudentData.name;
-              fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:selectedStudent,updates:{name:fullName,first_name:editStudentData.firstName,last_name:editStudentData.lastName,phone:editStudentData.phone,city:editStudentData.city,home_court:editStudentData.homeCourt}})}).catch(()=>{});
-              onAddStudent({name:fullName,firstName:editStudentData.firstName,lastName:editStudentData.lastName,phone:editStudentData.phone,city:editStudentData.city,homeCourt:editStudentData.homeCourt,email:selectedStudent,memberType:mockUsers[selectedStudent]?.memberType||"public"});
+              fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:selectedStudent,updates:{name:fullName,first_name:editStudentData.firstName,last_name:editStudentData.lastName,comm_email:(editStudentData.commEmail||"").toLowerCase(),phone:editStudentData.phone,city:editStudentData.city,home_court:editStudentData.homeCourt,skill_level:editStudentData.duprRating?"":editStudentData.skillLevel||"",dupr_rating:editStudentData.duprRating||""}})}).catch(()=>{});
+              onAddStudent({name:fullName,firstName:editStudentData.firstName,lastName:editStudentData.lastName,commEmail:(editStudentData.commEmail||"").toLowerCase(),phone:editStudentData.phone,city:editStudentData.city,homeCourt:editStudentData.homeCourt,skillLevel:editStudentData.duprRating?"":editStudentData.skillLevel||"",duprRating:editStudentData.duprRating||"",email:selectedStudent,memberType:mockUsers[selectedStudent]?.memberType||"public"});
               setEditingStudent(false);}} style={{background:G,color:"white",border:"none",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.82rem"}}>Save ✓</button>
                   </>
                 ):(
-                  <button onClick={()=>{setEditStudentData({name:mockUsers[selectedStudent]?.name||"",firstName:mockUsers[selectedStudent]?.firstName||"",lastName:mockUsers[selectedStudent]?.lastName||"",phone:mockUsers[selectedStudent]?.phone||"",city:mockUsers[selectedStudent]?.city||"",homeCourt:mockUsers[selectedStudent]?.homeCourt||""});setEditingStudent(true);}} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.82rem"}}>✏️ Edit</button>
+                  <button onClick={()=>{setEditStudentData({name:mockUsers[selectedStudent]?.name||"",firstName:mockUsers[selectedStudent]?.firstName||"",lastName:mockUsers[selectedStudent]?.lastName||"",commEmail:mockUsers[selectedStudent]?.commEmail||"",phone:mockUsers[selectedStudent]?.phone||"",city:mockUsers[selectedStudent]?.city||"",homeCourt:mockUsers[selectedStudent]?.homeCourt||"",skillLevel:mockUsers[selectedStudent]?.skillLevel||"",duprRating:mockUsers[selectedStudent]?.duprRating||""});setEditingStudent(true);}} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.82rem"}}>✏️ Edit</button>
                 )}
                 <button onClick={()=>setShowSchedule(true)} style={{background:G,color:"white",border:"none",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.82rem"}}>+ Schedule Lesson</button>
               </div>
@@ -3000,7 +3113,10 @@ export default function App(){
         if(pr.requests){
           setPendingStudents(pr.requests.map(r=>({
             id:r.id,name:r.name,email:r.email,
+            firstName:r.first_name||"",lastName:r.last_name||"",
+            commEmail:r.comm_email||"",
             phone:r.phone,homeCourt:r.home_court,
+            skillLevel:r.skill_level||"",duprRating:r.dupr_rating||"",
             requestedAt:new Date(r.requested_at).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})
           })));
         }
@@ -3012,6 +3128,9 @@ export default function App(){
               name:s.name||s.email,
               firstName:s.first_name||"",
               lastName:s.last_name||"",
+              commEmail:s.comm_email||"",
+              skillLevel:s.skill_level||"",
+              duprRating:s.dupr_rating||"",
               memberType:s.member_type||"public",
               approved:s.approved,
               blocked:s.blocked,
@@ -3094,12 +3213,13 @@ export default function App(){
   };
   const approveStudent=async(student,memberType)=>{
     try{
-      await fetch("/api/students?action=approve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({requestId:student.id,email:student.email,name:student.name,phone:student.phone||"",homeCourt:student.homeCourt||"",memberType,action:"approve"})});
+      await fetch("/api/students?action=approve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({requestId:student.id,email:student.email,name:student.name,firstName:student.firstName||"",lastName:student.lastName||"",commEmail:student.commEmail||"",phone:student.phone||"",homeCourt:student.homeCourt||"",skillLevel:student.skillLevel||"",duprRating:student.duprRating||"",memberType,action:"approve"})});
       setAllLessons(prev=>({...prev,[student.email]:[]}));
-      setMockUsersState(prev=>({...prev,[student.email]:{name:student.name,memberType,approved:true}}));
+      setMockUsersState(prev=>({...prev,[student.email]:{name:student.name,firstName:student.firstName||"",lastName:student.lastName||"",commEmail:student.commEmail||"",skillLevel:student.skillLevel||"",duprRating:student.duprRating||"",memberType,approved:true}}));
       setPendingStudents(prev=>prev.filter(s=>s.id!==student.id));
-      // Send approval email
-      fetch("https://formspree.io/f/"+FORMSPREE_ID,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:student.email,_subject:"Your DM Pickleball account is approved!",message:"Hi "+student.name+",\n\nYour account has been approved! You can now log in at:\nhttps://dmpickleball.com\n\nSee you on the court!\nDavid Mok"})}).catch(()=>{});
+      // Send approval email to comm email if available, else Google email
+      const notifyEmail=student.commEmail||student.email;
+      fetch("https://formspree.io/f/"+FORMSPREE_ID,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:notifyEmail,_subject:"Your DM Pickleball account is approved!",message:"Hi "+student.name+",\n\nYour account has been approved! You can now log in at:\nhttps://dmpickleball.com\n\nSee you on the court!\nDavid Mok"})}).catch(()=>{});
     }catch(e){console.error("Approve error:",e);}
   };
   const denyStudent=async id=>{
@@ -3137,7 +3257,7 @@ export default function App(){
   const reactivateStudent=async(email)=>{
     await fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,updates:{deactivated:false}})});
     const s=deactivatedStudents.find(x=>x.email===email);
-    if(s){setMockUsersState(prev=>({...prev,[email]:{name:s.name,firstName:s.firstName,lastName:s.lastName,memberType:s.memberType,approved:true,phone:s.phone,city:s.city,homeCourt:s.homeCourt,picture:s.picture}}));setAllLessons(prev=>({...prev,[email]:[]}));}
+    if(s){setMockUsersState(prev=>({...prev,[email]:{name:s.name,firstName:s.firstName,lastName:s.lastName,commEmail:s.commEmail||"",skillLevel:s.skillLevel||"",duprRating:s.duprRating||"",memberType:s.memberType,approved:true,phone:s.phone,city:s.city,homeCourt:s.homeCourt,picture:s.picture}}));setAllLessons(prev=>({...prev,[email]:[]}));}
     setDeactivatedStudents(prev=>prev.filter(x=>x.email!==email));
   };
   const logout=()=>{setUser(null);setIsAdmin(false);setPage("home");};

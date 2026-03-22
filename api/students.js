@@ -37,25 +37,48 @@ export default async function handler(req, res) {
 
   // POST request access
   if (req.method === 'POST' && action === 'request') {
-    const { email, name, phone, homeCourt } = req.body;
+    const { email, name, firstName, lastName, commEmail, phone, homeCourt, skillLevel, duprRating } = req.body;
     if (!email || !name || !phone) return res.status(400).json({ error: 'Missing required fields' });
     const { data: existing } = await supabase.from('students').select('email').eq('email', email.toLowerCase()).single();
     if (existing) return res.status(400).json({ error: 'already_exists' });
     const { data: existingRequest } = await supabase.from('access_requests').select('id').eq('email', email.toLowerCase()).eq('status', 'pending').single();
     if (existingRequest) return res.status(400).json({ error: 'already_requested' });
-    const { error } = await supabase.from('access_requests').insert({ email: email.toLowerCase(), name, phone, home_court: homeCourt || '' });
+    const { error } = await supabase.from('access_requests').insert({
+      email: email.toLowerCase(),
+      name,
+      first_name: firstName || '',
+      last_name: lastName || '',
+      comm_email: commEmail || '',
+      phone,
+      home_court: homeCourt || '',
+      skill_level: skillLevel || '',
+      dupr_rating: duprRating || '',
+    });
     if (error) return res.status(500).json({ error: error.message });
     return res.status(200).json({ success: true });
   }
 
   // POST approve/deny
   if (req.method === 'POST' && action === 'approve') {
-    const { requestId, email, name, phone, homeCourt, memberType, action: approveAction } = req.body;
+    const { requestId, email, name, firstName, lastName, commEmail, phone, homeCourt, skillLevel, duprRating, memberType, action: approveAction } = req.body;
     if (approveAction === 'deny') {
       await supabase.from('access_requests').update({ status: 'denied' }).eq('id', requestId);
       return res.status(200).json({ success: true });
     }
-    const { error } = await supabase.from('students').upsert({ email: email.toLowerCase(), name, phone: phone||'', home_court: homeCourt||'', member_type: memberType||'public', approved: true, deactivated: false });
+    const { error } = await supabase.from('students').upsert({
+      email: email.toLowerCase(),
+      name,
+      first_name: firstName || '',
+      last_name: lastName || '',
+      comm_email: commEmail || '',
+      phone: phone || '',
+      home_court: homeCourt || '',
+      skill_level: skillLevel || '',
+      dupr_rating: duprRating || '',
+      member_type: memberType || 'public',
+      approved: true,
+      deactivated: false,
+    });
     if (error) return res.status(500).json({ error: error.message });
     await supabase.from('access_requests').update({ status: 'approved' }).eq('id', requestId);
     return res.status(200).json({ success: true });
