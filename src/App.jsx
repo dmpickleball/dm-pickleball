@@ -2741,7 +2741,34 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                   <div style={{background:"#e8f0ee",border:"1.5px solid "+G,borderRadius:10,padding:"10px 16px",marginBottom:12,display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
                     <span style={{fontWeight:700,color:G,fontSize:"0.88rem"}}>📅 {dayLabel(quickBook.day)} · {fmtMinLabel(quickBook.startMins)}</span>
                     <span style={{color:"#6b7280",fontSize:"0.82rem"}}>Select student to book:</span>
-                    <select onChange={ev=>{if(ev.target.value){setSelectedStudent(ev.target.value);setSchedDate(quickBook.day);setTab("students");setQuickBook(null);}}} defaultValue="" style={{border:"1.5px solid #d1d5db",borderRadius:8,padding:"5px 10px",fontSize:"0.82rem",background:"white",flex:1,minWidth:140}}>
+                    <select onChange={ev=>{
+                      if(ev.target.value){
+                        const em=ev.target.value;
+                        const day=quickBook.day;
+                        const startMins=quickBook.startMins;
+                        const isMenlo=mockUsers[em]?.memberType==="menlo";
+                        // Navigate to student + open schedule flow at step 2 with date pre-filled
+                        setSelectedStudent(em);
+                        setSchedDate(day);
+                        setScheduleStep(2);
+                        setShowSchedule(true);
+                        setTab("students");
+                        setQuickBook(null);
+                        // Pre-fetch busy times then auto-select the clicked slot
+                        setSchedLoadingSlots(true);
+                        fetch("/api/get-busy-times?date="+day)
+                          .then(r=>r.json())
+                          .then(d=>{
+                            const busy=d.busy||[];
+                            setSchedBusyTimes(busy);
+                            const slots=getSlots(day,isMenlo?"menlo":"public",60).filter(sl=>!busy.some(b=>{const bufA=b.bufferAfter??30;const bufB=b.bufferBefore??30;return sl.s<(b.endMins+bufA)&&sl.e>(b.startMins-bufB);}));
+                            const idx=slots.findIndex(sl=>sl.s===startMins);
+                            if(idx>=0){setSchedSlot(slots[idx]);setSchedSlotIdx(idx);}
+                          })
+                          .catch(()=>setSchedBusyTimes([]))
+                          .finally(()=>setSchedLoadingSlots(false));
+                      }
+                    }} defaultValue="" style={{border:"1.5px solid #d1d5db",borderRadius:8,padding:"5px 10px",fontSize:"0.82rem",background:"white",flex:1,minWidth:140}}>
                       <option value="">— pick student —</option>
                       {sortedStudents.filter(em=>!mockUsers[em]?.deactivated).map(em=>(<option key={em} value={em}>{mockUsers[em]?.name||em}</option>))}
                     </select>
