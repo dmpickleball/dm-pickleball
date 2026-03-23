@@ -848,7 +848,7 @@ function LoginPage({onLogin,onAdminLogin}){
             <div style={{fontWeight:700,fontSize:"0.82rem",color:"#166534"}}>✓ Verified with {PROV_LABELS[providerInfo.provider]}</div>
             <div style={{fontSize:"0.78rem",color:"#15803d",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{providerInfo.email}</div>
           </div>
-          <button onClick={()=>{setProviderInfo(null);setError("");setFirstName("");setLastName("");setCommEmail("");setPhone("");setHomeCourt("");setSkillLevel("");setUseDupr(false);setDuprRating("");}} style={{background:"none",border:"none",color:"#6b7280",cursor:"pointer",fontSize:"0.78rem",fontWeight:600,whiteSpace:"nowrap"}}>✕ Change</button>
+          <button onClick={()=>{setProviderInfo(null);setLoadingProv(null);setError("");setFirstName("");setLastName("");setCommEmail("");setPhone("");setHomeCourt("");setSkillLevel("");setUseDupr(false);setDuprRating("");}} style={{background:"none",border:"none",color:"#6b7280",cursor:"pointer",fontSize:"0.78rem",fontWeight:600,whiteSpace:"nowrap",padding:"6px 10px"}}>✕ Change</button>
         </div>
         {error&&<div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:8,padding:"10px 14px",color:"#991b1b",fontSize:"0.88rem",marginBottom:16}}>{error}</div>}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
