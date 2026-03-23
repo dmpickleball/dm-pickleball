@@ -782,100 +782,150 @@ function LoginPage({onLogin,onAdminLogin}){
 
   const HANDLERS={google:handleGoogleLogin,microsoft:handleMicrosoftLogin,yahoo:handleYahooLogin};
 
+  // Step indicator component
+  const StepDot=({n,label,active,done})=>(
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+      <div style={{width:28,height:28,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:"0.8rem",
+        background:done?"#16a34a":active?G:"#e5e7eb",color:done||active?"white":"#9ca3af",transition:"all 0.2s"}}>
+        {done?"✓":n}
+      </div>
+      <span style={{fontSize:"0.7rem",fontWeight:600,color:done?"#16a34a":active?"#374151":"#9ca3af",whiteSpace:"nowrap"}}>{label}</span>
+    </div>
+  );
+  const StepBar=({step})=>(
+    <div style={{display:"flex",alignItems:"flex-start",justifyContent:"center",gap:0,marginBottom:28}}>
+      <StepDot n={1} label="Verify" active={step===1} done={step>1}/>
+      <div style={{width:48,height:2,background:step>1?"#16a34a":"#e5e7eb",marginTop:13,transition:"all 0.3s"}}/>
+      <StepDot n={2} label="Profile" active={step===2} done={step>2}/>
+      <div style={{width:48,height:2,background:step>2?"#16a34a":"#e5e7eb",marginTop:13,transition:"all 0.3s"}}/>
+      <StepDot n={3} label="Done" active={step===3} done={false}/>
+    </div>
+  );
+
   if(signedUp)return(
-    <div style={{maxWidth:440,margin:"80px auto",padding:"0 24px",textAlign:"center"}}>
-      <div style={{background:"white",borderRadius:16,padding:40,boxShadow:"0 4px 24px rgba(0,0,0,0.08)"}}>
-        <div style={{fontSize:48,marginBottom:16}}>🎾</div>
-        <h2 style={{color:G,marginBottom:10}}>Request Received!</h2>
-        <p style={{color:"#6b7280",lineHeight:1.7}}>Thanks <strong>{firstName}</strong>! David will review your request and reach out once approved.</p>
-        <button onClick={()=>{setProviderInfo(null);setSignedUp(false);setError("");}} style={{marginTop:20,background:G,color:"white",border:"none",padding:"11px 28px",borderRadius:50,cursor:"pointer",fontWeight:700}}>Back to Sign In</button>
+    <div style={{maxWidth:480,margin:"60px auto",padding:"0 24px"}}>
+      <div style={{background:"white",borderRadius:20,padding:"40px 36px",boxShadow:"0 4px 32px rgba(0,0,0,0.09)"}}>
+        <StepBar step={3}/>
+        <div style={{textAlign:"center",marginBottom:28}}>
+          <div style={{width:68,height:68,borderRadius:"50%",background:"#f0fdf4",border:"3px solid #86efac",display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,margin:"0 auto 16px"}}>✓</div>
+          <h2 style={{fontWeight:900,color:G,marginBottom:8,fontSize:"1.4rem"}}>You're on the list, {firstName}!</h2>
+          <p style={{color:"#6b7280",lineHeight:1.7,fontSize:"0.93rem"}}>Your access request has been sent to Coach David. Here's what happens next:</p>
+        </div>
+        <div style={{background:"#f8fafc",borderRadius:14,padding:"18px 20px",marginBottom:20}}>
+          {[
+            {icon:"🔍",text:"Coach David will review your profile and skill level"},
+            {icon:"📧",text:<>You'll get an email at <strong>{commEmail||providerInfo?.email}</strong> once approved</>,},
+            {icon:"⏱",text:"Reviews typically take 1–2 business days"},
+            {icon:"🏓",text:"Once approved, you'll have full access to book lessons and view your schedule"},
+          ].map((item,i)=>(
+            <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"10px 0",borderBottom:i<3?"1px solid #e5e7eb":"none"}}>
+              <span style={{fontSize:18,flexShrink:0,marginTop:1}}>{item.icon}</span>
+              <span style={{fontSize:"0.88rem",color:"#374151",lineHeight:1.6}}>{item.text}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:10,padding:"12px 16px",marginBottom:20,fontSize:"0.84rem",color:"#92400e",lineHeight:1.6}}>
+          💡 Keep an eye on your inbox — approval emails sometimes land in spam.
+        </div>
+        <button onClick={()=>{setProviderInfo(null);setSignedUp(false);setError("");}} style={{width:"100%",background:"#f3f4f6",color:"#374151",border:"none",padding:"12px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.9rem"}}>
+          ← Back to Sign In
+        </button>
+      </div>
+    </div>
+  );
+
+  if(providerInfo)return(
+    <div style={{maxWidth:480,margin:"60px auto",padding:"0 24px"}}>
+      <div style={{background:"white",borderRadius:20,padding:"36px 32px",boxShadow:"0 4px 32px rgba(0,0,0,0.09)"}}>
+        <StepBar step={2}/>
+        <div style={{textAlign:"center",marginBottom:20}}>
+          <h2 style={{fontWeight:900,color:G,marginBottom:6,fontSize:"1.3rem"}}>Complete Your Profile</h2>
+          <p style={{color:"#6b7280",fontSize:"0.87rem",lineHeight:1.6}}>Just a few more details so Coach David knows who you are.</p>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#f0fdf4",border:"1.5px solid #86efac",borderRadius:10,marginBottom:20}}>
+          {PROV_ICONS[providerInfo.provider]}
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontWeight:700,fontSize:"0.82rem",color:"#166534"}}>✓ Verified with {PROV_LABELS[providerInfo.provider]}</div>
+            <div style={{fontSize:"0.78rem",color:"#15803d",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{providerInfo.email}</div>
+          </div>
+          <button onClick={()=>{setProviderInfo(null);setError("");setFirstName("");setLastName("");setCommEmail("");setPhone("");setHomeCourt("");setSkillLevel("");setUseDupr(false);setDuprRating("");}} style={{background:"none",border:"none",color:"#6b7280",cursor:"pointer",fontSize:"0.78rem",fontWeight:600,whiteSpace:"nowrap"}}>✕ Change</button>
+        </div>
+        {error&&<div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:8,padding:"10px 14px",color:"#991b1b",fontSize:"0.88rem",marginBottom:16}}>{error}</div>}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
+          <input style={{...inp,marginBottom:0}} type="text" placeholder="First Name *" value={firstName} onChange={e=>setFirstName(e.target.value)}/>
+          <input style={{...inp,marginBottom:0}} type="text" placeholder="Last Name *" value={lastName} onChange={e=>setLastName(e.target.value)}/>
+        </div>
+        <input style={inp} type="email" placeholder="Communication Email *" value={commEmail} onChange={e=>setCommEmail(e.target.value)}/>
+        <div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:-10,marginBottom:14,paddingLeft:2}}>Where lesson confirmations & reminders will be sent</div>
+        <input style={inp} type="tel" placeholder="Phone Number *" value={phone} onChange={e=>setPhone(e.target.value)}/>
+        <LocationInput value={homeCourt} onChange={v=>setHomeCourt(v)} placeholder="Home Court (optional)" style={inp}/>
+        <div style={{marginBottom:18}}>
+          <div style={{fontSize:"0.78rem",fontWeight:700,color:"#374151",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Skill Rating <span style={{color:"#dc2626"}}>*</span></div>
+          <select value={skillLevel} onChange={e=>setSkillLevel(e.target.value)} disabled={useDupr}
+            style={{...inp,marginBottom:0,color:(!skillLevel||useDupr)?"#9ca3af":"#111827",opacity:useDupr?0.45:1,cursor:useDupr?"not-allowed":"pointer"}}>
+            <option value="">Select rating…</option>
+            {USAPA_RATINGS.map(r=><option key={r.value} value={r.value}>{r.label} – {r.desc}</option>)}
+          </select>
+          <div style={{display:"flex",alignItems:"center",margin:"10px 0 0"}}>
+            <div style={{flex:1,height:1,background:"#d1d5db"}}/><span style={{padding:"0 12px",fontSize:"0.78rem",color:"#9ca3af",fontWeight:600}}>OR</span><div style={{flex:1,height:1,background:"#d1d5db"}}/>
+          </div>
+          <div style={{marginTop:10,padding:"12px 14px",background:useDupr?"#f0f4ff":"#f9fafb",borderRadius:10,border:useDupr?"1.5px solid #1b2a6b":"1.5px solid #e5e7eb",transition:"all 0.15s"}}>
+            <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",userSelect:"none"}}>
+              <input type="checkbox" checked={useDupr} onChange={e=>{setUseDupr(e.target.checked);if(!e.target.checked)setDuprRating("");}} style={{width:17,height:17,accentColor:"#1b2a6b",cursor:"pointer"}}/>
+              <span style={{fontWeight:700,fontSize:"0.9rem",color:"#1b2a6b",letterSpacing:1.5,fontFamily:"Arial,sans-serif"}}>DUPR</span>
+              <span style={{fontWeight:600,fontSize:"0.88rem",color:"#374151"}}>I have a DUPR rating</span>
+            </label>
+            {useDupr&&(
+              <div style={{marginTop:10}}>
+                <input type="number" step="0.01" min="2" max="8" placeholder="Enter your DUPR rating (e.g. 4.25)" value={duprRating} onChange={e=>setDuprRating(e.target.value)} style={{...inp,marginBottom:4}}/>
+                <div style={{fontSize:"0.73rem",color:"#9ca3af"}}>You can link your DUPR account after registration to sync your rating automatically.</div>
+              </div>
+            )}
+          </div>
+        </div>
+        <button onClick={()=>{
+          if(!firstName||!lastName){setError("First and last name are required.");return;}
+          if(!commEmail||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(commEmail)){setError("A valid communication email is required.");return;}
+          if(!phone){setError("Phone number is required.");return;}
+          if(!useDupr&&!skillLevel){setError("Please select a skill rating or enter your DUPR rating.");return;}
+          if(useDupr&&!duprRating){setError("Please enter your DUPR rating.");return;}
+          const fullName=firstName.trim()+" "+lastName.trim();
+          fetch("/api/students?action=request",{method:"POST",headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({email:providerInfo.email,name:fullName,firstName:firstName.trim(),lastName:lastName.trim(),commEmail:commEmail.trim().toLowerCase(),phone,homeCourt,skillLevel:useDupr?"":skillLevel,duprRating:useDupr?duprRating:"",authProvider:providerInfo.provider})
+          }).then(r=>r.json()).then(data=>{
+            if(data.error==="already_exists"){setError("You already have an account. Please sign in.");return;}
+            if(data.error==="already_requested"){setError("You already have a pending request. David will be in touch soon.");return;}
+            fetch("https://formspree.io/f/"+FORMSPREE_ID,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:"dmpickleball@gmail.com",_subject:"New access request: "+fullName,message:fullName+" has requested access.\nProvider: "+PROV_LABELS[providerInfo.provider]+"\nLogin Email: "+providerInfo.email+"\nComm Email: "+commEmail+"\nPhone: "+phone+"\nHome Court: "+(homeCourt||"Not specified")+"\nSkill: "+(useDupr?"DUPR "+duprRating:skillLevel||"Not specified")+"\n\nApprove at: https://dmpickleball.com/admin"})}).catch(()=>{});
+            setSignedUp(true);
+          }).catch(()=>setSignedUp(true));
+        }} style={{width:"100%",background:G,color:"white",border:"none",padding:14,borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem",marginTop:4}}>
+          Send Access Request →
+        </button>
       </div>
     </div>
   );
 
   return(
     <div style={{maxWidth:420,margin:"60px auto",padding:"0 24px"}}>
-      <div style={{background:"white",borderRadius:16,padding:"36px 32px",boxShadow:"0 4px 24px rgba(0,0,0,0.08)"}}>
+      <div style={{background:"white",borderRadius:20,padding:"36px 32px",boxShadow:"0 4px 24px rgba(0,0,0,0.08)"}}>
+        <StepBar step={1}/>
         <div style={{textAlign:"center",marginBottom:28}}>
           <div style={{fontSize:36,marginBottom:8}}>🏓</div>
-          <h2 style={{fontWeight:900,color:G}}>{providerInfo?"Request Access":"Sign In"}</h2>
-          <p style={{color:"#6b7280",fontSize:"0.88rem",marginTop:6}}>{providerInfo?"Fill in your details to request access":"Sign in or request access to your account"}</p>
+          <h2 style={{fontWeight:900,color:G,marginBottom:6}}>Sign In</h2>
+          <p style={{color:"#6b7280",fontSize:"0.88rem",lineHeight:1.6}}>Sign in or request access to your account</p>
         </div>
         {error&&<div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:8,padding:"10px 14px",color:"#991b1b",fontSize:"0.88rem",marginBottom:16}}>{error}</div>}
-        {!providerInfo?(
-          <div style={{display:"flex",flexDirection:"column",gap:12}}>
-            {["google","microsoft","yahoo"].map(pk=>(
-              <button key={pk} onClick={HANDLERS[pk]} disabled={!!loadingProv}
-                style={{width:"100%",background:loadingProv===pk?"#f3f4f6":"white",color:"#374151",border:"1.5px solid #e5e7eb",padding:"13px 20px",borderRadius:50,fontWeight:700,cursor:loadingProv?"not-allowed":"pointer",fontSize:"0.95rem",display:"flex",alignItems:"center",justifyContent:"center",gap:10,transition:"border-color 0.12s",opacity:loadingProv&&loadingProv!==pk?0.5:1}}
-                onMouseEnter={e=>{if(!loadingProv)e.currentTarget.style.borderColor=PROV_COLORS[pk];}}
-                onMouseLeave={e=>{e.currentTarget.style.borderColor="#e5e7eb";}}>
-                {loadingProv===pk?<span style={{color:"#6b7280"}}>Connecting…</span>:<>{PROV_ICONS[pk]}<span>Continue with {PROV_LABELS[pk]}</span></>}
-              </button>
-            ))}
-            <p style={{textAlign:"center",fontSize:"0.78rem",color:"#9ca3af",marginTop:4,lineHeight:1.6}}>New students: sign in above — if you don't have an account yet, we'll walk you through requesting access.</p>
-          </div>
-        ):(
-          <>
-            <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#f0fdf4",border:"1.5px solid #86efac",borderRadius:10,marginBottom:18}}>
-              {PROV_ICONS[providerInfo.provider]}
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontWeight:700,fontSize:"0.82rem",color:"#166534"}}>Verified with {PROV_LABELS[providerInfo.provider]}</div>
-                <div style={{fontSize:"0.78rem",color:"#15803d",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{providerInfo.email}</div>
-              </div>
-              <button onClick={()=>{setProviderInfo(null);setError("");setFirstName("");setLastName("");setCommEmail("");setPhone("");setHomeCourt("");setSkillLevel("");setUseDupr(false);setDuprRating("");}} style={{background:"none",border:"none",color:"#6b7280",cursor:"pointer",fontSize:"0.78rem",fontWeight:600,whiteSpace:"nowrap"}}>✕ Change</button>
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
-              <input style={{...inp,marginBottom:0}} type="text" placeholder="First Name *" value={firstName} onChange={e=>setFirstName(e.target.value)}/>
-              <input style={{...inp,marginBottom:0}} type="text" placeholder="Last Name *" value={lastName} onChange={e=>setLastName(e.target.value)}/>
-            </div>
-            <input style={inp} type="email" placeholder="Communication Email *" value={commEmail} onChange={e=>setCommEmail(e.target.value)}/>
-            <div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:-10,marginBottom:14,paddingLeft:2}}>Where lesson confirmations & reminders will be sent — editable any time</div>
-            <input style={inp} type="tel" placeholder="Phone Number *" value={phone} onChange={e=>setPhone(e.target.value)}/>
-            <LocationInput value={homeCourt} onChange={v=>setHomeCourt(v)} placeholder="Home Court (optional)" style={inp}/>
-            <div style={{marginBottom:14}}>
-              <div style={{fontSize:"0.78rem",fontWeight:700,color:"#374151",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Skill Rating <span style={{color:"#dc2626"}}>*</span></div>
-              <select value={skillLevel} onChange={e=>setSkillLevel(e.target.value)} disabled={useDupr}
-                style={{...inp,marginBottom:0,color:(!skillLevel||useDupr)?"#9ca3af":"#111827",opacity:useDupr?0.45:1,cursor:useDupr?"not-allowed":"pointer"}}>
-                <option value="">Select rating…</option>
-                {USAPA_RATINGS.map(r=><option key={r.value} value={r.value}>{r.label} – {r.desc}</option>)}
-              </select>
-              <div style={{display:"flex",alignItems:"center",margin:"10px 0 0"}}>
-                <div style={{flex:1,height:1,background:"#d1d5db"}}/><span style={{padding:"0 12px",fontSize:"0.78rem",color:"#9ca3af",fontWeight:600}}>OR</span><div style={{flex:1,height:1,background:"#d1d5db"}}/>
-              </div>
-              <div style={{marginTop:10,padding:"12px 14px",background:useDupr?"#f0f4ff":"#f9fafb",borderRadius:10,border:useDupr?"1.5px solid #1b2a6b":"1.5px solid #e5e7eb",transition:"all 0.15s"}}>
-                <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",userSelect:"none"}}>
-                  <input type="checkbox" checked={useDupr} onChange={e=>{setUseDupr(e.target.checked);if(!e.target.checked)setDuprRating("");}} style={{width:17,height:17,accentColor:"#1b2a6b",cursor:"pointer"}}/>
-                  <span style={{fontWeight:700,fontSize:"0.9rem",color:"#1b2a6b",letterSpacing:1.5,fontFamily:"Arial,sans-serif"}}>DUPR</span>
-                  <span style={{fontWeight:600,fontSize:"0.88rem",color:"#374151"}}>I have a DUPR rating</span>
-                </label>
-                {useDupr&&(
-                  <div style={{marginTop:10}}>
-                    <input type="number" step="0.01" min="2" max="8" placeholder="Enter your DUPR rating (e.g. 4.25)" value={duprRating} onChange={e=>setDuprRating(e.target.value)} style={{...inp,marginBottom:4}}/>
-                    <div style={{fontSize:"0.73rem",color:"#9ca3af"}}>You can link your DUPR account after registration to sync your rating automatically.</div>
-                  </div>
-                )}
-              </div>
-            </div>
-            <button onClick={()=>{
-              if(!firstName||!lastName){setError("First and last name are required.");return;}
-              if(!commEmail||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(commEmail)){setError("A valid communication email is required.");return;}
-              if(!phone){setError("Phone number is required.");return;}
-              if(!useDupr&&!skillLevel){setError("Please select a skill rating or enter your DUPR rating.");return;}
-              if(useDupr&&!duprRating){setError("Please enter your DUPR rating.");return;}
-              const fullName=firstName.trim()+" "+lastName.trim();
-              fetch("/api/students?action=request",{method:"POST",headers:{"Content-Type":"application/json"},
-                body:JSON.stringify({email:providerInfo.email,name:fullName,firstName:firstName.trim(),lastName:lastName.trim(),commEmail:commEmail.trim().toLowerCase(),phone,homeCourt,skillLevel:useDupr?"":skillLevel,duprRating:useDupr?duprRating:"",authProvider:providerInfo.provider})
-              }).then(r=>r.json()).then(data=>{
-                if(data.error==="already_exists"){setError("You already have an account. Please sign in.");return;}
-                if(data.error==="already_requested"){setError("You already have a pending request. David will be in touch.");return;}
-                fetch("https://formspree.io/f/"+FORMSPREE_ID,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:"dmpickleball@gmail.com",_subject:"New access request: "+fullName,message:fullName+" has requested access.\nProvider: "+PROV_LABELS[providerInfo.provider]+"\nLogin Email: "+providerInfo.email+"\nComm Email: "+commEmail+"\nPhone: "+phone+"\nHome Court: "+(homeCourt||"Not specified")+"\nSkill: "+(useDupr?"DUPR "+duprRating:skillLevel||"Not specified")+"\n\nApprove at: https://dmpickleball.com/admin"})}).catch(()=>{});
-                setSignedUp(true);
-              }).catch(()=>setSignedUp(true));
-            }} style={{width:"100%",background:G,color:"white",border:"none",padding:14,borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem"}}>
-              Request Access →
+        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+          {["google","microsoft","yahoo"].map(pk=>(
+            <button key={pk} onClick={HANDLERS[pk]} disabled={!!loadingProv}
+              style={{width:"100%",background:loadingProv===pk?"#f3f4f6":"white",color:"#374151",border:"1.5px solid #e5e7eb",padding:"13px 20px",borderRadius:50,fontWeight:700,cursor:loadingProv?"not-allowed":"pointer",fontSize:"0.95rem",display:"flex",alignItems:"center",justifyContent:"center",gap:10,transition:"border-color 0.12s",opacity:loadingProv&&loadingProv!==pk?0.5:1}}
+              onMouseEnter={e=>{if(!loadingProv)e.currentTarget.style.borderColor=PROV_COLORS[pk];}}
+              onMouseLeave={e=>{e.currentTarget.style.borderColor="#e5e7eb";}}>
+              {loadingProv===pk?<span style={{color:"#6b7280"}}>Connecting…</span>:<>{PROV_ICONS[pk]}<span>Continue with {PROV_LABELS[pk]}</span></>}
             </button>
-          </>
-        )}
+          ))}
+          <p style={{textAlign:"center",fontSize:"0.78rem",color:"#9ca3af",marginTop:4,lineHeight:1.6}}>New students: sign in above — if you don't have an account yet, we'll walk you through requesting access.</p>
+        </div>
       </div>
     </div>
   );
