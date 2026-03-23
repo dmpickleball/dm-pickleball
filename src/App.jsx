@@ -775,7 +775,7 @@ function LoginPage({onLogin,onAdminLogin}){
     crypto.subtle.digest("SHA-256",new TextEncoder().encode(codeVerifier)).then(hash=>{
       const codeChallenge=btoa(String.fromCharCode(...new Uint8Array(hash))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=/g,"");
       const redirectUri=window.location.origin;
-      popup.location.href="https://api.login.yahoo.com/oauth2/request_auth?"+new URLSearchParams({client_id:YAHOO_CLIENT_ID,redirect_uri:redirectUri,response_type:"code",scope:"openid profile email",code_challenge:codeChallenge,code_challenge_method:"S256"}).toString();
+      popup.location.href="https://api.login.yahoo.com/oauth2/request_auth?"+new URLSearchParams({client_id:YAHOO_CLIENT_ID,redirect_uri:redirectUri,response_type:"code",scope:"openid profile email",code_challenge:codeChallenge,code_challenge_method:"S256",prompt:"select_account"}).toString();
       const t=setInterval(async()=>{try{if(popup.closed){clearInterval(t);setLoadingProv(null);return;}const url=popup.location.href;if(url.includes(redirectUri)&&url.includes("code=")){clearInterval(t);popup.close();const code=new URLSearchParams(url.split("?")[1]).get("code");const tokenRes=await fetch("/api/yahoo-token",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code,codeVerifier,redirectUri})});const info=await tokenRes.json();if(info.error){setLoadingProv(null);setError("Yahoo error: "+info.error);return;}await handleAuthResult("yahoo",{email:info.email||"",firstName:info.firstName||"",lastName:info.lastName||"",picture:info.picture||""});}}catch(e){clearInterval(t);setLoadingProv(null);setError("Yahoo sign-in failed: "+e.message);}},500);
     });
   };
@@ -848,7 +848,7 @@ function LoginPage({onLogin,onAdminLogin}){
             <div style={{fontWeight:700,fontSize:"0.82rem",color:"#166534"}}>✓ Verified with {PROV_LABELS[providerInfo.provider]}</div>
             <div style={{fontSize:"0.78rem",color:"#15803d",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{providerInfo.email}</div>
           </div>
-          <button onClick={()=>{setProviderInfo(null);setLoadingProv(null);setError("");setFirstName("");setLastName("");setCommEmail("");setPhone("");setHomeCourt("");setSkillLevel("");setUseDupr(false);setDuprRating("");}} style={{background:"none",border:"none",color:"#6b7280",cursor:"pointer",fontSize:"0.78rem",fontWeight:600,whiteSpace:"nowrap",padding:"6px 10px"}}>✕ Change</button>
+          <button onClick={()=>{setProviderInfo(null);setLoadingProv(null);setError("");setFirstName("");setLastName("");setCommEmail("");setPhone("");setHomeCourt("");setSkillLevel("");setUseDupr(false);setDuprRating("");}} style={{background:"white",border:"1.5px solid #d1d5db",color:"#374151",cursor:"pointer",fontSize:"0.78rem",fontWeight:600,whiteSpace:"nowrap",padding:"5px 12px",borderRadius:20,flexShrink:0}}>← Change</button>
         </div>
         {error&&<div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:8,padding:"10px 14px",color:"#991b1b",fontSize:"0.88rem",marginBottom:16}}>{error}</div>}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
