@@ -17,7 +17,7 @@ export default async function handler(req, res) {
   if (req.method === 'POST' && action === 'save') {
     const { lesson } = req.body;
     const { data, error } = await supabase.from('lessons').insert({
-      student_email: lesson.studentEmail,
+      student_email: (lesson.studentEmail||'').toLowerCase(),
       date: lesson.date,
       time: lesson.time,
       type: lesson.type,

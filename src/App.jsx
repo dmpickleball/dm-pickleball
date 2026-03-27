@@ -1043,7 +1043,7 @@ function AccountPage({user,setPage,onUpdateUser}){
   );
 }
 
-function Dashboard({user,setPage,lessons,onCancel}){
+function Dashboard({user,setPage,lessons,onCancel,dbLoaded}){
   const cancelledStatuses=["cancelled","late_cancel","cancelled_forgiven"];
   const upcoming=lessons.filter(l=>!isPast(l.date,l.time)&&!cancelledStatuses.includes(l.status));
   const history=lessons.filter(l=>isPast(l.date,l.time)||l.status==="completed"||cancelledStatuses.includes(l.status));
@@ -1060,21 +1060,29 @@ function Dashboard({user,setPage,lessons,onCancel}){
         </div>
         <button onClick={()=>setPage("booking")} style={{background:G,color:"white",border:"none",padding:"11px 24px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"0.92rem"}}>+ Book a Lesson</button>
       </div>
-      <div style={{marginBottom:36}}>
-        <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Upcoming Lessons ({upcoming.length})</div>
-        {upcoming.length===0
-          ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"32px",textAlign:"center",color:"#9ca3af"}}>No upcoming lessons. <span onClick={()=>setPage("booking")} style={{color:G,fontWeight:700,cursor:"pointer"}}>Book one now →</span></div>
-          :upcoming.map(l=><LessonCard key={l.id} lesson={l} isHistory={false} onCancel={onCancel}/>)
-        }
-      </div>
-      <div>
-        <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Lesson History ({history.length}) · Click to expand</div>
-
-        {history.length===0
-          ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"32px",textAlign:"center",color:"#9ca3af"}}>No past lessons yet.</div>
-          :history.map(l=><LessonCard key={l.id} lesson={l} isHistory={true} onCancel={onCancel}/>)
-        }
-      </div>
+      {!dbLoaded?(
+        <div style={{textAlign:"center",padding:"60px 0",color:"#9ca3af"}}>
+          <div style={{fontSize:"1.5rem",marginBottom:12}}>⏳</div>
+          <div style={{fontWeight:600}}>Loading your lessons…</div>
+        </div>
+      ):(
+        <>
+          <div style={{marginBottom:36}}>
+            <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Upcoming Lessons ({upcoming.length})</div>
+            {upcoming.length===0
+              ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"32px",textAlign:"center",color:"#9ca3af"}}>No upcoming lessons. <span onClick={()=>setPage("booking")} style={{color:G,fontWeight:700,cursor:"pointer"}}>Book one now →</span></div>
+              :upcoming.map(l=><LessonCard key={l.id} lesson={l} isHistory={false} onCancel={onCancel}/>)
+            }
+          </div>
+          <div>
+            <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Lesson History ({history.length}) · Click to expand</div>
+            {history.length===0
+              ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"32px",textAlign:"center",color:"#9ca3af"}}>No past lessons yet.</div>
+              :history.map(l=><LessonCard key={l.id} lesson={l} isHistory={true} onCancel={onCancel}/>)
+            }
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -3184,7 +3192,8 @@ export default function App(){
           const users={};
           const lessonsByStudent={};
           sr.students.forEach(s=>{
-            users[s.email]={
+            const sEmail=(s.email||"").toLowerCase();
+            users[sEmail]={
               name:s.name||s.email,
               firstName:s.first_name||"",
               lastName:s.last_name||"",
@@ -3199,12 +3208,13 @@ export default function App(){
               homeCourt:s.home_court||"",
               picture:s.picture||"",
             };
-            lessonsByStudent[s.email]=[];
+            lessonsByStudent[sEmail]=[];
           });
           if(lr.lessons){
             lr.lessons.forEach(l=>{
-              if(!lessonsByStudent[l.student_email])lessonsByStudent[l.student_email]=[];
-              lessonsByStudent[l.student_email].push({
+              const lEmail=(l.student_email||"").toLowerCase();
+              if(!lessonsByStudent[lEmail])lessonsByStudent[lEmail]=[];
+              lessonsByStudent[lEmail].push({
                 id:l.id,date:l.date,time:l.time,type:l.type,
                 duration:l.duration,status:l.status,focus:l.focus||"",
                 notes:l.notes||"",photos:[],videos:[],
@@ -3343,7 +3353,7 @@ export default function App(){
       {page==="contact"&&<ContactPage/>}
       {page==="login"&&<LoginPage onLogin={u=>{setUser(u);setPage("dashboard");}} onAdminLogin={()=>setIsAdmin(true)}/>}
       {page==="account"&&(user?<AccountPage user={user} setPage={setPage} onUpdateUser={updateUser}/>:<LoginPage onLogin={u=>{setUser(u);setPage("dashboard");}} onAdminLogin={()=>setIsAdmin(true)}/>)}
-      {page==="dashboard"&&(user?<Dashboard user={user} setPage={setPage} lessons={userLessons} onCancel={cancelLesson}/>:<LoginPage onLogin={u=>{setUser(u);setPage("dashboard");}} onAdminLogin={()=>setIsAdmin(true)}/>)}
+      {page==="dashboard"&&(user?<Dashboard user={user} setPage={setPage} lessons={userLessons} onCancel={cancelLesson} dbLoaded={dbLoaded}/>:<LoginPage onLogin={u=>{setUser(u);setPage("dashboard");}} onAdminLogin={()=>setIsAdmin(true)}/>)}
       {page==="booking"&&(user?<BookingPage user={user} setPage={setPage} onAddLesson={addLesson}/>:<LoginPage onLogin={u=>{setUser(u);setPage("dashboard");}} onAdminLogin={()=>setIsAdmin(true)}/>)}
       <footer style={{textAlign:"center",padding:24,color:"#9ca3af",fontSize:"0.82rem",borderTop:"1px solid #e5e7eb",marginTop:20}}>
         © 2026 DM Pickleball — David Mok · SF Peninsula, Bay Area
