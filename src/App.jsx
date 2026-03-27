@@ -139,7 +139,7 @@ function CopyButton({code}){
   );
 }
 
-function CalendarPicker({value,onChange,memberType,fullyBookedDays=new Set()}){
+function CalendarPicker({value,onChange,memberType,fullyBookedDays=new Set(),slotCounts=new Map()}){
   const today=new Date();today.setHours(0,0,0,0);
   const maxDate=new Date(today);maxDate.setDate(today.getDate()+30);
   const[viewing,setViewing]=useState({year:today.getFullYear(),month:today.getMonth()});
@@ -163,31 +163,28 @@ function CalendarPicker({value,onChange,memberType,fullyBookedDays=new Set()}){
       <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",background:"#e8f0ee"}}>
         {["Su","Mo","Tu","We","Th","Fr","Sa"].map(d=><div key={d} style={{textAlign:"center",padding:"8px 0",fontSize:"0.75rem",fontWeight:700,color:G}}>{d}</div>)}
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",padding:"8px"}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",padding:"6px"}}>
         {Array(firstDay).fill(null).map((_,i)=><div key={`e${i}`}/>)}
         {Array(daysInMonth).fill(null).map((_,i)=>{
-          const day=i+1,disabled=isDisabled(day),booked=isFullyBooked(day),selected=isSelected(day),tod=isToday(day);
+          const day=i+1,ds=dayToDS(day),disabled=isDisabled(day),booked=isFullyBooked(day),selected=isSelected(day),tod=isToday(day);
+          const unavailable=disabled||booked;
+          const count=!unavailable?slotCounts.get(ds):undefined;
           return(
-            <div key={day} onClick={()=>selectDay(day)} title={booked?"Fully booked":undefined}
-              style={{position:"relative",aspectRatio:"1",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",borderRadius:"50%",margin:"2px auto",width:36,height:36,
-                cursor:disabled?"default":booked?"not-allowed":"pointer",
-                background:selected?G:booked?"#f3f4f6":"transparent",
-                color:selected?"white":disabled?"#d1d5db":booked?"#b0b7c3":"#1a1a1a",
-                fontWeight:tod||selected?700:400,fontSize:"0.9rem",
-                border:tod&&!selected&&!booked?`2px solid ${G}`:"2px solid transparent",
-                opacity:disabled?0.35:1,transition:"all 0.15s",
-                textDecoration:booked?"line-through":undefined,
-                textDecorationColor:booked?"#9ca3af":undefined,
+            <div key={day} onClick={()=>selectDay(day)}
+              style={{display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",borderRadius:8,margin:"2px",height:44,
+                cursor:unavailable?"default":"pointer",
+                background:selected?G:"transparent",
+                color:selected?"white":unavailable?"#d1d5db":"#1a1a1a",
+                fontWeight:tod&&!unavailable||selected?700:400,fontSize:"0.88rem",
+                border:tod&&!selected&&!unavailable?`2px solid ${G}`:"2px solid transparent",
+                opacity:unavailable?0.4:1,transition:"all 0.15s",
               }}>
-              {day}
-              {booked&&<div style={{position:"absolute",bottom:2,left:"50%",transform:"translateX(-50%)",width:4,height:4,borderRadius:"50%",background:"#d1d5db"}}/>}
+              <span>{day}</span>
+              {count!=null&&<span style={{fontSize:"0.6rem",lineHeight:1.2,marginTop:1,fontWeight:500,color:selected?"rgba(255,255,255,0.8)":G}}>{count} open</span>}
             </div>
           );
         })}
       </div>
-      {fullyBookedDays.size>0&&<div style={{padding:"8px 12px 10px",fontSize:"0.7rem",color:"#9ca3af",borderTop:"1px solid #f3f4f6",textAlign:"center"}}>
-        <span style={{textDecoration:"line-through",marginRight:4}}>7</span>= Fully booked
-      </div>}
     </div>
   );
 }
@@ -1128,6 +1125,7 @@ function BookingPage({user,setPage,onAddLesson}){
   const[busyTimes,setBusyTimes]=useState([]);
   const[loadingSlots,setLoadingSlots]=useState(false);
   const[fullyBookedDays,setFullyBookedDays]=useState(new Set());
+  const[slotCounts,setSlotCounts]=useState(new Map());
   const[loadingAvail,setLoadingAvail]=useState(false);
 
   // Fetch availability as soon as duration is selected (runs in background on step 1)
@@ -1139,7 +1137,8 @@ function BookingPage({user,setPage,onAddLesson}){
     const endStr=toDS(addDays(today,30));
     const mt=isMenlo?"menlo":"public";
     setLoadingAvail(true);
-    setFullyBookedDays(new Set()); // reset while refetching
+    setFullyBookedDays(new Set());
+    setSlotCounts(new Map());
     fetch("/api/get-busy-times?date="+startStr+"&endDate="+endStr+"&memberType="+mt)
       .then(r=>r.json())
       .then(data=>{
@@ -1147,13 +1146,16 @@ function BookingPage({user,setPage,onAddLesson}){
         const busyByDay={};
         busyAll.forEach(b=>{const day=b.start.substring(0,10);if(!busyByDay[day])busyByDay[day]=[];busyByDay[day].push(b);});
         const fullyBooked=new Set();
+        const counts=new Map();
         for(let i=0;i<=30;i++){
           const d=addDays(today,i);const ds=toDS(d);
           const busyForDay=busyByDay[ds]||[];
           const avail=getSlots(ds,mt,duration).filter(s=>!busyForDay.some(b=>{const bufA=b.bufferAfter??30;const bufB=b.bufferBefore??30;return s.s<(b.endMins+bufA)&&s.e>(b.startMins-bufB);}));
           if(avail.length===0)fullyBooked.add(ds);
+          else counts.set(ds,avail.length);
         }
         setFullyBookedDays(fullyBooked);
+        setSlotCounts(counts);
         setLoadingAvail(false);
       })
       .catch(()=>setLoadingAvail(false));
@@ -1289,7 +1291,7 @@ function BookingPage({user,setPage,onAddLesson}){
             {loadingAvail&&<span style={{fontSize:"0.75rem",color:"#9ca3af",display:"flex",alignItems:"center",gap:4}}><span style={{display:"inline-block",width:10,height:10,border:"2px solid #9ca3af",borderTop:"2px solid transparent",borderRadius:"50%",animation:"spin 0.7s linear infinite"}}/> Checking availability…</span>}
           </div>
           <div style={{marginBottom:20,pointerEvents:loadingAvail?"none":"auto",opacity:loadingAvail?0.5:1,transition:"opacity 0.2s"}}>
-            <CalendarPicker value={date} onChange={async d=>{setDate(d);setSlot(null);setSlotIdx(-1);setLoadingSlots(true);try{const r=await fetch("/api/get-busy-times?date="+d);const data=await r.json();setBusyTimes(data.busy||[]);}catch(e){setBusyTimes([]);}setLoadingSlots(false);}} memberType={isMenlo?"menlo":"public"} fullyBookedDays={fullyBookedDays}/>
+            <CalendarPicker value={date} onChange={async d=>{setDate(d);setSlot(null);setSlotIdx(-1);setLoadingSlots(true);try{const r=await fetch("/api/get-busy-times?date="+d);const data=await r.json();setBusyTimes(data.busy||[]);}catch(e){setBusyTimes([]);}setLoadingSlots(false);}} memberType={isMenlo?"menlo":"public"} fullyBookedDays={fullyBookedDays} slotCounts={slotCounts}/>
           </div>
           {date&&(
             <div style={{marginBottom:24}}>
