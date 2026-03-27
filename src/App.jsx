@@ -2012,7 +2012,7 @@ function AdminCalendarView(){
   );
 }
 function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,onApprove,onDeny,mockUsers,onAddStudent,onAddLesson,onToggleMenlo,onToggleSaturday,onBlockStudent,onDeleteStudent,deactivatedStudents,onDeactivateStudent,onReactivateStudent}){
-  const[tab,setTab]=useState(pendingStudents.length>0?"pending":"students");
+  const[tab,setTab]=useState("students");
   const[studentSearch,setStudentSearch]=useState("");
   const[selectedStudent,setSelectedStudent]=useState(null);
   const[editingStudent,setEditingStudent]=useState(false);
@@ -2219,11 +2219,6 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
           <div style={{fontSize:"2rem",fontWeight:900,color:G}}>${earnings.total.toFixed(2)}</div>
           <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:4}}>Your earnings</div>
         </div>
-        <div style={{background:"#e8f0ee",borderRadius:12,padding:"20px 24px",border:"1.5px solid "+G}}>
-          <div style={{fontSize:"0.72rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Menlo Net (70%)</div>
-          <div style={{fontSize:"2rem",fontWeight:900,color:G}}>${earnings.menloNet.toFixed(2)}</div>
-          <div style={{fontSize:"0.8rem",color:"#4b5563",marginTop:4}}>Your 70% from MCC</div>
-        </div>
         <div style={{background:"white",borderRadius:12,padding:"20px 24px",border:"1.5px solid #e5e7eb"}}>
           <div style={{fontSize:"0.72rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Total Students</div>
           <div style={{fontSize:"2rem",fontWeight:900,color:"#1a1a1a"}}>{allStudents.length}</div>
@@ -2237,42 +2232,47 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
       </div>
 
       <div style={{display:"flex",gap:0,borderBottom:"2px solid #e5e7eb",marginBottom:28,flexWrap:"wrap"}}>
-        {[["pending","Pending"+(pendingStudents.length>0?" ("+pendingStudents.length+")":"")],["students","Students"],["lessons","Lessons"],["finances","Finances"]].map(([t,label])=>(
+        {[["students","Students"],["lessons","Lessons"],["finances","Finances"]].map(([t,label])=>(
           <button key={t} onClick={()=>{setTab(t);setSelectedStudent(null);setShowSchedule(false);}}
             style={{background:"none",border:"none",borderBottom:"2px solid "+(tab===t?G:"transparent"),marginBottom:-2,padding:"10px 20px",fontSize:"0.88rem",fontWeight:tab===t?700:500,color:tab===t?G:"#6b7280",cursor:"pointer"}}>
             {label}
-            {t==="pending"&&pendingStudents.length>0&&<span style={{background:"#dc2626",color:"white",borderRadius:50,padding:"1px 7px",fontSize:"0.7rem",fontWeight:800,marginLeft:6}}>{pendingStudents.length}</span>}
+            {t==="students"&&pendingStudents.length>0&&<span style={{background:"#dc2626",color:"white",borderRadius:50,padding:"1px 7px",fontSize:"0.7rem",fontWeight:800,marginLeft:6}}>{pendingStudents.length}</span>}
           </button>
         ))}
       </div>
 
-      {tab==="pending"&&(
-        <div>
-          {pendingStudents.length===0
-            ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"40px",textAlign:"center",color:"#9ca3af"}}>No pending requests right now.</div>
-            :pendingStudents.map(student=>(
-              <div key={student.id} style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"20px 24px",marginBottom:12}}>
-                <div style={{fontWeight:700,fontSize:"0.97rem"}}>{student.firstName&&student.lastName?student.lastName+", "+student.firstName:student.name}</div>
-                <div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>Google: {student.email}{student.commEmail&&student.commEmail!==student.email?" · Comm: "+student.commEmail:""}</div>
-                {student.phone&&<div style={{fontSize:"0.83rem",color:"#6b7280"}}>📱 {student.phone}{student.homeCourt?" · 🏓 "+student.homeCourt:""}</div>}
-                {(student.skillLevel||student.duprRating)&&(
-                  <div style={{marginTop:4,display:"flex",alignItems:"center",gap:6}}>
-                    {student.duprRating?(<><span style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"0.72rem",letterSpacing:1,padding:"1px 6px",borderRadius:3}}>DUPR</span><span style={{fontSize:"0.83rem",fontWeight:700}}>{student.duprRating}</span></>):(<span style={{fontSize:"0.83rem",fontWeight:600,color:"#374151"}}>USAPA {student.skillLevel}</span>)}
-                  </div>
-                )}
-                <div style={{marginTop:12,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
-                  <span style={{fontSize:"0.78rem",fontWeight:600,color:"#6b7280"}}>Approve as:</span>
-                  {["public","menlo"].map(type=>(<button key={type} onClick={()=>onApprove(student,type)} style={{background:type==="menlo"?G:"#1a1a1a",color:"white",border:"none",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>✓ {type==="menlo"?"Menlo Club":"General"}</button>))}
-                  <button onClick={()=>onDeny(student.id)} style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>✕ Deny</button>
-                </div>
-              </div>
-            ))
-          }
-        </div>
-      )}
-
       {tab==="students"&&!selectedStudent&&(
         <div>
+          {/* ── Pending requests inline section ── */}
+          {pendingStudents.length>0&&(
+            <div style={{marginBottom:24}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+                <div style={{fontWeight:800,fontSize:"0.88rem",color:"#dc2626",textTransform:"uppercase",letterSpacing:1}}>⏳ Pending Requests</div>
+                <span style={{background:"#dc2626",color:"white",borderRadius:50,padding:"1px 8px",fontSize:"0.72rem",fontWeight:800}}>{pendingStudents.length}</span>
+              </div>
+              {pendingStudents.map(student=>(
+                <div key={student.id} style={{background:"#fff8f8",borderRadius:12,border:"1.5px solid #fca5a5",padding:"16px 20px",marginBottom:10}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8}}>
+                    <div>
+                      <div style={{fontWeight:700,fontSize:"0.97rem"}}>{student.firstName&&student.lastName?student.lastName+", "+student.firstName:student.name}</div>
+                      <div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>{student.email}{student.commEmail&&student.commEmail!==student.email?" · Comm: "+student.commEmail:""}</div>
+                      {student.phone&&<div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:1}}>📱 {student.phone}{student.homeCourt?" · 🏓 "+student.homeCourt:""}</div>}
+                      {(student.skillLevel||student.duprRating)&&(
+                        <div style={{marginTop:4,display:"flex",alignItems:"center",gap:6}}>
+                          {student.duprRating?(<><span style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"0.72rem",letterSpacing:1,padding:"1px 6px",borderRadius:3}}>DUPR</span><span style={{fontSize:"0.83rem",fontWeight:700}}>{student.duprRating}</span></>):(<span style={{fontSize:"0.83rem",fontWeight:600,color:"#374151"}}>USAPA {student.skillLevel}</span>)}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",flexShrink:0}}>
+                      {["public","menlo"].map(type=>(<button key={type} onClick={()=>onApprove(student,type)} style={{background:type==="menlo"?G:"#1a1a1a",color:"white",border:"none",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>✓ {type==="menlo"?"Menlo Club":"General"}</button>))}
+                      <button onClick={()=>onDeny(student.id)} style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>✕ Deny</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <div style={{height:1,background:"#e5e7eb",marginBottom:20}}/>
+            </div>
+          )}
           <div style={{display:"flex",gap:0,marginBottom:16,borderRadius:50,overflow:"hidden",border:"1.5px solid #e5e7eb",alignSelf:"flex-start",width:"fit-content"}}>
             <button onClick={()=>setShowDeactivated(false)} style={{background:!showDeactivated?G:"white",color:!showDeactivated?"white":"#374151",border:"none",padding:"7px 20px",cursor:"pointer",fontWeight:700,fontSize:"0.82rem"}}>Active ({filteredStudents.length})</button>
             <button onClick={()=>setShowDeactivated(true)} style={{background:showDeactivated?"#6b7280":"white",color:showDeactivated?"white":"#6b7280",border:"none",padding:"7px 20px",cursor:"pointer",fontWeight:700,fontSize:"0.82rem",borderLeft:"1.5px solid #e5e7eb"}}>Deactivated ({(deactivatedStudents||[]).length})</button>
@@ -3027,6 +3027,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                             {GRID_E>17&&<div style={{position:"absolute",top:(17-GRID_S)*HOUR_H,left:0,right:0,height:2,background:"#fbbf24",zIndex:1,pointerEvents:"none"}}/>}
                             {/* Bottom grid line */}
                             <div style={{position:"absolute",top:totalH,left:0,right:0,height:1,background:"#e5e7eb",zIndex:1,pointerEvents:"none"}}/>
+                            {/* Current time indicator — only on today's column */}
+                            {isToday&&(()=>{const now=new Date();const nowMins=now.getHours()*60+now.getMinutes();if(nowMins<GRID_S*60||nowMins>GRID_E*60)return null;const nowTop=(nowMins-GRID_S*60)/60*HOUR_H;return(<><div style={{position:"absolute",top:nowTop-1,left:0,right:0,height:2,background:"#ef4444",zIndex:9,pointerEvents:"none"}}/><div style={{position:"absolute",top:nowTop-5,left:-4,width:10,height:10,borderRadius:"50%",background:"#ef4444",zIndex:9,pointerEvents:"none"}}/></>);})()}
                             {/* Event / lesson blocks */}
                             {allDayItems.map((item,i)=>{
                               const{s,e}=getItemStartEnd(item);
