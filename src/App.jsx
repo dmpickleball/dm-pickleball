@@ -139,7 +139,7 @@ function CopyButton({code}){
   );
 }
 
-function CalendarPicker({value,onChange,memberType}){
+function CalendarPicker({value,onChange,memberType,fullyBookedDays=new Set()}){
   const today=new Date();today.setHours(0,0,0,0);
   const maxDate=new Date(today);maxDate.setDate(today.getDate()+30);
   const[viewing,setViewing]=useState({year:today.getFullYear(),month:today.getMonth()});
@@ -147,10 +147,12 @@ function CalendarPicker({value,onChange,memberType}){
   const firstDay=new Date(year,month,1).getDay();
   const daysInMonth=new Date(year,month+1,0).getDate();
   const monthName=new Date(year,month).toLocaleString("default",{month:"long",year:"numeric"});
+  const dayToDS=day=>{const d=new Date(year,month,day);return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;};
   const isDisabled=day=>{const d=new Date(year,month,day);d.setHours(0,0,0,0);if(d<today||d>maxDate)return true;const dow=d.getDay();if(dow===0)return true;if(memberType==="menlo"&&dow===6)return true;return false;};
+  const isFullyBooked=day=>!isDisabled(day)&&fullyBookedDays.has(dayToDS(day));
   const isSelected=day=>{if(!value)return false;const v=new Date(value+"T12:00:00");return year===v.getFullYear()&&month===v.getMonth()&&day===v.getDate();};
   const isToday=day=>{const d=new Date(year,month,day);d.setHours(0,0,0,0);return d.getTime()===today.getTime();};
-  const selectDay=day=>{if(isDisabled(day))return;const d=new Date(year,month,day);onChange(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`);};
+  const selectDay=day=>{if(isDisabled(day)||isFullyBooked(day))return;const d=new Date(year,month,day);onChange(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`);};
   return(
     <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden",userSelect:"none"}}>
       <div style={{background:G,color:"white",padding:"14px 20px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
@@ -164,10 +166,28 @@ function CalendarPicker({value,onChange,memberType}){
       <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",padding:"8px"}}>
         {Array(firstDay).fill(null).map((_,i)=><div key={`e${i}`}/>)}
         {Array(daysInMonth).fill(null).map((_,i)=>{
-          const day=i+1,disabled=isDisabled(day),selected=isSelected(day),tod=isToday(day);
-          return <div key={day} onClick={()=>selectDay(day)} style={{aspectRatio:"1",display:"flex",alignItems:"center",justifyContent:"center",borderRadius:"50%",margin:"2px auto",width:36,height:36,cursor:disabled?"default":"pointer",background:selected?G:"transparent",color:selected?"white":disabled?"#d1d5db":"#1a1a1a",fontWeight:tod||selected?700:400,fontSize:"0.9rem",border:tod&&!selected?`2px solid ${G}`:"2px solid transparent",opacity:disabled?0.4:1,transition:"all 0.15s"}}>{day}</div>;
+          const day=i+1,disabled=isDisabled(day),booked=isFullyBooked(day),selected=isSelected(day),tod=isToday(day);
+          return(
+            <div key={day} onClick={()=>selectDay(day)} title={booked?"Fully booked":undefined}
+              style={{position:"relative",aspectRatio:"1",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",borderRadius:"50%",margin:"2px auto",width:36,height:36,
+                cursor:disabled?"default":booked?"not-allowed":"pointer",
+                background:selected?G:booked?"#f3f4f6":"transparent",
+                color:selected?"white":disabled?"#d1d5db":booked?"#b0b7c3":"#1a1a1a",
+                fontWeight:tod||selected?700:400,fontSize:"0.9rem",
+                border:tod&&!selected&&!booked?`2px solid ${G}`:"2px solid transparent",
+                opacity:disabled?0.35:1,transition:"all 0.15s",
+                textDecoration:booked?"line-through":undefined,
+                textDecorationColor:booked?"#9ca3af":undefined,
+              }}>
+              {day}
+              {booked&&<div style={{position:"absolute",bottom:2,left:"50%",transform:"translateX(-50%)",width:4,height:4,borderRadius:"50%",background:"#d1d5db"}}/>}
+            </div>
+          );
         })}
       </div>
+      {fullyBookedDays.size>0&&<div style={{padding:"8px 12px 10px",fontSize:"0.7rem",color:"#9ca3af",borderTop:"1px solid #f3f4f6",textAlign:"center"}}>
+        <span style={{textDecoration:"line-through",marginRight:4}}>7</span>= Fully booked
+      </div>}
     </div>
   );
 }
@@ -1107,6 +1127,35 @@ function BookingPage({user,setPage,onAddLesson}){
   const[bookedSummary,setBookedSummary]=useState(null);
   const[busyTimes,setBusyTimes]=useState([]);
   const[loadingSlots,setLoadingSlots]=useState(false);
+  const[fullyBookedDays,setFullyBookedDays]=useState(new Set());
+  const[loadingAvail,setLoadingAvail]=useState(false);
+
+  // Pre-fetch full month of busy times when entering step 2 so we can grey out booked days
+  useEffect(()=>{
+    if(step!==2||!duration)return;
+    const today=new Date();
+    const startStr=toDS(today);
+    const endStr=toDS(addDays(today,30));
+    const mt=isMenlo?"menlo":"public";
+    setLoadingAvail(true);
+    fetch("/api/get-busy-times?date="+startStr+"&endDate="+endStr+"&memberType="+mt)
+      .then(r=>r.json())
+      .then(data=>{
+        const busyAll=data.busy||[];
+        const busyByDay={};
+        busyAll.forEach(b=>{const day=b.start.substring(0,10);if(!busyByDay[day])busyByDay[day]=[];busyByDay[day].push(b);});
+        const fullyBooked=new Set();
+        for(let i=0;i<=30;i++){
+          const d=addDays(today,i);const ds=toDS(d);
+          const busyForDay=busyByDay[ds]||[];
+          const avail=getSlots(ds,mt,duration).filter(s=>!busyForDay.some(b=>{const bufA=b.bufferAfter??30;const bufB=b.bufferBefore??30;return s.s<(b.endMins+bufA)&&s.e>(b.startMins-bufB);}));
+          if(avail.length===0)fullyBooked.add(ds);
+        }
+        setFullyBookedDays(fullyBooked);
+        setLoadingAvail(false);
+      })
+      .catch(()=>setLoadingAvail(false));
+  },[step,duration,isMenlo]);
 
   const PRICES={private:{60:isMenlo?115:120,90:isMenlo?172.50:180},semi:{60:isMenlo?120:140,90:isMenlo?180:210},group:{60:140,90:210}};
   const LESSONS=[{id:"private",icon:"🎯",label:"Private",desc:"1-on-1 coaching"},{id:"semi",icon:"👥",label:"Semi-Private",desc:"Always 2 students"},{id:"group",icon:"🏆",label:"Group",desc:"3-5 students"}];
@@ -1233,9 +1282,12 @@ function BookingPage({user,setPage,onAddLesson}){
 
       {step===2&&(
         <div>
-          <div style={{...lbl,marginBottom:12}}>Select a Date</div>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+            <div style={{...lbl}}>Select a Date</div>
+            {loadingAvail&&<span style={{fontSize:"0.75rem",color:"#9ca3af",display:"flex",alignItems:"center",gap:4}}><span style={{display:"inline-block",width:10,height:10,border:"2px solid #9ca3af",borderTop:"2px solid transparent",borderRadius:"50%",animation:"spin 0.7s linear infinite"}}/> Checking availability…</span>}
+          </div>
           <div style={{marginBottom:20}}>
-            <CalendarPicker value={date} onChange={async d=>{setDate(d);setSlot(null);setSlotIdx(-1);setLoadingSlots(true);try{const r=await fetch("/api/get-busy-times?date="+d);const data=await r.json();setBusyTimes(data.busy||[]);}catch(e){setBusyTimes([]);}setLoadingSlots(false);}} memberType={isMenlo?"menlo":"public"}/>
+            <CalendarPicker value={date} onChange={async d=>{setDate(d);setSlot(null);setSlotIdx(-1);setLoadingSlots(true);try{const r=await fetch("/api/get-busy-times?date="+d);const data=await r.json();setBusyTimes(data.busy||[]);}catch(e){setBusyTimes([]);}setLoadingSlots(false);}} memberType={isMenlo?"menlo":"public"} fullyBookedDays={fullyBookedDays}/>
           </div>
           {date&&(
             <div style={{marginBottom:24}}>
