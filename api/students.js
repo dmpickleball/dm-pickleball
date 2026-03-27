@@ -17,6 +17,13 @@ export default async function handler(req, res) {
     return res.status(200).json({ students: data });
   }
 
+  // GET deleted students (archived — email freed for re-registration)
+  if (req.method === 'GET' && action === 'list-deleted') {
+    const { data, error } = await supabase.from('deleted_students').select('*').order('deleted_at', { ascending: false });
+    if (error) return res.status(500).json({ error: error.message });
+    return res.status(200).json({ students: data });
+  }
+
   // GET single student
   if (req.method === 'GET' && action === 'get') {
     const { email } = req.query;
@@ -85,11 +92,35 @@ export default async function handler(req, res) {
     return res.status(200).json({ success: true });
   }
 
-  // POST delete student
+  // POST delete student — archives profile to deleted_students, removes from students
+  // This frees the email for re-registration while preserving lesson history
   if (req.method === 'POST' && action === 'delete') {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: 'email required' });
-    const { error } = await supabase.from('students').delete().eq('email', email.toLowerCase());
+    const lowerEmail = email.toLowerCase();
+
+    // Fetch current student record to archive
+    const { data: student } = await supabase.from('students').select('*').eq('email', lowerEmail).single();
+    if (student) {
+      await supabase.from('deleted_students').upsert({
+        email: lowerEmail,
+        name: student.name || '',
+        first_name: student.first_name || '',
+        last_name: student.last_name || '',
+        comm_email: student.comm_email || '',
+        phone: student.phone || '',
+        city: student.city || '',
+        home_court: student.home_court || '',
+        skill_level: student.skill_level || '',
+        dupr_rating: student.dupr_rating || '',
+        member_type: student.member_type || 'public',
+        picture: student.picture || '',
+        deleted_at: new Date().toISOString(),
+      });
+    }
+
+    // Remove from students table — frees the email
+    const { error } = await supabase.from('students').delete().eq('email', lowerEmail);
     if (error) return res.status(500).json({ error: error.message });
     return res.status(200).json({ success: true });
   }

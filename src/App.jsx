@@ -2019,7 +2019,7 @@ function AdminCalendarView(){
     </div>
   );
 }
-function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,onApprove,onDeny,mockUsers,onAddStudent,onAddLesson,onToggleMenlo,onToggleSaturday,onBlockStudent,onDeleteStudent,deactivatedStudents,onDeactivateStudent,onReactivateStudent}){
+function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,onApprove,onDeny,mockUsers,onAddStudent,onAddLesson,onToggleMenlo,onToggleSaturday,onBlockStudent,onDeleteStudent,deactivatedStudents,onDeactivateStudent,onReactivateStudent,deletedStudents}){
   const[tab,setTab]=useState("students");
   const[studentSearch,setStudentSearch]=useState("");
   const[selectedStudent,setSelectedStudent]=useState(null);
@@ -2057,7 +2057,9 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[showAddStudent,setShowAddStudent]=useState(false);
   const[newStudent,setNewStudent]=useState({name:"",email:"",memberType:"public"});
   const[showDeactivated,setShowDeactivated]=useState(false);
+  const[studentView,setStudentView]=useState("active"); // "active" | "deactivated" | "deleted"
   const[deactivatedSearch,setDeactivatedSearch]=useState("");
+  const[confirmDeleteLogin,setConfirmDeleteLogin]=useState(null); // email being confirmed for deletion
   const[showCalendar,setShowCalendar]=useState(true);
   const[calendarItems,setCalendarItems]=useState([]);
   const[calLoading,setCalLoading]=useState(false);
@@ -2291,79 +2293,137 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
               <div style={{height:1,background:"#e5e7eb",marginBottom:20}}/>
             </div>
           )}
+          {/* ── View toggle: Active / Deactivated / Deleted ── */}
           <div style={{display:"flex",gap:0,marginBottom:16,borderRadius:50,overflow:"hidden",border:"1.5px solid #e5e7eb",alignSelf:"flex-start",width:"fit-content"}}>
-            <button onClick={()=>setShowDeactivated(false)} style={{background:!showDeactivated?G:"white",color:!showDeactivated?"white":"#374151",border:"none",padding:"7px 20px",cursor:"pointer",fontWeight:700,fontSize:"0.82rem"}}>Active ({filteredStudents.length})</button>
-            <button onClick={()=>setShowDeactivated(true)} style={{background:showDeactivated?"#6b7280":"white",color:showDeactivated?"white":"#6b7280",border:"none",padding:"7px 20px",cursor:"pointer",fontWeight:700,fontSize:"0.82rem",borderLeft:"1.5px solid #e5e7eb"}}>Deactivated ({(deactivatedStudents||[]).length})</button>
+            {[["active","Active",filteredStudents.length],["deactivated","Deactivated",(deactivatedStudents||[]).length],["deleted","Deleted",(deletedStudents||[]).length]].map(([v,lbl,cnt],i)=>(
+              <button key={v} onClick={()=>{setStudentView(v);setConfirmDeleteLogin(null);}} style={{background:studentView===v?(v==="deleted"?"#7f1d1d":v==="deactivated"?"#6b7280":G):"white",color:studentView===v?"white":v==="deleted"?"#7f1d1d":v==="deactivated"?"#6b7280":"#374151",border:"none",padding:"7px 20px",cursor:"pointer",fontWeight:700,fontSize:"0.82rem",borderLeft:i>0?"1.5px solid #e5e7eb":"none"}}>{lbl} ({cnt})</button>
+            ))}
           </div>
-          {!showDeactivated&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
-            <input placeholder="🔍 Search students..." value={studentSearch} onChange={e=>setStudentSearch(e.target.value)} style={{...inp,marginBottom:0,maxWidth:300,flex:1}}/>
-            <button onClick={()=>setShowAddStudent(!showAddStudent)} style={{background:G,color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>+ Add Student</button>
-          </div>}
-          {showDeactivated&&<div style={{marginBottom:16}}>
-            <input placeholder="🔍 Search deactivated..." value={deactivatedSearch} onChange={e=>setDeactivatedSearch(e.target.value)} style={{...inp,marginBottom:0,maxWidth:300}}/>
-          </div>}
-          {showAddStudent&&(
-            <div style={{background:"#f9f9f6",borderRadius:12,padding:"20px",marginBottom:16,border:"1.5px solid #e5e7eb"}}>
-              <div style={{fontWeight:700,marginBottom:12}}>Add Student Manually</div>
-              <input placeholder="Full Name" value={newStudent.name} onChange={e=>setNewStudent({...newStudent,name:e.target.value})} style={inp}/>
-              <input placeholder="Email Address" value={newStudent.email} onChange={e=>setNewStudent({...newStudent,email:e.target.value})} style={inp}/>
-              <select value={newStudent.memberType} onChange={e=>setNewStudent({...newStudent,memberType:e.target.value})} style={{...inp,marginBottom:12}}>
-                <option value="public">General Student</option>
-                <option value="menlo">Menlo Circus Club</option>
-              </select>
-              <div style={{display:"flex",gap:8}}>
-                <button onClick={()=>setShowAddStudent(false)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"8px 20px",borderRadius:50,cursor:"pointer",fontWeight:600}}>Cancel</button>
-                <button onClick={()=>{if(!newStudent.name||!newStudent.email){alert("Name and email required.");return;}onAddStudent(newStudent);setNewStudent({name:"",email:"",memberType:"public"});setShowAddStudent(false);}} style={{background:G,color:"white",border:"none",padding:"8px 20px",borderRadius:50,cursor:"pointer",fontWeight:700}}>Add Student</button>
+
+          {/* Active */}
+          {studentView==="active"&&<>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
+              <input placeholder="🔍 Search students..." value={studentSearch} onChange={e=>setStudentSearch(e.target.value)} style={{...inp,marginBottom:0,maxWidth:300,flex:1}}/>
+              <button onClick={()=>setShowAddStudent(!showAddStudent)} style={{background:G,color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>+ Add Student</button>
+            </div>
+            {showAddStudent&&(
+              <div style={{background:"#f9f9f6",borderRadius:12,padding:"20px",marginBottom:16,border:"1.5px solid #e5e7eb"}}>
+                <div style={{fontWeight:700,marginBottom:12}}>Add Student Manually</div>
+                <input placeholder="Full Name" value={newStudent.name} onChange={e=>setNewStudent({...newStudent,name:e.target.value})} style={inp}/>
+                <input placeholder="Email Address" value={newStudent.email} onChange={e=>setNewStudent({...newStudent,email:e.target.value})} style={inp}/>
+                <select value={newStudent.memberType} onChange={e=>setNewStudent({...newStudent,memberType:e.target.value})} style={{...inp,marginBottom:12}}>
+                  <option value="public">General Student</option>
+                  <option value="menlo">Menlo Circus Club</option>
+                </select>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={()=>setShowAddStudent(false)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"8px 20px",borderRadius:50,cursor:"pointer",fontWeight:600}}>Cancel</button>
+                  <button onClick={()=>{if(!newStudent.name||!newStudent.email){alert("Name and email required.");return;}onAddStudent(newStudent);setNewStudent({name:"",email:"",memberType:"public"});setShowAddStudent(false);}} style={{background:G,color:"white",border:"none",padding:"8px 20px",borderRadius:50,cursor:"pointer",fontWeight:700}}>Add Student</button>
+                </div>
+              </div>
+            )}
+            <div style={{display:"grid",gap:10}}>
+              {filteredStudents.map(email=>{
+                const u=mockUsers[email]||{};
+                const lessons=allLessons[email]||[];
+                const upcoming=lessons.filter(l=>!isPast(l.date,l.time)&&l.status!=="cancelled");
+                const completed=lessons.filter(l=>isPast(l.date,l.time)||l.status==="completed");
+                return(
+                  <div key={email} onClick={()=>{setSelectedStudent(email);setEditingStudent(false);setEditStudentData({});setConfirmDeleteStudent(false);}} style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"16px 20px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8,transition:"all 0.15s"}}
+                    onMouseEnter={e=>e.currentTarget.style.borderColor=G}
+                    onMouseLeave={e=>e.currentTarget.style.borderColor="#e5e7eb"}>
+                    <div style={{display:"flex",alignItems:"center",gap:14}}>
+                      <div style={{width:42,height:42,borderRadius:"50%",overflow:"hidden",background:u.memberType==="menlo"?G:"#e8f0ee",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:"1rem",color:u.memberType==="menlo"?"white":G}}>
+                        {u.picture?<img src={u.picture} alt={u.name} style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:"50%"}}/>:(u.name||email).charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <div style={{fontWeight:700,fontSize:"0.97rem"}}>{u.lastName&&u.firstName?u.lastName+", "+u.firstName:u.name||email}</div>
+                        <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:2}}>{email}</div>
+                      </div>
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                      {u.memberType==="menlo"&&<span style={{background:G,color:"white",padding:"2px 10px",borderRadius:50,fontSize:"0.7rem",fontWeight:700}}>MCC</span>}
+                      {u.blocked&&<span style={{background:"#dc2626",color:"white",padding:"2px 10px",borderRadius:50,fontSize:"0.7rem",fontWeight:700}}>Blocked</span>}
+                      <span style={{fontSize:"0.8rem",color:"#6b7280"}}>{upcoming.length} upcoming · {completed.length} completed</span>
+                      <span style={{color:G,fontSize:"1.1rem"}}>›</span>
+                    </div>
+                  </div>
+                );
+              })}
+              {filteredStudents.length===0&&<div style={{textAlign:"center",color:"#9ca3af",padding:"40px"}}>No students found.</div>}
+            </div>
+          </>}
+
+          {/* Deactivated */}
+          {studentView==="deactivated"&&(
+            <div>
+              <input placeholder="🔍 Search deactivated..." value={deactivatedSearch} onChange={e=>setDeactivatedSearch(e.target.value)} style={{...inp,marginBottom:16,maxWidth:300}}/>
+              <div style={{display:"grid",gap:10}}>
+                {(deactivatedStudents||[]).filter(s=>(s.name||s.email).toLowerCase().includes(deactivatedSearch.toLowerCase())||s.email.toLowerCase().includes(deactivatedSearch.toLowerCase())).map(s=>(
+                  <div key={s.email} style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"16px 20px",opacity:0.85}}>
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+                      <div style={{display:"flex",alignItems:"center",gap:14}}>
+                        <div style={{width:42,height:42,borderRadius:"50%",overflow:"hidden",background:"#f3f4f6",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:"1rem",color:"#9ca3af"}}>
+                          {s.picture?<img src={s.picture} alt={s.name} style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:"50%",filter:"grayscale(1)"}}/>:(s.name||s.email).charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <div style={{fontWeight:700,fontSize:"0.97rem",color:"#6b7280"}}>{s.lastName&&s.firstName?s.lastName+", "+s.firstName:s.name||s.email}</div>
+                          <div style={{fontSize:"0.8rem",color:"#9ca3af",marginTop:2}}>{s.email}</div>
+                          <div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:1}}>{(allLessons[s.email]||[]).length} lesson{(allLessons[s.email]||[]).length!==1?"s":""} on record</div>
+                        </div>
+                      </div>
+                      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                        <button onClick={async()=>{await onReactivateStudent(s.email);}} style={{background:"white",color:G,border:"1.5px solid "+G,padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>↩ Reactivate</button>
+                        <button onClick={()=>setConfirmDeleteLogin(confirmDeleteLogin===s.email?null:s.email)} style={{background:"white",color:"#7f1d1d",border:"1.5px solid #fca5a5",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>🗑 Delete Login</button>
+                      </div>
+                    </div>
+                    {/* Inline confirm */}
+                    {confirmDeleteLogin===s.email&&(
+                      <div style={{marginTop:12,background:"#fff8f8",border:"1.5px solid #fca5a5",borderRadius:10,padding:"14px 16px"}}>
+                        <div style={{fontWeight:700,color:"#7f1d1d",marginBottom:4,fontSize:"0.88rem"}}>Delete login for {s.name||s.email}?</div>
+                        <div style={{fontSize:"0.8rem",color:"#9ca3af",marginBottom:12}}>Their profile moves to Deleted Accounts. All {(allLessons[s.email]||[]).length} lessons are preserved. The email is freed — they could re-register with the same OAuth.</div>
+                        <div style={{display:"flex",gap:8}}>
+                          <button onClick={()=>setConfirmDeleteLogin(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Cancel</button>
+                          <button onClick={async()=>{setConfirmDeleteLogin(null);await onDeleteStudent(s.email);}} style={{background:"#7f1d1d",color:"white",border:"none",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>Yes, Delete Login</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {(deactivatedStudents||[]).length===0&&<div style={{textAlign:"center",color:"#9ca3af",padding:"40px"}}>No deactivated accounts.</div>}
               </div>
             </div>
           )}
-          {!showDeactivated&&<div style={{display:"grid",gap:10}}>
-            {filteredStudents.map(email=>{
-              const u=mockUsers[email]||{};
-              const lessons=allLessons[email]||[];
-              const upcoming=lessons.filter(l=>!isPast(l.date,l.time)&&l.status!=="cancelled");
-              const completed=lessons.filter(l=>isPast(l.date,l.time)||l.status==="completed");
-              return(
-                <div key={email} onClick={()=>{setSelectedStudent(email);setEditingStudent(false);setEditStudentData({});setConfirmDeleteStudent(false);}} style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"16px 20px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8,transition:"all 0.15s"}}
-                  onMouseEnter={e=>e.currentTarget.style.borderColor=G}
-                  onMouseLeave={e=>e.currentTarget.style.borderColor="#e5e7eb"}>
-                  <div style={{display:"flex",alignItems:"center",gap:14}}>
-                    <div style={{width:42,height:42,borderRadius:"50%",overflow:"hidden",background:u.memberType==="menlo"?G:"#e8f0ee",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:"1rem",color:u.memberType==="menlo"?"white":G}}>
-                      {u.picture?<img src={u.picture} alt={u.name} style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:"50%"}}/>:(u.name||email).charAt(0).toUpperCase()}
+
+          {/* Deleted */}
+          {studentView==="deleted"&&(
+            <div>
+              <div style={{background:"#fff8f8",border:"1.5px solid #fca5a5",borderRadius:10,padding:"12px 16px",marginBottom:16,fontSize:"0.82rem",color:"#7f1d1d"}}>
+                🗑 Login removed — profile archived here. Lesson history is fully preserved. These emails are free to re-register.
+              </div>
+              <div style={{display:"grid",gap:10}}>
+                {(deletedStudents||[]).map(s=>{
+                  const lessonCount=(allLessons[s.email]||[]).length;
+                  const deletedDate=s.deletedAt?new Date(s.deletedAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):"";
+                  return(
+                    <div key={s.email} style={{background:"white",borderRadius:12,border:"1.5px solid #fca5a5",padding:"16px 20px",opacity:0.75}}>
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+                        <div style={{display:"flex",alignItems:"center",gap:14}}>
+                          <div style={{width:42,height:42,borderRadius:"50%",background:"#fef2f2",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:"1rem",color:"#9ca3af"}}>
+                            {s.picture?<img src={s.picture} alt={s.name} style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:"50%",filter:"grayscale(1)"}}/>:(s.name||s.email).charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <div style={{fontWeight:700,fontSize:"0.97rem",color:"#6b7280"}}>{s.lastName&&s.firstName?s.lastName+", "+s.firstName:s.name||s.email}</div>
+                            <div style={{fontSize:"0.8rem",color:"#9ca3af",marginTop:2}}>{s.email}</div>
+                            <div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:1}}>{lessonCount} lesson{lessonCount!==1?"s":""} on record{deletedDate?" · Deleted "+deletedDate:""}</div>
+                          </div>
+                        </div>
+                        <span style={{background:"#fef2f2",color:"#dc2626",padding:"3px 12px",borderRadius:50,fontSize:"0.72rem",fontWeight:700}}>Login Deleted</span>
+                      </div>
                     </div>
-                    <div>
-                      <div style={{fontWeight:700,fontSize:"0.97rem"}}>{u.lastName&&u.firstName?u.lastName+", "+u.firstName:u.name||email}</div>
-                      <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:2}}>{email}</div>
-                    </div>
-                  </div>
-                  <div style={{display:"flex",alignItems:"center",gap:10}}>
-                    {u.memberType==="menlo"&&<span style={{background:G,color:"white",padding:"2px 10px",borderRadius:50,fontSize:"0.7rem",fontWeight:700}}>MCC</span>}
-                    {u.blocked&&<span style={{background:"#dc2626",color:"white",padding:"2px 10px",borderRadius:50,fontSize:"0.7rem",fontWeight:700}}>Blocked</span>}
-                    <span style={{fontSize:"0.8rem",color:"#6b7280"}}>{upcoming.length} upcoming · {completed.length} completed</span>
-                    <span style={{color:G,fontSize:"1.1rem"}}>›</span>
-                  </div>
-                </div>
-              );
-            })}
-            {filteredStudents.length===0&&<div style={{textAlign:"center",color:"#9ca3af",padding:"40px"}}>No students found.</div>}
-          </div>}
-          {showDeactivated&&(
-            <div style={{display:"grid",gap:10}}>
-              {(deactivatedStudents||[]).filter(s=>(s.name||s.email).toLowerCase().includes(deactivatedSearch.toLowerCase())||s.email.toLowerCase().includes(deactivatedSearch.toLowerCase())).map(s=>(
-                <div key={s.email} style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"16px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8,opacity:0.75}}>
-                  <div style={{display:"flex",alignItems:"center",gap:14}}>
-                    <div style={{width:42,height:42,borderRadius:"50%",overflow:"hidden",background:"#f3f4f6",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:"1rem",color:"#9ca3af"}}>
-                      {s.picture?<img src={s.picture} alt={s.name} style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:"50%",filter:"grayscale(1)"}}/>:(s.name||s.email).charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <div style={{fontWeight:700,fontSize:"0.97rem",color:"#6b7280"}}>{s.lastName&&s.firstName?s.lastName+", "+s.firstName:s.name||s.email}</div>
-                      <div style={{fontSize:"0.8rem",color:"#9ca3af",marginTop:2}}>{s.email}</div>
-                    </div>
-                  </div>
-                  <button onClick={async()=>{await onReactivateStudent(s.email);}} style={{background:"white",color:G,border:"1.5px solid "+G,padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>↩ Reactivate</button>
-                </div>
-              ))}
-              {(deactivatedStudents||[]).length===0&&<div style={{textAlign:"center",color:"#9ca3af",padding:"40px"}}>No deactivated accounts.</div>}
+                  );
+                })}
+                {(deletedStudents||[]).length===0&&<div style={{textAlign:"center",color:"#9ca3af",padding:"40px"}}>No deleted accounts.</div>}
+              </div>
             </div>
           )}
         </div>
@@ -3215,18 +3275,20 @@ export default function App(){
   const[pendingStudents,setPendingStudents]=useState([]);
   const[mockUsersState,setMockUsersState]=useState({});
   const[deactivatedStudents,setDeactivatedStudents]=useState([]);
+  const[deletedStudents,setDeletedStudents]=useState([]);
   const[dbLoaded,setDbLoaded]=useState(false);
   const[locations,setLocations]=useState([]);
 
   useEffect(()=>{
     const loadFromSupabase=async()=>{
       try{
-        const [pr,lr,sr,locr,dr]=await Promise.all([
+        const [pr,lr,sr,locr,dr,xr]=await Promise.all([
           fetch("/api/students?action=pending").then(r=>r.json()).catch(()=>({})),
           fetch("/api/lessons?action=list").then(r=>r.json()).catch(()=>({})),
           fetch("/api/students?action=list").then(r=>r.json()).catch(()=>({})),
           fetch("/api/locations?action=list").then(r=>r.json()).catch(()=>({})),
           fetch("/api/students?action=list-deactivated").then(r=>r.json()).catch(()=>({})),
+          fetch("/api/students?action=list-deleted").then(r=>r.json()).catch(()=>({})),
         ]);
         if(pr.requests){
           setPendingStudents(pr.requests.map(r=>({
@@ -3282,6 +3344,7 @@ export default function App(){
         }
         if(locr.locations)setLocations(locr.locations);
         if(dr.students)setDeactivatedStudents(dr.students.map(s=>({email:s.email,name:s.name||s.email,firstName:s.first_name||"",lastName:s.last_name||"",memberType:s.member_type||"public",phone:s.phone||"",city:s.city||"",homeCourt:s.home_court||"",picture:s.picture||""})));
+        if(xr.students)setDeletedStudents(xr.students.map(s=>({email:s.email,name:s.name||s.email,firstName:s.first_name||"",lastName:s.last_name||"",memberType:s.member_type||"public",phone:s.phone||"",city:s.city||"",homeCourt:s.home_court||"",picture:s.picture||"",deletedAt:s.deleted_at||""})));
       }catch(e){console.error("Supabase load error:",e);}
       setDbLoaded(true);
     };
@@ -3363,9 +3426,14 @@ export default function App(){
   const toggleSaturday=email=>setMockUsersState(prev=>({...prev,[email]:{...prev[email],saturdayEnabled:!prev[email]?.saturdayEnabled}}));
   const blockStudent=email=>setMockUsersState(prev=>({...prev,[email]:{...prev[email],blocked:!prev[email]?.blocked}}));
   const deleteStudent=async(email)=>{
+    // API archives to deleted_students then removes from students (frees email for re-registration)
     await fetch("/api/students?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email})});
+    // Move from deactivated → deleted in local state; lesson data stays in allLessons
+    const s=deactivatedStudents.find(x=>x.email===email)||{email,name:email};
+    setDeletedStudents(prev=>[{...s,deletedAt:new Date().toISOString()},...prev]);
+    setDeactivatedStudents(prev=>prev.filter(x=>x.email!==email));
+    // Also remove from active state if somehow called from there
     setMockUsersState(prev=>{const next={...prev};delete next[email];return next;});
-    setAllLessons(prev=>{const next={...prev};delete next[email];return next;});
   };
   const deactivateStudent=async(email)=>{
     await fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,updates:{deactivated:true}})});
@@ -3390,7 +3458,7 @@ export default function App(){
           <button onClick={logout} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.4)",color:"white",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem"}}>Log out</button>
         </div>
       </nav>
-      <AdminPanel allLessons={allLessons} onUpdateLesson={updateLesson} onCancelLesson={adminCancel} pendingStudents={pendingStudents} onApprove={approveStudent} onDeny={denyStudent} mockUsers={mockUsersState} onAddStudent={addStudent} onAddLesson={adminAddLesson} onToggleMenlo={toggleMenlo} onToggleSaturday={toggleSaturday} onBlockStudent={blockStudent} onDeleteStudent={deleteStudent} deactivatedStudents={deactivatedStudents} onDeactivateStudent={deactivateStudent} onReactivateStudent={reactivateStudent}/>
+      <AdminPanel allLessons={allLessons} onUpdateLesson={updateLesson} onCancelLesson={adminCancel} pendingStudents={pendingStudents} onApprove={approveStudent} onDeny={denyStudent} mockUsers={mockUsersState} onAddStudent={addStudent} onAddLesson={adminAddLesson} onToggleMenlo={toggleMenlo} onToggleSaturday={toggleSaturday} onBlockStudent={blockStudent} onDeleteStudent={deleteStudent} deactivatedStudents={deactivatedStudents} onDeactivateStudent={deactivateStudent} onReactivateStudent={reactivateStudent} deletedStudents={deletedStudents}/>
     </div>
   );
   return(
