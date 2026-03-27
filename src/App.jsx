@@ -189,7 +189,7 @@ function CalendarPicker({value,onChange,memberType,fullyBookedDays=new Set(),slo
           const unavailable=disabled||booked;
           const selected=!!value&&(()=>{const v=new Date(value+"T12:00:00");return v.getFullYear()===y&&v.getMonth()===m&&v.getDate()===d;})();
           const tod=!other&&isToday(d);
-          const count=!unavailable&&!other?slotCounts.get(ds):undefined;
+          const count=!unavailable?slotCounts.get(ds):undefined;
           const handleClick=()=>{
             if(other){
               // Switch month; select the day if it's available
