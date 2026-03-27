@@ -93,11 +93,22 @@ export default async function handler(req, res) {
           isPickup: true,
           startTime: fmtTime(startDT),
           endTime: fmtTime(endDT),
+          attendeeEmails: (event.attendees || []).map(a => (a.email || '').toLowerCase()).filter(e => e && !e.includes('resource.calendar.google') && !e.includes('serviceaccount')),
         });
         continue;
       }
 
+      // Extract attendee emails (for linking to student profiles on frontend)
+      const attendeeEmails = (event.attendees || [])
+        .map(a => (a.email || '').toLowerCase())
+        .filter(e => e && !e.includes('resource.calendar.google') && !e.includes('serviceaccount'));
+
       const isStanford = category.type === 'stanford_rec' || category.type === 'stanford_open';
+
+      // Extract attendee emails (for linking to student profiles on frontend)
+      const attendeeEmails = (event.attendees || [])
+        .map(a => (a.email || '').toLowerCase())
+        .filter(e => e && !e.includes('resource.calendar.google') && !e.includes('serviceaccount'));
 
       // Menlo lessons: show on calendar but no earnings counted
       if (category.isMenlo) {
@@ -114,6 +125,7 @@ export default async function handler(req, res) {
           location: event.location || '',
           startTime: fmtTime(startDT),
           endTime: fmtTime(endDT),
+          attendeeEmails,
         });
         continue;
       }
@@ -137,6 +149,7 @@ export default async function handler(req, res) {
           isStanford: true,
           startTime: fmtTime(startDT),
           endTime: fmtTime(endDT),
+          attendeeEmails,
         });
       } else {
         const hrs = getDurationHrs(startDT, endDT);
@@ -159,6 +172,7 @@ export default async function handler(req, res) {
           location: event.location || '',
           startTime: fmtTime(startDT),
           endTime: fmtTime(endDT),
+          attendeeEmails,
         });
       }
     }

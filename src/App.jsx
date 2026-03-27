@@ -2868,14 +2868,18 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
         const CalRow=(e,idx)=>{
           const d=new Date(e.date+"T12:00:00");
           const isStanford=e.isStanford||((e.summary||"").toLowerCase().includes("stanford"));
-          const rowBg=isStanford?"#fdf8ff":"#fafffe";
-          const rowBorder=isStanford?"#e9d5ff":"#d1fae5";
-          const dateBg=isStanford?"#ede9fe":"#d1fae5";
-          const dateColor=isStanford?"#5b21b6":"#065f46";
-          const titleColor=isStanford?"#4c1d95":"#1a3c34";
-          const badgeBg=isStanford?"#ede9fe":"#d1fae5";
-          const badgeColor=isStanford?"#5b21b6":"#065f46";
-          const badgeLabel=isStanford?"🎓 Stanford":"📅 Calendar";
+          const isMenlo=e.isMenlo;
+          const rowBg=isStanford?"#fdf8ff":isMenlo?"#fffbeb":"#fafffe";
+          const rowBorder=isStanford?"#e9d5ff":isMenlo?"#fde68a":"#d1fae5";
+          const dateBg=isStanford?"#ede9fe":isMenlo?"#fef3c7":"#d1fae5";
+          const dateColor=isStanford?"#5b21b6":isMenlo?"#92400e":"#065f46";
+          const titleColor=isStanford?"#4c1d95":isMenlo?"#78350f":"#1a3c34";
+          const badgeBg=isStanford?"#ede9fe":isMenlo?"#fef3c7":"#d1fae5";
+          const badgeColor=isStanford?"#5b21b6":isMenlo?"#92400e":"#065f46";
+          const badgeLabel=isStanford?"🎓 Stanford":isMenlo?"🏠 Menlo":"📅 Calendar";
+          // Find linked student from attendee emails
+          const linkedEmail=(e.attendeeEmails||[]).find(em=>mockUsers[em]);
+          const linkedStudent=linkedEmail?mockUsers[linkedEmail]:null;
           return(
             <div key={"cal-"+idx} style={{background:rowBg,borderRadius:12,border:"1.5px solid "+rowBorder,padding:"16px 20px",marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
               <div style={{display:"flex",alignItems:"center",gap:14}}>
@@ -2885,6 +2889,20 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 </div>
                 <div>
                   <div style={{fontWeight:700,fontSize:"0.95rem",color:titleColor}}>{e.summary}</div>
+                  {linkedStudent&&(
+                    <div
+                      onClick={()=>{setSelectedStudent(linkedEmail);setTab("students");}}
+                      style={{display:"inline-flex",alignItems:"center",gap:5,marginTop:3,cursor:"pointer",background:G+"15",border:"1px solid "+G+"40",borderRadius:50,padding:"2px 10px 2px 4px"}}
+                      onMouseEnter={ev=>ev.currentTarget.style.background=G+"25"}
+                      onMouseLeave={ev=>ev.currentTarget.style.background=G+"15"}
+                    >
+                      {linkedStudent.picture
+                        ?<img src={linkedStudent.picture} style={{width:18,height:18,borderRadius:"50%",objectFit:"cover"}}/>
+                        :<div style={{width:18,height:18,borderRadius:"50%",background:G,color:"white",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.6rem",fontWeight:800}}>{(linkedStudent.name||"?")[0]}</div>
+                      }
+                      <span style={{fontSize:"0.75rem",fontWeight:700,color:G}}>{linkedStudent.name}</span>
+                    </div>
+                  )}
                   {e.startTime&&<div style={{fontSize:"0.85rem",fontWeight:700,color:"#374151",marginTop:2}}>🕐 {e.startTime}{e.endTime?" – "+e.endTime:""}</div>}
                   <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:1}}>{e.category}{e.hours?" · "+e.hours+"h":""}</div>
                   {e.location&&<div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:2}}>📍 {e.location.split(",")[0]}</div>}
