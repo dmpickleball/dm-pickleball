@@ -734,18 +734,15 @@ function AdminLoginPage({onAdminLogin}){
     </div>
   );
 }
-const USAPA_RATINGS=[
-  {value:"1.0",label:"1.0",desc:"New to pickleball"},
-  {value:"1.5",label:"1.5",desc:"Learning basics, limited experience"},
-  {value:"2.0",label:"2.0",desc:"Developing strokes, short rallies"},
-  {value:"2.5",label:"2.5",desc:"Consistent medium-paced rallies"},
-  {value:"3.0",label:"3.0",desc:"Consistent groundstrokes, developing strategy"},
-  {value:"3.5",label:"3.5",desc:"More consistent, improving shot placement"},
-  {value:"4.0",label:"4.0",desc:"Powerful shots, advanced strategy, tournament-tested"},
-  {value:"4.5",label:"4.5",desc:"Strong player, competing at high level"},
-  {value:"5.0",label:"5.0",desc:"Tournament-level, mastered power & spin"},
-  {value:"5.5+",label:"5.5+",desc:"Professional / elite competitive"},
+const SELF_RATINGS=[
+  {value:"beginner",   label:"Beginner",       desc:"New to pickleball or just learning the basics"},
+  {value:"novice",     label:"Novice",          desc:"Getting consistent, short rallies"},
+  {value:"intermediate",label:"Intermediate",   desc:"Steady rallies, developing court strategy"},
+  {value:"advanced",   label:"Advanced",        desc:"Strong all-around game, tournament experience"},
+  {value:"elite",      label:"Elite",           desc:"Competing at the highest local/regional level"},
 ];
+// Keep for any legacy references
+const USAPA_RATINGS=SELF_RATINGS;
 
 // ─── Provider icon SVGs ───────────────────────────────────────────────────────
 const PROV_ICONS={
@@ -907,11 +904,11 @@ function LoginPage({onLogin,onAdminLogin}){
         <input style={inp} type="tel" placeholder="Phone Number *" value={phone} onChange={e=>setPhone(e.target.value)}/>
         <LocationInput value={homeCourt} onChange={v=>setHomeCourt(v)} placeholder="Home Court (optional)" style={inp}/>
         <div style={{marginBottom:18}}>
-          <div style={{fontSize:"0.78rem",fontWeight:700,color:"#374151",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Skill Rating <span style={{color:"#dc2626"}}>*</span></div>
+          <div style={{fontSize:"0.78rem",fontWeight:700,color:"#374151",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Self Rating <span style={{color:"#dc2626"}}>*</span></div>
           <select value={skillLevel} onChange={e=>setSkillLevel(e.target.value)} disabled={useDupr}
             style={{...inp,marginBottom:0,color:(!skillLevel||useDupr)?"#9ca3af":"#111827",opacity:useDupr?0.45:1,cursor:useDupr?"not-allowed":"pointer"}}>
-            <option value="">Select rating…</option>
-            {USAPA_RATINGS.map(r=><option key={r.value} value={r.value}>{r.label} – {r.desc}</option>)}
+            <option value="">How would you describe your level?</option>
+            {SELF_RATINGS.map(r=><option key={r.value} value={r.value}>{r.label} – {r.desc}</option>)}
           </select>
           <div style={{display:"flex",alignItems:"center",margin:"10px 0 0"}}>
             <div style={{flex:1,height:1,background:"#d1d5db"}}/><span style={{padding:"0 12px",fontSize:"0.78rem",color:"#9ca3af",fontWeight:600}}>OR</span><div style={{flex:1,height:1,background:"#d1d5db"}}/>
@@ -934,7 +931,7 @@ function LoginPage({onLogin,onAdminLogin}){
           if(!firstName||!lastName){setError("First and last name are required.");return;}
           if(!commEmail||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(commEmail)){setError("A valid communication email is required.");return;}
           if(!phone){setError("Phone number is required.");return;}
-          if(!useDupr&&!skillLevel){setError("Please select a skill rating or enter your DUPR rating.");return;}
+          if(!useDupr&&!skillLevel){setError("Please select your skill level or enter your DUPR rating.");return;}
           if(useDupr&&!duprRating){setError("Please enter your DUPR rating.");return;}
           const fullName=firstName.trim()+" "+lastName.trim();
           fetch("/api/students?action=request",{method:"POST",headers:{"Content-Type":"application/json"},
@@ -1064,24 +1061,6 @@ function AccountPage({user,setPage,onUpdateUser}){
           <label style={lbl}>Home Court <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(optional)</span></label>
           <LocationInput value={homeCourt} onChange={v=>setHomeCourt(v)} placeholder="e.g. Andrew Spinas Park" style={inp}/>
         </div>
-        {(user.skillLevel||user.duprRating)&&(
-          <div style={{marginBottom:24,padding:"12px 14px",background:"#f9fafb",borderRadius:10,border:"1.5px solid #e5e7eb"}}>
-            <div style={{fontSize:"0.78rem",fontWeight:700,color:"#374151",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Skill Rating</div>
-            {user.duprRating?(
-              <div style={{display:"flex",alignItems:"center",gap:10}}>
-                <span style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"0.78rem",letterSpacing:1.5,padding:"2px 8px",borderRadius:4}}>DUPR</span>
-                <span style={{fontWeight:700,fontSize:"1rem"}}>{user.duprRating}</span>
-                <span style={{fontSize:"0.78rem",color:"#6b7280",marginLeft:4}}>· Contact David to update</span>
-              </div>
-            ):(
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <span style={{fontWeight:700,fontSize:"1rem"}}>USAPA {user.skillLevel}</span>
-                <span style={{fontSize:"0.78rem",color:"#6b7280"}}>· {(USAPA_RATINGS.find(r=>r.value===user.skillLevel)||{}).desc||""}</span>
-              </div>
-            )}
-            <div style={{fontSize:"0.73rem",color:"#9ca3af",marginTop:6}}>To update your rating, contact David.</div>
-          </div>
-        )}
         <button onClick={handleSave} disabled={saving} style={{width:"100%",background:saving?"#9ca3af":G,color:"white",border:"none",padding:"14px",borderRadius:50,fontWeight:700,cursor:saving?"not-allowed":"pointer",fontSize:"1rem"}}>
           {saving?"Saving...":"Save Changes"}
         </button>
@@ -2124,6 +2103,9 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[editingId,setEditingId]=useState(null);const[editPriceId,setEditPriceId]=useState(null);const[editPriceVal,setEditPriceVal]=useState("");
   const[editNotes,setEditNotes]=useState("");
   const[confirmCancel,setConfirmCancel]=useState(null);const[confirmDelete,setConfirmDelete]=useState(null);const[confirmDeleteStudent,setConfirmDeleteStudent]=useState(false);
+  const[coachRatingInput,setCoachRatingInput]=useState("");
+  const[ratingNoteInput,setRatingNoteInput]=useState("");
+  const[ratingHistories,setRatingHistories]=useState({});// keyed by student email
   const[scheduleStep,setScheduleStep]=useState(1);
   const[schedLessonType,setSchedLessonType]=useState("private");
   const[schedDuration,setSchedDuration]=useState(60);
@@ -2365,9 +2347,9 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                       <div style={{fontWeight:700,fontSize:"0.97rem"}}>{student.firstName&&student.lastName?student.lastName+", "+student.firstName:student.name}</div>
                       <div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>{student.email}{student.commEmail&&student.commEmail!==student.email?" · Comm: "+student.commEmail:""}</div>
                       {student.phone&&<div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:1}}>📱 {student.phone}{student.homeCourt?" · 🏓 "+student.homeCourt:""}</div>}
-                      {(student.skillLevel||student.duprRating)&&(
-                        <div style={{marginTop:4,display:"flex",alignItems:"center",gap:6}}>
-                          {student.duprRating?(<><span style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"0.72rem",letterSpacing:1,padding:"1px 6px",borderRadius:3}}>DUPR</span><span style={{fontSize:"0.83rem",fontWeight:700}}>{student.duprRating}</span></>):(<span style={{fontSize:"0.83rem",fontWeight:600,color:"#374151"}}>USAPA {student.skillLevel}</span>)}
+                      {student.skillLevel&&(
+                        <div style={{marginTop:2,fontSize:"0.75rem",color:"#9ca3af"}}>
+                          Self-rated: {(SELF_RATINGS.find(r=>r.value===student.skillLevel)||{label:student.skillLevel}).label}
                         </div>
                       )}
                     </div>
@@ -2538,13 +2520,6 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                       <input value={editStudentData.phone||""} onChange={e=>setEditStudentData({...editStudentData,phone:e.target.value})} style={{...inp,marginBottom:8,fontSize:"0.85rem"}} placeholder="Phone Number"/>
                       <input value={editStudentData.city||""} onChange={e=>setEditStudentData({...editStudentData,city:e.target.value})} style={{...inp,marginBottom:8,fontSize:"0.85rem"}} placeholder="City"/>
                       <LocationInput value={editStudentData.homeCourt||""} onChange={v=>setEditStudentData({...editStudentData,homeCourt:v})} placeholder="Home Court" style={{...inp,marginBottom:8,fontSize:"0.85rem"}}/>
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-                        <select value={editStudentData.skillLevel||""} onChange={e=>setEditStudentData({...editStudentData,skillLevel:e.target.value})} disabled={!!(editStudentData.duprRating)} style={{...inp,marginBottom:0,fontSize:"0.82rem",opacity:editStudentData.duprRating?0.45:1}}>
-                          <option value="">USAPA Rating…</option>
-                          {USAPA_RATINGS.map(r=><option key={r.value} value={r.value}>{r.label} – {r.desc}</option>)}
-                        </select>
-                        <input value={editStudentData.duprRating||""} onChange={e=>setEditStudentData({...editStudentData,duprRating:e.target.value,skillLevel:e.target.value?"":editStudentData.skillLevel})} style={{...inp,marginBottom:0,fontSize:"0.85rem"}} placeholder="DUPR Rating (e.g. 4.25)" type="number" step="0.01" min="2" max="8"/>
-                      </div>
                     </div>
                   ):(
                     <div>
@@ -2554,8 +2529,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                       {mockUsers[selectedStudent]?.phone&&<div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>📱 {formatPhone(mockUsers[selectedStudent].phone)}</div>}
                       {mockUsers[selectedStudent]?.city&&<div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>📍 {mockUsers[selectedStudent].city}</div>}
                       {mockUsers[selectedStudent]?.homeCourt&&<div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>🏓 {mockUsers[selectedStudent].homeCourt}</div>}
-                      {mockUsers[selectedStudent]?.duprRating&&<div style={{fontSize:"0.83rem",marginTop:2,display:"flex",alignItems:"center",gap:5}}><span style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"0.7rem",letterSpacing:1,padding:"1px 5px",borderRadius:3}}>DUPR</span><span style={{fontWeight:700}}>{mockUsers[selectedStudent].duprRating}</span></div>}
-                      {!mockUsers[selectedStudent]?.duprRating&&mockUsers[selectedStudent]?.skillLevel&&<div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>⭐ USAPA {mockUsers[selectedStudent].skillLevel}</div>}
+                      {mockUsers[selectedStudent]?.skillLevel&&<div style={{fontSize:"0.78rem",color:"#9ca3af",marginTop:2}}>Self-rated: {(SELF_RATINGS.find(r=>r.value===mockUsers[selectedStudent].skillLevel)||{label:mockUsers[selectedStudent].skillLevel}).label}</div>}
                     </div>
                   )}
                 </div>
@@ -2597,6 +2571,67 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
               </div>
             )}
           </div>
+
+          {/* ── Coach Rating ─────────────────────────────────────────── */}
+          {(()=>{
+            const history=(ratingHistories[selectedStudent]||[]);
+            const current=history.length>0?history[history.length-1].rating:null;
+            const submitRating=()=>{
+              const val=parseFloat(coachRatingInput);
+              if(isNaN(val)||val<1||val>7){alert("Enter a rating between 1.0 and 7.0");return;}
+              const entry={id:Date.now(),rating:val,note:ratingNoteInput.trim(),date:new Date().toISOString()};
+              const updated=[...history,entry];
+              setRatingHistories(prev=>({...prev,[selectedStudent]:updated}));
+              fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},
+                body:JSON.stringify({email:selectedStudent,updates:{coach_rating:val,rating_history:JSON.stringify(updated)}})}).catch(()=>{});
+              setCoachRatingInput("");setRatingNoteInput("");
+            };
+            const deleteEntry=(id)=>{
+              const updated=history.filter(e=>e.id!==id);
+              setRatingHistories(prev=>({...prev,[selectedStudent]:updated}));
+              const newCurrent=updated.length>0?updated[updated.length-1].rating:null;
+              fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},
+                body:JSON.stringify({email:selectedStudent,updates:{coach_rating:newCurrent||"",rating_history:JSON.stringify(updated)}})}).catch(()=>{});
+            };
+            return(
+              <div style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:12,padding:"16px 18px",marginBottom:16}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+                  <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2}}>Coach Rating</div>
+                  {current!=null&&<div style={{background:"#e8f0ee",color:G,fontWeight:900,fontSize:"1.1rem",padding:"4px 14px",borderRadius:50}}>{current.toFixed(1)}</div>}
+                </div>
+                {/* Add new rating */}
+                <div style={{display:"flex",gap:8,marginBottom:history.length>0?12:0}}>
+                  <input type="number" step="0.1" min="1" max="7" placeholder="Rating (e.g. 3.5)" value={coachRatingInput} onChange={e=>setCoachRatingInput(e.target.value)}
+                    style={{...inp,marginBottom:0,flex:"0 0 140px",fontSize:"0.85rem"}}
+                    onKeyDown={e=>e.key==="Enter"&&submitRating()}/>
+                  <input type="text" placeholder="Note (optional)" value={ratingNoteInput} onChange={e=>setRatingNoteInput(e.target.value)}
+                    style={{...inp,marginBottom:0,flex:1,fontSize:"0.85rem"}}
+                    onKeyDown={e=>e.key==="Enter"&&submitRating()}/>
+                  <button onClick={submitRating} style={{background:G,color:"white",border:"none",padding:"0 18px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem",flexShrink:0}}>Submit</button>
+                </div>
+                {/* History */}
+                {history.length>0&&(
+                  <div style={{borderTop:"1px solid #f3f4f6",paddingTop:10}}>
+                    <div style={{fontSize:"0.72rem",color:"#9ca3af",fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>History</div>
+                    {[...history].reverse().map((e,i)=>(
+                      <div key={e.id} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",borderBottom:i<history.length-1?"1px solid #f9fafb":"none"}}>
+                        <span style={{fontWeight:700,fontSize:"0.88rem",color:G,minWidth:32}}>{e.rating.toFixed(1)}</span>
+                        <span style={{fontSize:"0.78rem",color:"#6b7280",flex:1}}>{e.note||<span style={{color:"#d1d5db",fontStyle:"italic"}}>no note</span>}</span>
+                        <span style={{fontSize:"0.72rem",color:"#9ca3af",minWidth:80,textAlign:"right"}}>{new Date(e.date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"2-digit"})}</span>
+                        <button onClick={()=>deleteEntry(e.id)} style={{background:"none",border:"none",color:"#d1d5db",cursor:"pointer",fontSize:"0.9rem",padding:"0 2px",lineHeight:1}} title="Delete">✕</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {/* DUPR placeholder */}
+                <div style={{marginTop:12,padding:"8px 12px",background:"#f0f4ff",borderRadius:8,display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"0.68rem",letterSpacing:1.5,padding:"2px 7px",borderRadius:4}}>DUPR</span>
+                  <span style={{fontSize:"0.75rem",color:"#6b7280"}}>DUPR integration coming soon — link student accounts to sync ratings automatically.</span>
+                </div>
+              </div>
+            );
+          })()}
+          {/* ─────────────────────────────────────────────────────────── */}
 
           <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Lesson History</div>
           {(allLessons[selectedStudent]||[]).length===0&&<div style={{color:"#9ca3af",fontSize:"0.9rem",textAlign:"center",padding:"32px"}}>No lessons yet.</div>}
