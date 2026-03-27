@@ -735,11 +735,11 @@ function AdminLoginPage({onAdminLogin}){
   );
 }
 const SELF_RATINGS=[
-  {value:"beginner",   label:"Beginner",       desc:"New to pickleball or just learning the basics"},
-  {value:"novice",     label:"Novice",          desc:"Getting consistent, short rallies"},
-  {value:"intermediate",label:"Intermediate",   desc:"Steady rallies, developing court strategy"},
-  {value:"advanced",   label:"Advanced",        desc:"Strong all-around game, tournament experience"},
-  {value:"elite",      label:"Elite",           desc:"Competing at the highest local/regional level"},
+  {value:"beginner",    label:"Beginner",      range:"2.0–2.9", desc:"New to pickleball or just learning the basics"},
+  {value:"novice",      label:"Novice",        range:"3.0–3.4", desc:"Getting consistent, short rallies"},
+  {value:"intermediate",label:"Intermediate",  range:"3.5–4.0", desc:"Steady rallies, developing court strategy"},
+  {value:"advanced",    label:"Advanced",      range:"4.0–5.0", desc:"Strong all-around game, tournament experience"},
+  {value:"elite",       label:"Elite",         range:"5.0+",    desc:"Competing at the highest local/regional level"},
 ];
 // Keep for any legacy references
 const USAPA_RATINGS=SELF_RATINGS;
@@ -905,37 +905,23 @@ function LoginPage({onLogin,onAdminLogin}){
         <LocationInput value={homeCourt} onChange={v=>setHomeCourt(v)} placeholder="Home Court (optional)" style={inp}/>
         <div style={{marginBottom:18}}>
           <div style={{fontSize:"0.78rem",fontWeight:700,color:"#374151",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Self Rating <span style={{color:"#dc2626"}}>*</span></div>
-          <select value={skillLevel} onChange={e=>setSkillLevel(e.target.value)} disabled={useDupr}
-            style={{...inp,marginBottom:0,color:(!skillLevel||useDupr)?"#9ca3af":"#111827",opacity:useDupr?0.45:1,cursor:useDupr?"not-allowed":"pointer"}}>
+          <select value={skillLevel} onChange={e=>setSkillLevel(e.target.value)}
+            style={{...inp,marginBottom:0,color:!skillLevel?"#9ca3af":"#111827",cursor:"pointer"}}>
             <option value="">How would you describe your level?</option>
-            {SELF_RATINGS.map(r=><option key={r.value} value={r.value}>{r.label} – {r.desc}</option>)}
+            {SELF_RATINGS.map(r=><option key={r.value} value={r.value}>{r.label} ({r.range}) – {r.desc}</option>)}
           </select>
-          <div style={{display:"flex",alignItems:"center",margin:"10px 0 0"}}>
-            <div style={{flex:1,height:1,background:"#d1d5db"}}/><span style={{padding:"0 12px",fontSize:"0.78rem",color:"#9ca3af",fontWeight:600}}>OR</span><div style={{flex:1,height:1,background:"#d1d5db"}}/>
-          </div>
-          <div style={{marginTop:10,padding:"12px 14px",background:useDupr?"#f0f4ff":"#f9fafb",borderRadius:10,border:useDupr?"1.5px solid #1b2a6b":"1.5px solid #e5e7eb",transition:"all 0.15s"}}>
-            <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",userSelect:"none"}}>
-              <input type="checkbox" checked={useDupr} onChange={e=>{setUseDupr(e.target.checked);if(!e.target.checked)setDuprRating("");}} style={{width:17,height:17,accentColor:"#1b2a6b",cursor:"pointer"}}/>
-              <span style={{fontWeight:700,fontSize:"0.9rem",color:"#1b2a6b",letterSpacing:1.5,fontFamily:"Arial,sans-serif"}}>DUPR</span>
-              <span style={{fontWeight:600,fontSize:"0.88rem",color:"#374151"}}>I have a DUPR rating</span>
-            </label>
-            {useDupr&&(
-              <div style={{marginTop:10}}>
-                <input type="number" step="0.01" min="2" max="8" placeholder="Enter your DUPR rating (e.g. 4.25)" value={duprRating} onChange={e=>setDuprRating(e.target.value)} style={{...inp,marginBottom:4}}/>
-                <div style={{fontSize:"0.73rem",color:"#9ca3af"}}>You can link your DUPR account after registration to sync your rating automatically.</div>
-              </div>
-            )}
+          <div style={{marginTop:8,fontSize:"0.72rem",color:"#9ca3af",paddingLeft:2}}>
+            Have a DUPR rating? You'll be able to link your account after signing in.
           </div>
         </div>
         <button onClick={()=>{
           if(!firstName||!lastName){setError("First and last name are required.");return;}
           if(!commEmail||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(commEmail)){setError("A valid communication email is required.");return;}
           if(!phone){setError("Phone number is required.");return;}
-          if(!useDupr&&!skillLevel){setError("Please select your skill level or enter your DUPR rating.");return;}
-          if(useDupr&&!duprRating){setError("Please enter your DUPR rating.");return;}
+          if(!skillLevel){setError("Please select your skill level.");return;}
           const fullName=firstName.trim()+" "+lastName.trim();
           fetch("/api/students?action=request",{method:"POST",headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({email:providerInfo.email,name:fullName,firstName:firstName.trim(),lastName:lastName.trim(),commEmail:commEmail.trim().toLowerCase(),phone,homeCourt,skillLevel:useDupr?"":skillLevel,duprRating:useDupr?duprRating:"",authProvider:providerInfo.provider})
+            body:JSON.stringify({email:providerInfo.email,name:fullName,firstName:firstName.trim(),lastName:lastName.trim(),commEmail:commEmail.trim().toLowerCase(),phone,homeCourt,skillLevel,duprRating:"",authProvider:providerInfo.provider})
           }).then(r=>r.json()).then(data=>{
             if(data.error==="already_exists"){setError("You already have an account. Please sign in.");return;}
             if(data.error==="already_requested"){setError("You already have a pending request. David will be in touch soon.");return;}
