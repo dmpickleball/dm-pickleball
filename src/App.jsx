@@ -147,39 +147,69 @@ function CalendarPicker({value,onChange,memberType,fullyBookedDays=new Set(),slo
   const firstDay=new Date(year,month,1).getDay();
   const daysInMonth=new Date(year,month+1,0).getDate();
   const monthName=new Date(year,month).toLocaleString("default",{month:"long",year:"numeric"});
-  const dayToDS=day=>{const d=new Date(year,month,day);return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;};
-  const isDisabled=day=>{const d=new Date(year,month,day);d.setHours(0,0,0,0);if(d<today||d>maxDate)return true;const dow=d.getDay();if(dow===0)return true;if(memberType==="menlo"&&dow===6)return true;return false;};
-  const isFullyBooked=day=>!isDisabled(day)&&fullyBookedDays.has(dayToDS(day));
-  const isSelected=day=>{if(!value)return false;const v=new Date(value+"T12:00:00");return year===v.getFullYear()&&month===v.getMonth()&&day===v.getDate();};
+  const prevYear=month===0?year-1:year, prevMonth=month===0?11:month-1;
+  const nextYear=month===11?year+1:year, nextMonth=month===11?0:month+1;
+  const prevMonthLastDay=new Date(prevYear,prevMonth+1,0).getDate();
+  const totalCells=Math.ceil((firstDay+daysInMonth)/7)*7;
+  const trailingCount=totalCells-firstDay-daysInMonth;
+
+  const dsForDate=(y,m,d)=>{const dt=new Date(y,m,d);return`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}-${String(dt.getDate()).padStart(2,"0")}`;};
+  const isDateDisabled=(y,m,d)=>{const dt=new Date(y,m,d);dt.setHours(0,0,0,0);if(dt<today||dt>maxDate)return true;const dow=dt.getDay();if(dow===0)return true;if(memberType==="menlo"&&dow===6)return true;return false;};
   const isToday=day=>{const d=new Date(year,month,day);d.setHours(0,0,0,0);return d.getTime()===today.getTime();};
-  const selectDay=day=>{if(isDisabled(day)||isFullyBooked(day))return;const d=new Date(year,month,day);onChange(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`);};
+
+  // Navigate to a different month; clear selected date if it's not in the new month
+  const changeMonth=(ny,nm)=>{
+    if(value){const v=new Date(value+"T12:00:00");if(v.getFullYear()!==ny||v.getMonth()!==nm)onChange('');}
+    setViewing({year:ny,month:nm});
+  };
+
+  // Build all 35 or 42 grid cells: leading prev-month, current month, trailing next-month
+  const cells=[
+    ...Array.from({length:firstDay},(_,i)=>({y:prevYear,m:prevMonth,d:prevMonthLastDay-firstDay+1+i,other:true})),
+    ...Array.from({length:daysInMonth},(_,i)=>({y:year,m:month,d:i+1,other:false})),
+    ...Array.from({length:trailingCount},(_,i)=>({y:nextYear,m:nextMonth,d:i+1,other:true})),
+  ];
+
   return(
     <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden",userSelect:"none"}}>
       <div style={{background:G,color:"white",padding:"14px 20px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <button onClick={()=>month===0?setViewing({year:year-1,month:11}):setViewing({year,month:month-1})} style={{background:"none",border:"none",color:"white",fontSize:"1.3rem",cursor:"pointer",padding:"0 8px"}}>‹</button>
+        <button onClick={()=>changeMonth(prevYear,prevMonth)} style={{background:"none",border:"none",color:"white",fontSize:"1.3rem",cursor:"pointer",padding:"0 8px"}}>‹</button>
         <span style={{fontWeight:700,fontSize:"0.95rem"}}>{monthName}</span>
-        <button onClick={()=>month===11?setViewing({year:year+1,month:0}):setViewing({year,month:month+1})} style={{background:"none",border:"none",color:"white",fontSize:"1.3rem",cursor:"pointer",padding:"0 8px"}}>›</button>
+        <button onClick={()=>changeMonth(nextYear,nextMonth)} style={{background:"none",border:"none",color:"white",fontSize:"1.3rem",cursor:"pointer",padding:"0 8px"}}>›</button>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",background:"#e8f0ee"}}>
         {["Su","Mo","Tu","We","Th","Fr","Sa"].map(d=><div key={d} style={{textAlign:"center",padding:"8px 0",fontSize:"0.75rem",fontWeight:700,color:G}}>{d}</div>)}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",padding:"6px"}}>
-        {Array(firstDay).fill(null).map((_,i)=><div key={`e${i}`}/>)}
-        {Array(daysInMonth).fill(null).map((_,i)=>{
-          const day=i+1,ds=dayToDS(day),disabled=isDisabled(day),booked=isFullyBooked(day),selected=isSelected(day),tod=isToday(day);
+        {cells.map((cell,idx)=>{
+          const{y,m,d,other}=cell;
+          const ds=dsForDate(y,m,d);
+          const disabled=isDateDisabled(y,m,d);
+          const booked=!disabled&&fullyBookedDays.has(ds);
           const unavailable=disabled||booked;
-          const count=!unavailable?slotCounts.get(ds):undefined;
+          const selected=!!value&&(()=>{const v=new Date(value+"T12:00:00");return v.getFullYear()===y&&v.getMonth()===m&&v.getDate()===d;})();
+          const tod=!other&&isToday(d);
+          const count=!unavailable&&!other?slotCounts.get(ds):undefined;
+          const handleClick=()=>{
+            if(other){
+              // Switch month; select the day if it's available
+              setViewing({year:y,month:m});
+              if(!unavailable)onChange(ds); else onChange('');
+            } else {
+              if(!unavailable)onChange(ds);
+            }
+          };
           return(
-            <div key={day} onClick={()=>selectDay(day)}
+            <div key={idx} onClick={handleClick}
               style={{display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",borderRadius:8,margin:"2px",height:44,
-                cursor:unavailable?"default":"pointer",
+                cursor:unavailable&&!other?"default":other&&disabled?"default":"pointer",
                 background:selected?G:"transparent",
-                color:selected?"white":unavailable?"#d1d5db":"#1a1a1a",
+                color:selected?"white":unavailable?"#d1d5db":other?"#9ca3af":"#1a1a1a",
                 fontWeight:tod&&!unavailable||selected?700:400,fontSize:"0.88rem",
                 border:tod&&!selected&&!unavailable?`2px solid ${G}`:"2px solid transparent",
-                opacity:unavailable?0.4:1,transition:"all 0.15s",
+                opacity:unavailable?0.4:other?0.55:1,transition:"all 0.15s",
               }}>
-              <span>{day}</span>
+              <span>{d}</span>
               {count!=null&&<span style={{fontSize:"0.6rem",lineHeight:1.2,marginTop:1,fontWeight:500,color:selected?"rgba(255,255,255,0.8)":G}}>{count} open</span>}
             </div>
           );
@@ -1291,7 +1321,7 @@ function BookingPage({user,setPage,onAddLesson}){
             {loadingAvail&&<span style={{fontSize:"0.75rem",color:"#9ca3af",display:"flex",alignItems:"center",gap:4}}><span style={{display:"inline-block",width:10,height:10,border:"2px solid #9ca3af",borderTop:"2px solid transparent",borderRadius:"50%",animation:"spin 0.7s linear infinite"}}/> Checking availability…</span>}
           </div>
           <div style={{marginBottom:20,pointerEvents:loadingAvail?"none":"auto",opacity:loadingAvail?0.5:1,transition:"opacity 0.2s"}}>
-            <CalendarPicker value={date} onChange={async d=>{setDate(d);setSlot(null);setSlotIdx(-1);setLoadingSlots(true);try{const r=await fetch("/api/get-busy-times?date="+d);const data=await r.json();setBusyTimes(data.busy||[]);}catch(e){setBusyTimes([]);}setLoadingSlots(false);}} memberType={isMenlo?"menlo":"public"} fullyBookedDays={fullyBookedDays} slotCounts={slotCounts}/>
+            <CalendarPicker value={date} onChange={async d=>{setSlot(null);setSlotIdx(-1);if(!d){setDate('');setBusyTimes([]);return;}setDate(d);setLoadingSlots(true);try{const r=await fetch("/api/get-busy-times?date="+d);const data=await r.json();setBusyTimes(data.busy||[]);}catch(e){setBusyTimes([]);}setLoadingSlots(false);}} memberType={isMenlo?"menlo":"public"} fullyBookedDays={fullyBookedDays} slotCounts={slotCounts}/>
           </div>
           {date&&(
             <div style={{marginBottom:24}}>
@@ -1372,11 +1402,11 @@ function BookingPage({user,setPage,onAddLesson}){
           <div style={{background:"#f9f9f6",borderRadius:12,padding:"24px",marginBottom:20,border:"1.5px solid #e5e7eb"}}>
             <div style={{fontWeight:700,color:G,marginBottom:16,fontSize:"1rem"}}>Booking Summary</div>
             <div style={{fontSize:"0.92rem",color:"#374151",lineHeight:2.2}}>
-              <div>📅 {fmtDate(date)}</div>
-              <div>⏱ {slot&&toTimeStr(slot.s,slot.e)}</div>
-              <div>🎯 {lessonType==="private"?"Private":lessonType==="semi"?"Semi-Private":"Group"} · {duration} min</div>
+              <div>📅 <strong style={{fontSize:"1rem"}}>{fmtDate(date)}</strong></div>
+              <div>⏱ <strong style={{fontSize:"1rem"}}>{slot&&toTimeStr(slot.s,slot.e)}</strong></div>
+              <div>🎯 <strong>{lessonType==="private"?"Private":lessonType==="semi"?"Semi-Private":"Group"} · {duration} min</strong></div>
               {focus&&<div>🏓 Focus: {focus}</div>}
-              <div>💰 ${price}{lessonType!=="private"?" per person":""}</div>
+              <div>💰 <strong>${price}{lessonType!=="private"?" per person":""}</strong></div>
               <div>📍 <a href={!isMenlo?"https://maps.google.com/?q=Andrew+Spinas+Park,+3003+Bay+Rd,+Redwood+City,+CA+94063":"https://maps.google.com/?q=Stanford+Redwood+City+Recreation+and+Wellness+Center"} target="_blank" rel="noreferrer" style={{color:G,fontWeight:600}}>{!isMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City":"Stanford Redwood City"}</a></div>
               {lessonType==="semi"&&<div>👥 Partner: {partner.name}</div>}
               {lessonType==="group"&&<div>👥 Group: {[user.name,...groupMembers.slice(0,groupSize-1).map(m=>m.name)].join(", ")}</div>}
