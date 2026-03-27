@@ -27,7 +27,6 @@ function categorizeEvent(summary, location) {
   const s = (summary || '').toLowerCase();
   const l = (location || '').toLowerCase();
   const isMenlo = l.includes('190 park') || l.includes('190 park ln');
-  if (isMenlo) return null;
 
   if (s.includes('stanford rec')) {
     const level = s.includes('adv') ? 'Int-Adv' : s.includes('int') ? 'Beg-Int' : 'Beginner';
@@ -38,17 +37,19 @@ function categorizeEvent(summary, location) {
   }
   if (s.includes('stanford') && !s.includes('pb')) return null;
   if (s.includes('group pb lesson')) {
-    return { type: 'group', label: 'Group Lesson', rateType: 'per60', rate: 140 };
+    return { type: 'group', label: 'Group Lesson', rateType: isMenlo ? 'none' : 'per60', rate: 140, isMenlo };
   }
   if (s.includes('pb lesson')) {
     const slashCount = (s.match(/\//g) || []).length;
-    if (slashCount >= 2) return { type: 'group', label: 'Group Lesson', rateType: 'per60', rate: 140 };
-    if (slashCount === 1) return { type: 'semi', label: 'Semi-Private Lesson', rateType: 'per60', rate: 140 };
-    return { type: 'private', label: 'Private Lesson', rateType: 'per60', rate: 120 };
+    if (slashCount >= 2) return { type: 'group', label: 'Group Lesson', rateType: isMenlo ? 'none' : 'per60', rate: 140, isMenlo };
+    if (slashCount === 1) return { type: 'semi', label: 'Semi-Private Lesson', rateType: isMenlo ? 'none' : 'per60', rate: 140, isMenlo };
+    return { type: 'private', label: 'Private Lesson', rateType: isMenlo ? 'none' : 'per60', rate: 120, isMenlo };
   }
   if (s.includes('pickup')) {
     return { type: 'pickup', label: 'Pickup Buffer', rateType: 'none', rate: 0 };
   }
+  // Non-lesson Menlo events (e.g. court reservations not matching above) — skip
+  if (isMenlo) return null;
   return null;
 }
 
@@ -97,6 +98,25 @@ export default async function handler(req, res) {
       }
 
       const isStanford = category.type === 'stanford_rec' || category.type === 'stanford_open';
+
+      // Menlo lessons: show on calendar but no earnings counted
+      if (category.isMenlo) {
+        const hrs = getDurationHrs(startDT, endDT);
+        events.push({
+          date: startDT.substring(0, 10),
+          summary: event.summary,
+          category: category.label,
+          type: category.type,
+          hours: Math.round(hrs * 100) / 100,
+          earnings: 0,
+          isStanford: false,
+          isMenlo: true,
+          location: event.location || '',
+          startTime: fmtTime(startDT),
+          endTime: fmtTime(endDT),
+        });
+        continue;
+      }
 
       if (isStanford) {
         const hrs = getDurationHrs(startDT, endDT);
