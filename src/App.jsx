@@ -2237,22 +2237,15 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
       </div>
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:16,marginBottom:32}}>
-        <div style={{background:"white",borderRadius:12,padding:"20px 24px",border:"1.5px solid #e5e7eb"}}>
-          <div style={{fontSize:"0.72rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>
-            {["week","month","year"].map(r=>(<span key={r} onClick={()=>setEarningsRange(r)} style={{marginRight:8,cursor:"pointer",color:earningsRange===r?G:"#9ca3af",fontWeight:earningsRange===r?800:500}}>{r.charAt(0).toUpperCase()+r.slice(1)}</span>))}
-          </div>
-          <div style={{fontSize:"2rem",fontWeight:900,color:G}}>{calLoading?"…":"$"+(calEarnings||earnings.total).toFixed(2)}</div>
-          <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:4}}>Your earnings (excl. Stanford)</div>
-        </div>
-        <div style={{background:"white",borderRadius:12,padding:"20px 24px",border:"1.5px solid #e5e7eb"}}>
-          <div style={{fontSize:"0.72rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Total Students</div>
+        <div onClick={()=>{setTab("students");setSelectedStudent(null);}} style={{background:"white",borderRadius:12,padding:"20px 24px",border:"1.5px solid #e5e7eb",cursor:"pointer",transition:"box-shadow 0.15s"}} onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 14px rgba(0,0,0,0.08)"} onMouseLeave={e=>e.currentTarget.style.boxShadow="none"}>
+          <div style={{fontSize:"0.72rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Students</div>
           <div style={{fontSize:"2rem",fontWeight:900,color:"#1a1a1a"}}>{allStudents.length}</div>
-          <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:4}}>Active students</div>
+          <div style={{fontSize:"0.8rem",color:G,marginTop:4,fontWeight:600}}>View all →</div>
         </div>
-        <div style={{background:"white",borderRadius:12,padding:"20px 24px",border:"1.5px solid #e5e7eb"}}>
+        <div onClick={()=>{setTab("lessons");setUpcomingView("upcoming");}} style={{background:"white",borderRadius:12,padding:"20px 24px",border:"1.5px solid #e5e7eb",cursor:"pointer",transition:"box-shadow 0.15s"}} onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 14px rgba(0,0,0,0.08)"} onMouseLeave={e=>e.currentTarget.style.boxShadow="none"}>
           <div style={{fontSize:"0.72rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Upcoming</div>
           <div style={{fontSize:"2rem",fontWeight:900,color:"#1a1a1a"}}>{calLoading?"…":upcomingCalItems.length||allLessonsList.filter(l=>!isPast(l.date,l.time)&&l.status!=="cancelled").length}</div>
-          <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:4}}>Lessons scheduled (excl. Stanford)</div>
+          <div style={{fontSize:"0.8rem",color:G,marginTop:4,fontWeight:600}}>View schedule →</div>
         </div>
       </div>
 
@@ -2884,7 +2877,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
           {/* ── Controls row: view switcher + filters ──────────────────── */}
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:8}}>
             <div style={{display:"flex",gap:4,background:"#f3f4f6",padding:4,borderRadius:10}}>
-              {[["day","Day"],["week","Week"],["month","Month"]].map(([v,lbl])=>(
+              {[["day","Day"],["week","Week"],["month","Month"],["upcoming","Upcoming"]].map(([v,lbl])=>(
                 <button key={v} onClick={()=>{setUpcomingView(v);if(v==="day")setSelectedDay(todayStr);}} style={{background:upcomingView===v?"white":"transparent",color:upcomingView===v?G:"#6b7280",border:"none",padding:"6px 16px",borderRadius:8,cursor:"pointer",fontSize:"0.85rem",fontWeight:upcomingView===v?700:500,boxShadow:upcomingView===v?"0 1px 4px rgba(0,0,0,0.1)":"none",transition:"all 0.15s"}}>{lbl}</button>
               ))}
             </div>
@@ -2896,10 +2889,10 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                   <button onClick={()=>{const[y,m]=calMonth.split("-").map(Number);const next=new Date(y,m,1);setCalMonth(toDS(next).slice(0,7));}} style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"5px 10px",cursor:"pointer",fontWeight:700}}>›</button>
                 </div>
               )}
-              {/* Filter pills */}
-              <button onClick={()=>setFilterCancelled(p=>!p)} style={{background:filterCancelled?"#fef2f2":"white",color:filterCancelled?"#dc2626":"#6b7280",border:"1.5px solid "+(filterCancelled?"#fca5a5":"#e5e7eb"),padding:"5px 13px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:filterCancelled?700:500}}>
+              {/* Filter pills — hidden in Upcoming view */}
+              {upcomingView!=="upcoming"&&<button onClick={()=>setFilterCancelled(p=>!p)} style={{background:filterCancelled?"#fef2f2":"white",color:filterCancelled?"#dc2626":"#6b7280",border:"1.5px solid "+(filterCancelled?"#fca5a5":"#e5e7eb"),padding:"5px 13px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:filterCancelled?700:500}}>
                 {filterCancelled?"✕ Hide Cancelled":"Show Cancelled"}
-              </button>
+              </button>}
               <button onClick={()=>setShowCalendar(p=>!p)} style={{background:showCalendar?"#e8f0ee":"white",color:showCalendar?G:"#6b7280",border:"1.5px solid "+(showCalendar?G:"#e5e7eb"),padding:"5px 13px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:showCalendar?700:500}}>
                 {calLoading?<span style={{display:"inline-block",width:10,height:10,border:"2px solid "+G,borderTop:"2px solid transparent",borderRadius:"50%",animation:"spin 0.7s linear infinite",verticalAlign:"middle",marginRight:4}}/>:"📅 "}{showCalendar?"Cal On":"Cal Off"}
               </button>
@@ -3090,6 +3083,46 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
           })()}
 
           {/* ── MONTH view ─────────────────────────────────────────────── */}
+          {/* ── UPCOMING view ──────────────────────────────────────────── */}
+          {upcomingView==="upcoming"&&(()=>{
+            const todayDT=new Date();todayDT.setHours(0,0,0,0);
+            // Merge portal lessons + non-Stanford calendar items from today onward
+            const portalFwd=allLessonsList.filter(l=>!cancelledStatuses2.includes(l.status)&&!isPast(l.date,l.time));
+            const calFwd=showCalendar?calendarItems.filter(c=>!c.isStanford&&!c.isPickup&&new Date(c.date+"T12:00:00")>=todayDT):[];
+            const merged2=[
+              ...portalFwd.map(l=>({...l,_type:"portal",_sortKey:l.date+(l.time||"")})),
+              ...calFwd.map((c,i)=>({...c,_type:"cal",_idx:i,_sortKey:c.date+(c.startTime||"")}))
+            ].sort((a,b)=>a._sortKey.localeCompare(b._sortKey));
+            // Group by date
+            const byDate={};
+            merged2.forEach(item=>{if(!byDate[item.date])byDate[item.date]=[];byDate[item.date].push(item);});
+            const dates=Object.keys(byDate).sort();
+            if(dates.length===0)return(
+              <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"40px",textAlign:"center",color:"#9ca3af"}}>
+                {calLoading?"Loading upcoming lessons…":"No upcoming lessons found."}
+              </div>
+            );
+            return(
+              <div>
+                <div style={{fontSize:"0.78rem",color:"#9ca3af",marginBottom:16}}>{merged2.length} upcoming lesson{merged2.length!==1?"s":""} · excl. Stanford &amp; Menlo Circus</div>
+                {dates.map(day=>{
+                  const isToday2=day===todayStr;
+                  const dObj=new Date(day+"T12:00:00");
+                  const dayLabel2=isToday2?"Today — "+dObj.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"}):dObj.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"});
+                  return(
+                    <div key={day} style={{marginBottom:20}}>
+                      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+                        <div style={{fontWeight:800,fontSize:"0.8rem",color:isToday2?G:"#374151",textTransform:"uppercase",letterSpacing:1}}>{dayLabel2}</div>
+                        {isToday2&&<span style={{background:G,color:"white",fontSize:"0.65rem",fontWeight:800,padding:"1px 8px",borderRadius:50}}>TODAY</span>}
+                      </div>
+                      {byDate[day].map((item,i)=>item._type==="portal"?LessonRow(item):CalRow(item,item._idx??i))}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
           {upcomingView==="month"&&(
             <div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:4}}>
