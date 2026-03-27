@@ -2072,6 +2072,21 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[weekBusyLoading,setWeekBusyLoading]=useState(false);
 
   const earnings=getEarnings(allLessons,mockUsers,earningsRange);
+  // Calendar-based earnings (non-Stanford, non-pickup, non-Menlo — mirrors Finances tab)
+  const calEarnings=(()=>{
+    const now=new Date();
+    const items=calendarItems.filter(c=>{
+      if(c.isStanford||c.isPickup)return false;
+      const d=new Date(c.date+"T23:59:59");
+      if(d>now)return false;
+      if(earningsRange==="week"){const s=new Date(now);s.setDate(now.getDate()-now.getDay());return d>=s;}
+      if(earningsRange==="month")return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
+      return d.getFullYear()===now.getFullYear();
+    });
+    return items.reduce((sum,c)=>sum+(c.earnings||0),0);
+  })();
+  // Upcoming calendar lessons (non-Stanford, non-pickup)
+  const upcomingCalItems=calendarItems.filter(c=>!c.isStanford&&!c.isPickup&&new Date(c.date+"T12:00:00")>new Date());
   const allStudents=Object.keys(mockUsers);
   const sortedStudents=[...allStudents].sort((a,b)=>{
     const aLast=(mockUsers[a]?.name||a).split(" ").slice(-1)[0].toLowerCase();
@@ -2122,6 +2137,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
         setWeather({temp,emoji:wEmoji(code),desc:wDesc(code),hourly});
       }).catch(()=>{});
   },[]);
+  // Load calendar on mount so dashboard earnings + upcoming are always populated
+  useEffect(()=>{fetchCalendarItems();},[]);
   useEffect(()=>{if(tab==="lessons"&&calendarItems.length===0&&!calLoading)fetchCalendarItems();},[tab]);
   useEffect(()=>{
     if(tab!=="lessons"||upcomingView!=="week")return;
@@ -2224,8 +2241,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
           <div style={{fontSize:"0.72rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>
             {["week","month","year"].map(r=>(<span key={r} onClick={()=>setEarningsRange(r)} style={{marginRight:8,cursor:"pointer",color:earningsRange===r?G:"#9ca3af",fontWeight:earningsRange===r?800:500}}>{r.charAt(0).toUpperCase()+r.slice(1)}</span>))}
           </div>
-          <div style={{fontSize:"2rem",fontWeight:900,color:G}}>${earnings.total.toFixed(2)}</div>
-          <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:4}}>Your earnings</div>
+          <div style={{fontSize:"2rem",fontWeight:900,color:G}}>{calLoading?"…":"$"+(calEarnings||earnings.total).toFixed(2)}</div>
+          <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:4}}>Your earnings (excl. Stanford)</div>
         </div>
         <div style={{background:"white",borderRadius:12,padding:"20px 24px",border:"1.5px solid #e5e7eb"}}>
           <div style={{fontSize:"0.72rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Total Students</div>
@@ -2234,8 +2251,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
         </div>
         <div style={{background:"white",borderRadius:12,padding:"20px 24px",border:"1.5px solid #e5e7eb"}}>
           <div style={{fontSize:"0.72rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Upcoming</div>
-          <div style={{fontSize:"2rem",fontWeight:900,color:"#1a1a1a"}}>{allLessonsList.filter(l=>!isPast(l.date,l.time)&&l.status!=="cancelled").length}</div>
-          <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:4}}>Lessons scheduled</div>
+          <div style={{fontSize:"2rem",fontWeight:900,color:"#1a1a1a"}}>{calLoading?"…":upcomingCalItems.length||allLessonsList.filter(l=>!isPast(l.date,l.time)&&l.status!=="cancelled").length}</div>
+          <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:4}}>Lessons scheduled (excl. Stanford)</div>
         </div>
       </div>
 
