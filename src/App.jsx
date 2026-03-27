@@ -1009,8 +1009,9 @@ function AccountPage({user,setPage,onUpdateUser}){
           <div>
             <div style={{fontWeight:700,fontSize:"1rem"}}>{firstName} {lastName}</div>
             <div style={{fontSize:"0.85rem",color:"#6b7280",marginTop:2}}>{user.email}</div>
-            <span style={{background:"#e8f0ee",color:G,padding:"2px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:600,marginTop:4,display:"inline-block"}}>
-              {user.memberType==="menlo"?"Menlo Circus Club":"General Student"}
+            <span style={{display:"inline-flex",gap:6,marginTop:4,flexWrap:"wrap"}}>
+              {user.memberType==="menlo"&&<span style={{background:"#e8f0ee",color:G,padding:"2px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:600}}>Menlo Circus Club</span>}
+              {user.grandfathered&&<span style={{background:"#fffbea",color:"#92400e",padding:"2px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:600}}>Grandfathered</span>}
             </span>
           </div>
         </div>
@@ -1065,10 +1066,10 @@ function Dashboard({user,setPage,lessons,onCancel,dbLoaded}){
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:32,flexWrap:"wrap",gap:12}}>
         <div>
           <h2 style={{fontWeight:900,color:G,fontSize:"1.6rem",marginBottom:4}}>My Lessons</h2>
-          <p style={{color:"#6b7280",fontSize:"0.92rem"}}>Welcome back, <strong>{user.name}</strong> ·
-            <span style={{background:"#e8f0ee",color:G,padding:"2px 10px",borderRadius:50,fontSize:"0.78rem",fontWeight:600,marginLeft:8}}>
-              {user.memberType==="menlo"?"Menlo Circus Club":"General Student"}
-            </span>
+          <p style={{color:"#6b7280",fontSize:"0.92rem",display:"flex",alignItems:"center",flexWrap:"wrap",gap:6}}>
+            Welcome back, <strong>{user.name}</strong>
+            {user.memberType==="menlo"&&<span style={{background:"#e8f0ee",color:G,padding:"2px 10px",borderRadius:50,fontSize:"0.78rem",fontWeight:600}}>Menlo Circus Club</span>}
+            {user.grandfathered&&<span style={{background:"#fffbea",color:"#92400e",padding:"2px 10px",borderRadius:50,fontSize:"0.78rem",fontWeight:600}}>Grandfathered</span>}
           </p>
         </div>
         <button onClick={()=>setPage("booking")} style={{background:G,color:"white",border:"none",padding:"11px 24px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"0.92rem"}}>+ Book a Lesson</button>
@@ -1240,7 +1241,11 @@ function BookingPage({user,setPage,onAddLesson}){
     <div style={{maxWidth:620,margin:"0 auto",padding:"32px 24px"}}>
       <div style={{marginBottom:28}}>
         <h2 style={{fontWeight:900,color:G,fontSize:"1.6rem",marginBottom:4}}>Book a Lesson</h2>
-        <p style={{color:"#6b7280",fontSize:"0.88rem"}}>Booking as <strong>{user.name}</strong> <span style={{background:"#e8f0ee",color:G,padding:"2px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:600,marginLeft:6}}>{isMenlo?"Menlo Circus Club":"General Student"}</span></p>
+        <p style={{color:"#6b7280",fontSize:"0.88rem",display:"flex",alignItems:"center",flexWrap:"wrap",gap:6}}>
+          Booking as <strong>{user.name}</strong>
+          {isMenlo&&<span style={{background:"#e8f0ee",color:G,padding:"2px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:600}}>Menlo Circus Club</span>}
+          {isGrandfathered&&<span style={{background:"#fffbea",color:"#92400e",padding:"2px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:600}}>Grandfathered</span>}
+        </p>
       </div>
 
       <div style={{display:"flex",alignItems:"center",marginBottom:32,gap:0}}>
