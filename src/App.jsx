@@ -786,7 +786,7 @@ function LoginPage({onLogin,onAdminLogin}){
       if(data.student.deactivated){setLoadingProv(null);setError("This account has been deactivated. Please contact David.");return;}
       if(data.student.blocked){setLoadingProv(null);setError("Your account has been blocked. Please contact David.");return;}
       setLoadingProv(null);
-      onLogin({email,name:data.student.name||(info.firstName+" "+info.lastName).trim(),firstName:data.student.first_name||info.firstName||"",lastName:data.student.last_name||info.lastName||"",commEmail:data.student.comm_email||"",memberType:data.student.member_type,approved:true,picture:info.picture||data.student.picture||"",phone:data.student.phone||"",homeCourt:data.student.home_court||"",city:data.student.city||"",skillLevel:data.student.skill_level||"",duprRating:data.student.dupr_rating||""});
+      onLogin({email,name:data.student.name||(info.firstName+" "+info.lastName).trim(),firstName:data.student.first_name||info.firstName||"",lastName:data.student.last_name||info.lastName||"",commEmail:data.student.comm_email||"",memberType:data.student.member_type,approved:true,picture:info.picture||data.student.picture||"",phone:data.student.phone||"",homeCourt:data.student.home_court||"",city:data.student.city||"",skillLevel:data.student.skill_level||"",duprRating:data.student.dupr_rating||"",grandfathered:!!(data.student.grandfathered)});
       fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,updates:{picture:info.picture||"",auth_provider:provKey}})}).catch(()=>{});
     }catch(e){setLoadingProv(null);setError("Login failed. Please try again.");}
   };
@@ -1102,6 +1102,7 @@ function Dashboard({user,setPage,lessons,onCancel,dbLoaded}){
 
 function BookingPage({user,setPage,onAddLesson}){
   const isMenlo=user.memberType==="menlo";
+  const isGrandfathered=!!(user.grandfathered);
   const[step,setStep]=useState(1);
   const[lessonType,setLessonType]=useState("");
   const[duration,setDuration]=useState(null);
@@ -1157,7 +1158,11 @@ function BookingPage({user,setPage,onAddLesson}){
       .catch(()=>setLoadingAvail(false));
   },[duration,isMenlo]);
 
-  const PRICES={private:{60:isMenlo?115:120,90:isMenlo?172.50:180},semi:{60:isMenlo?120:140,90:isMenlo?180:210},group:{60:140,90:210}};
+  const PRICES={
+    private:{60:isGrandfathered?120:isMenlo?115:120, 90:isGrandfathered?180:isMenlo?172.50:180},
+    semi:   {60:isMenlo?120:140, 90:isMenlo?180:210},
+    group:  {60:140, 90:210},
+  };
   const LESSONS=[{id:"private",icon:"🎯",label:"Private",desc:"1-on-1 coaching"},{id:"semi",icon:"👥",label:"Semi-Private",desc:"Always 2 students"},{id:"group",icon:"🏆",label:"Group",desc:"3-5 students"}];
   const price=lessonType&&duration?PRICES[lessonType][duration]:null;
   const slots=date?getSlots(date,isMenlo?"menlo":"public",duration||60).filter(s=>!busyTimes.some(b=>{const bufA=b.bufferAfter??30;const bufB=b.bufferBefore??30;return s.s<(b.endMins+bufA)&&s.e>(b.startMins-bufB);})):[];
@@ -2071,7 +2076,7 @@ function AdminCalendarView(){
     </div>
   );
 }
-function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,onApprove,onDeny,mockUsers,onAddStudent,onAddLesson,onToggleMenlo,onToggleSaturday,onBlockStudent,onDeleteStudent,deactivatedStudents,onDeactivateStudent,onReactivateStudent,deletedStudents,onBlockDenied}){
+function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,onApprove,onDeny,mockUsers,onAddStudent,onAddLesson,onToggleMenlo,onToggleSaturday,onBlockStudent,onDeleteStudent,deactivatedStudents,onDeactivateStudent,onReactivateStudent,deletedStudents,onBlockDenied,onToggleGrandfathered}){
   const[tab,setTab]=useState("students");
   const[studentSearch,setStudentSearch]=useState("");
   const[selectedStudent,setSelectedStudent]=useState(null);
@@ -2109,6 +2114,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[schedQuickMins,setSchedQuickMins]=useState(null); // target startMins pre-filled from week view click
   const[schedSubmitting,setSchedSubmitting]=useState(false);const[schedCustomPrice,setSchedCustomPrice]=useState("");const[customLocation,setCustomLocation]=useState(false);const[schedLocation,setSchedLocation]=useState("");
   
+  const[pendingMenlo,setPendingMenlo]=useState({}); // {[studentId]: boolean}
   const[showAddStudent,setShowAddStudent]=useState(false);
   const[newStudent,setNewStudent]=useState({name:"",email:"",memberType:"public"});
   const[showDeactivated,setShowDeactivated]=useState(false);
@@ -2327,26 +2333,43 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 <div style={{fontWeight:800,fontSize:"0.88rem",color:"#dc2626",textTransform:"uppercase",letterSpacing:1}}>⏳ Pending Requests</div>
                 <span style={{background:"#dc2626",color:"white",borderRadius:50,padding:"1px 8px",fontSize:"0.72rem",fontWeight:800}}>{pendingStudents.length}</span>
               </div>
-              {pendingStudents.map(student=>(
+              {pendingStudents.map(student=>{
+                const isMenloChecked=!!(pendingMenlo[student.id]);
+                return(
                 <div key={student.id} style={{background:"#fff8f8",borderRadius:12,border:"1.5px solid #fca5a5",padding:"16px 20px",marginBottom:10}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8}}>
-                    <div>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12}}>
+                    {/* Student info */}
+                    <div style={{flex:1,minWidth:0}}>
                       <div style={{fontWeight:700,fontSize:"0.97rem"}}>{student.firstName&&student.lastName?student.lastName+", "+student.firstName:student.name}</div>
-                      <div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>{student.email}{student.commEmail&&student.commEmail!==student.email?" · Comm: "+student.commEmail:""}</div>
-                      {student.phone&&<div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:1}}>📱 {student.phone}{student.homeCourt?" · 🏓 "+student.homeCourt:""}</div>}
-                      {student.skillLevel&&(
-                        <div style={{marginTop:2,fontSize:"0.75rem",color:"#9ca3af"}}>
-                          Self-rated: {(SELF_RATINGS.find(r=>r.value===student.skillLevel)||{label:student.skillLevel}).label}
-                        </div>
-                      )}
+                      <div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>{student.email}{student.commEmail&&student.commEmail!==student.email?" · "+student.commEmail:""}</div>
+                      {student.phone&&<div style={{fontSize:"0.8rem",color:"#9ca3af",marginTop:1}}>📱 {student.phone}{student.homeCourt?" · 🏓 "+student.homeCourt:""}</div>}
+                      {student.skillLevel&&<div style={{marginTop:2,fontSize:"0.75rem",color:"#9ca3af"}}>Self-rated: {(SELF_RATINGS.find(r=>r.value===student.skillLevel)||{label:student.skillLevel}).label}</div>}
                     </div>
-                    <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",flexShrink:0}}>
-                      {["public","menlo"].map(type=>(<button key={type} onClick={()=>onApprove(student,type)} style={{background:type==="menlo"?G:"#1a1a1a",color:"white",border:"none",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>✓ {type==="menlo"?"Menlo Club":"General"}</button>))}
-                      <button onClick={()=>onDeny(student.id)} style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>✕ Deny</button>
+                    {/* Approval controls */}
+                    <div style={{display:"flex",flexDirection:"column",gap:8,alignItems:"flex-end",flexShrink:0}}>
+                      {/* Menlo Club checkbox */}
+                      <label style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",userSelect:"none",fontSize:"0.82rem",fontWeight:600,color:isMenloChecked?G:"#374151"}}>
+                        <input type="checkbox" checked={isMenloChecked}
+                          onChange={e=>setPendingMenlo(prev=>({...prev,[student.id]:e.target.checked}))}
+                          style={{width:15,height:15,accentColor:G,cursor:"pointer"}}/>
+                        Menlo Circus Club
+                      </label>
+                      {/* Action buttons */}
+                      <div style={{display:"flex",gap:8}}>
+                        <button onClick={()=>onApprove(student,isMenloChecked?"menlo":"public")}
+                          style={{background:G,color:"white",border:"none",padding:"7px 18px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>
+                          ✓ Approve{isMenloChecked?" (Menlo)":""}
+                        </button>
+                        <button onClick={()=>onDeny(student.id)}
+                          style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"7px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>
+                          ✕ Deny
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
               <div style={{height:1,background:"#e5e7eb",marginBottom:20}}/>
             </div>
           )}
@@ -2556,14 +2579,32 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 <button onClick={()=>setShowSchedule(true)} style={{background:G,color:"white",border:"none",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.82rem"}}>+ Schedule Lesson</button>
               </div>
             </div>
-            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-              <button onClick={()=>onToggleMenlo(selectedStudent)} style={{background:mockUsers[selectedStudent]?.memberType==="menlo"?G:"white",color:mockUsers[selectedStudent]?.memberType==="menlo"?"white":G,border:"1.5px solid "+G,padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>
-                {mockUsers[selectedStudent]?.memberType==="menlo"?"✓ Menlo Club":"Set Menlo Club"}
-              </button>
-              <button onClick={()=>onBlockStudent(selectedStudent)} style={{background:mockUsers[selectedStudent]?.blocked?"#dc2626":"white",color:mockUsers[selectedStudent]?.blocked?"white":"#dc2626",border:"1.5px solid #dc2626",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>
-                {mockUsers[selectedStudent]?.blocked?"Unblock":"Block Student"}
-              </button>
-              <button onClick={()=>setConfirmDeleteStudent(true)} style={{background:"white",color:"#6b7280",border:"1.5px solid #d1d5db",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>⊘ Deactivate</button>
+            {/* ── Student Modifiers ── */}
+            <div style={{background:"#f9fafb",borderRadius:10,border:"1.5px solid #e5e7eb",padding:"14px 16px",marginBottom:0}}>
+              <div style={{fontSize:"0.7rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1.5,marginBottom:10}}>Account Modifiers</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:10,marginBottom:10}}>
+                {/* Menlo Club */}
+                <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",userSelect:"none",background:mockUsers[selectedStudent]?.memberType==="menlo"?"#e8f0ee":"white",border:"1.5px solid "+(mockUsers[selectedStudent]?.memberType==="menlo"?G:"#e5e7eb"),borderRadius:50,padding:"6px 14px",fontSize:"0.8rem",fontWeight:700,color:mockUsers[selectedStudent]?.memberType==="menlo"?G:"#374151",transition:"all 0.15s"}}>
+                  <input type="checkbox" checked={mockUsers[selectedStudent]?.memberType==="menlo"} onChange={()=>onToggleMenlo(selectedStudent)} style={{width:14,height:14,accentColor:G,cursor:"pointer"}}/>
+                  Menlo Circus Club
+                </label>
+                {/* Grandfathered Pricing */}
+                <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",userSelect:"none",background:mockUsers[selectedStudent]?.grandfathered?"#fffbea":"white",border:"1.5px solid "+(mockUsers[selectedStudent]?.grandfathered?"#f59e0b":"#e5e7eb"),borderRadius:50,padding:"6px 14px",fontSize:"0.8rem",fontWeight:700,color:mockUsers[selectedStudent]?.grandfathered?"#92400e":"#374151",transition:"all 0.15s"}}>
+                  <input type="checkbox" checked={!!mockUsers[selectedStudent]?.grandfathered} onChange={()=>onToggleGrandfathered&&onToggleGrandfathered(selectedStudent)} style={{width:14,height:14,accentColor:"#f59e0b",cursor:"pointer"}}/>
+                  Grandfathered Pricing
+                </label>
+              </div>
+              {mockUsers[selectedStudent]?.grandfathered&&(
+                <div style={{fontSize:"0.72rem",color:"#92400e",background:"#fffbea",borderRadius:6,padding:"5px 10px",marginBottom:8}}>
+                  Private: $120 / 60 min · $180 / 90 min — all other rates unchanged
+                </div>
+              )}
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                <button onClick={()=>onBlockStudent(selectedStudent)} style={{background:mockUsers[selectedStudent]?.blocked?"#dc2626":"white",color:mockUsers[selectedStudent]?.blocked?"white":"#dc2626",border:"1.5px solid #dc2626",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.75rem",fontWeight:700}}>
+                  {mockUsers[selectedStudent]?.blocked?"Unblock Student":"Block Student"}
+                </button>
+                <button onClick={()=>setConfirmDeleteStudent(true)} style={{background:"white",color:"#6b7280",border:"1.5px solid #d1d5db",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.75rem",fontWeight:700}}>⊘ Deactivate</button>
+              </div>
             </div>
             {confirmDeleteStudent&&(
               <div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:10,padding:"14px 18px",marginTop:10,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
@@ -3544,6 +3585,7 @@ export default function App(){
               memberType:s.member_type||"public",
               approved:s.approved,
               blocked:s.blocked,
+              grandfathered:!!(s.grandfathered),
               phone:s.phone||"",
               city:s.city||"",
               homeCourt:s.home_court||"",
@@ -3669,6 +3711,12 @@ export default function App(){
   const toggleMenlo=email=>setMockUsersState(prev=>({...prev,[email]:{...prev[email],memberType:prev[email]?.memberType==="menlo"?"public":"menlo"}}));
   const toggleSaturday=email=>setMockUsersState(prev=>({...prev,[email]:{...prev[email],saturdayEnabled:!prev[email]?.saturdayEnabled}}));
   const blockStudent=email=>setMockUsersState(prev=>({...prev,[email]:{...prev[email],blocked:!prev[email]?.blocked}}));
+  const toggleGrandfathered=email=>{
+    const next=!mockUsersState[email]?.grandfathered;
+    setMockUsersState(prev=>({...prev,[email]:{...prev[email],grandfathered:next}}));
+    fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({email,updates:{grandfathered:next}})}).catch(()=>{});
+  };
   const deleteStudent=async(email)=>{
     // API archives to deleted_students then removes from students (frees email for re-registration)
     await fetch("/api/students?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email})});
@@ -3702,7 +3750,7 @@ export default function App(){
           <button onClick={logout} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.4)",color:"white",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem"}}>Log out</button>
         </div>
       </nav>
-      <AdminPanel allLessons={allLessons} onUpdateLesson={updateLesson} onCancelLesson={adminCancel} pendingStudents={pendingStudents} onApprove={approveStudent} onDeny={denyStudent} mockUsers={mockUsersState} onAddStudent={addStudent} onAddLesson={adminAddLesson} onToggleMenlo={toggleMenlo} onToggleSaturday={toggleSaturday} onBlockStudent={blockStudent} onDeleteStudent={deleteStudent} deactivatedStudents={deactivatedStudents} onDeactivateStudent={deactivateStudent} onReactivateStudent={reactivateStudent} deletedStudents={deletedStudents} onBlockDenied={blockDeniedStudent}/>
+      <AdminPanel allLessons={allLessons} onUpdateLesson={updateLesson} onCancelLesson={adminCancel} pendingStudents={pendingStudents} onApprove={approveStudent} onDeny={denyStudent} mockUsers={mockUsersState} onAddStudent={addStudent} onAddLesson={adminAddLesson} onToggleMenlo={toggleMenlo} onToggleSaturday={toggleSaturday} onBlockStudent={blockStudent} onDeleteStudent={deleteStudent} deactivatedStudents={deactivatedStudents} onDeactivateStudent={deactivateStudent} onReactivateStudent={reactivateStudent} deletedStudents={deletedStudents} onBlockDenied={blockDeniedStudent} onToggleGrandfathered={toggleGrandfathered}/>
     </div>
   );
   return(
