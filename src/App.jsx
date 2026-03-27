@@ -1130,14 +1130,16 @@ function BookingPage({user,setPage,onAddLesson}){
   const[fullyBookedDays,setFullyBookedDays]=useState(new Set());
   const[loadingAvail,setLoadingAvail]=useState(false);
 
-  // Pre-fetch full month of busy times when entering step 2 so we can grey out booked days
+  // Fetch availability as soon as duration is selected (runs in background on step 1)
+  // so by the time the student hits step 2 the greyed-out days are already ready
   useEffect(()=>{
-    if(step!==2||!duration)return;
+    if(!duration)return;
     const today=new Date();
     const startStr=toDS(today);
     const endStr=toDS(addDays(today,30));
     const mt=isMenlo?"menlo":"public";
     setLoadingAvail(true);
+    setFullyBookedDays(new Set()); // reset while refetching
     fetch("/api/get-busy-times?date="+startStr+"&endDate="+endStr+"&memberType="+mt)
       .then(r=>r.json())
       .then(data=>{
@@ -1155,7 +1157,7 @@ function BookingPage({user,setPage,onAddLesson}){
         setLoadingAvail(false);
       })
       .catch(()=>setLoadingAvail(false));
-  },[step,duration,isMenlo]);
+  },[duration,isMenlo]);
 
   const PRICES={private:{60:isMenlo?115:120,90:isMenlo?172.50:180},semi:{60:isMenlo?120:140,90:isMenlo?180:210},group:{60:140,90:210}};
   const LESSONS=[{id:"private",icon:"🎯",label:"Private",desc:"1-on-1 coaching"},{id:"semi",icon:"👥",label:"Semi-Private",desc:"Always 2 students"},{id:"group",icon:"🏆",label:"Group",desc:"3-5 students"}];
@@ -1286,7 +1288,7 @@ function BookingPage({user,setPage,onAddLesson}){
             <div style={{...lbl}}>Select a Date</div>
             {loadingAvail&&<span style={{fontSize:"0.75rem",color:"#9ca3af",display:"flex",alignItems:"center",gap:4}}><span style={{display:"inline-block",width:10,height:10,border:"2px solid #9ca3af",borderTop:"2px solid transparent",borderRadius:"50%",animation:"spin 0.7s linear infinite"}}/> Checking availability…</span>}
           </div>
-          <div style={{marginBottom:20}}>
+          <div style={{marginBottom:20,pointerEvents:loadingAvail?"none":"auto",opacity:loadingAvail?0.5:1,transition:"opacity 0.2s"}}>
             <CalendarPicker value={date} onChange={async d=>{setDate(d);setSlot(null);setSlotIdx(-1);setLoadingSlots(true);try{const r=await fetch("/api/get-busy-times?date="+d);const data=await r.json();setBusyTimes(data.busy||[]);}catch(e){setBusyTimes([]);}setLoadingSlots(false);}} memberType={isMenlo?"menlo":"public"} fullyBookedDays={fullyBookedDays}/>
           </div>
           {date&&(
