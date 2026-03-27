@@ -2089,8 +2089,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
     });
     return items.reduce((sum,c)=>sum+(c.earnings||0),0);
   })();
-  // Upcoming calendar lessons (all non-pickup items from today forward)
-  const upcomingCalItems=calendarItems.filter(c=>!c.isPickup&&new Date(c.date+"T12:00:00")>new Date());
+  // Upcoming calendar lessons for dashboard count (non-Stanford, non-pickup, future)
+  const upcomingCalItems=calendarItems.filter(c=>!c.isPickup&&!c.isStanford&&new Date(c.date+"T12:00:00")>new Date());
   const allStudents=Object.keys(mockUsers);
   const sortedStudents=[...allStudents].sort((a,b)=>{
     const aLast=(mockUsers[a]?.name||a).split(" ").slice(-1)[0].toLowerCase();
@@ -2164,7 +2164,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
       .finally(()=>setWeekBusyLoading(false));
   },[tab,upcomingView,selectedDay]);
 
-  const getWeekDays=(ref)=>{const d=new Date(ref+"T12:00:00");const dow=d.getDay();const mon=new Date(d);mon.setDate(d.getDate()-(dow===0?6:dow-1));return Array.from({length:7},(_,i)=>{const x=new Date(mon);x.setDate(mon.getDate()+i);return toDS(x);});};
+  const getWeekDays=(ref)=>{const d=new Date(ref+"T12:00:00");const dow=d.getDay();const sun=new Date(d);sun.setDate(d.getDate()-dow);return Array.from({length:7},(_,i)=>{const x=new Date(sun);x.setDate(sun.getDate()+i);return toDS(x);});};
   const getMonthGrid=(ym)=>{const[y,m]=ym.split("-").map(Number);const first=new Date(y,m-1,1);const last=new Date(y,m,0);const pad=first.getDay();const days=Array(pad).fill(null);for(let d=1;d<=last.getDate();d++)days.push(toDS(new Date(y,m-1,d)));while(days.length%7!==0)days.push(null);return days;};
   const timeStrToMins=(str)=>{if(!str)return null;const m=str.trim().match(/^(\d+):(\d+)\s*(AM|PM)$/i);if(!m)return null;let h=parseInt(m[1]),mn=parseInt(m[2]);const pm=m[3].toUpperCase()==='PM';if(pm&&h!==12)h+=12;if(!pm&&h===12)h=0;return h*60+mn;};
   const getItemStartEnd=(item)=>{if(item.studentEmail){if(!item.time)return{s:null,e:null};const sep=item.time.includes(' \u2013 ')?' \u2013 ':' - ';const parts=item.time.split(sep);return{s:timeStrToMins(parts[0]),e:parts[1]?timeStrToMins(parts[1]):null};}return{s:timeStrToMins(item.startTime),e:timeStrToMins(item.endTime)};};
