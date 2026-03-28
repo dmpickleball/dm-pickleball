@@ -9,11 +9,9 @@ const LOGO_SIXZERO = "/images/logo-sixzero.png";  // was: IMG_5035.png
 const LOGO_ENGAGE  = "/images/logo-engage.png";   // was: IMG_5037.png
 const DAVID_PHOTO  = "/images/david.jpg";         // was: 1773178886822_IMG_2962.JPG
 
-// ─── FORMSPREE ───────────────────────────────────────────────────────────────
-// 1. Go to https://formspree.io and create a free account
-// 2. Create a new form → copy the form ID (looks like "xrgvkpqz")
-// 3. Replace mvzwanal below with your actual ID
-const FORMSPREE_ID = "mvzwanal";
+// ─── CONTACT FORM ────────────────────────────────────────────────────────────
+// Contact form submissions go to /api/contact (Vercel serverless function).
+// Set CONTACT_GMAIL and CONTACT_GMAIL_APP_PASSWORD in Vercel env vars.
 const GOOGLE_CLIENT_ID    = "708565807163-uu8teuc876ufboujut8vhdo34ro27v8s.apps.googleusercontent.com";
 const MICROSOFT_CLIENT_ID = "87bf204b-1326-4fa8-a616-3d5088714a4a";
 const YAHOO_CLIENT_ID     = "dj0yJmk9dEVscml2TzNha0JVJmQ9WVdrOU5XOWFUMG95WjBNbWNHbzlNQT09JnM9Y29uc3VtZXJzZWNyZXQmc3Y9MCZ4PTUy";
@@ -728,7 +726,7 @@ function GearPage(){
   );
 }
 
-// ─── CONTACT PAGE (with real Formspree submission) ────────────────────────────
+// ─── CONTACT PAGE ────────────────────────────────────────────────────────────
 function ContactPage(){
   const[status,setStatus]=useState("idle"); // idle | sending | success | error
   const[form,setForm]=useState({name:"",email:"",phone:"",message:""});
@@ -737,9 +735,9 @@ function ContactPage(){
     if(!form.name||!form.email){alert("Please enter your name and email.");return;}
     setStatus("sending");
     try{
-      const res=await fetch(`https://formspree.io/f/${FORMSPREE_ID}`,{
+      const res=await fetch("/api/contact",{
         method:"POST",
-        headers:{"Content-Type":"application/json","Accept":"application/json"},
+        headers:{"Content-Type":"application/json"},
         body:JSON.stringify(form),
       });
       if(res.ok){setStatus("success");}
