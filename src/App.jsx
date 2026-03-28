@@ -2993,12 +2993,10 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                   <div style={{display:"flex",gap:8}}>
                     <button onClick={()=>setConfirmDelete(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Keep it</button>
                     <button onClick={async()=>{
-                      try{
-                        if(l.gcalEventId)await fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:l.gcalEventId,mode:"delete"})});
-                        await fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})});
-                        setAllLessons(prev=>({...prev,[selectedStudent]:(prev[selectedStudent]||[]).filter(x=>x.id!==l.id)}));
-                        setConfirmDelete(null);
-                      }catch(e){console.error(e);setConfirmDelete(null);}
+                      if(l.gcalEventId){try{await fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:l.gcalEventId,mode:"delete"})});}catch(e){console.error("GCal delete failed:",e);}}
+                      try{await fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})});}catch(e){console.error("DB delete failed:",e);}
+                      setAllLessons(prev=>({...prev,[selectedStudent]:(prev[selectedStudent]||[]).filter(x=>x.id!==l.id)}));
+                      setConfirmDelete(null);
                     }} style={{background:"#dc2626",color:"white",border:"none",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>Yes, Delete</button>
                   </div>
                 </div>
@@ -3278,12 +3276,10 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 <div style={{display:"flex",gap:8}}>
                   <button onClick={()=>setConfirmDelete(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Keep it</button>
                   <button onClick={async()=>{
-                    try{
-                      if(l.gcalEventId)await fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:l.gcalEventId,mode:"delete"})});
-                      await fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})});
-                      setAllLessons(prev=>({...prev,[l.studentEmail]:(prev[l.studentEmail]||[]).filter(x=>x.id!==l.id)}));
-                      setConfirmDelete(null);
-                    }catch(e){console.error(e);setConfirmDelete(null);}
+                    if(l.gcalEventId){try{await fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:l.gcalEventId,mode:"delete"})});}catch(e){console.error("GCal delete failed:",e);}}
+                    try{await fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})});}catch(e){console.error("DB delete failed:",e);}
+                    setAllLessons(prev=>({...prev,[l.studentEmail]:(prev[l.studentEmail]||[]).filter(x=>x.id!==l.id)}));
+                    setConfirmDelete(null);
                   }} style={{background:"#dc2626",color:"white",border:"none",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>Yes, Delete</button>
                 </div>
               </div>
@@ -3882,7 +3878,7 @@ export default function App(){
   const cancelLesson=async(id)=>{
     const lesson=userLessons.find(l=>l.id===id);
     if(lesson?.gcalEventId){
-      try{await fetch('/api/cancel-booking',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({eventId:lesson.gcalEventId})});}
+      try{await fetch('/api/cancel-booking',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({eventId:lesson.gcalEventId,mode:"delete"})});}
       catch(e){console.error('Calendar cancel failed:',e);}
     }
     const cancelMsg="Your pickleball lesson on "+fmtDateShort(lesson.date)+" at "+lesson.time+" has been cancelled.\n\nIf you have any questions, please contact David at (650) 839-3398.";
@@ -3899,7 +3895,7 @@ export default function App(){
     const lesson=(allLessons[email]||[]).find(l=>l.id===id);
     if(lesson?.gcalEventId){
       try{
-        await fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:lesson.gcalEventId})});
+        await fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:lesson.gcalEventId,mode:"delete"})});
       }catch(e){console.error("Admin GCal cancel failed:",e);}
     }
     const cancelNow2=new Date();const lDeadline2=new Date(getLessonStart(lesson.date,lesson.time).getTime()-24*60*60*1000);const withinGrace2=lesson.createdAt&&((cancelNow2-new Date(lesson.createdAt))/60000)<15;const cancelStatus2=(!withinGrace2&&cancelNow2>lDeadline2)?"late_cancel":"cancelled";
