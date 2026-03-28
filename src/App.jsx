@@ -1304,7 +1304,7 @@ function BookingPage({user,setPage,onAddLesson}){
     const endTime=toTime24(slot.e);
     const timeStr=toTimeStr(slot.s,slot.e);
     const lessonLabel=lessonType==="private"?"Private":lessonType==="semi"?"Semi-Private":"Group";
-    const nameInitial=(first,last)=>{const f=(first||"").trim(),l=(last||"").trim();return l?f+" "+l[0].toUpperCase()+".":f;};
+    const nameInitial=(first,last)=>{const f=(first||"").trim(),l=(last||"").trim();return l?f+" "+l[0].toUpperCase():f;};
     const bookerParts=user.name.trim().split(/\s+/);
     const bookerInitial=nameInitial(bookerParts[0],bookerParts.slice(1).join(" "));
     const partnerFull=(partner.firstName+" "+partner.lastName).trim();
