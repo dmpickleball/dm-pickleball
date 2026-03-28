@@ -317,87 +317,164 @@ function Nav({user,onLogin,onLogout,setPage,currentPage}){
   );
 }
 
-function LessonCard({lesson,isHistory,onCancel}){
-  const[expanded,setExpanded]=useState(false);
-  const[confirmCancel,setConfirmCancel]=useState(false);
+function fmtParticipantName(fullName){
+  if(!fullName)return"";
+  const p=fullName.trim().split(/\s+/);
+  const first=p[0]||"";
+  const last=p.length>1?p[p.length-1]:"";
+  return last?first+" "+last[0].toUpperCase()+".":first;
+}
+function LessonModal({lesson,isMenlo,onClose,onCancel}){
   const isCancelled=["cancelled","late_cancel","cancelled_forgiven"].includes(lesson.status);
+  const cancellable=!isCancelled&&canCancel(lesson.date,lesson.time,lesson.createdAt);
+  const withinGrace=!isCancelled&&!canCancel(lesson.date,lesson.time)&&canCancel(lesson.date,lesson.time,lesson.createdAt);
+  const closed=!isCancelled&&!cancellable&&!withinGrace;
+  const deadline=!isCancelled?getCancelDeadline(lesson.date,lesson.time):null;
+  const[confirmCancel,setConfirmCancel]=useState(false);
+  const location=isMenlo?"Stanford Redwood City":"Andrew Spinas Park, Redwood City";
+  const dateObj=new Date(lesson.date+"T12:00:00");
+  const statusMap={
+    confirmed:{bg:"#e8f0ee",color:G,label:"✓ Confirmed"},
+    pending:{bg:"#fffbea",color:"#92400e",label:"⏳ Pending"},
+    completed:{bg:"#e8f0ee",color:G,label:"✓ Completed"},
+    cancelled:{bg:"#fef2f2",color:"#dc2626",label:"✕ Cancelled"},
+    late_cancel:{bg:"#fff7ed",color:"#c2410c",label:"⚠️ Late Cancel"},
+    cancelled_forgiven:{bg:"#f3f4f6",color:"#6b7280",label:"✓ Cancelled (forgiven)"},
+  };
+  const st=statusMap[lesson.status]||{bg:"#f3f4f6",color:"#6b7280",label:lesson.status};
+  const participants=(lesson.members||[]).filter(Boolean);
+  const detailRows=[
+    ["📅","Date & Time",dateObj.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"})+" · "+lesson.time],
+    ["👨‍🏫","Coach","David Mok"],
+    ["📍","Location",location],
+    ...(lesson.focus?[["🎯","Focus / Drill",lesson.focus]]:[]),
+    ...(lesson.notes?[["📝","Coaching Notes",lesson.notes]]:[]),
+  ];
+  return(
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:20,backdropFilter:"blur(3px)"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"white",borderRadius:16,maxWidth:460,width:"100%",maxHeight:"90vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+        <div style={{background:G,color:"white",padding:"20px 24px",display:"flex",justifyContent:"space-between",alignItems:"flex-start",borderRadius:"16px 16px 0 0"}}>
+          <div>
+            <div style={{fontWeight:900,fontSize:"1.15rem"}}>{lesson.type} · {lesson.duration}</div>
+            <div style={{fontSize:"0.85rem",opacity:0.8,marginTop:4}}>{dateObj.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})}</div>
+          </div>
+          <button onClick={onClose} style={{background:"rgba(255,255,255,0.18)",border:"none",color:"white",width:32,height:32,borderRadius:"50%",cursor:"pointer",fontSize:"1rem",lineHeight:1,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+        </div>
+        <div style={{padding:"14px 24px",borderBottom:"1px solid #f3f4f6",display:"flex",flexWrap:"wrap",gap:8,alignItems:"center"}}>
+          <span style={{background:st.bg,color:st.color,padding:"4px 12px",borderRadius:50,fontSize:"0.82rem",fontWeight:700}}>{st.label}</span>
+          {!isCancelled&&deadline&&(
+            <span style={{fontSize:"0.78rem",color:withinGrace?"#92400e":cancellable?"#6b7280":"#dc2626",background:withinGrace?"#fffbea":cancellable?"#f9f9f6":"#fef2f2",padding:"3px 10px",borderRadius:50,border:`1px solid ${withinGrace?"#f4c430":cancellable?"#e5e7eb":"#fca5a5"}`}}>
+              {withinGrace?"⚠️ Cancel within 15 min":cancellable?"Cancel by: "+fmtDeadline(deadline):"⛔ Cancellation closed"}
+            </span>
+          )}
+        </div>
+        <div style={{padding:"18px 24px"}}>
+          {detailRows.map(([icon,label,val])=>(
+            <div key={label} style={{display:"flex",gap:12,marginBottom:14,alignItems:"flex-start"}}>
+              <span style={{fontSize:"1.1rem",lineHeight:"1.4",flexShrink:0,width:24,textAlign:"center"}}>{icon}</span>
+              <div>
+                <div style={{fontSize:"0.7rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>{label}</div>
+                <div style={{fontSize:"0.9rem",color:"#374151",lineHeight:1.5}}>{val}</div>
+              </div>
+            </div>
+          ))}
+          {participants.length>0&&(
+            <div style={{display:"flex",gap:12,marginBottom:14,alignItems:"flex-start"}}>
+              <span style={{fontSize:"1.1rem",lineHeight:"1.4",flexShrink:0,width:24,textAlign:"center"}}>👥</span>
+              <div>
+                <div style={{fontSize:"0.7rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>Participants</div>
+                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                  {participants.map((p,i)=><span key={i} style={{background:"#f0faf5",color:G,padding:"3px 10px",borderRadius:50,fontSize:"0.82rem",fontWeight:600}}>{fmtParticipantName(p)}</span>)}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+        {!isCancelled&&(
+          <div style={{padding:"0 24px 24px"}}>
+            {confirmCancel?(
+              <div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:10,padding:"16px"}}>
+                <div style={{fontWeight:700,color:"#991b1b",marginBottom:6,fontSize:"0.9rem"}}>Cancel this lesson?</div>
+                <div style={{fontSize:"0.83rem",color:"#7f1d1d",marginBottom:12}}>{lesson.type} on {fmtDateShort(lesson.date)} at {lesson.time.split("–")[0].trim()}</div>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={()=>setConfirmCancel(false)} style={{flex:1,background:"white",border:"1.5px solid #e5e7eb",padding:"9px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:600}}>Keep it</button>
+                  <button onClick={()=>{onCancel(lesson.id);onClose();}} style={{flex:1,background:"#dc2626",color:"white",border:"none",padding:"9px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:700}}>Yes, Cancel</button>
+                </div>
+              </div>
+            ):(
+              <button onClick={()=>{if(!closed)setConfirmCancel(true);}} style={{width:"100%",background:closed?"#f3f4f6":"#fef2f2",color:closed?"#9ca3af":"#dc2626",border:`1.5px solid ${closed?"#e5e7eb":"#fca5a5"}`,padding:"11px",borderRadius:50,fontSize:"0.88rem",fontWeight:600,cursor:closed?"not-allowed":"pointer"}}>
+                {closed?"Cancellation Closed":"✕ Cancel This Lesson"}
+              </button>
+            )}
+          </div>
+        )}
+        {isCancelled&&lesson.notes&&(
+          <div style={{padding:"0 24px 24px"}}>
+            <div style={{...lbl,marginBottom:8}}>📝 Coaching Notes</div>
+            <div style={{background:"#f9f9f6",borderRadius:8,padding:"14px 16px",fontSize:"0.9rem",color:"#374151",lineHeight:1.75}}>{lesson.notes}</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+function LessonCard({lesson,isMenlo,isHistory,onCancel}){
+  const[showModal,setShowModal]=useState(false);
+  const isCancelled=["cancelled","late_cancel","cancelled_forgiven"].includes(lesson.status);
+  const cancellable=!isHistory&&!isCancelled&&canCancel(lesson.date,lesson.time,lesson.createdAt);
+  const withinGrace=!isHistory&&!isCancelled&&!canCancel(lesson.date,lesson.time)&&canCancel(lesson.date,lesson.time,lesson.createdAt);
   const deadline=!isHistory&&!isCancelled?getCancelDeadline(lesson.date,lesson.time):null;
-  const cancellable=!isHistory&&!isCancelled&&canCancel(lesson.date,lesson.time,lesson.createdAt);const withinGrace=!isHistory&&!isCancelled&&!canCancel(lesson.date,lesson.time)&&canCancel(lesson.date,lesson.time,lesson.createdAt);
-  const closed=!isHistory&&!isCancelled&&!cancellable;
   const dateObj=new Date(lesson.date+"T12:00:00");
   return(
-    <div style={{background:"white",borderRadius:12,border:`1.5px solid ${expanded?G:isCancelled?"#fca5a5":"#e5e7eb"}`,overflow:"hidden",marginBottom:12,opacity:isCancelled?0.85:1}}>
-      {confirmCancel&&(
-        <div style={{background:"#fef2f2",borderBottom:"1px solid #fca5a5",padding:"14px 20px"}}>
-          <div style={{fontWeight:700,color:"#991b1b",marginBottom:8,fontSize:"0.9rem"}}>Cancel this lesson?</div>
-          <div style={{fontSize:"0.85rem",color:"#7f1d1d",marginBottom:10}}>{lesson.type} on {fmtDateShort(lesson.date)} at {lesson.time.split("–")[0].trim()}</div>
-          <div style={{display:"flex",gap:8}}>
-            <button onClick={()=>setConfirmCancel(false)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 18px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:600}}>Keep it</button>
-            <button onClick={()=>{onCancel(lesson.id);setConfirmCancel(false);}} style={{background:"#dc2626",color:"white",border:"none",padding:"7px 18px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:700}}>Yes, Cancel</button>
-          </div>
-        </div>
-      )}
-      <div onClick={()=>(isHistory||isCancelled)&&setExpanded(!expanded)} style={{padding:"16px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:(isHistory||isCancelled)?"pointer":"default"}}>
-        <div style={{display:"flex",alignItems:"center",gap:16}}>
-          <div style={{background:isCancelled?"#fef2f2":isHistory?"#e8f0ee":lesson.status==="confirmed"?"#e8f0ee":"#fffbea",border:`1.5px solid ${isCancelled?"#fca5a5":isHistory?G:lesson.status==="confirmed"?G:Y}`,borderRadius:10,padding:"10px 14px",textAlign:"center",minWidth:56}}>
-            <div style={{fontSize:"1.3rem",fontWeight:900,color:isCancelled?"#dc2626":isHistory?G:lesson.status==="confirmed"?G:"#92400e",lineHeight:1}}>{dateObj.getDate()}</div>
-            <div style={{fontSize:"0.65rem",fontWeight:700,color:"#6b7280",textTransform:"uppercase"}}>{dateObj.toLocaleString("default",{month:"short"})}</div>
-          </div>
-          <div>
-            <div style={{fontWeight:700,fontSize:"0.97rem"}}>{lesson.type} · {lesson.duration}</div>
-            <div style={{fontSize:"0.85rem",color:"#6b7280",marginTop:2}}>⏱ {lesson.time}</div>
-            {lesson.focus&&<div style={{fontSize:"0.8rem",color:G,marginTop:3,fontWeight:600}}>🎯 {lesson.focus}</div>}
-            {isCancelled&&(
-              <div style={{marginTop:5}}>
-                <span style={{background:lesson.status==="late_cancel"?"#fff7ed":lesson.status==="cancelled_forgiven"?"#f3f4f6":"#fef2f2",color:lesson.status==="late_cancel"?"#c2410c":lesson.status==="cancelled_forgiven"?"#6b7280":"#dc2626",padding:"2px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>
-                  {lesson.status==="late_cancel"?"⚠️ Cancelled (late)":lesson.status==="cancelled_forgiven"?"✓ Cancelled (forgiven)":"✕ Cancelled"}
-                </span>
-              </div>
-            )}
-            {!isHistory&&!isCancelled&&(
+    <>
+      {showModal&&<LessonModal lesson={lesson} isMenlo={!!isMenlo} onClose={()=>setShowModal(false)} onCancel={id=>{onCancel(id);setShowModal(false);}}/>}
+      <div onClick={()=>setShowModal(true)}
+        style={{background:"white",borderRadius:12,border:`1.5px solid ${isCancelled?"#fca5a5":"#e5e7eb"}`,marginBottom:12,cursor:"pointer",transition:"border-color 0.15s,box-shadow 0.15s",opacity:isCancelled?0.85:1}}
+        onMouseEnter={e=>{e.currentTarget.style.borderColor=isCancelled?"#fca5a5":G;e.currentTarget.style.boxShadow="0 2px 12px rgba(26,60,52,0.10)";}}
+        onMouseLeave={e=>{e.currentTarget.style.borderColor=isCancelled?"#fca5a5":"#e5e7eb";e.currentTarget.style.boxShadow="none";}}>
+        <div style={{padding:"16px 20px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div style={{display:"flex",alignItems:"center",gap:16}}>
+            <div style={{background:isCancelled?"#fef2f2":"#e8f0ee",border:`1.5px solid ${isCancelled?"#fca5a5":G}`,borderRadius:10,padding:"10px 14px",textAlign:"center",minWidth:56,flexShrink:0}}>
+              <div style={{fontSize:"1.3rem",fontWeight:900,color:isCancelled?"#dc2626":G,lineHeight:1}}>{dateObj.getDate()}</div>
+              <div style={{fontSize:"0.65rem",fontWeight:700,color:"#6b7280",textTransform:"uppercase"}}>{dateObj.toLocaleString("default",{month:"short"})}</div>
+            </div>
+            <div>
+              <div style={{fontWeight:700,fontSize:"0.97rem"}}>{lesson.type} · {lesson.duration}</div>
+              <div style={{fontSize:"0.85rem",color:"#6b7280",marginTop:2}}>⏱ {lesson.time}</div>
+              {lesson.focus&&<div style={{fontSize:"0.8rem",color:G,marginTop:3,fontWeight:600}}>🎯 {lesson.focus}</div>}
               <div style={{marginTop:5,display:"flex",flexWrap:"wrap",gap:6,alignItems:"center"}}>
-                <span style={{background:lesson.status==="confirmed"?"#e8f0ee":"#fffbea",color:lesson.status==="confirmed"?G:"#92400e",padding:"2px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>
-                  {lesson.status==="confirmed"?"✓ Confirmed":"⏳ Pending"}
-                </span>
-                {deadline&&(
-                  <span style={{fontSize:"0.75rem",color:withinGrace?"#92400e":cancellable?"#6b7280":"#dc2626",background:withinGrace?"#fffbea":cancellable?"#f9f9f6":"#fef2f2",padding:"2px 10px",borderRadius:50,border:`1px solid ${withinGrace?"#f4c430":cancellable?"#e5e7eb":"#fca5a5"}`}}>
-                    {withinGrace?"⚠️ Cancel within 15 min (inside 24hr window)":cancellable?`Cancel by: ${fmtDeadline(deadline)}`:"⛔ Cancellation closed"}
+                {isCancelled?(
+                  <span style={{background:lesson.status==="late_cancel"?"#fff7ed":lesson.status==="cancelled_forgiven"?"#f3f4f6":"#fef2f2",color:lesson.status==="late_cancel"?"#c2410c":lesson.status==="cancelled_forgiven"?"#6b7280":"#dc2626",padding:"2px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>
+                    {lesson.status==="late_cancel"?"⚠️ Cancelled (late)":lesson.status==="cancelled_forgiven"?"✓ Cancelled (forgiven)":"✕ Cancelled"}
                   </span>
+                ):!isHistory&&(
+                  <>
+                    <span style={{background:lesson.status==="confirmed"?"#e8f0ee":"#fffbea",color:lesson.status==="confirmed"?G:"#92400e",padding:"2px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>
+                      {lesson.status==="confirmed"?"✓ Confirmed":"⏳ Pending"}
+                    </span>
+                    {deadline&&(
+                      <span style={{fontSize:"0.75rem",color:withinGrace?"#92400e":cancellable?"#6b7280":"#dc2626",background:withinGrace?"#fffbea":cancellable?"#f9f9f6":"#fef2f2",padding:"2px 10px",borderRadius:50,border:`1px solid ${withinGrace?"#f4c430":cancellable?"#e5e7eb":"#fca5a5"}`}}>
+                        {withinGrace?"⚠️ Cancel within 15 min":cancellable?`Cancel by: ${fmtDeadline(deadline)}`:"⛔ Cancellation closed"}
+                      </span>
+                    )}
+                  </>
                 )}
               </div>
+            </div>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6,flexShrink:0,marginLeft:8}}>
+            <span style={{color:"#9ca3af",fontSize:"1.1rem"}}>›</span>
+            {isHistory&&(lesson.notes||lesson.photos?.length>0||lesson.videos?.length>0)&&(
+              <div style={{display:"flex",gap:4}}>
+                {lesson.notes&&<span style={{background:"#e8f0ee",color:G,padding:"2px 8px",borderRadius:50,fontSize:"0.7rem",fontWeight:600}}>📝</span>}
+                {lesson.photos?.length>0&&<span style={{background:"#e8f0ee",color:G,padding:"2px 8px",borderRadius:50,fontSize:"0.7rem",fontWeight:600}}>🖼 {lesson.photos.length}</span>}
+                {lesson.videos?.length>0&&<span style={{background:"#e8f0ee",color:G,padding:"2px 8px",borderRadius:50,fontSize:"0.7rem",fontWeight:600}}>🎬 {lesson.videos.length}</span>}
+              </div>
             )}
           </div>
         </div>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          {(isHistory||isCancelled)&&(
-            <>
-              {!isCancelled&&lesson.notes&&<span style={{fontSize:"0.75rem",background:"#e8f0ee",color:G,padding:"3px 10px",borderRadius:50,fontWeight:600}}>📝</span>}
-              {!isCancelled&&lesson.photos?.length>0&&<span style={{fontSize:"0.75rem",background:"#e8f0ee",color:G,padding:"3px 10px",borderRadius:50,fontWeight:600}}>🖼 {lesson.photos.length}</span>}
-              {!isCancelled&&lesson.videos?.length>0&&<span style={{fontSize:"0.75rem",background:"#e8f0ee",color:G,padding:"3px 10px",borderRadius:50,fontWeight:600}}>🎬 {lesson.videos.length}</span>}
-              {!isCancelled&&!lesson.notes&&!lesson.photos?.length&&!lesson.videos?.length&&<span style={{fontSize:"0.75rem",color:"#9ca3af",fontStyle:"italic"}}>No notes yet</span>}
-              <span style={{color:isCancelled?"#dc2626":G,fontSize:"1.1rem"}}>{expanded?"▲":"▼"}</span>
-            </>
-          )}
-          {!isHistory&&!isCancelled&&(
-            <button onClick={e=>{e.stopPropagation();if(cancellable)setConfirmCancel(true);}}
-              style={{background:closed?"#f3f4f6":"#fef2f2",color:closed?"#9ca3af":"#dc2626",border:`1.5px solid ${closed?"#e5e7eb":"#fca5a5"}`,padding:"6px 14px",borderRadius:50,fontSize:"0.8rem",fontWeight:600,cursor:closed?"not-allowed":"pointer"}}>
-              {closed?"Closed":"✕ Cancel"}
-            </button>
-          )}
-        </div>
       </div>
-      {(isHistory||isCancelled)&&expanded&&(
-        <div style={{borderTop:"1px solid #e5e7eb",padding:"20px"}}>
-          {lesson.notes
-            ?<div style={{marginBottom:16}}><div style={{...lbl,marginBottom:8}}>📝 Coaching Notes from David</div><div style={{background:"#f9f9f6",borderRadius:8,padding:"14px 16px",fontSize:"0.9rem",color:"#374151",lineHeight:1.75}}>{lesson.notes}</div></div>
-            :<div style={{background:"#f9f9f6",borderRadius:8,padding:"14px 16px",fontSize:"0.88rem",color:"#9ca3af",marginBottom:16,fontStyle:"italic"}}>📝 No coaching notes yet — check back after David reviews the session.</div>
-          }
-          {lesson.photos?.length>0&&<div style={{marginBottom:16}}><div style={{...lbl,marginBottom:8}}>🖼 Photos</div><div style={{display:"flex",gap:10,flexWrap:"wrap"}}>{lesson.photos.map((_,i)=><div key={i} style={{width:80,height:80,background:"#e5e7eb",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28}}>🖼️</div>)}</div></div>}
-          {lesson.videos?.length>0&&<div><div style={{...lbl,marginBottom:8}}>🎬 Videos</div><div style={{display:"flex",gap:10,flexWrap:"wrap"}}>{lesson.videos.map((_,i)=><div key={i} style={{width:120,height:80,background:"#1a1a1a",borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28}}>▶️</div>)}</div></div>}
-          {!lesson.notes&&!lesson.photos?.length&&!lesson.videos?.length&&<div style={{textAlign:"center",color:"#9ca3af",fontSize:"0.85rem"}}>No media added yet.</div>}
-        </div>
-      )}
-    </div>
+    </>
   );
 }
 
@@ -1123,14 +1200,14 @@ function Dashboard({user,setPage,lessons,onCancel,dbLoaded}){
             <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Upcoming Lessons ({upcoming.length})</div>
             {upcoming.length===0
               ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"32px",textAlign:"center",color:"#9ca3af"}}>No upcoming lessons. <span onClick={()=>setPage("booking")} style={{color:G,fontWeight:700,cursor:"pointer"}}>Book one now →</span></div>
-              :upcoming.map(l=><LessonCard key={l.id} lesson={l} isHistory={false} onCancel={onCancel}/>)
+              :upcoming.map(l=><LessonCard key={l.id} lesson={l} isMenlo={user.memberType==="menlo"} isHistory={false} onCancel={onCancel}/>)
             }
           </div>
           <div>
-            <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Lesson History ({history.length}) · Click to expand</div>
+            <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Lesson History ({history.length}) · Click to view</div>
             {history.length===0
               ?<div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"32px",textAlign:"center",color:"#9ca3af"}}>No past lessons yet.</div>
-              :history.map(l=><LessonCard key={l.id} lesson={l} isHistory={true} onCancel={onCancel}/>)
+              :history.map(l=><LessonCard key={l.id} lesson={l} isMenlo={user.memberType==="menlo"} isHistory={true} onCancel={onCancel}/>)
             }
           </div>
         </>
@@ -1150,9 +1227,9 @@ function BookingPage({user,setPage,onAddLesson}){
   const[slotIdx,setSlotIdx]=useState(-1);
   const[focus,setFocus]=useState("");
   const[notes,setNotes]=useState("");
-  const[partner,setPartner]=useState({name:"",email:""});
+  const[partner,setPartner]=useState({firstName:"",lastName:"",email:""});
   const[groupSize,setGroupSize]=useState(3);
-  const[groupMembers,setGroupMembers]=useState([{name:"",email:""},{name:"",email:""},{name:"",email:""}]);
+  const[groupMembers,setGroupMembers]=useState([{firstName:"",lastName:"",email:""},{firstName:"",lastName:"",email:""},{firstName:"",lastName:"",email:""}]);
   const[submitting,setSubmitting]=useState(false);
   const[done,setDone]=useState(false);
   const[error,setError]=useState("");
@@ -1208,12 +1285,14 @@ function BookingPage({user,setPage,onAddLesson}){
   const toTime24=(mins)=>{const h=Math.floor(mins/60),m=mins%60;return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");};
   const toTimeStr=(s,e)=>fmt(s)+" - "+fmt(e);
 
-  const STEPS=["Type & Duration","Date & Time",lessonType==="private"?"Details":"People & Details","Confirm"];
-  const totalSteps=4;
+  // Private = 3 steps (skip participants); Semi/Group = 4 steps
+  const isPrivate=lessonType==="private";
+  const displaySteps=isPrivate?["Type","Date & Time","Confirm"]:["Type","Date & Time","Participants","Confirm"];
+  const displayStep=isPrivate&&step===4?3:step;
 
-  const step1Done=lessonType&&duration;
+  const step1Done=lessonType&&duration&&(lessonType!=="group"||groupSize);
   const step2Done=date&&slot;
-  const step3Done=lessonType==="private"?true:lessonType==="semi"?partner.name.trim()!=="":groupMembers.slice(0,groupSize-1).every(m=>m.name.trim()!=="");
+  const step3Done=isPrivate?true:lessonType==="semi"?(partner.firstName.trim()!==""&&partner.lastName.trim()!==""):groupMembers.slice(0,groupSize-1).every(m=>m.firstName.trim()!==""&&m.lastName.trim()!=="");
   const canConfirm=step1Done&&step2Done&&step3Done;
 
   const handleBook=async()=>{
@@ -1222,11 +1301,16 @@ function BookingPage({user,setPage,onAddLesson}){
     const endTime=toTime24(slot.e);
     const timeStr=toTimeStr(slot.s,slot.e);
     const lessonLabel=lessonType==="private"?"Private":lessonType==="semi"?"Semi-Private":"Group";
-    const memberNames=lessonType==="semi"?[user.name,partner.name]:lessonType==="group"?[user.name,...groupMembers.slice(0,groupSize-1).map(m=>m.name)]:[user.name];
-    const titleSuffix=lessonType==="group"?" pb group lesson":" pb lesson";
-    const summary=memberNames.join("/")+titleSuffix;
-    const partnerInfo=lessonType==="semi"?"\nPartner: "+partner.name+(partner.email?" ("+partner.email+")":""):"";
-    const groupInfo=lessonType==="group"?"\nGroup: "+groupMembers.slice(0,groupSize-1).map(m=>m.name+(m.email?" ("+m.email+")":"")).join(", "):"";
+    const nameInitial=(first,last)=>{const f=(first||"").trim(),l=(last||"").trim();return l?f+" "+l[0].toUpperCase()+".":f;};
+    const bookerParts=user.name.trim().split(/\s+/);
+    const bookerInitial=nameInitial(bookerParts[0],bookerParts.slice(1).join(" "));
+    const partnerFull=(partner.firstName+" "+partner.lastName).trim();
+    const memberNames=lessonType==="semi"?[user.name,partnerFull]:lessonType==="group"?[user.name,...groupMembers.slice(0,groupSize-1).map(m=>(m.firstName+" "+m.lastName).trim())]:[user.name];
+    const participantInitials=lessonType==="semi"?[bookerInitial,nameInitial(partner.firstName,partner.lastName)]:lessonType==="group"?[bookerInitial,...groupMembers.slice(0,groupSize-1).map(m=>nameInitial(m.firstName,m.lastName))]:[bookerInitial];
+    const summary=participantInitials.join("/")+` pb lesson`;
+    const partnerInfo=lessonType==="semi"?"\nPartner: "+partnerFull+(partner.email?" ("+partner.email+")":""):"";
+    const groupInfo=lessonType==="group"?"\nGroup: "+groupMembers.slice(0,groupSize-1).map(m=>(m.firstName+" "+m.lastName).trim()+(m.email?" ("+m.email+")":"")).join(", "):"";
+    const partnerEmail=partner.email;
     const location=!isMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City, CA 94063, USA":"Stanford Redwood City";
     const description="Student: "+user.name+"\nEmail: "+user.email+"\nType: "+lessonLabel+" "+duration+"min\nFocus: "+(focus||"Not specified")+"\nNotes: "+(notes||"None")+partnerInfo+groupInfo+"\nLocation: "+location+"\nManage: https://dmpickleball.com";
     let eventId="";
@@ -1240,9 +1324,9 @@ function BookingPage({user,setPage,onAddLesson}){
     const link="https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(summary)+"&dates="+startISO.replace(/[-:]/g,"").slice(0,15)+"/"+endISO.replace(/[-:]/g,"").slice(0,15)+"&details="+encodeURIComponent(description)+"&location="+encodeURIComponent(location);
     try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:user.email,_replyto:user.email,_subject:"Your lesson is booked - "+fmtDateShort(date),message:"Hi "+user.name+",\n\nYour pickleball lesson is confirmed!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+duration+" min\nFocus: "+(focus||"Not specified")+"\nLocation: "+location+"\n\nManage your booking:\nhttps://dmpickleball.com\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398"})});}catch(e){}
     try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:"dmpickleball@gmail.com",_replyto:user.email,_subject:"New booking: "+summary+" - "+fmtDateShort(date),message:"New lesson booked!\n\nStudent: "+user.name+"\nEmail: "+user.email+"\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+duration+" min\nFocus: "+(focus||"Not specified")+"\nNotes: "+(notes||"None")+partnerInfo+groupInfo+"\nPrice: $"+price+"\nLocation: "+location})});}catch(e){}
-    if(lessonType==="semi"&&partner.email){try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({_to:partner.email,email:partner.email,_replyto:"dmpickleball@gmail.com",_subject:"You have been added to a pickleball lesson - "+fmtDateShort(date),message:"Hi "+partner.name+",\n\n"+user.name+" has added you to a lesson!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: Semi-Private · "+duration+" min\nFocus: "+(focus||"Not specified")+"\nLocation: "+location+"\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398"})})}catch(e){}}
-    if(lessonType==="group"){groupMembers.slice(0,groupSize-1).forEach(async m=>{if(m.email){try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:m.email,_subject:"You have been added to a group pickleball lesson - "+fmtDateShort(date),message:"Hi "+m.name+",\n\n"+user.name+" has added you to a group lesson!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nLocation: "+location+"\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok"})})}catch(e){}}});}
-    const newLesson={id:Date.now(),date,time:timeStr,type:lessonLabel,duration:duration+" min",status:"confirmed",focus,notes:"",photos:[],videos:[],gcalEventId:eventId,partnerEmail:lessonType==="semi"?partner.email:"",groupEmails:lessonType==="group"?groupMembers.slice(0,groupSize-1).map(m=>m.email).filter(Boolean):[],members:memberNames.slice(1),createdAt:new Date().toISOString()};
+    if(lessonType==="semi"&&partnerEmail){try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({_to:partnerEmail,email:partnerEmail,_replyto:"dmpickleball@gmail.com",_subject:"You have been added to a pickleball lesson - "+fmtDateShort(date),message:"Hi "+partnerFull+",\n\n"+user.name+" has added you to a lesson!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: Semi-Private · "+duration+" min\nFocus: "+(focus||"Not specified")+"\nLocation: "+location+"\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398"})})}catch(e){}}
+    if(lessonType==="group"){groupMembers.slice(0,groupSize-1).forEach(async m=>{if(m.email){const mFull=(m.firstName+" "+m.lastName).trim();try{await fetch("https://formspree.io/f/mvzwanal",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:m.email,_subject:"You have been added to a group pickleball lesson - "+fmtDateShort(date),message:"Hi "+mFull+",\n\n"+user.name+" has added you to a group lesson!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nLocation: "+location+"\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok"})})}catch(e){}}});}
+    const newLesson={id:Date.now(),date,time:timeStr,type:lessonLabel,duration:duration+" min",status:"confirmed",focus,notes:"",photos:[],videos:[],gcalEventId:eventId,partnerEmail:lessonType==="semi"?partnerEmail:"",groupEmails:lessonType==="group"?groupMembers.slice(0,groupSize-1).map(m=>m.email).filter(Boolean):[],members:memberNames.slice(1),createdAt:new Date().toISOString()};
     onAddLesson(newLesson);
     setGcalLink(link);
     setBookedSummary({date,timeStr,lessonLabel,duration,focus,price,summary});
@@ -1287,20 +1371,20 @@ function BookingPage({user,setPage,onAddLesson}){
       </div>
 
       <div style={{display:"flex",alignItems:"center",marginBottom:32,gap:0}}>
-        {STEPS.map((s,i)=>{
+        {displaySteps.map((s,i)=>{
           const n=i+1;
-          const active=step===n;
-          const done=step>n;
+          const active=displayStep===n;
+          const done=displayStep>n;
           return(
-            <div key={i} style={{display:"flex",alignItems:"center",flex:i<STEPS.length-1?1:"auto"}}>
+            <div key={i} style={{display:"flex",alignItems:"center",flex:i<displaySteps.length-1?1:"auto"}}>
               <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
                 <div style={{width:32,height:32,borderRadius:"50%",background:done?G:active?G:"#e5e7eb",color:done||active?"white":"#9ca3af",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:"0.85rem",cursor:done?"pointer":"default",transition:"all 0.2s"}}
-                  onClick={()=>done&&setStep(n)}>
+                  onClick={()=>{if(!done)return;if(isPrivate){setStep(n===3?4:n);}else{setStep(n);}}}>
                   {done?"✓":n}
                 </div>
                 <div style={{fontSize:"0.65rem",fontWeight:600,color:active?G:done?G:"#9ca3af",whiteSpace:"nowrap",textAlign:"center"}}>{s}</div>
               </div>
-              {i<STEPS.length-1&&<div style={{flex:1,height:2,background:done?G:"#e5e7eb",margin:"0 8px",marginBottom:16,transition:"all 0.2s"}}/>}
+              {i<displaySteps.length-1&&<div style={{flex:1,height:2,background:done?G:"#e5e7eb",margin:"0 8px",marginBottom:16,transition:"all 0.2s"}}/>}
             </div>
           );
         })}
@@ -1316,9 +1400,17 @@ function BookingPage({user,setPage,onAddLesson}){
               const p=duration?PRICES[l.id][duration]:null;
               const totalLabel=!p?"Select duration":"$"+p+" total";
               const subLabel=!p?null:l.id==="semi"?"$"+(p/2)+"/person":l.id==="group"?"split equally":null;
-              return(<div key={l.id} onClick={()=>setLessonType(l.id)} style={{background:lessonType===l.id?"#e8f0ee":"white",border:"2px solid "+(lessonType===l.id?G:"#e5e7eb"),borderRadius:12,padding:"16px",cursor:"pointer",textAlign:"center"}}><div style={{fontSize:28,marginBottom:6}}>{l.icon}</div><div style={{fontWeight:700,fontSize:"0.95rem",color:lessonType===l.id?G:"#1a1a1a"}}>{l.label}</div><div style={{fontSize:"0.75rem",color:"#6b7280",marginTop:2,marginBottom:8}}>{l.desc}</div><div style={{fontWeight:800,color:G,fontSize:"0.95rem"}}>{totalLabel}</div>{subLabel&&<div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:2}}>{subLabel}</div>}</div>);
+              return(<div key={l.id} onClick={()=>{setLessonType(l.id);}} style={{background:lessonType===l.id?"#e8f0ee":"white",border:"2px solid "+(lessonType===l.id?G:"#e5e7eb"),borderRadius:12,padding:"16px",cursor:"pointer",textAlign:"center"}}><div style={{fontSize:28,marginBottom:6}}>{l.icon}</div><div style={{fontWeight:700,fontSize:"0.95rem",color:lessonType===l.id?G:"#1a1a1a"}}>{l.label}</div><div style={{fontSize:"0.75rem",color:"#6b7280",marginTop:2,marginBottom:8}}>{l.desc}</div><div style={{fontWeight:800,color:G,fontSize:"0.95rem"}}>{totalLabel}</div>{subLabel&&<div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:2}}>{subLabel}</div>}</div>);
             })}
           </div>
+          {lessonType==="group"&&(
+            <div style={{marginBottom:24}}>
+              <div style={{...lbl,marginBottom:12}}>Group Size</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                {[3,4].map(n=>(<div key={n} onClick={()=>setGroupSize(n)} style={{background:groupSize===n?"#e8f0ee":"white",border:"2px solid "+(groupSize===n?G:"#e5e7eb"),borderRadius:12,padding:"14px",cursor:"pointer",textAlign:"center"}}><div style={{fontWeight:700,fontSize:"1rem",color:groupSize===n?G:"#1a1a1a"}}>{n} students</div><div style={{fontSize:"0.75rem",color:"#6b7280",marginTop:3}}>{n-1} additional name{n-1>1?"s":""} required</div></div>))}
+              </div>
+            </div>
+          )}
           <div style={{...lbl,marginBottom:12}}>Select Duration</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:32}}>
             {[60,90].map(d=>(<div key={d} onClick={()=>setDuration(d)} style={{background:duration===d?"#e8f0ee":"white",border:"2px solid "+(duration===d?G:"#e5e7eb"),borderRadius:12,padding:"16px",cursor:"pointer",textAlign:"center"}}><div style={{fontWeight:700,fontSize:"1rem",color:duration===d?G:"#1a1a1a"}}>{d} min</div></div>))}
@@ -1358,51 +1450,43 @@ function BookingPage({user,setPage,onAddLesson}){
           ):null;})()}
           <div style={{display:"flex",gap:10}}>
             <button onClick={()=>setStep(1)} style={{flex:1,background:"white",border:"1.5px solid #e5e7eb",padding:"14px",borderRadius:50,fontWeight:600,cursor:"pointer",fontSize:"0.95rem"}}>← Back</button>
-            <button onClick={()=>setStep(3)} disabled={!step2Done} style={{flex:2,background:step2Done?G:"#e5e7eb",color:step2Done?"white":"#9ca3af",border:"none",padding:"14px",borderRadius:50,fontWeight:700,cursor:step2Done?"pointer":"not-allowed",fontSize:"0.95rem"}}>
-              Next: {lessonType==="private"?"Add Details":"Add People"} →
+            <button onClick={()=>setStep(isPrivate?4:3)} disabled={!step2Done} style={{flex:2,background:step2Done?G:"#e5e7eb",color:step2Done?"white":"#9ca3af",border:"none",padding:"14px",borderRadius:50,fontWeight:700,cursor:step2Done?"pointer":"not-allowed",fontSize:"0.95rem"}}>
+              Next: {isPrivate?"Review & Confirm":"Add Participants"} →
             </button>
           </div>
         </div>
       )}
 
-      {step===3&&(
+      {step===3&&!isPrivate&&(
         <div>
           {lessonType==="semi"&&(
             <div style={{marginBottom:20}}>
-              <div style={{...lbl,marginBottom:8}}>Partner Info <span style={{color:"#dc2626",fontWeight:700}}>*</span></div>
+              <div style={{...lbl,marginBottom:8}}>Partner <span style={{color:"#dc2626",fontWeight:700}}>*</span></div>
               <div style={{background:"#f9f9f6",borderRadius:10,padding:"16px"}}>
-                <input placeholder="Partner Full Name (required)" value={partner.name} onChange={e=>setPartner({...partner,name:e.target.value})} style={{...inp,marginBottom:8,border:partner.name?"1.5px solid #e5e7eb":"1.5px solid #fca5a5"}}/>
-                <input placeholder="Partner Email (optional — sends calendar invite)" value={partner.email} onChange={e=>setPartner({...partner,email:e.target.value})} style={{...inp,marginBottom:0}}/>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+                  <input placeholder="First Name" value={partner.firstName} onChange={e=>setPartner({...partner,firstName:e.target.value})} style={{...inp,marginBottom:0,border:partner.firstName?"1.5px solid #e5e7eb":"1.5px solid #fca5a5"}}/>
+                  <input placeholder="Last Name" value={partner.lastName} onChange={e=>setPartner({...partner,lastName:e.target.value})} style={{...inp,marginBottom:0,border:partner.lastName?"1.5px solid #e5e7eb":"1.5px solid #fca5a5"}}/>
+                </div>
+                <input placeholder="Email (optional — sends calendar invite)" value={partner.email} onChange={e=>setPartner({...partner,email:e.target.value})} style={{...inp,marginBottom:0}}/>
               </div>
             </div>
           )}
           {lessonType==="group"&&(
             <div style={{marginBottom:20}}>
-              <div style={{...lbl,marginBottom:10}}>Group Size</div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
-                {[3,4,5].map(n=>(<div key={n} onClick={()=>{setGroupSize(n);}} style={{background:groupSize===n?"#e8f0ee":"white",border:"2px solid "+(groupSize===n?G:"#e5e7eb"),borderRadius:10,padding:"10px",cursor:"pointer",textAlign:"center",fontWeight:groupSize===n?700:500,color:groupSize===n?G:"#374151"}}>{n} people</div>))}
-              </div>
-              <div style={{...lbl,marginBottom:8}}>Group Members <span style={{color:"#dc2626",fontWeight:700}}>*</span></div>
+              <div style={{...lbl,marginBottom:8}}>Additional Participants <span style={{color:"#dc2626",fontWeight:700}}>*</span></div>
+              <div style={{fontSize:"0.82rem",color:"#6b7280",marginBottom:12}}>You are Person 1. Enter the remaining {groupSize-1} participant{groupSize-1>1?"s":""} below.</div>
               {Array(groupSize-1).fill(null).map((_,i)=>(
                 <div key={i} style={{background:"#f9f9f6",borderRadius:10,padding:"14px 16px",marginBottom:10}}>
                   <div style={{fontSize:"0.82rem",fontWeight:700,color:"#6b7280",marginBottom:8}}>Person {i+2}</div>
-                  <input placeholder="Full Name (required)" value={groupMembers[i]?.name||""} onChange={e=>{const m=[...groupMembers];m[i]={...m[i],name:e.target.value};setGroupMembers(m);}} style={{...inp,marginBottom:8,border:groupMembers[i]?.name?"1.5px solid #e5e7eb":"1.5px solid #fca5a5"}}/>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+                    <input placeholder="First Name" value={groupMembers[i]?.firstName||""} onChange={e=>{const m=[...groupMembers];m[i]={...m[i],firstName:e.target.value};setGroupMembers(m);}} style={{...inp,marginBottom:0,border:groupMembers[i]?.firstName?"1.5px solid #e5e7eb":"1.5px solid #fca5a5"}}/>
+                    <input placeholder="Last Name" value={groupMembers[i]?.lastName||""} onChange={e=>{const m=[...groupMembers];m[i]={...m[i],lastName:e.target.value};setGroupMembers(m);}} style={{...inp,marginBottom:0,border:groupMembers[i]?.lastName?"1.5px solid #e5e7eb":"1.5px solid #fca5a5"}}/>
+                  </div>
                   <input placeholder="Email (optional — sends calendar invite)" value={groupMembers[i]?.email||""} onChange={e=>{const m=[...groupMembers];m[i]={...m[i],email:e.target.value};setGroupMembers(m);}} style={{...inp,marginBottom:0}}/>
                 </div>
               ))}
             </div>
           )}
-          <div style={{marginBottom:16}}>
-            <div style={{...lbl,marginBottom:6}}>Focus Area <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(optional)</span></div>
-            <select value={focus} onChange={e=>setFocus(e.target.value)} style={{...inp,marginBottom:0}}>
-              <option value="">No specific focus</option>
-              {FOCUS_AREAS.map(f=><option key={f} value={f}>{f}</option>)}
-            </select>
-          </div>
-          <div style={{marginBottom:24}}>
-            <div style={{...lbl,marginBottom:6}}>Notes for David <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(optional)</span></div>
-            <textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Anything David should know..." style={{...inp,height:80,resize:"vertical",fontFamily:"inherit",marginBottom:0}}/>
-          </div>
           <div style={{display:"flex",gap:10}}>
             <button onClick={()=>setStep(2)} style={{flex:1,background:"white",border:"1.5px solid #e5e7eb",padding:"14px",borderRadius:50,fontWeight:600,cursor:"pointer",fontSize:"0.95rem"}}>← Back</button>
             <button onClick={()=>setStep(4)} disabled={!step3Done} style={{flex:2,background:step3Done?G:"#e5e7eb",color:step3Done?"white":"#9ca3af",border:"none",padding:"14px",borderRadius:50,fontWeight:700,cursor:step3Done?"pointer":"not-allowed",fontSize:"0.95rem"}}>
@@ -1414,6 +1498,17 @@ function BookingPage({user,setPage,onAddLesson}){
 
       {step===4&&(
         <div>
+          <div style={{marginBottom:16}}>
+            <div style={{...lbl,marginBottom:6}}>Focus Area <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(optional)</span></div>
+            <select value={focus} onChange={e=>setFocus(e.target.value)} style={{...inp,marginBottom:0}}>
+              <option value="">No specific focus</option>
+              {FOCUS_AREAS.map(f=><option key={f} value={f}>{f}</option>)}
+            </select>
+          </div>
+          <div style={{marginBottom:20}}>
+            <div style={{...lbl,marginBottom:6}}>Notes for David <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(optional)</span></div>
+            <textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Anything David should know..." style={{...inp,height:72,resize:"vertical",fontFamily:"inherit",marginBottom:0}}/>
+          </div>
           <div style={{background:"#f9f9f6",borderRadius:12,padding:"24px",marginBottom:20,border:"1.5px solid #e5e7eb"}}>
             <div style={{fontWeight:700,color:G,marginBottom:16,fontSize:"1rem"}}>Booking Summary</div>
             <div style={{fontSize:"0.92rem",color:"#374151",lineHeight:2.2}}>
@@ -1423,8 +1518,8 @@ function BookingPage({user,setPage,onAddLesson}){
               {focus&&<div>🏓 Focus: {focus}</div>}
               <div>💰 <strong>${price}{lessonType!=="private"?" per person":""}</strong></div>
               <div>📍 <a href={!isMenlo?"https://maps.google.com/?q=Andrew+Spinas+Park,+3003+Bay+Rd,+Redwood+City,+CA+94063":"https://maps.google.com/?q=Stanford+Redwood+City+Recreation+and+Wellness+Center"} target="_blank" rel="noreferrer" style={{color:G,fontWeight:600}}>{!isMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City":"Stanford Redwood City"}</a></div>
-              {lessonType==="semi"&&<div>👥 Partner: {partner.name}</div>}
-              {lessonType==="group"&&<div>👥 Group: {[user.name,...groupMembers.slice(0,groupSize-1).map(m=>m.name)].join(", ")}</div>}
+              {lessonType==="semi"&&<div>👥 Partner: {(partner.firstName+" "+partner.lastName).trim()}</div>}
+              {lessonType==="group"&&<div>👥 Group: {[user.name,...groupMembers.slice(0,groupSize-1).map(m=>(m.firstName+" "+m.lastName).trim())].join(", ")}</div>}
             </div>
           </div>
           {(()=>{
@@ -1442,7 +1537,7 @@ function BookingPage({user,setPage,onAddLesson}){
             );
           })()}
           <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>setStep(3)} disabled={submitting} style={{flex:1,background:"white",border:"1.5px solid #e5e7eb",padding:"14px",borderRadius:50,fontWeight:600,cursor:submitting?"not-allowed":"pointer",fontSize:"0.95rem",opacity:submitting?0.5:1}}>← Back</button>
+            <button onClick={()=>setStep(isPrivate?2:3)} disabled={submitting} style={{flex:1,background:"white",border:"1.5px solid #e5e7eb",padding:"14px",borderRadius:50,fontWeight:600,cursor:submitting?"not-allowed":"pointer",fontSize:"0.95rem",opacity:submitting?0.5:1}}>← Back</button>
             <button onClick={handleBook} disabled={submitting} style={{flex:2,background:G,color:"white",border:"none",padding:"14px",borderRadius:50,fontWeight:700,cursor:submitting?"not-allowed":"pointer",fontSize:"0.95rem",opacity:submitting?0.7:1}}>
               {submitting?"Confirming...":"Confirm Booking ✓"}
             </button>
@@ -1653,10 +1748,13 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
   const viewLabel=financeView==="day"?new Date(selectedDay+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):financeView==="week"?(()=>{const sd=new Date(viewRange.start+"T12:00:00");const ed=new Date(viewRange.end+"T12:00:00");return"Week of "+MON[sd.getMonth()]+" "+sd.getDate()+", "+sd.getFullYear();})():financeView==="month"?MONFULL[viewMonth-1]+" "+viewYear:String(viewYearOnly);
   const portalEarnings=getEarnings(allLessons,mockUsers,"custom",viewRange.start,viewRange.end);
   const typeColors={private:"#1a3c34",semi:"#0ea5e9",group:"#f97316",stanford_rec:"#8b5cf6",stanford_open:"#8b5cf6"};
+  const typeLabelMap={private:"Private Lesson",semi:"Semi-Private Lesson",group:"Group Lesson"};
   const calendarLessons=(financeData?.events||[]).filter(e=>!e.isStanford&&!e.isPickup);
   const stanfordEvents=(financeData?.events||[]).filter(e=>e.isStanford);
   const[calOverrides,setCalOverrides]=useState(()=>{try{return JSON.parse(localStorage.getItem("calPriceOverrides")||"{}")}catch{return{}}});
-  const adjustedCalLessons=calendarLessons.map(e=>{const k=e.date+"|"+e.summary;return calOverrides[k]!=null?{...e,earnings:calOverrides[k]}:e;});
+  const[calTypeOverrides,setCalTypeOverrides]=useState(()=>{try{return JSON.parse(localStorage.getItem("calTypeOverrides")||"{}")}catch{return{}}});
+  const[editTypeVal,setEditTypeVal]=useState("");
+  const adjustedCalLessons=calendarLessons.map(e=>{const k=e.date+"|"+e.summary;const typeOv=calTypeOverrides[k];return{...e,...(calOverrides[k]!=null?{earnings:calOverrides[k]}:{}),...(typeOv?{type:typeOv,category:typeLabelMap[typeOv]||e.category}:{})};});
   const adjustedLessonEarnings=adjustedCalLessons.reduce((s,e)=>s+e.earnings,0);
   const stanfordAmt=includeStanford?(showNetStanford?(financeData?.stanfordNetEarnings||0):(financeData?.stanfordEarnings||0)):0;
   const totalEarnings=adjustedLessonEarnings+portalEarnings.total+stanfordAmt;
@@ -1914,13 +2012,15 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                     {adjustedCalLessons.map((e,i)=>{
                       const calKey=e.date+"|"+e.summary;
                       const isOverridden=calOverrides[calKey]!=null;
+                      const isTypeOverridden=calTypeOverrides[calKey]!=null;
+                      const openEdit=()=>{editRowRef.current={...e,isCalendar:true,calKey};setEditPriceVal(String(e.earnings));setEditTypeVal(e.type||"");dialogRef.current?.showModal();};
                       return(
                       <tr key={i} style={{borderBottom:"1px solid #f3f4f6"}}>
                         <td style={{padding:"12px 16px"}}>{fmtDateShort(e.date)}</td>
                         <td style={{padding:"12px 16px",maxWidth:180,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.summary}</td>
-                        <td style={{padding:"12px 16px"}}><span style={{background:(typeColors[e.type]||"#666")+"22",color:typeColors[e.type]||"#666",padding:"2px 8px",borderRadius:50,fontSize:"0.72rem",fontWeight:700}}>{e.category}</span></td>
+                        <td onClick={openEdit} style={{padding:"12px 16px",cursor:"pointer",userSelect:"none"}} title="Click to edit type"><span style={{background:(typeColors[e.type]||"#666")+"22",color:isTypeOverridden?"#0ea5e9":(typeColors[e.type]||"#666"),padding:"2px 8px",borderRadius:50,fontSize:"0.72rem",fontWeight:700}}>{e.category}</span>{isTypeOverridden&&<span style={{fontSize:"0.7rem",color:"#0ea5e9",marginLeft:4,opacity:0.7}}>✎</span>}</td>
                         <td style={{padding:"12px 16px"}}>{e.hours}h</td>
-                        <td onClick={()=>{editRowRef.current={...e,isCalendar:true,calKey};setEditPriceVal(String(e.earnings));dialogRef.current?.showModal();}} style={{padding:"12px 16px",fontWeight:700,color:isOverridden?"#0ea5e9":"#1a3c34",cursor:"pointer",userSelect:"none"}} title="Click to edit">${typeof e.earnings==="number"?e.earnings.toFixed(2):e.earnings}<span style={{fontSize:"0.7rem",color:isOverridden?"#0ea5e9":"#9ca3af",marginLeft:5,opacity:0.7}}>✎</span></td>
+                        <td onClick={openEdit} style={{padding:"12px 16px",fontWeight:700,color:isOverridden?"#0ea5e9":"#1a3c34",cursor:"pointer",userSelect:"none"}} title="Click to edit">${typeof e.earnings==="number"?e.earnings.toFixed(2):e.earnings}<span style={{fontSize:"0.7rem",color:isOverridden?"#0ea5e9":"#9ca3af",marginLeft:5,opacity:0.7}}>✎</span></td>
                       </tr>
                     );})}
                   </tbody>
@@ -1975,6 +2075,18 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
           <dialog ref={dialogRef} onClick={e=>{if(e.target===dialogRef.current)dialogRef.current.close();}} style={{border:"none",borderRadius:16,padding:"28px 32px",maxWidth:420,width:"90%",boxShadow:"0 8px 40px rgba(0,0,0,0.25)"}}>
             <div style={{fontWeight:800,fontSize:"1.05rem",marginBottom:4}}>Edit Lesson Income</div>
             <div style={{fontSize:"0.85rem",color:"#6b7280",marginBottom:20}}>{editRowRef.current?.isCalendar?editRowRef.current?.summary:editRowRef.current?.name} · {editRowRef.current?fmtDateShort(editRowRef.current.date):""} · {editRowRef.current?.isCalendar?(editRowRef.current?.hours+"h"):editRowRef.current?.duration}</div>
+            {editRowRef.current?.isCalendar&&(
+              <div style={{marginBottom:16}}>
+                <div style={{...lbl,marginBottom:6}}>Lesson Type</div>
+                <select value={editTypeVal} onChange={ev=>setEditTypeVal(ev.target.value)} style={{...inp,marginBottom:0,cursor:"pointer"}}>
+                  <option value="">— auto (from title) —</option>
+                  <option value="private">Private</option>
+                  <option value="semi">Semi-Private</option>
+                  <option value="group">Group</option>
+                </select>
+              </div>
+            )}
+            <div style={{...lbl,marginBottom:6}}>Earnings</div>
             <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
               <span style={{fontSize:"1.1rem",color:"#6b7280",fontWeight:600}}>$</span>
               <input type="number" value={editPriceVal} onChange={e=>setEditPriceVal(e.target.value)} style={{...inp,marginBottom:0,fontSize:"1.1rem",fontWeight:700}} placeholder="0.00"/>
@@ -1991,13 +2103,14 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                   const newOv={...calOverrides,[r.calKey]:price};
                   setCalOverrides(newOv);
                   localStorage.setItem("calPriceOverrides",JSON.stringify(newOv));
+                  if(editTypeVal){const newTypeOv={...calTypeOverrides,[r.calKey]:editTypeVal};setCalTypeOverrides(newTypeOv);localStorage.setItem("calTypeOverrides",JSON.stringify(newTypeOv));}else{const newTypeOv={...calTypeOverrides};delete newTypeOv[r.calKey];setCalTypeOverrides(newTypeOv);localStorage.setItem("calTypeOverrides",JSON.stringify(newTypeOv));}
                 }else{
                   await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:r.id,updates:{custom_price:price}})});
                   onUpdateLesson(r.email,r.id,{customPrice:price});
                 }
                 dialogRef.current?.close();
               }} style={{background:G,color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.88rem"}}>Save</button>
-              {editRowRef.current&&(editRowRef.current.isCalendar?calOverrides[editRowRef.current.calKey]!=null:editRowRef.current.gross!==getRate(editRowRef.current.type,parseInt(editRowRef.current.duration),editRowRef.current.isMenlo?"menlo":"public"))&&(
+              {editRowRef.current&&(editRowRef.current.isCalendar?(calOverrides[editRowRef.current.calKey]!=null||calTypeOverrides[editRowRef.current.calKey]!=null):editRowRef.current.gross!==getRate(editRowRef.current.type,parseInt(editRowRef.current.duration),editRowRef.current.isMenlo?"menlo":"public"))&&(
                 <button onClick={async()=>{
                   const r=editRowRef.current;
                   if(!r)return;
@@ -2006,6 +2119,10 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                     delete newOv[r.calKey];
                     setCalOverrides(newOv);
                     localStorage.setItem("calPriceOverrides",JSON.stringify(newOv));
+                    const newTypeOv={...calTypeOverrides};
+                    delete newTypeOv[r.calKey];
+                    setCalTypeOverrides(newTypeOv);
+                    localStorage.setItem("calTypeOverrides",JSON.stringify(newTypeOv));
                   }else{
                     await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:r.id,updates:{custom_price:null}})});
                     onUpdateLesson(r.email,r.id,{customPrice:null});
