@@ -465,7 +465,7 @@ function LessonCard({lesson,isMenlo,isHistory,onCancel}){
               <div style={{marginTop:5,display:"flex",flexWrap:"wrap",gap:6,alignItems:"center"}}>
                 {isCancelled?(
                   <span style={{background:lesson.status==="late_cancel"?"#fff7ed":lesson.status==="cancelled_forgiven"?"#f3f4f6":"#fef2f2",color:lesson.status==="late_cancel"?"#c2410c":lesson.status==="cancelled_forgiven"?"#6b7280":"#dc2626",padding:"2px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>
-                    {lesson.status==="late_cancel"?"⚠️ Cancelled (late)":lesson.status==="cancelled_forgiven"?"✓ Cancelled (forgiven)":"✕ Cancelled"}
+                    {lesson.status==="late_cancel"?"⚠️ Cancelled (late)":lesson.status==="cancelled_forgiven"?"✓ Cancelled (forgiven)":lesson.cancelledByGcal?"📅 Removed from Calendar":"✕ Cancelled"}
                   </span>
                 ):!isHistory&&(
                   <>
@@ -3037,7 +3037,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
                   {missingCal&&!isCancelled&&<span title="No linked Google Calendar event" style={{background:"#fff7ed",color:"#c2410c",border:"1px solid #fed7aa",padding:"2px 7px",borderRadius:50,fontSize:"0.65rem",fontWeight:700}}>⚠️ No Cal</span>}
                   <span style={{background:l.status==="confirmed"?"#e8f0ee":l.status==="late_cancel"?"#fff7ed":l.status==="cancelled_forgiven"?"#f3f4f6":l.status==="cancelled"?"#fef2f2":"#fffbea",color:l.status==="confirmed"?G:l.status==="late_cancel"?"#c2410c":l.status==="cancelled_forgiven"?"#6b7280":l.status==="cancelled"?"#dc2626":"#92400e",padding:"3px 9px",borderRadius:50,fontSize:"0.72rem",fontWeight:700}}>
-                    {l.status==="confirmed"?"✓ Confirmed":l.status==="cancelled"?"✕ Cancelled":l.status==="late_cancel"?"⚠️ Late Cancel":l.status==="cancelled_forgiven"?"✓ Forgiven":"⏳ Pending"}
+                    {l.status==="confirmed"?"✓ Confirmed":l.status==="cancelled"?l.cancelledByGcal?"📅 Removed from Calendar":"✕ Cancelled":l.status==="late_cancel"?"⚠️ Late Cancel":l.status==="cancelled_forgiven"?"✓ Forgiven":"⏳ Pending"}
                   </span>
                   {l.status==="late_cancel"&&<button onClick={()=>onUpdateLesson(selectedStudent,l.id,{status:"cancelled_forgiven"})} style={{background:"white",color:"#6b7280",border:"1.5px solid #d1d5db",padding:"4px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:700}}>✓ Forgive</button>}
                   <button onClick={()=>setActiveMenu(isMenuOpen?null:smk)} style={{background:isMenuOpen?"#f3f4f6":"white",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"5px 10px",cursor:"pointer",fontSize:"1rem",lineHeight:1,color:"#6b7280",fontWeight:700}}>⋯</button>
@@ -3384,7 +3384,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 {missingCal&&!isCancelled&&<span title="This lesson has no linked Google Calendar event" style={{background:"#fff7ed",color:"#c2410c",border:"1px solid #fed7aa",padding:"2px 8px",borderRadius:50,fontSize:"0.68rem",fontWeight:700}}>⚠️ No Cal</span>}
                 {l.isMenlo&&<span style={{background:G,color:"white",padding:"2px 7px",borderRadius:50,fontSize:"0.68rem",fontWeight:700}}>MCC</span>}
                 <span style={{background:l.status==="confirmed"?"#e8f0ee":l.status==="late_cancel"?"#fff7ed":l.status==="cancelled_forgiven"?"#f3f4f6":l.status==="cancelled"?"#fef2f2":"#fffbea",color:l.status==="confirmed"?G:l.status==="late_cancel"?"#c2410c":l.status==="cancelled_forgiven"?"#6b7280":l.status==="cancelled"?"#dc2626":"#92400e",padding:"3px 9px",borderRadius:50,fontSize:"0.72rem",fontWeight:700}}>
-                  {l.status==="confirmed"?"✓ Confirmed":l.status==="cancelled"?"✕ Cancelled":l.status==="late_cancel"?"⚠️ Late Cancel":l.status==="cancelled_forgiven"?"✓ Forgiven":"⏳ Pending"}
+                  {l.status==="confirmed"?"✓ Confirmed":l.status==="cancelled"?l.cancelledByGcal?"📅 Removed from Calendar":"✕ Cancelled":l.status==="late_cancel"?"⚠️ Late Cancel":l.status==="cancelled_forgiven"?"✓ Forgiven":"⏳ Pending"}
                 </span>
                 {l.status==="late_cancel"&&<button onClick={()=>onUpdateLesson(l.studentEmail,l.id,{status:"cancelled_forgiven"})} style={{background:"white",color:"#6b7280",border:"1.5px solid #d1d5db",padding:"4px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:700}}>✓ Forgive</button>}
                 <button onClick={()=>setActiveMenu(isMenuOpen?null:mk)} style={{background:isMenuOpen?"#f3f4f6":"white",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"5px 10px",cursor:"pointer",fontSize:"1rem",lineHeight:1,color:"#6b7280",fontWeight:700}}>⋯</button>
@@ -4012,6 +4012,26 @@ export default function App(){
               });
             });
           }
+          // ── GCal cross-reference ─────────────────────────────────────────────
+          // Collect gcalEventIds from upcoming portal lessons (status not already resolved)
+          const RESOLVED=new Set(["completed","cancelled","late_cancel"]);
+          const gcalIds=[];
+          Object.values(lessonsByStudent).forEach(arr=>arr.forEach(l=>{if(l.gcalEventId&&!RESOLVED.has(l.status))gcalIds.push(l.gcalEventId);}));
+          if(gcalIds.length>0){
+            const vr=await fetch("/api/calendar-events?action=verify&ids="+gcalIds.join(",")).then(r=>r.json()).catch(()=>({found:gcalIds}));
+            const foundSet=new Set(vr.found||gcalIds);
+            Object.keys(lessonsByStudent).forEach(email=>{
+              lessonsByStudent[email]=lessonsByStudent[email].map(l=>{
+                if(l.gcalEventId&&!foundSet.has(l.gcalEventId)&&!RESOLVED.has(l.status)){
+                  // GCal event is gone — auto-cancel and silently sync Supabase
+                  fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id,updates:{status:"cancelled",cancelled_by:"gcal_sync",cancelled_at:new Date().toISOString()}})}).catch(()=>{});
+                  return{...l,status:"cancelled",cancelledByGcal:true};
+                }
+                return l;
+              });
+            });
+          }
+          // ────────────────────────────────────────────────────────────────────
           setAllLessons(lessonsByStudent);
           setMockUsersState(users);
         }

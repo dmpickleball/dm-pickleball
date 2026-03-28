@@ -23,6 +23,25 @@ function fmtDate(dt) {
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  // ── Verify which event IDs still exist in Google Calendar ──────────────────
+  // GET /api/calendar-events?action=verify&ids=id1,id2,id3
+  // Returns { found: ['id1', 'id2'] } — IDs that exist and are not deleted/cancelled
+  if (req.query.action === 'verify') {
+    const ids = (req.query.ids || '').split(',').map(s => s.trim()).filter(Boolean);
+    if (!ids.length) return res.status(200).json({ found: [] });
+    const calendar = google.calendar({ version: 'v3', auth: getAuth() });
+    const results = await Promise.all(ids.map(async id => {
+      try {
+        const r = await calendar.events.get({ calendarId: process.env.GOOGLE_CALENDAR_ID, eventId: id });
+        return r.data.status !== 'cancelled' ? id : null;
+      } catch (e) {
+        return null; // 404 or any error = event gone
+      }
+    }));
+    return res.status(200).json({ found: results.filter(Boolean) });
+  }
+
   const { start, end, keywords } = req.query;
   if (!start || !end) return res.status(400).json({ error: 'start and end dates required' });
 
