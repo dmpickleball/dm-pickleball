@@ -41,9 +41,9 @@ export default async function handler(req, res) {
       </div>`;
   } else {
     // General mode
-    ({ to, subject, text, replyTo } = body);
-    if (!to || !subject || !text) {
-      return res.status(400).json({ error: 'to, subject, and text are required.' });
+    ({ to, subject, text, html, replyTo } = body);
+    if (!to || !subject || (!text && !html)) {
+      return res.status(400).json({ error: 'to, subject, and text or html are required.' });
     }
   }
 

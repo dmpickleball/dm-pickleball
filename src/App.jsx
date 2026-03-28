@@ -73,6 +73,23 @@ function toTimeStrGlobal(s,e){const fmt=m=>{const h=Math.floor(m/60),mn=m%60,amp
 const capWords=s=>(s||"").replace(/\b\w/g,c=>c.toUpperCase());
 // Generate a human-readable lesson ticket: PB-MMDD-XXXX
 function generateTicket(){const n=new Date();const mmdd=String(n.getMonth()+1).padStart(2,"0")+String(n.getDate()).padStart(2,"0");const rand=Math.random().toString(36).slice(2,6).toUpperCase();return"PB-"+mmdd+"-"+rand;}
+// Generate branded HTML email — calLink is optional (renders as a button if provided)
+function makeEmailHtml(text,calLink){
+  const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  const rows=text.split('\n').map(line=>{
+    if(!line.trim())return'<div style="height:8px"></div>';
+    if(/^Ref: PB-/.test(line))return`<div style="display:inline-block;background:#e8f0ee;color:#1a3c34;font-family:monospace;font-weight:800;font-size:0.9rem;padding:6px 14px;border-radius:6px;margin:8px 0;letter-spacing:0.5px;">🎫 ${esc(line)}</div>`;
+    const ci=line.indexOf(': ');
+    if(ci>0&&ci<22&&!/^(Hi |See |David |Your |You |New )/.test(line)){const lbl=esc(line.slice(0,ci));const val=esc(line.slice(ci+2));return`<div style="padding:3px 0;"><span style="color:#6b7280;font-weight:700;display:inline-block;min-width:70px;">${lbl}:</span> <span style="color:#1a1a1a;">${val}</span></div>`;}
+    return`<div style="padding:2px 0;color:#374151;">${esc(line)}</div>`;
+  }).join('');
+  const btn=calLink?`<div style="margin:24px 0;"><a href="${calLink}" style="display:inline-block;background:#1a3c34;color:white;padding:12px 28px;border-radius:50px;text-decoration:none;font-weight:700;font-size:0.88rem;">📅 Add to Google Calendar</a></div>`:'';
+  return`<!DOCTYPE html><html><body style="margin:0;padding:20px;background:#f4f9f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+<div style="max-width:520px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.07);">
+  <div style="background:#1a3c34;padding:20px 28px;"><span style="color:white;font-weight:800;font-size:1.05rem;letter-spacing:0.3px;">🏓 DM Pickleball</span></div>
+  <div style="padding:28px 32px;">${rows}${btn}<div style="margin-top:22px;padding-top:16px;border-top:1px solid #f3f4f6;font-size:0.75rem;color:#9ca3af;">DM Pickleball · <a href="https://dmpickleball.com" style="color:#1a3c34;text-decoration:none;">dmpickleball.com</a> · (650) 839-3398</div></div>
+</div></body></html>`;
+}
 const NOW = new Date();
 const INIT_LESSONS = {
   "student@email.com":[
@@ -1326,11 +1343,14 @@ function BookingPage({user,setPage,onAddLesson}){
     const startISO=date+"T"+startTime+":00";
     const endISO=date+"T"+endTime+":00";
     const link="https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(summary)+"&dates="+startISO.replace(/[-:]/g,"").slice(0,15)+"/"+endISO.replace(/[-:]/g,"").slice(0,15)+"&details="+encodeURIComponent(description)+"&location="+encodeURIComponent(location);
-    const sendEmail=(to,subject,text,replyTo)=>fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to,subject,text,...(replyTo?{replyTo}:{})})}).catch(()=>{});
-    await sendEmail(user.email,"Your lesson is booked - "+fmtDateShort(date),"Hi "+user.name+",\n\nYour pickleball lesson is confirmed!\n\nRef: "+ticketId+"\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+duration+" min\nFocus: "+(focus||"Not specified")+"\nLocation: "+location+"\n\nManage your booking:\nhttps://dmpickleball.com\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398",user.email);
-    await sendEmail("dmpickleball@gmail.com","New booking: "+summary+" - "+fmtDateShort(date),"New lesson booked!\n\nRef: "+ticketId+"\nStudent: "+user.name+"\nEmail: "+user.email+"\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+duration+" min\nFocus: "+(focus||"Not specified")+"\nNotes: "+(notes||"None")+partnerInfo+groupInfo+"\nPrice: $"+price+"\nLocation: "+location,user.email);
-    if(lessonType==="semi"&&partnerEmail){await sendEmail(partnerEmail,"You have been added to a pickleball lesson - "+fmtDateShort(date),"Hi "+partnerFull+",\n\n"+user.name+" has added you to a lesson!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: Semi-Private · "+duration+" min\nFocus: "+(focus||"Not specified")+"\nLocation: "+location+"\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398","dmpickleball@gmail.com");}
-    if(lessonType==="group"){for(const m of groupMembers.slice(0,groupSize-1)){if(m.email){const mFull=(m.firstName+" "+m.lastName).trim();await sendEmail(m.email,"You have been added to a group pickleball lesson - "+fmtDateShort(date),"Hi "+mFull+",\n\n"+user.name+" has added you to a group lesson!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nLocation: "+location+"\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok","dmpickleball@gmail.com");}}}
+    const priceNote=lessonType==="semi"?" ($"+(price/2)+"/person)":lessonType==="group"?" (split equally)":"";
+    const sendEmail=(to,subject,text,replyTo,calLink)=>{const html=makeEmailHtml(text,calLink);return fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to,subject,text,html,...(replyTo?{replyTo}:{})})}).catch(()=>{});};
+    const studentText="Hi "+user.name+",\n\nYour pickleball lesson is confirmed!\n\nRef: "+ticketId+"\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+duration+" min\nPrice: $"+price+" total"+priceNote+"\nFocus: "+(focus||"Not specified")+"\nLocation: "+location+"\n\nManage your booking: https://dmpickleball.com\n\nSee you on the court!\nDavid Mok\n(650) 839-3398";
+    await sendEmail(user.email,"Your lesson is booked - "+fmtDateShort(date),studentText,user.email,link);
+    const adminText="New lesson booked!\n\nRef: "+ticketId+"\nStudent: "+user.name+"\nEmail: "+user.email+"\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+duration+" min\nFocus: "+(focus||"Not specified")+"\nNotes: "+(notes||"None")+partnerInfo+groupInfo+"\nPrice: $"+price+" total"+priceNote+"\nLocation: "+location;
+    await sendEmail("dmpickleball@gmail.com","New booking: "+summary+" - "+fmtDateShort(date),adminText,user.email);
+    if(lessonType==="semi"&&partnerEmail){const partnerText="Hi "+partnerFull+",\n\n"+user.name+" has added you to a pickleball lesson!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: Semi-Private · "+duration+" min\nFocus: "+(focus||"Not specified")+"\nLocation: "+location+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398";await sendEmail(partnerEmail,"You have been added to a pickleball lesson - "+fmtDateShort(date),partnerText,"dmpickleball@gmail.com",link);}
+    if(lessonType==="group"){for(const m of groupMembers.slice(0,groupSize-1)){if(m.email){const mFull=(m.firstName+" "+m.lastName).trim();const groupMemberText="Hi "+mFull+",\n\n"+user.name+" has added you to a group pickleball lesson!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nLocation: "+location+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398";await sendEmail(m.email,"You have been added to a group pickleball lesson - "+fmtDateShort(date),groupMemberText,"dmpickleball@gmail.com",link);}}}
     const newLesson={id:Date.now(),date,time:timeStr,type:lessonLabel,duration:duration+" min",status:"confirmed",focus,notes:"",photos:[],videos:[],gcalEventId:eventId,ticketId,partnerEmail:lessonType==="semi"?partnerEmail:"",groupEmails:lessonType==="group"?groupMembers.slice(0,groupSize-1).map(m=>m.email).filter(Boolean):[],members:memberNames.slice(1),createdAt:new Date().toISOString()};
     onAddLesson(newLesson);
     setGcalLink(link);
@@ -1352,7 +1372,7 @@ function BookingPage({user,setPage,onAddLesson}){
             <div>⏱ {bookedSummary?.timeStr}</div>
             <div>🎯 {bookedSummary?.lessonLabel} · {bookedSummary?.duration} min</div>
             {bookedSummary?.focus&&<div>🏓 {bookedSummary.focus}</div>}
-            <div>💰 ${bookedSummary?.price}{lessonType!=="private"?" per person":""}</div>
+            <div>💰 <strong>${bookedSummary?.price} total</strong>{lessonType==="semi"&&<span style={{color:"#9ca3af"}}> · ${bookedSummary.price/2}/person</span>}{lessonType==="group"&&<span style={{color:"#9ca3af"}}> · split equally</span>}</div>
             <div>📍 <a href={!isMenlo?"https://maps.google.com/?q=Andrew+Spinas+Park,+3003+Bay+Rd,+Redwood+City,+CA+94063":"https://maps.google.com/?q=Stanford+Redwood+City+Recreation+and+Wellness+Center"} target="_blank" rel="noreferrer" style={{color:G,fontWeight:600}}>{!isMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City":"Stanford Redwood City"}</a></div>
           </div>
         </div>
@@ -1521,7 +1541,7 @@ function BookingPage({user,setPage,onAddLesson}){
               <div>⏱ <strong style={{fontSize:"1rem"}}>{slot&&toTimeStr(slot.s,slot.e)}</strong></div>
               <div>🎯 <strong>{lessonType==="private"?"Private":lessonType==="semi"?"Semi-Private":"Group"} · {duration} min</strong></div>
               {focus&&<div>🏓 Focus: {focus}</div>}
-              <div>💰 <strong>${price}{lessonType!=="private"?" per person":""}</strong></div>
+              <div>💰 <strong>${price} total</strong>{lessonType==="semi"&&<span style={{color:"#9ca3af",fontWeight:400,fontSize:"0.85rem"}}> · ${price/2}/person</span>}{lessonType==="group"&&<span style={{color:"#9ca3af",fontWeight:400,fontSize:"0.85rem"}}> · split equally</span>}</div>
               <div>📍 <a href={!isMenlo?"https://maps.google.com/?q=Andrew+Spinas+Park,+3003+Bay+Rd,+Redwood+City,+CA+94063":"https://maps.google.com/?q=Stanford+Redwood+City+Recreation+and+Wellness+Center"} target="_blank" rel="noreferrer" style={{color:G,fontWeight:600}}>{!isMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City":"Stanford Redwood City"}</a></div>
               {lessonType==="semi"&&<div>👥 Partner: {(partner.firstName+" "+partner.lastName).trim()}</div>}
               {lessonType==="group"&&<div>👥 Group: {[user.name,...groupMembers.slice(0,groupSize-1).map(m=>(m.firstName+" "+m.lastName).trim())].join(", ")}</div>}
@@ -2552,13 +2572,17 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
     const startISO=schedDate+"T"+startTime+":00";
     const endISO=schedDate+"T"+endTime+":00";
     const link="https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(summary)+"&dates="+startISO.replace(/[-:]/g,"").slice(0,15)+"/"+endISO.replace(/[-:]/g,"").slice(0,15)+"&details="+encodeURIComponent(description)+"&location="+encodeURIComponent(location);
-    const sendEmail2=(to,subject,text,replyTo)=>fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to,subject,text,...(replyTo?{replyTo}:{})})}).catch(()=>{});
+    const sendEmail2=(to,subject,text,replyTo,calLink)=>{const html=makeEmailHtml(text,calLink);return fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to,subject,text,html,...(replyTo?{replyTo}:{})})}).catch(()=>{});};
     const partnerInfo2=schedLessonType==="semi"&&schedPartner.name?"\nPartner: "+schedPartner.name+(schedPartner.email?" ("+schedPartner.email+")":""):"";
     const groupInfo2=schedLessonType==="group"&&schedGroupMembers.slice(0,schedGroupSize-1).some(m=>m.name)?"\nGroup: "+schedGroupMembers.slice(0,schedGroupSize-1).filter(m=>m.name).map(m=>m.name+(m.email?" ("+m.email+")":"")).join(", "):"";
-    await sendEmail2(selectedStudent,"Your lesson is booked - "+fmtDateShort(schedDate),"Hi "+student.name+",\n\nDavid has scheduled a lesson for you!\n\nRef: "+ticketId2+"\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+schedDuration+" min\nFocus: "+(schedFocus||"Not specified")+"\nLocation: "+location+"\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398","dmpickleball@gmail.com");
-    await sendEmail2("dmpickleball@gmail.com","Scheduled: "+summary+" - "+fmtDateShort(schedDate),"You scheduled a lesson!\n\nRef: "+ticketId2+"\nStudent: "+student.name+"\nEmail: "+selectedStudent+"\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+schedDuration+" min\nFocus: "+(schedFocus||"Not specified")+partnerInfo2+groupInfo2+"\nLocation: "+location,selectedStudent);
-    if(schedLessonType==="semi"&&schedPartner.email){await sendEmail2(schedPartner.email,"You've been added to a pickleball lesson - "+fmtDateShort(schedDate),"Hi "+schedPartner.name+",\n\n"+student.name+" has added you to a lesson with David Mok!\n\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nType: Semi-Private · "+schedDuration+" min\nFocus: "+(schedFocus||"Not specified")+"\nLocation: "+location+"\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398","dmpickleball@gmail.com");}
-    if(schedLessonType==="group"){for(const m of schedGroupMembers.slice(0,schedGroupSize-1)){if(m.email){await sendEmail2(m.email,"You've been added to a group pickleball lesson - "+fmtDateShort(schedDate),"Hi "+m.name+",\n\n"+student.name+" has added you to a group lesson with David Mok!\n\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nLocation: "+location+"\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok","dmpickleball@gmail.com");}}}
+    const schedPriceTotal=schedCustomPrice?parseFloat(schedCustomPrice):SCHED_PRICES[schedLessonType][schedDuration];
+    const schedPriceNote=!schedCustomPrice&&schedLessonType==="semi"?" ($"+(schedPriceTotal/2)+"/person)":!schedCustomPrice&&schedLessonType==="group"?" (split equally)":"";
+    const schedStudentText="Hi "+student.name+",\n\nDavid has scheduled a lesson for you!\n\nRef: "+ticketId2+"\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+schedDuration+" min\nPrice: $"+schedPriceTotal+" total"+schedPriceNote+"\nFocus: "+(schedFocus||"Not specified")+"\nLocation: "+location+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398";
+    await sendEmail2(selectedStudent,"Your lesson is booked - "+fmtDateShort(schedDate),schedStudentText,"dmpickleball@gmail.com",link);
+    const schedAdminText="You scheduled a lesson!\n\nRef: "+ticketId2+"\nStudent: "+student.name+"\nEmail: "+selectedStudent+"\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+schedDuration+" min\nPrice: $"+schedPriceTotal+" total"+schedPriceNote+"\nFocus: "+(schedFocus||"Not specified")+partnerInfo2+groupInfo2+"\nLocation: "+location;
+    await sendEmail2("dmpickleball@gmail.com","Scheduled: "+summary+" - "+fmtDateShort(schedDate),schedAdminText,selectedStudent);
+    if(schedLessonType==="semi"&&schedPartner.email){const schedPartnerText="Hi "+schedPartner.name+",\n\n"+student.name+" has added you to a pickleball lesson with David Mok!\n\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nType: Semi-Private · "+schedDuration+" min\nFocus: "+(schedFocus||"Not specified")+"\nLocation: "+location+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398";await sendEmail2(schedPartner.email,"You've been added to a pickleball lesson - "+fmtDateShort(schedDate),schedPartnerText,"dmpickleball@gmail.com",link);}
+    if(schedLessonType==="group"){for(const m of schedGroupMembers.slice(0,schedGroupSize-1)){if(m.email){const schedGroupText="Hi "+m.name+",\n\n"+student.name+" has added you to a group pickleball lesson with David Mok!\n\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nLocation: "+location+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398";await sendEmail2(m.email,"You've been added to a group pickleball lesson - "+fmtDateShort(schedDate),schedGroupText,"dmpickleball@gmail.com",link);}}}
     const finalPrice=schedCustomPrice?parseFloat(schedCustomPrice):null;
     const newLesson={id:Date.now(),date:schedDate,time:timeStr,type:lessonLabel,duration:schedDuration+" min",status:"confirmed",focus:schedFocus,notes:"",photos:[],videos:[],gcalEventId:eventId,ticketId:ticketId2,customPrice:finalPrice,partnerEmail:schedLessonType==="semi"?schedPartner.email:"",members:memberNames.slice(1)};
     onAddLesson(selectedStudent,newLesson);
