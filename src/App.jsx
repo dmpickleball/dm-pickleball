@@ -2387,6 +2387,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[editingId,setEditingId]=useState(null);const[editPriceId,setEditPriceId]=useState(null);const[editPriceVal,setEditPriceVal]=useState("");
   const[editNotes,setEditNotes]=useState("");
   const[confirmCancel,setConfirmCancel]=useState(null);const[confirmDelete,setConfirmDelete]=useState(null);const[confirmDeleteStudent,setConfirmDeleteStudent]=useState(false);
+  const[deleteLoading,setDeleteLoading]=useState(false);const[deletedToast,setDeletedToast]=useState(false);
+  const[cancelLoading,setCancelLoading]=useState(false);
   const[coachRatingInput,setCoachRatingInput]=useState("");
   const[ratingNoteInput,setRatingNoteInput]=useState("");
   const[ratingHistories,setRatingHistories]=useState({});// keyed by student email
@@ -2400,7 +2402,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[schedNotes,setSchedNotes]=useState("");
   const[schedPartner,setSchedPartner]=useState({name:"",email:""});
   const[schedGroupSize,setSchedGroupSize]=useState(3);
-  const[schedGroupMembers,setSchedGroupMembers]=useState([{name:"",email:""},{name:"",email:""},{name:"",email:""}]);
+  const[schedGroupMembers,setSchedGroupMembers]=useState([{name:"",email:""},{name:"",email:""},{name:"",email:""},{name:"",email:""}]);
   const[schedBusyTimes,setSchedBusyTimes]=useState([]);
   const[schedLoadingSlots,setSchedLoadingSlots]=useState(false);
   const[schedQuickMins,setSchedQuickMins]=useState(null); // target startMins pre-filled from week view click
@@ -2551,13 +2553,17 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
     const endISO=schedDate+"T"+endTime+":00";
     const link="https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(summary)+"&dates="+startISO.replace(/[-:]/g,"").slice(0,15)+"/"+endISO.replace(/[-:]/g,"").slice(0,15)+"&details="+encodeURIComponent(description)+"&location="+encodeURIComponent(location);
     const sendEmail2=(to,subject,text,replyTo)=>fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to,subject,text,...(replyTo?{replyTo}:{})})}).catch(()=>{});
+    const partnerInfo2=schedLessonType==="semi"&&schedPartner.name?"\nPartner: "+schedPartner.name+(schedPartner.email?" ("+schedPartner.email+")":""):"";
+    const groupInfo2=schedLessonType==="group"&&schedGroupMembers.slice(0,schedGroupSize-1).some(m=>m.name)?"\nGroup: "+schedGroupMembers.slice(0,schedGroupSize-1).filter(m=>m.name).map(m=>m.name+(m.email?" ("+m.email+")":"")).join(", "):"";
     await sendEmail2(selectedStudent,"Your lesson is booked - "+fmtDateShort(schedDate),"Hi "+student.name+",\n\nDavid has scheduled a lesson for you!\n\nRef: "+ticketId2+"\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+schedDuration+" min\nFocus: "+(schedFocus||"Not specified")+"\nLocation: "+location+"\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398","dmpickleball@gmail.com");
-    await sendEmail2("dmpickleball@gmail.com","Scheduled: "+summary+" - "+fmtDateShort(schedDate),"You scheduled a lesson!\n\nRef: "+ticketId2+"\nStudent: "+student.name+"\nEmail: "+selectedStudent+"\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+schedDuration+" min\nFocus: "+(schedFocus||"Not specified")+"\nLocation: "+location,selectedStudent);
+    await sendEmail2("dmpickleball@gmail.com","Scheduled: "+summary+" - "+fmtDateShort(schedDate),"You scheduled a lesson!\n\nRef: "+ticketId2+"\nStudent: "+student.name+"\nEmail: "+selectedStudent+"\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+schedDuration+" min\nFocus: "+(schedFocus||"Not specified")+partnerInfo2+groupInfo2+"\nLocation: "+location,selectedStudent);
+    if(schedLessonType==="semi"&&schedPartner.email){await sendEmail2(schedPartner.email,"You've been added to a pickleball lesson - "+fmtDateShort(schedDate),"Hi "+schedPartner.name+",\n\n"+student.name+" has added you to a lesson with David Mok!\n\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nType: Semi-Private · "+schedDuration+" min\nFocus: "+(schedFocus||"Not specified")+"\nLocation: "+location+"\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398","dmpickleball@gmail.com");}
+    if(schedLessonType==="group"){for(const m of schedGroupMembers.slice(0,schedGroupSize-1)){if(m.email){await sendEmail2(m.email,"You've been added to a group pickleball lesson - "+fmtDateShort(schedDate),"Hi "+m.name+",\n\n"+student.name+" has added you to a group lesson with David Mok!\n\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nLocation: "+location+"\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok","dmpickleball@gmail.com");}}}
     const finalPrice=schedCustomPrice?parseFloat(schedCustomPrice):null;
-    const newLesson={id:Date.now(),date:schedDate,time:timeStr,type:lessonLabel,duration:schedDuration+" min",status:"confirmed",focus:schedFocus,notes:"",photos:[],videos:[],gcalEventId:eventId,ticketId:ticketId2,customPrice:finalPrice};
+    const newLesson={id:Date.now(),date:schedDate,time:timeStr,type:lessonLabel,duration:schedDuration+" min",status:"confirmed",focus:schedFocus,notes:"",photos:[],videos:[],gcalEventId:eventId,ticketId:ticketId2,customPrice:finalPrice,partnerEmail:schedLessonType==="semi"?schedPartner.email:"",members:memberNames.slice(1)};
     onAddLesson(selectedStudent,newLesson);
     setShowSchedule(false);
-    setScheduleStep(1);setSchedLessonType("private");setSchedDuration(60);setSchedDate("");setSchedSlot(null);setSchedSlotIdx(-1);setSchedFocus("");setSchedNotes("");setSchedBusyTimes([]);setSchedCustomPrice("");setSchedQuickMins(null);
+    setScheduleStep(1);setSchedLessonType("private");setSchedDuration(60);setSchedDate("");setSchedSlot(null);setSchedSlotIdx(-1);setSchedFocus("");setSchedNotes("");setSchedBusyTimes([]);setSchedCustomPrice("");setSchedQuickMins(null);setSchedPartner({name:"",email:""});setSchedGroupMembers([{name:"",email:""},{name:"",email:""},{name:"",email:""},{name:"",email:""}]);setSchedGroupSize(3);
     setSchedSubmitting(false);
     alert("Lesson scheduled for "+student.name+"!");
   };
@@ -2587,6 +2593,13 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
 
   return(
     <div style={{maxWidth:1100,margin:"0 auto",padding:"40px 24px"}}>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes fadeInUp{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}`}</style>
+      {/* Deleted lesson success toast */}
+      {deletedToast&&(
+        <div style={{position:"fixed",bottom:28,left:"50%",transform:"translateX(-50%)",background:"#1a3c34",color:"white",borderRadius:50,padding:"12px 28px",fontWeight:700,fontSize:"0.9rem",boxShadow:"0 4px 20px rgba(0,0,0,0.18)",zIndex:9999,display:"flex",alignItems:"center",gap:8,animation:"fadeInUp 0.25s ease"}}>
+          ✓ Lesson deleted successfully
+        </div>
+      )}
       <div style={{marginBottom:28,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
         <div>
           <div style={{fontSize:"0.78rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:4}}>Admin Panel</div>
@@ -2988,23 +3001,31 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 <div style={{background:"#fef2f2",borderTop:"1px solid #fca5a5",padding:"12px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
                   <span style={{fontWeight:700,color:"#991b1b",fontSize:"0.88rem"}}>Cancel this lesson?</span>
                   <div style={{display:"flex",gap:8}}>
-                    <button onClick={()=>setConfirmCancel(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Keep it</button>
-                    <button onClick={()=>{onCancelLesson(selectedStudent,l.id);setConfirmCancel(null);}} style={{background:"#dc2626",color:"white",border:"none",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>Yes, Cancel</button>
+                    <button onClick={()=>setConfirmCancel(null)} disabled={cancelLoading} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600,opacity:cancelLoading?0.5:1}}>Keep it</button>
+                    <button onClick={async()=>{setCancelLoading(true);await onCancelLesson(selectedStudent,l.id);setCancelLoading(false);setConfirmCancel(null);}} disabled={cancelLoading} style={{background:cancelLoading?"#9ca3af":"#dc2626",color:"white",border:"none",padding:"6px 14px",borderRadius:50,cursor:cancelLoading?"not-allowed":"pointer",fontSize:"0.82rem",fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
+                      {cancelLoading&&<span style={{display:"inline-block",width:12,height:12,border:"2px solid white",borderTop:"2px solid transparent",borderRadius:"50%",animation:"spin 0.7s linear infinite"}}/>}
+                      {cancelLoading?"Cancelling...":"Yes, Cancel"}
+                    </button>
                   </div>
                 </div>
               )}
               {/* Delete confirm */}
               {confirmDelete===l.id&&(
-                <div style={{background:"#fef2f2",borderTop:"1px solid #fca5a5",padding:"12px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
-                  <span style={{fontWeight:700,color:"#991b1b",fontSize:"0.88rem"}}>Permanently delete?</span>
-                  <div style={{display:"flex",gap:8}}>
-                    <button onClick={()=>setConfirmDelete(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Keep it</button>
+                <div style={{background:"#fef2f2",borderTop:"2px solid #dc2626",padding:"16px 18px"}}>
+                  <div style={{fontWeight:800,color:"#991b1b",fontSize:"0.95rem",marginBottom:4}}>🗑 Delete this lesson?</div>
+                  <div style={{fontSize:"0.82rem",color:"#b91c1c",marginBottom:12,fontWeight:600}}>⚠️ This is permanent and cannot be undone. The calendar event will also be removed.</div>
+                  <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+                    <button onClick={()=>setConfirmDelete(null)} disabled={deleteLoading} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600,opacity:deleteLoading?0.5:1}}>Keep it</button>
                     <button onClick={async()=>{
+                      setDeleteLoading(true);
                       if(l.gcalEventId){try{await fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:l.gcalEventId,mode:"delete"})});}catch(e){console.error("GCal delete failed:",e);}}
                       try{await fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})});}catch(e){console.error("DB delete failed:",e);}
                       setAllLessons(prev=>({...prev,[selectedStudent]:(prev[selectedStudent]||[]).filter(x=>x.id!==l.id)}));
-                      setConfirmDelete(null);
-                    }} style={{background:"#dc2626",color:"white",border:"none",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>Yes, Delete</button>
+                      setDeleteLoading(false);setConfirmDelete(null);setDeletedToast(true);setTimeout(()=>setDeletedToast(false),3000);
+                    }} disabled={deleteLoading} style={{background:deleteLoading?"#9ca3af":"#dc2626",color:"white",border:"none",padding:"7px 16px",borderRadius:50,cursor:deleteLoading?"not-allowed":"pointer",fontSize:"0.82rem",fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
+                      {deleteLoading&&<span style={{display:"inline-block",width:12,height:12,border:"2px solid white",borderTop:"2px solid transparent",borderRadius:"50%",animation:"spin 0.7s linear infinite"}}/>}
+                      {deleteLoading?"Deleting...":"Yes, Delete Permanently"}
+                    </button>
                   </div>
                 </div>
               )}
@@ -3046,24 +3067,30 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
           <h3 style={{fontWeight:800,fontSize:"1.2rem",marginBottom:4,color:G}}>Schedule Lesson</h3>
           <p style={{color:"#6b7280",fontSize:"0.88rem",marginBottom:24}}>Scheduling for <strong>{mockUsers[selectedStudent]?.name}</strong></p>
 
-          <div style={{display:"flex",alignItems:"center",marginBottom:28,gap:0}}>
-            {["Type","Date & Time","Details","Confirm"].map((s,i)=>{
-              const n=i+1;
-              const active=scheduleStep===n;
-              const done=scheduleStep>n;
-              return(
-                <div key={i} style={{display:"flex",alignItems:"center",flex:i<3?1:"auto"}}>
-                  <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                    <div style={{width:28,height:28,borderRadius:"50%",background:done?G:active?G:"#e5e7eb",color:done||active?"white":"#9ca3af",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:"0.8rem",cursor:done?"pointer":"default"}} onClick={()=>done&&setScheduleStep(n)}>
-                      {done?"✓":n}
+          {(()=>{
+            const isSchedPrivate=schedLessonType==="private";
+            const schedStepLabels=isSchedPrivate?["Type","Date & Time","Details","Confirm"]:["Type","Date & Time","Participants","Details","Confirm"];
+            return(
+              <div style={{display:"flex",alignItems:"center",marginBottom:28,gap:0}}>
+                {schedStepLabels.map((s,i)=>{
+                  const n=i+1;
+                  const active=scheduleStep===n;
+                  const done=scheduleStep>n;
+                  return(
+                    <div key={i} style={{display:"flex",alignItems:"center",flex:i<schedStepLabels.length-1?1:"auto"}}>
+                      <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+                        <div style={{width:28,height:28,borderRadius:"50%",background:done?G:active?G:"#e5e7eb",color:done||active?"white":"#9ca3af",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:"0.8rem",cursor:done?"pointer":"default"}} onClick={()=>done&&setScheduleStep(n)}>
+                          {done?"✓":n}
+                        </div>
+                        <div style={{fontSize:"0.62rem",fontWeight:600,color:active?G:done?G:"#9ca3af",whiteSpace:"nowrap"}}>{s}</div>
+                      </div>
+                      {i<schedStepLabels.length-1&&<div style={{flex:1,height:2,background:done?G:"#e5e7eb",margin:"0 6px",marginBottom:14}}/>}
                     </div>
-                    <div style={{fontSize:"0.62rem",fontWeight:600,color:active?G:done?G:"#9ca3af",whiteSpace:"nowrap"}}>{s}</div>
-                  </div>
-                  {i<3&&<div style={{flex:1,height:2,background:done?G:"#e5e7eb",margin:"0 6px",marginBottom:14}}/>}
-                </div>
-              );
-            })}
-          </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
 
           {scheduleStep===1&&(
             <div>
@@ -3173,7 +3200,49 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
             </div>
           )}
 
-          {scheduleStep===3&&(
+          {/* Step 3: Participants (semi/group) OR Details (private) */}
+          {scheduleStep===3&&schedLessonType!=="private"&&(
+            <div>
+              <p style={{fontSize:"0.85rem",color:"#6b7280",marginBottom:16}}>Add the other participants for this lesson.</p>
+              {schedLessonType==="semi"&&(
+                <div style={{background:"#f9f9f6",borderRadius:12,padding:"16px",marginBottom:16,border:"1.5px solid #e5e7eb"}}>
+                  <div style={{fontWeight:700,fontSize:"0.88rem",color:G,marginBottom:12}}>👥 Partner</div>
+                  <label style={lbl}>Partner Name</label>
+                  <input value={schedPartner.name} onChange={e=>setSchedPartner(p=>({...p,name:capWords(e.target.value)}))} placeholder="Full name" style={inp}/>
+                  <label style={lbl}>Partner Email <span style={{fontWeight:400,color:"#9ca3af",textTransform:"none"}}>(optional — for confirmation email)</span></label>
+                  <input type="email" value={schedPartner.email} onChange={e=>setSchedPartner(p=>({...p,email:e.target.value}))} placeholder="partner@email.com" style={{...inp,marginBottom:0}}/>
+                </div>
+              )}
+              {schedLessonType==="group"&&(
+                <div>
+                  <div style={{...lbl,marginBottom:8}}>Group Size</div>
+                  <div style={{display:"flex",gap:8,marginBottom:16}}>
+                    {[3,4,5].map(n=>(
+                      <div key={n} onClick={()=>setSchedGroupSize(n)} style={{background:schedGroupSize===n?"#e8f0ee":"white",border:"2px solid "+(schedGroupSize===n?G:"#e5e7eb"),borderRadius:10,padding:"10px 18px",cursor:"pointer",fontWeight:700,color:schedGroupSize===n?G:"#374151",fontSize:"0.9rem"}}>
+                        {n} players
+                      </div>
+                    ))}
+                  </div>
+                  {Array.from({length:schedGroupSize-1}).map((_,i)=>(
+                    <div key={i} style={{background:"#f9f9f6",borderRadius:12,padding:"14px 16px",marginBottom:10,border:"1.5px solid #e5e7eb"}}>
+                      <div style={{fontWeight:700,fontSize:"0.85rem",color:G,marginBottom:10}}>🏓 Player {i+2}</div>
+                      <label style={lbl}>Name</label>
+                      <input value={schedGroupMembers[i]?.name||""} onChange={e=>{const a=[...schedGroupMembers];a[i]={...a[i],name:capWords(e.target.value)};setSchedGroupMembers(a);}} placeholder="Full name" style={inp}/>
+                      <label style={lbl}>Email <span style={{fontWeight:400,color:"#9ca3af",textTransform:"none"}}>(optional)</span></label>
+                      <input type="email" value={schedGroupMembers[i]?.email||""} onChange={e=>{const a=[...schedGroupMembers];a[i]={...a[i],email:e.target.value};setSchedGroupMembers(a);}} placeholder="player@email.com" style={{...inp,marginBottom:0}}/>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div style={{display:"flex",gap:10,marginTop:8}}>
+                <button onClick={()=>setScheduleStep(2)} style={{flex:1,background:"white",border:"1.5px solid #e5e7eb",padding:"13px",borderRadius:50,fontWeight:600,cursor:"pointer"}}>← Back</button>
+                <button onClick={()=>setScheduleStep(4)} style={{flex:2,background:G,color:"white",border:"none",padding:"13px",borderRadius:50,fontWeight:700,cursor:"pointer"}}>Next: Details →</button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3 (private) or Step 4 (semi/group): Details */}
+          {((scheduleStep===3&&schedLessonType==="private")||(scheduleStep===4&&schedLessonType!=="private"))&&(
             <div>
               <div style={{marginBottom:16}}>
                 <div style={{...lbl,marginBottom:6}}>Focus Area <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(optional)</span></div>
@@ -3187,18 +3256,21 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 <textarea value={schedNotes} onChange={e=>setSchedNotes(e.target.value)} placeholder="Any notes for this lesson..." style={{...inp,height:80,resize:"vertical",fontFamily:"inherit",marginBottom:0}}/>
               </div>
               <div style={{display:"flex",gap:10}}>
-                <button onClick={()=>setScheduleStep(2)} style={{flex:1,background:"white",border:"1.5px solid #e5e7eb",padding:"13px",borderRadius:50,fontWeight:600,cursor:"pointer"}}>← Back</button>
-                <button onClick={()=>setScheduleStep(4)} style={{flex:2,background:G,color:"white",border:"none",padding:"13px",borderRadius:50,fontWeight:700,cursor:"pointer"}}>Next: Review →</button>
+                <button onClick={()=>setScheduleStep(schedLessonType==="private"?2:3)} style={{flex:1,background:"white",border:"1.5px solid #e5e7eb",padding:"13px",borderRadius:50,fontWeight:600,cursor:"pointer"}}>← Back</button>
+                <button onClick={()=>setScheduleStep(schedLessonType==="private"?4:5)} style={{flex:2,background:G,color:"white",border:"none",padding:"13px",borderRadius:50,fontWeight:700,cursor:"pointer"}}>Next: Review →</button>
               </div>
             </div>
           )}
 
-          {scheduleStep===4&&(
+          {/* Step 4 (private) or Step 5 (semi/group): Confirm */}
+          {((scheduleStep===4&&schedLessonType==="private")||(scheduleStep===5&&schedLessonType!=="private"))&&(
             <div>
               <div style={{background:"#f9f9f6",borderRadius:12,padding:"20px",marginBottom:20,border:"1.5px solid #e5e7eb"}}>
                 <div style={{fontWeight:700,color:G,marginBottom:12}}>Booking Summary</div>
                 <div style={{fontSize:"0.9rem",color:"#374151",lineHeight:2}}>
                   <div>👤 {mockUsers[selectedStudent]?.name}</div>
+                  {schedLessonType==="semi"&&schedPartner.name&&<div>👥 Partner: {schedPartner.name}{schedPartner.email?" · "+schedPartner.email:""}</div>}
+                  {schedLessonType==="group"&&schedGroupMembers.slice(0,schedGroupSize-1).filter(m=>m.name).length>0&&<div>🏆 Group: {schedGroupMembers.slice(0,schedGroupSize-1).map(m=>m.name).filter(Boolean).join(", ")}</div>}
                   <div>📅 {fmtDate(schedDate)}</div>
                   <div>⏱ {schedSlot&&toTimeStr(schedSlot.s,schedSlot.e)}</div>
                   <div>🎯 {schedLessonType==="private"?"Private":schedLessonType==="semi"?"Semi-Private":"Group"} · {schedDuration} min</div>
@@ -3208,8 +3280,9 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 </div>
               </div>
               <div style={{display:"flex",gap:10}}>
-                <button onClick={()=>setScheduleStep(3)} style={{flex:1,background:"white",border:"1.5px solid #e5e7eb",padding:"13px",borderRadius:50,fontWeight:600,cursor:"pointer"}}>← Back</button>
-                <button onClick={handleSchedule} disabled={schedSubmitting} style={{flex:2,background:schedSubmitting?"#9ca3af":G,color:"white",border:"none",padding:"13px",borderRadius:50,fontWeight:700,cursor:schedSubmitting?"not-allowed":"pointer"}}>
+                <button onClick={()=>setScheduleStep(schedLessonType==="private"?3:4)} style={{flex:1,background:"white",border:"1.5px solid #e5e7eb",padding:"13px",borderRadius:50,fontWeight:600,cursor:"pointer"}}>← Back</button>
+                <button onClick={handleSchedule} disabled={schedSubmitting} style={{flex:2,background:schedSubmitting?"#9ca3af":G,color:"white",border:"none",padding:"13px",borderRadius:50,fontWeight:700,cursor:schedSubmitting?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+                  {schedSubmitting&&<span style={{display:"inline-block",width:14,height:14,border:"2.5px solid white",borderTop:"2.5px solid transparent",borderRadius:"50%",animation:"spin 0.7s linear infinite"}}/>}
                   {schedSubmitting?"Scheduling...":"Confirm & Send Confirmation ✓"}
                 </button>
               </div>
@@ -3271,23 +3344,31 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
               <div style={{background:"#fef2f2",borderTop:"1px solid #fca5a5",padding:"12px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
                 <span style={{fontWeight:700,color:"#991b1b",fontSize:"0.88rem"}}>Cancel this lesson?</span>
                 <div style={{display:"flex",gap:8}}>
-                  <button onClick={()=>setConfirmCancel(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Keep it</button>
-                  <button onClick={async()=>{await onCancelLesson(l.studentEmail,l.id);setConfirmCancel(null);}} style={{background:"#dc2626",color:"white",border:"none",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>Yes, Cancel</button>
+                  <button onClick={()=>setConfirmCancel(null)} disabled={cancelLoading} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600,opacity:cancelLoading?0.5:1}}>Keep it</button>
+                  <button onClick={async()=>{setCancelLoading(true);await onCancelLesson(l.studentEmail,l.id);setCancelLoading(false);setConfirmCancel(null);}} disabled={cancelLoading} style={{background:cancelLoading?"#9ca3af":"#dc2626",color:"white",border:"none",padding:"6px 14px",borderRadius:50,cursor:cancelLoading?"not-allowed":"pointer",fontSize:"0.82rem",fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
+                    {cancelLoading&&<span style={{display:"inline-block",width:12,height:12,border:"2px solid white",borderTop:"2px solid transparent",borderRadius:"50%",animation:"spin 0.7s linear infinite"}}/>}
+                    {cancelLoading?"Cancelling...":"Yes, Cancel"}
+                  </button>
                 </div>
               </div>
             )}
             {/* Delete confirm */}
             {confirmDelete===mk&&(
-              <div style={{background:"#fef2f2",borderTop:"1px solid #fca5a5",padding:"12px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
-                <span style={{fontWeight:700,color:"#991b1b",fontSize:"0.88rem"}}>Permanently delete this lesson?</span>
-                <div style={{display:"flex",gap:8}}>
-                  <button onClick={()=>setConfirmDelete(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Keep it</button>
+              <div style={{background:"#fef2f2",borderTop:"2px solid #dc2626",padding:"16px 18px"}}>
+                <div style={{fontWeight:800,color:"#991b1b",fontSize:"0.95rem",marginBottom:4}}>🗑 Delete this lesson?</div>
+                <div style={{fontSize:"0.82rem",color:"#b91c1c",marginBottom:12,fontWeight:600}}>⚠️ This is permanent and cannot be undone. The calendar event will also be removed.</div>
+                <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+                  <button onClick={()=>setConfirmDelete(null)} disabled={deleteLoading} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600,opacity:deleteLoading?0.5:1}}>Keep it</button>
                   <button onClick={async()=>{
+                    setDeleteLoading(true);
                     if(l.gcalEventId){try{await fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:l.gcalEventId,mode:"delete"})});}catch(e){console.error("GCal delete failed:",e);}}
                     try{await fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})});}catch(e){console.error("DB delete failed:",e);}
                     setAllLessons(prev=>({...prev,[l.studentEmail]:(prev[l.studentEmail]||[]).filter(x=>x.id!==l.id)}));
-                    setConfirmDelete(null);
-                  }} style={{background:"#dc2626",color:"white",border:"none",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>Yes, Delete</button>
+                    setDeleteLoading(false);setConfirmDelete(null);setDeletedToast(true);setTimeout(()=>setDeletedToast(false),3000);
+                  }} disabled={deleteLoading} style={{background:deleteLoading?"#9ca3af":"#dc2626",color:"white",border:"none",padding:"7px 16px",borderRadius:50,cursor:deleteLoading?"not-allowed":"pointer",fontSize:"0.82rem",fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
+                    {deleteLoading&&<span style={{display:"inline-block",width:12,height:12,border:"2px solid white",borderTop:"2px solid transparent",borderRadius:"50%",animation:"spin 0.7s linear infinite"}}/>}
+                    {deleteLoading?"Deleting...":"Yes, Delete Permanently"}
+                  </button>
                 </div>
               </div>
             )}
@@ -3965,11 +4046,15 @@ export default function App(){
   };
   const addStudent=({name,email,memberType})=>{setMockUsersState(prev=>({...prev,[email]:{name,memberType,approved:true,password:""}}));setAllLessons(prev=>({...prev,[email]:[]}));};
   const adminAddLesson=async(email,lesson)=>{
-    setAllLessons(prev=>({...prev,[email]:[...(prev[email]||[]),lesson]}));
     try{
-      const finalPrice=schedCustomPrice?parseFloat(schedCustomPrice):null;
-    await fetch("/api/lessons?action=save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lesson:{...lesson,studentEmail:email}})});
-    }catch(e){console.error("Admin save lesson error:",e);}
+      const r=await fetch("/api/lessons?action=save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lesson:{...lesson,studentEmail:email}})});
+      const data=await r.json();
+      const finalLesson=data.id?{...lesson,id:data.id}:lesson;
+      setAllLessons(prev=>({...prev,[email]:[...(prev[email]||[]),finalLesson]}));
+    }catch(e){
+      console.error("Admin save lesson error:",e);
+      setAllLessons(prev=>({...prev,[email]:[...(prev[email]||[]),lesson]}));
+    }
   };
   const toggleMenlo=email=>{
     const next=mockUsersState[email]?.memberType==="menlo"?"public":"menlo";
