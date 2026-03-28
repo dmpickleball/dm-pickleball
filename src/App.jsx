@@ -2385,17 +2385,17 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                     </div>
                     {/* Approval controls */}
                     <div style={{display:"flex",flexDirection:"column",gap:8,alignItems:"flex-end",flexShrink:0}}>
-                      {/* Menlo Club checkbox */}
+                      {/* Menlo Club checkbox — mutually exclusive with GF */}
                       <label style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",userSelect:"none",fontSize:"0.82rem",fontWeight:600,color:isMenloChecked?G:"#374151"}}>
                         <input type="checkbox" checked={isMenloChecked}
-                          onChange={e=>setPendingMenlo(prev=>({...prev,[student.id]:e.target.checked}))}
+                          onChange={e=>{setPendingMenlo(prev=>({...prev,[student.id]:e.target.checked}));if(e.target.checked)setPendingGrandfathered(prev=>({...prev,[student.id]:false}));}}
                           style={{width:15,height:15,accentColor:G,cursor:"pointer"}}/>
                         Menlo Circus Club
                       </label>
-                      {/* Grandfathered Pricing checkbox */}
+                      {/* Grandfathered Pricing checkbox — mutually exclusive with MCC */}
                       <label style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",userSelect:"none",fontSize:"0.82rem",fontWeight:600,color:isGFChecked?"#92400e":"#374151"}}>
                         <input type="checkbox" checked={isGFChecked}
-                          onChange={e=>setPendingGrandfathered(prev=>({...prev,[student.id]:e.target.checked}))}
+                          onChange={e=>{setPendingGrandfathered(prev=>({...prev,[student.id]:e.target.checked}));if(e.target.checked)setPendingMenlo(prev=>({...prev,[student.id]:false}));}}
                           style={{width:15,height:15,accentColor:"#f59e0b",cursor:"pointer"}}/>
                         Grandfathered Pricing
                       </label>
@@ -2591,14 +2591,14 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
             <div style={{background:"#f9fafb",borderRadius:10,border:"1.5px solid #e5e7eb",padding:"14px 16px",marginBottom:0}}>
               <div style={{fontSize:"0.7rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1.5,marginBottom:10}}>Account Modifiers</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:10,marginBottom:10}}>
-                {/* Menlo Club */}
+                {/* Menlo Club — mutually exclusive with GF */}
                 <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",userSelect:"none",background:mockUsers[selectedStudent]?.memberType==="menlo"?"#e8f0ee":"white",border:"1.5px solid "+(mockUsers[selectedStudent]?.memberType==="menlo"?G:"#e5e7eb"),borderRadius:50,padding:"6px 14px",fontSize:"0.8rem",fontWeight:700,color:mockUsers[selectedStudent]?.memberType==="menlo"?G:"#374151",transition:"all 0.15s"}}>
-                  <input type="checkbox" checked={mockUsers[selectedStudent]?.memberType==="menlo"} onChange={()=>onToggleMenlo(selectedStudent)} style={{width:14,height:14,accentColor:G,cursor:"pointer"}}/>
+                  <input type="checkbox" checked={mockUsers[selectedStudent]?.memberType==="menlo"} onChange={()=>{const turningOn=mockUsers[selectedStudent]?.memberType!=="menlo";onToggleMenlo(selectedStudent);if(turningOn&&mockUsers[selectedStudent]?.grandfathered)onToggleGrandfathered&&onToggleGrandfathered(selectedStudent);}} style={{width:14,height:14,accentColor:G,cursor:"pointer"}}/>
                   Menlo Circus Club
                 </label>
-                {/* Grandfathered Pricing */}
+                {/* Grandfathered Pricing — mutually exclusive with MCC */}
                 <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",userSelect:"none",background:mockUsers[selectedStudent]?.grandfathered?"#fffbea":"white",border:"1.5px solid "+(mockUsers[selectedStudent]?.grandfathered?"#f59e0b":"#e5e7eb"),borderRadius:50,padding:"6px 14px",fontSize:"0.8rem",fontWeight:700,color:mockUsers[selectedStudent]?.grandfathered?"#92400e":"#374151",transition:"all 0.15s"}}>
-                  <input type="checkbox" checked={!!mockUsers[selectedStudent]?.grandfathered} onChange={()=>onToggleGrandfathered&&onToggleGrandfathered(selectedStudent)} style={{width:14,height:14,accentColor:"#f59e0b",cursor:"pointer"}}/>
+                  <input type="checkbox" checked={!!mockUsers[selectedStudent]?.grandfathered} onChange={()=>{const turningOn=!mockUsers[selectedStudent]?.grandfathered;onToggleGrandfathered&&onToggleGrandfathered(selectedStudent);if(turningOn&&mockUsers[selectedStudent]?.memberType==="menlo")onToggleMenlo(selectedStudent);}} style={{width:14,height:14,accentColor:"#f59e0b",cursor:"pointer"}}/>
                   Grandfathered Pricing
                 </label>
               </div>
