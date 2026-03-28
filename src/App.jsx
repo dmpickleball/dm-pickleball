@@ -225,6 +225,12 @@ function formatPhone(p){
   if(d.length===11)return "+"+d[0]+" ("+d.slice(1,4)+") "+d.slice(4,7)+"-"+d.slice(7);
   return p;
 }
+function formatPhoneInput(raw){
+  const d=raw.replace(/\D/g,"").slice(0,10);
+  if(d.length<4)return d;
+  if(d.length<7)return "("+d.slice(0,3)+") "+d.slice(3);
+  return "("+d.slice(0,3)+") "+d.slice(3,6)+"-"+d.slice(6);
+}
 function LocationInput({value, onChange, placeholder, style}){
   const[query,setQuery]=useState(value||"");
   const[suggestions,setSuggestions]=useState([]);
@@ -762,6 +768,8 @@ function LoginPage({onLogin,onAdminLogin}){
   const[phone,setPhone]=useState("");
   const[homeCourt,setHomeCourt]=useState("");
   const[skillLevel,setSkillLevel]=useState("");
+  const[goals,setGoals]=useState("");
+  const[referralSource,setReferralSource]=useState("");
   const[useDupr,setUseDupr]=useState(false);
   const[duprRating,setDuprRating]=useState("");
   const[error,setError]=useState("");
@@ -892,7 +900,7 @@ function LoginPage({onLogin,onAdminLogin}){
             <div style={{fontWeight:700,fontSize:"0.82rem",color:"#166534"}}>✓ Verified with {PROV_LABELS[providerInfo.provider]}</div>
             <div style={{fontSize:"0.78rem",color:"#15803d",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{providerInfo.email}</div>
           </div>
-          <button onClick={()=>{setProviderInfo(null);setLoadingProv(null);setError("");setFirstName("");setLastName("");setCommEmail("");setPhone("");setHomeCourt("");setSkillLevel("");setUseDupr(false);setDuprRating("");}} style={{background:"white",border:"1.5px solid #d1d5db",color:"#374151",cursor:"pointer",fontSize:"0.78rem",fontWeight:600,whiteSpace:"nowrap",padding:"5px 12px",borderRadius:20,flexShrink:0}}>← Change</button>
+          <button onClick={()=>{setProviderInfo(null);setLoadingProv(null);setError("");setFirstName("");setLastName("");setCommEmail("");setPhone("");setHomeCourt("");setSkillLevel("");setGoals("");setReferralSource("");setUseDupr(false);setDuprRating("");}} style={{background:"white",border:"1.5px solid #d1d5db",color:"#374151",cursor:"pointer",fontSize:"0.78rem",fontWeight:600,whiteSpace:"nowrap",padding:"5px 12px",borderRadius:20,flexShrink:0}}>← Change</button>
         </div>
         {error&&<div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:8,padding:"10px 14px",color:"#991b1b",fontSize:"0.88rem",marginBottom:16}}>{error}</div>}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
@@ -901,9 +909,9 @@ function LoginPage({onLogin,onAdminLogin}){
         </div>
         <input style={inp} type="email" placeholder="Communication Email *" value={commEmail} onChange={e=>setCommEmail(e.target.value)}/>
         <div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:-10,marginBottom:14,paddingLeft:2}}>Where lesson confirmations & reminders will be sent</div>
-        <input style={inp} type="tel" placeholder="Phone Number *" value={phone} onChange={e=>setPhone(e.target.value)}/>
-        <LocationInput value={homeCourt} onChange={v=>setHomeCourt(v)} placeholder="Home Court (optional)" style={inp}/>
-        <div style={{marginBottom:18}}>
+        <input style={inp} type="tel" placeholder="Phone Number *" value={phone} onChange={e=>setPhone(formatPhoneInput(e.target.value))}/>
+        <LocationInput value={homeCourt} onChange={v=>setHomeCourt(v)} placeholder="Home Court (optional)" style={{...inp,marginBottom:20}}/>
+        <div style={{marginBottom:16}}>
           <div style={{fontSize:"0.78rem",fontWeight:700,color:"#374151",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Self Rating <span style={{color:"#dc2626"}}>*</span></div>
           <select value={skillLevel} onChange={e=>setSkillLevel(e.target.value)}
             style={{...inp,marginBottom:0,color:!skillLevel?"#9ca3af":"#111827",cursor:"pointer"}}>
@@ -914,6 +922,29 @@ function LoginPage({onLogin,onAdminLogin}){
             Have a DUPR rating? You'll be able to link your account after signing in.
           </div>
         </div>
+        <div style={{marginBottom:16}}>
+          <div style={{fontSize:"0.78rem",fontWeight:700,color:"#374151",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>My Goal</div>
+          <select value={goals} onChange={e=>setGoals(e.target.value)}
+            style={{...inp,marginBottom:0,color:!goals?"#9ca3af":"#111827",cursor:"pointer"}}>
+            <option value="">What brings you here?</option>
+            <option value="fun">Just for fun</option>
+            <option value="improve">Improve my game</option>
+            <option value="compete">Compete locally</option>
+            <option value="serious">Train seriously</option>
+          </select>
+        </div>
+        <div style={{marginBottom:18}}>
+          <div style={{fontSize:"0.78rem",fontWeight:700,color:"#374151",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>How did you hear about me?</div>
+          <select value={referralSource} onChange={e=>setReferralSource(e.target.value)}
+            style={{...inp,marginBottom:0,color:!referralSource?"#9ca3af":"#111827",cursor:"pointer"}}>
+            <option value="">Select one</option>
+            <option value="word_of_mouth">Word of mouth</option>
+            <option value="club">Club / court</option>
+            <option value="instagram">Instagram</option>
+            <option value="google">Google</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
         <button onClick={()=>{
           if(!firstName||!lastName){setError("First and last name are required.");return;}
           if(!commEmail||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(commEmail)){setError("A valid communication email is required.");return;}
@@ -921,12 +952,12 @@ function LoginPage({onLogin,onAdminLogin}){
           if(!skillLevel){setError("Please select your skill level.");return;}
           const fullName=firstName.trim()+" "+lastName.trim();
           fetch("/api/students?action=request",{method:"POST",headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({email:providerInfo.email,name:fullName,firstName:firstName.trim(),lastName:lastName.trim(),commEmail:commEmail.trim().toLowerCase(),phone,homeCourt,skillLevel,duprRating:"",authProvider:providerInfo.provider})
+            body:JSON.stringify({email:providerInfo.email,name:fullName,firstName:firstName.trim(),lastName:lastName.trim(),commEmail:commEmail.trim().toLowerCase(),phone,homeCourt,skillLevel,goals,referralSource,duprRating:"",authProvider:providerInfo.provider})
           }).then(r=>r.json()).then(data=>{
             if(data.error==="already_exists"){setError("You already have an account. Please sign in.");return;}
             if(data.error==="already_requested"){setError("You already have a pending request. David will be in touch soon.");return;}
             if(data.error==="blocked"||data.student?.blocked){setError("Your registration request was not accepted. Please contact David directly.");return;}
-            fetch("https://formspree.io/f/"+FORMSPREE_ID,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:"dmpickleball@gmail.com",_subject:"New access request: "+fullName,message:fullName+" has requested access.\nProvider: "+PROV_LABELS[providerInfo.provider]+"\nLogin Email: "+providerInfo.email+"\nComm Email: "+commEmail+"\nPhone: "+phone+"\nHome Court: "+(homeCourt||"Not specified")+"\nSkill: "+(useDupr?"DUPR "+duprRating:skillLevel||"Not specified")+"\n\nApprove at: https://dmpickleball.com/admin"})}).catch(()=>{});
+            fetch("https://formspree.io/f/"+FORMSPREE_ID,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({email:"dmpickleball@gmail.com",_subject:"New access request: "+fullName,message:fullName+" has requested access.\nProvider: "+PROV_LABELS[providerInfo.provider]+"\nLogin Email: "+providerInfo.email+"\nComm Email: "+commEmail+"\nPhone: "+phone+"\nHome Court: "+(homeCourt||"Not specified")+"\nSkill: "+(skillLevel||"Not specified")+"\nGoal: "+(goals||"Not specified")+"\nReferral: "+(referralSource||"Not specified")+"\n\nApprove at: https://dmpickleball.com/admin"})}).catch(()=>{});
             setSignedUp(true);
           }).catch(()=>setSignedUp(true));
         }} style={{width:"100%",background:G,color:"white",border:"none",padding:14,borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem",marginTop:4}}>
@@ -1039,7 +1070,7 @@ function AccountPage({user,setPage,onUpdateUser}){
         </div>
         <div style={{marginBottom:16}}>
           <label style={lbl}>Phone Number <span style={{color:"#dc2626"}}>*</span></label>
-          <input value={phone} onChange={e=>setPhone(e.target.value)} style={inp} placeholder="(650) 000-0000" type="tel"/>
+          <input value={phone} onChange={e=>setPhone(formatPhoneInput(e.target.value))} style={inp} placeholder="(650) 000-0000" type="tel"/>
         </div>
         <div style={{marginBottom:16}}>
           <label style={lbl}>City <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(optional)</span></label>
@@ -2345,8 +2376,10 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{fontWeight:700,fontSize:"0.97rem"}}>{student.firstName&&student.lastName?student.lastName+", "+student.firstName:student.name}</div>
                       <div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>{student.email}{student.commEmail&&student.commEmail!==student.email?" · "+student.commEmail:""}</div>
-                      {student.phone&&<div style={{fontSize:"0.8rem",color:"#9ca3af",marginTop:1}}>📱 {student.phone}{student.homeCourt?" · 🏓 "+student.homeCourt:""}</div>}
+                      {student.phone&&<div style={{fontSize:"0.8rem",color:"#9ca3af",marginTop:1}}>📱 {formatPhone(student.phone)}{student.homeCourt?" · 🏓 "+student.homeCourt:""}</div>}
                       {student.skillLevel&&<div style={{marginTop:2,fontSize:"0.75rem",color:"#9ca3af"}}>Self-rated: {(SELF_RATINGS.find(r=>r.value===student.skillLevel)||{label:student.skillLevel}).label}</div>}
+                      {student.goals&&<div style={{marginTop:1,fontSize:"0.75rem",color:"#9ca3af"}}>🎯 {({fun:"Just for fun",improve:"Improve my game",compete:"Compete locally",serious:"Train seriously"})[student.goals]||student.goals}</div>}
+                      {student.referralSource&&<div style={{marginTop:1,fontSize:"0.75rem",color:"#9ca3af"}}>📣 {({word_of_mouth:"Word of mouth",club:"Club / court",instagram:"Instagram",google:"Google",other:"Other"})[student.referralSource]||student.referralSource}</div>}
                     </div>
                     {/* Approval controls */}
                     <div style={{display:"flex",flexDirection:"column",gap:8,alignItems:"flex-end",flexShrink:0}}>
@@ -2513,7 +2546,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                       </div>
                       <input value={selectedStudent} disabled style={{...inp,marginBottom:8,fontSize:"0.85rem",background:"#f3f4f6",color:"#9ca3af",cursor:"not-allowed"}} title="Google login email — cannot be changed"/>
                       <input value={editStudentData.commEmail||""} onChange={e=>setEditStudentData({...editStudentData,commEmail:e.target.value})} style={{...inp,marginBottom:8,fontSize:"0.85rem"}} placeholder="Communication Email" type="email"/>
-                      <input value={editStudentData.phone||""} onChange={e=>setEditStudentData({...editStudentData,phone:e.target.value})} style={{...inp,marginBottom:8,fontSize:"0.85rem"}} placeholder="Phone Number"/>
+                      <input value={editStudentData.phone||""} onChange={e=>setEditStudentData({...editStudentData,phone:formatPhoneInput(e.target.value)})} style={{...inp,marginBottom:8,fontSize:"0.85rem"}} placeholder="Phone Number"/>
                       <input value={editStudentData.city||""} onChange={e=>setEditStudentData({...editStudentData,city:e.target.value})} style={{...inp,marginBottom:8,fontSize:"0.85rem"}} placeholder="City"/>
                       <LocationInput value={editStudentData.homeCourt||""} onChange={v=>setEditStudentData({...editStudentData,homeCourt:v})} placeholder="Home Court" style={{...inp,marginBottom:8,fontSize:"0.85rem"}}/>
                     </div>
@@ -3531,6 +3564,7 @@ export default function App(){
             commEmail:r.comm_email||"",
             phone:r.phone,homeCourt:r.home_court,
             skillLevel:r.skill_level||"",duprRating:r.dupr_rating||"",
+            goals:r.goals||"",referralSource:r.referral_source||"",
             requestedAt:new Date(r.requested_at).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})
           })));
         }

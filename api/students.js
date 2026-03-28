@@ -42,7 +42,7 @@ export default async function handler(req, res) {
 
   // POST request access
   if (req.method === 'POST' && action === 'request') {
-    const { email, name, firstName, lastName, commEmail, phone, homeCourt, skillLevel, duprRating, authProvider } = req.body;
+    const { email, name, firstName, lastName, commEmail, phone, homeCourt, skillLevel, goals, referralSource, duprRating, authProvider } = req.body;
     if (!email || !name || !phone) return res.status(400).json({ error: 'Missing required fields' });
     const lowerEmail = email.toLowerCase();
 
@@ -64,6 +64,8 @@ export default async function handler(req, res) {
       phone,
       home_court: homeCourt || '',
       skill_level: skillLevel || '',
+      goals: goals || '',
+      referral_source: referralSource || '',
       dupr_rating: duprRating || '',
       auth_provider: authProvider || 'google',
     });
