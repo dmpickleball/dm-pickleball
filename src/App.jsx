@@ -3015,16 +3015,15 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                   <div style={{fontWeight:800,color:"#991b1b",fontSize:"0.95rem",marginBottom:4}}>🗑 Delete this lesson?</div>
                   <div style={{fontSize:"0.82rem",color:"#b91c1c",marginBottom:12,fontWeight:600}}>⚠️ This is permanent and cannot be undone. The calendar event will also be removed.</div>
                   <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
-                    <button onClick={()=>setConfirmDelete(null)} disabled={deleteLoading} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600,opacity:deleteLoading?0.5:1}}>Keep it</button>
-                    <button onClick={async()=>{
-                      setDeleteLoading(true);
-                      if(l.gcalEventId){try{await fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:l.gcalEventId,mode:"delete"})});}catch(e){console.error("GCal delete failed:",e);}}
-                      try{await fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})});}catch(e){console.error("DB delete failed:",e);}
+                    <button onClick={()=>setConfirmDelete(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Keep it</button>
+                    <button onClick={()=>{
+                      // Remove from UI immediately — API calls fire in background
                       setAllLessons(prev=>({...prev,[selectedStudent]:(prev[selectedStudent]||[]).filter(x=>x.id!==l.id)}));
-                      setDeleteLoading(false);setConfirmDelete(null);setDeletedToast(true);setTimeout(()=>setDeletedToast(false),3000);
-                    }} disabled={deleteLoading} style={{background:deleteLoading?"#9ca3af":"#dc2626",color:"white",border:"none",padding:"7px 16px",borderRadius:50,cursor:deleteLoading?"not-allowed":"pointer",fontSize:"0.82rem",fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
-                      {deleteLoading&&<span style={{display:"inline-block",width:12,height:12,border:"2px solid white",borderTop:"2px solid transparent",borderRadius:"50%",animation:"spin 0.7s linear infinite"}}/>}
-                      {deleteLoading?"Deleting...":"Yes, Delete Permanently"}
+                      setConfirmDelete(null);setDeletedToast(true);setTimeout(()=>setDeletedToast(false),3000);
+                      if(l.gcalEventId){fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:l.gcalEventId,mode:"delete"})}).catch(e=>console.error("GCal delete failed:",e));}
+                      fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})}).catch(e=>console.error("DB delete failed:",e));
+                    }} style={{background:"#dc2626",color:"white",border:"none",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>
+                      Yes, Delete Permanently
                     </button>
                   </div>
                 </div>
@@ -3358,16 +3357,15 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 <div style={{fontWeight:800,color:"#991b1b",fontSize:"0.95rem",marginBottom:4}}>🗑 Delete this lesson?</div>
                 <div style={{fontSize:"0.82rem",color:"#b91c1c",marginBottom:12,fontWeight:600}}>⚠️ This is permanent and cannot be undone. The calendar event will also be removed.</div>
                 <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
-                  <button onClick={()=>setConfirmDelete(null)} disabled={deleteLoading} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600,opacity:deleteLoading?0.5:1}}>Keep it</button>
-                  <button onClick={async()=>{
-                    setDeleteLoading(true);
-                    if(l.gcalEventId){try{await fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:l.gcalEventId,mode:"delete"})});}catch(e){console.error("GCal delete failed:",e);}}
-                    try{await fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})});}catch(e){console.error("DB delete failed:",e);}
+                  <button onClick={()=>setConfirmDelete(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Keep it</button>
+                  <button onClick={()=>{
+                    // Remove from UI immediately — API calls fire in background
                     setAllLessons(prev=>({...prev,[l.studentEmail]:(prev[l.studentEmail]||[]).filter(x=>x.id!==l.id)}));
-                    setDeleteLoading(false);setConfirmDelete(null);setDeletedToast(true);setTimeout(()=>setDeletedToast(false),3000);
-                  }} disabled={deleteLoading} style={{background:deleteLoading?"#9ca3af":"#dc2626",color:"white",border:"none",padding:"7px 16px",borderRadius:50,cursor:deleteLoading?"not-allowed":"pointer",fontSize:"0.82rem",fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
-                    {deleteLoading&&<span style={{display:"inline-block",width:12,height:12,border:"2px solid white",borderTop:"2px solid transparent",borderRadius:"50%",animation:"spin 0.7s linear infinite"}}/>}
-                    {deleteLoading?"Deleting...":"Yes, Delete Permanently"}
+                    setConfirmDelete(null);setDeletedToast(true);setTimeout(()=>setDeletedToast(false),3000);
+                    if(l.gcalEventId){fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:l.gcalEventId,mode:"delete"})}).catch(e=>console.error("GCal delete failed:",e));}
+                    fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})}).catch(e=>console.error("DB delete failed:",e));
+                  }} style={{background:"#dc2626",color:"white",border:"none",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>
+                    Yes, Delete Permanently
                   </button>
                 </div>
               </div>
