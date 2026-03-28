@@ -1641,7 +1641,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
     const future=new Date(now);future.setMonth(future.getMonth()+6);
     const end=fmtD(future);
     setProjectedCalLoading(true);
-    fetch("/api/earnings-calendar?start="+start+"&end="+end+"&includeStanford=false")
+    fetch("/api/earnings-calendar?start="+start+"&end="+end+"&includeStanford=false&includeFuture=true")
       .then(r=>r.json()).then(data=>setProjectedCalData(data)).catch(e=>console.error("Projected load error:",e)).finally(()=>setProjectedCalLoading(false));
   },[projectedMode]);
   const handleStanfordToggle=()=>{const next=!includeStanford;setIncludeStanford(next);loadData(viewRange.start,viewRange.end,next);};
@@ -1657,10 +1657,17 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
   const adjustedLessonEarnings=adjustedCalLessons.reduce((s,e)=>s+e.earnings,0);
   const stanfordAmt=includeStanford?(showNetStanford?(financeData?.stanfordNetEarnings||0):(financeData?.stanfordEarnings||0)):0;
   const totalEarnings=adjustedLessonEarnings+portalEarnings.total+stanfordAmt;
+  // Build the fixed 6-month window starting from today
+  const projectedMonthKeys=(()=>{
+    const keys=[];
+    for(let i=0;i<6;i++){const d=new Date(now.getFullYear(),now.getMonth()+i,1);keys.push(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"));}
+    return keys;
+  })();
   // Projected earnings: future calendar lessons + portal lessons, grouped by month
   const projectedByMonth=(()=>{
     const map={};
-    const add=(mk,row)=>{if(!map[mk])map[mk]={total:0,count:0,rows:[]};map[mk].total+=row.earnings;map[mk].count++;map[mk].rows.push(row);};
+    projectedMonthKeys.forEach(mk=>{map[mk]={total:0,count:0,rows:[]};});
+    const add=(mk,row)=>{if(!map[mk])return;map[mk].total+=row.earnings;map[mk].count++;map[mk].rows.push(row);};
     // Future calendar events (non-Stanford, non-pickup)
     (projectedCalData?.events||[]).filter(e=>!e.isStanford&&!e.isPickup).forEach(e=>{
       const mk=e.date.substring(0,7);
@@ -1679,9 +1686,10 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
         add(mk,{date:l.date,label:u.name||email,category:l.type,earnings:net,duration:l.duration,isMenlo:u.memberType==="menlo",source:"portal"});
       });
     });
-    return Object.entries(map).sort(([a],[b])=>a.localeCompare(b));
+    return projectedMonthKeys.map(mk=>[mk,map[mk]]);
   })();
   const projectedTotal=projectedByMonth.reduce((s,[,v])=>s+v.total,0);
+  const projectedTotalCount=projectedByMonth.reduce((s,[,v])=>s+v.count,0);
   return(
     <div>
       {/* Actual / Projected toggle */}
@@ -1692,60 +1700,69 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
       {/* Projected View */}
       {projectedMode&&(
         <div>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:12}}>
-            <div>
-              <div style={{fontWeight:800,fontSize:"1.1rem",color:"#1a3c34"}}>Projected Earnings</div>
-              <div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>Next 6 months — calendar lessons + portal bookings, excluding Stanford</div>
+          {/* Summary bar */}
+          <div style={{display:"flex",gap:16,marginBottom:24,flexWrap:"wrap"}}>
+            <div style={{background:"white",borderRadius:12,padding:"20px 28px",border:"1.5px solid #e5e7eb",flex:"0 0 auto"}}>
+              <div style={{fontSize:"0.7rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>6-Month Projected</div>
+              <div style={{fontSize:"1.9rem",fontWeight:900,color:"#1a3c34"}}>{projectedCalLoading?"…":"$"+projectedTotal.toFixed(2)}</div>
+              <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:3}}>{projectedCalLoading?"Loading…":projectedTotalCount+" total lessons"}</div>
             </div>
-            <div style={{background:"white",borderRadius:12,padding:"16px 24px",border:"1.5px solid #e5e7eb",textAlign:"right"}}>
-              <div style={{fontSize:"0.7rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Total Projected</div>
-              <div style={{fontSize:"1.8rem",fontWeight:900,color:"#1a3c34"}}>{projectedCalLoading?"—":"$"+projectedTotal.toFixed(2)}</div>
-              <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:2}}>{projectedCalLoading?"Loading…":projectedByMonth.reduce((s,[,v])=>s+v.count,0)+" events across "+projectedByMonth.length+" month"+(projectedByMonth.length!==1?"s":"")}</div>
-            </div>
+            {/* Mini month totals bar */}
+            {!projectedCalLoading&&<div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"stretch"}}>
+              {projectedByMonth.map(([mk,data])=>{
+                const[yr,mo]=mk.split("-");
+                const isCurrentMonth=now.getFullYear()===parseInt(yr)&&(now.getMonth()+1)===parseInt(mo);
+                return(
+                  <div key={mk} style={{background:isCurrentMonth?"#f0faf5":"white",borderRadius:10,padding:"12px 16px",border:"1.5px solid "+(isCurrentMonth?"#1a3c34":"#e5e7eb"),minWidth:90,textAlign:"center"}}>
+                    <div style={{fontSize:"0.72rem",fontWeight:700,color:isCurrentMonth?"#1a3c34":"#9ca3af",textTransform:"uppercase",marginBottom:4}}>{MON[parseInt(mo)-1]}</div>
+                    <div style={{fontSize:"1.1rem",fontWeight:900,color:data.count>0?"#1a3c34":"#d1d5db"}}>{data.count>0?"$"+Math.round(data.total):"—"}</div>
+                    <div style={{fontSize:"0.7rem",color:"#9ca3af",marginTop:2}}>{data.count} lesson{data.count!==1?"s":""}</div>
+                  </div>
+                );
+              })}
+            </div>}
           </div>
+          {/* Month-by-month breakdown */}
           {projectedCalLoading?(
             <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"40px",textAlign:"center",color:"#9ca3af"}}>Loading calendar data…</div>
-          ):projectedByMonth.length===0?(
-            <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"40px",textAlign:"center",color:"#9ca3af",fontSize:"0.9rem"}}>No upcoming lessons found in the next 6 months.</div>
           ):(
-            <div style={{display:"flex",flexDirection:"column",gap:16}}>
+            <div style={{display:"flex",flexDirection:"column",gap:12}}>
               {projectedByMonth.map(([mk,data])=>{
                 const[yr,mo]=mk.split("-");
                 const monthLabel=MONFULL[parseInt(mo)-1]+" "+yr;
-                const calCount=data.rows.filter(r=>r.source==="calendar").length;
-                const portalCount=data.rows.filter(r=>r.source==="portal").length;
+                const isCurrentMonth=now.getFullYear()===parseInt(yr)&&(now.getMonth()+1)===parseInt(mo);
                 return(
-                  <div key={mk} style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
-                    <div style={{background:"#f0faf5",borderBottom:"1.5px solid #e5e7eb",padding:"12px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
-                      <div>
-                        <span style={{fontWeight:800,fontSize:"0.95rem",color:"#1a3c34"}}>{monthLabel}</span>
-                        <span style={{fontSize:"0.78rem",color:"#6b7280",marginLeft:10}}>
-                          {calCount>0&&<span>{calCount} calendar</span>}
-                          {calCount>0&&portalCount>0&&<span style={{margin:"0 4px"}}>·</span>}
-                          {portalCount>0&&<span>{portalCount} portal</span>}
+                  <div key={mk} style={{background:"white",borderRadius:12,border:"1.5px solid "+(isCurrentMonth?"#1a3c34":"#e5e7eb"),overflow:"hidden"}}>
+                    <div style={{background:isCurrentMonth?"#1a3c34":"#f9f9f6",borderBottom:"1.5px solid "+(isCurrentMonth?"#1a3c34":"#e5e7eb"),padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+                      <div style={{display:"flex",alignItems:"center",gap:12}}>
+                        <span style={{fontWeight:800,fontSize:"1rem",color:isCurrentMonth?"white":"#1a3c34"}}>{monthLabel}</span>
+                        <span style={{background:isCurrentMonth?"rgba(255,255,255,0.2)":"#e5e7eb",color:isCurrentMonth?"white":"#6b7280",fontSize:"0.75rem",fontWeight:700,padding:"2px 10px",borderRadius:50}}>
+                          {data.count} lesson{data.count!==1?"s":""}
                         </span>
                       </div>
-                      <span style={{fontWeight:800,fontSize:"1.05rem",color:"#1a3c34"}}>${data.total.toFixed(2)}</span>
+                      <span style={{fontWeight:900,fontSize:"1.1rem",color:isCurrentMonth?"white":data.count>0?"#1a3c34":"#9ca3af"}}>{data.count>0?"$"+data.total.toFixed(2):"No lessons"}</span>
                     </div>
-                    <table style={{width:"100%",borderCollapse:"collapse",fontSize:"0.87rem"}}>
-                      <thead><tr style={{background:"#f9f9f6",borderBottom:"1px solid #e5e7eb"}}>{["Date","Description","Type","Details","Est. Income"].map(h=>(<th key={h} style={{padding:"10px 16px",textAlign:"left",fontWeight:700,color:"#6b7280",fontSize:"0.75rem",textTransform:"uppercase"}}>{h}</th>))}</tr></thead>
-                      <tbody>
-                        {data.rows.sort((a,b)=>a.date.localeCompare(b.date)).map((r,i)=>(
-                          <tr key={i} style={{borderBottom:"1px solid #f3f4f6",background:r.isMenlo?"#f0faf5":"white"}}>
-                            <td style={{padding:"10px 16px",whiteSpace:"nowrap"}}>{fmtDateShort(r.date)}</td>
-                            <td style={{padding:"10px 16px",maxWidth:180,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                              {r.label}
-                              {r.isMenlo&&<span style={{background:"#1a3c34",color:"white",fontSize:"0.62rem",fontWeight:700,padding:"1px 6px",borderRadius:50,marginLeft:6}}>MCC</span>}
-                            </td>
-                            <td style={{padding:"10px 16px"}}>
-                              <span style={{background:(typeColors[r.category?.toLowerCase()]||"#1a3c34")+"22",color:typeColors[r.category?.toLowerCase()]||"#1a3c34",padding:"2px 8px",borderRadius:50,fontSize:"0.72rem",fontWeight:700}}>{r.category||"—"}</span>
-                            </td>
-                            <td style={{padding:"10px 16px",color:"#6b7280",fontSize:"0.82rem"}}>{r.source==="calendar"?(r.hours!=null?r.hours+"h":"—"):r.duration||"—"}</td>
-                            <td style={{padding:"10px 16px",fontWeight:700,color:"#1a3c34"}}>${r.earnings.toFixed(2)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    {data.rows.length>0&&(
+                      <table style={{width:"100%",borderCollapse:"collapse",fontSize:"0.87rem"}}>
+                        <thead><tr style={{background:"#f9f9f6",borderBottom:"1px solid #e5e7eb"}}>{["Date","Description","Type","Details","Est. Income"].map(h=>(<th key={h} style={{padding:"10px 16px",textAlign:"left",fontWeight:700,color:"#6b7280",fontSize:"0.75rem",textTransform:"uppercase"}}>{h}</th>))}</tr></thead>
+                        <tbody>
+                          {data.rows.sort((a,b)=>a.date.localeCompare(b.date)).map((r,i)=>(
+                            <tr key={i} style={{borderBottom:"1px solid #f3f4f6",background:r.isMenlo?"#f0faf5":"white"}}>
+                              <td style={{padding:"10px 16px",whiteSpace:"nowrap"}}>{fmtDateShort(r.date)}</td>
+                              <td style={{padding:"10px 16px",maxWidth:180,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                                {r.label}
+                                {r.isMenlo&&<span style={{background:"#1a3c34",color:"white",fontSize:"0.62rem",fontWeight:700,padding:"1px 6px",borderRadius:50,marginLeft:6}}>MCC</span>}
+                              </td>
+                              <td style={{padding:"10px 16px"}}>
+                                <span style={{background:(typeColors[r.category?.toLowerCase()]||"#1a3c34")+"22",color:typeColors[r.category?.toLowerCase()]||"#1a3c34",padding:"2px 8px",borderRadius:50,fontSize:"0.72rem",fontWeight:700}}>{r.category||"—"}</span>
+                              </td>
+                              <td style={{padding:"10px 16px",color:"#6b7280",fontSize:"0.82rem"}}>{r.source==="calendar"?(r.hours!=null?r.hours+"h":"—"):r.duration||"—"}</td>
+                              <td style={{padding:"10px 16px",fontWeight:700,color:"#1a3c34"}}>${r.earnings.toFixed(2)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
                   </div>
                 );
               })}
