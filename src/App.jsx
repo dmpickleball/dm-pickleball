@@ -447,12 +447,13 @@ function Homepage({setPage}){
             <h2 style={{fontSize:"1.8rem",fontWeight:900}}>Lesson Types</h2>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:16}}>
-            {[["🎯","Private","1-on-1 coaching",null],["👥","Semi-Private","Always 2 students · $70/person","$140 / $210"],["🏆","Group Lesson","3–5 students",null]].map(([icon,title,desc,price])=>(
+            {[["🎯","Private","1-on-1 coaching",null,null],["👥","Semi-Private","2 students","$140 / $210","$70 / $105 per person"],["🏆","Group Lesson","3–5 students",null,"split equally"]].map(([icon,title,desc,price,sub])=>(
               <div key={title} style={{border:"2px solid #e5e7eb",borderRadius:12,padding:24,textAlign:"center"}}>
                 <div style={{fontSize:32,marginBottom:10}}>{icon}</div>
                 <div style={{fontWeight:700,marginBottom:6}}>{title}</div>
                 <div style={{fontSize:"0.83rem",color:"#6b7280",marginBottom:12}}>{desc}</div>
                 <div style={{fontWeight:800,color:G,fontSize:"1.1rem"}}>{price}</div>
+                {sub&&<div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:3}}>{sub}</div>}
               </div>
             ))}
           </div>
@@ -484,7 +485,7 @@ function PricingPage(){
         <p style={{color:"#6b7280",marginTop:8}}>SF Peninsula, Bay Area</p>
       </div>
       <div style={{display:"grid",gap:16}}>
-        {[["🎯","Private Lesson","1-on-1 personalized coaching","$120/hr"],["👥","Semi-Private","Always 2 students · $70/person","$140/hr total"],["🏆","Group Lesson","3–5 students · split equally","$140/hr total"]].map(([icon,title,desc,price])=>(
+        {[["🎯","Private Lesson","1-on-1 personalized coaching","$120/hr",null],["👥","Semi-Private","2 students","$140/hr total","$70/person"],["🏆","Group Lesson","3–5 students","$140/hr total","split equally"]].map(([icon,title,desc,price,sub])=>(
           <div key={title} style={{background:"white",border:"2px solid #e5e7eb",borderRadius:12,padding:"24px 28px",display:"flex",alignItems:"center",gap:20}}>
             <div style={{fontSize:36}}>{icon}</div>
             <div style={{flex:1}}>
@@ -492,7 +493,10 @@ function PricingPage(){
               <div style={{fontSize:"0.85rem",color:"#6b7280",marginTop:2}}>{desc}</div>
               <div style={{fontSize:"0.78rem",color:"#9ca3af",marginTop:4}}>60 & 90 min sessions available</div>
             </div>
-            <div style={{fontWeight:700,color:G,fontSize:"1.1rem"}}>{price}</div>
+            <div style={{textAlign:"right"}}>
+              <div style={{fontWeight:700,color:G,fontSize:"1.1rem"}}>{price}</div>
+              {sub&&<div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:2}}>{sub}</div>}
+            </div>
           </div>
         ))}
         <div style={{background:"white",border:"2px solid #e5e7eb",borderRadius:12,padding:"24px 28px",display:"flex",alignItems:"center",gap:20}}>
@@ -865,7 +869,7 @@ function LoginPage({onLogin,onAdminLogin}){
         </div>
         <div style={{background:"#f8fafc",borderRadius:14,padding:"18px 20px",marginBottom:20}}>
           {[
-            {icon:"🔍",text:"Coach David will review your profile and skill level"},
+            {icon:"🔍",text:"Coach David will review your request and be in touch soon"},
             {icon:"📧",text:<>You'll get an email at <strong>{commEmail||providerInfo?.email}</strong> once approved</>,},
             {icon:"⏱",text:"Reviews typically take 1–2 business days"},
             {icon:"🏓",text:"Once approved, you'll have full access to book lessons and view your schedule"},
@@ -1195,7 +1199,7 @@ function BookingPage({user,setPage,onAddLesson}){
     semi:   {60:isMenlo?120:140, 90:isMenlo?180:210},
     group:  {60:140, 90:210},
   };
-  const LESSONS=[{id:"private",icon:"🎯",label:"Private",desc:"1-on-1 coaching"},{id:"semi",icon:"👥",label:"Semi-Private",desc:"Always 2 students"},{id:"group",icon:"🏆",label:"Group",desc:"3-5 students"}];
+  const LESSONS=[{id:"private",icon:"🎯",label:"Private",desc:"1-on-1 coaching"},{id:"semi",icon:"👥",label:"Semi-Private",desc:"2 students"},{id:"group",icon:"🏆",label:"Group",desc:"3-5 students"}];
   const price=lessonType&&duration?PRICES[lessonType][duration]:null;
   const slots=date?getSlots(date,isMenlo?"menlo":"public",duration||60).filter(s=>!busyTimes.some(b=>{const bufA=b.bufferAfter??30;const bufB=b.bufferBefore??30;return s.s<(b.endMins+bufA)&&s.e>(b.startMins-bufB);})):[];
   const toTime24=(mins)=>{const h=Math.floor(mins/60),m=mins%60;return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");};
@@ -1307,8 +1311,9 @@ function BookingPage({user,setPage,onAddLesson}){
           <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:24}}>
             {LESSONS.map(l=>{
               const p=duration?PRICES[l.id][duration]:null;
-              const pLabel=!p?"Select duration":l.id==="private"?"$"+p:l.id==="semi"?"$"+p+"/person":"$"+p+" total";
-              return(<div key={l.id} onClick={()=>setLessonType(l.id)} style={{background:lessonType===l.id?"#e8f0ee":"white",border:"2px solid "+(lessonType===l.id?G:"#e5e7eb"),borderRadius:12,padding:"16px",cursor:"pointer",textAlign:"center"}}><div style={{fontSize:28,marginBottom:6}}>{l.icon}</div><div style={{fontWeight:700,fontSize:"0.95rem",color:lessonType===l.id?G:"#1a1a1a"}}>{l.label}</div><div style={{fontSize:"0.75rem",color:"#6b7280",marginTop:2,marginBottom:8}}>{l.desc}</div><div style={{fontWeight:800,color:G,fontSize:"0.95rem"}}>{pLabel}</div></div>);
+              const totalLabel=!p?"Select duration":"$"+p+" total";
+              const subLabel=!p?null:l.id==="semi"?"$"+(p/2)+"/person":l.id==="group"?"split equally":null;
+              return(<div key={l.id} onClick={()=>setLessonType(l.id)} style={{background:lessonType===l.id?"#e8f0ee":"white",border:"2px solid "+(lessonType===l.id?G:"#e5e7eb"),borderRadius:12,padding:"16px",cursor:"pointer",textAlign:"center"}}><div style={{fontSize:28,marginBottom:6}}>{l.icon}</div><div style={{fontWeight:700,fontSize:"0.95rem",color:lessonType===l.id?G:"#1a1a1a"}}>{l.label}</div><div style={{fontSize:"0.75rem",color:"#6b7280",marginTop:2,marginBottom:8}}>{l.desc}</div><div style={{fontWeight:800,color:G,fontSize:"0.95rem"}}>{totalLabel}</div>{subLabel&&<div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:2}}>{subLabel}</div>}</div>);
             })}
           </div>
           <div style={{...lbl,marginBottom:12}}>Select Duration</div>
