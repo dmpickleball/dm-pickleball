@@ -75,7 +75,7 @@ export default async function handler(req, res) {
 
   // POST approve/deny
   if (req.method === 'POST' && action === 'approve') {
-    const { requestId, email, name, firstName, lastName, commEmail, phone, homeCourt, skillLevel, duprRating, memberType, action: approveAction } = req.body;
+    const { requestId, email, name, firstName, lastName, commEmail, phone, homeCourt, skillLevel, duprRating, memberType, grandfathered, action: approveAction } = req.body;
     if (approveAction === 'deny') {
       await supabase.from('access_requests').update({ status: 'denied' }).eq('id', requestId);
       return res.status(200).json({ success: true });
@@ -91,6 +91,7 @@ export default async function handler(req, res) {
       skill_level: skillLevel || '',
       dupr_rating: duprRating || '',
       member_type: memberType || 'public',
+      grandfathered: !!grandfathered,
       approved: true,
       blocked: false,
     });

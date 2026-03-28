@@ -2151,6 +2151,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[schedSubmitting,setSchedSubmitting]=useState(false);const[schedCustomPrice,setSchedCustomPrice]=useState("");const[customLocation,setCustomLocation]=useState(false);const[schedLocation,setSchedLocation]=useState("");
   
   const[pendingMenlo,setPendingMenlo]=useState({}); // {[studentId]: boolean}
+  const[pendingGrandfathered,setPendingGrandfathered]=useState({}); // {[studentId]: boolean}
   const[showAddStudent,setShowAddStudent]=useState(false);
   const[newStudent,setNewStudent]=useState({name:"",email:"",memberType:"public"});
   const[studentView,setStudentView]=useState("active"); // "active" | "removed"
@@ -2369,6 +2370,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
               </div>
               {pendingStudents.map(student=>{
                 const isMenloChecked=!!(pendingMenlo[student.id]);
+                const isGFChecked=!!(pendingGrandfathered[student.id]);
                 return(
                 <div key={student.id} style={{background:"#fff8f8",borderRadius:12,border:"1.5px solid #fca5a5",padding:"16px 20px",marginBottom:10}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12}}>
@@ -2390,11 +2392,18 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                           style={{width:15,height:15,accentColor:G,cursor:"pointer"}}/>
                         Menlo Circus Club
                       </label>
+                      {/* Grandfathered Pricing checkbox */}
+                      <label style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",userSelect:"none",fontSize:"0.82rem",fontWeight:600,color:isGFChecked?"#92400e":"#374151"}}>
+                        <input type="checkbox" checked={isGFChecked}
+                          onChange={e=>setPendingGrandfathered(prev=>({...prev,[student.id]:e.target.checked}))}
+                          style={{width:15,height:15,accentColor:"#f59e0b",cursor:"pointer"}}/>
+                        Grandfathered Pricing
+                      </label>
                       {/* Action buttons */}
                       <div style={{display:"flex",gap:8}}>
-                        <button onClick={()=>onApprove(student,isMenloChecked?"menlo":"public")}
+                        <button onClick={()=>onApprove(student,isMenloChecked?"menlo":"public",isGFChecked)}
                           style={{background:G,color:"white",border:"none",padding:"7px 18px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>
-                          ✓ Approve{isMenloChecked?" (Menlo)":""}
+                          ✓ Approve{isMenloChecked?" (Menlo)":""}{isGFChecked?" (GF)":""}
                         </button>
                         <button onClick={()=>onDeny(student.id)}
                           style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"7px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>
@@ -3662,11 +3671,11 @@ export default function App(){
       await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:id,updates})});
     }catch(e){console.error("Update lesson error:",e);}
   };
-  const approveStudent=async(student,memberType)=>{
+  const approveStudent=async(student,memberType,grandfathered=false)=>{
     try{
-      await fetch("/api/students?action=approve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({requestId:student.id,email:student.email,name:student.name,firstName:student.firstName||"",lastName:student.lastName||"",commEmail:student.commEmail||"",phone:student.phone||"",homeCourt:student.homeCourt||"",skillLevel:student.skillLevel||"",duprRating:student.duprRating||"",memberType,action:"approve"})});
+      await fetch("/api/students?action=approve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({requestId:student.id,email:student.email,name:student.name,firstName:student.firstName||"",lastName:student.lastName||"",commEmail:student.commEmail||"",phone:student.phone||"",homeCourt:student.homeCourt||"",skillLevel:student.skillLevel||"",duprRating:student.duprRating||"",memberType,grandfathered,action:"approve"})});
       setAllLessons(prev=>({...prev,[student.email]:[]}));
-      setMockUsersState(prev=>({...prev,[student.email]:{name:student.name,firstName:student.firstName||"",lastName:student.lastName||"",commEmail:student.commEmail||"",skillLevel:student.skillLevel||"",duprRating:student.duprRating||"",memberType,approved:true}}));
+      setMockUsersState(prev=>({...prev,[student.email]:{name:student.name,firstName:student.firstName||"",lastName:student.lastName||"",commEmail:student.commEmail||"",skillLevel:student.skillLevel||"",duprRating:student.duprRating||"",memberType,approved:true,grandfathered:!!grandfathered}}));
       setPendingStudents(prev=>prev.filter(s=>s.id!==student.id));
       // Send approval email to comm email if available, else Google email
       const notifyEmail=student.commEmail||student.email;
