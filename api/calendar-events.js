@@ -77,6 +77,7 @@ export default async function handler(req, res) {
         summary: event.summary || '',
         location: event.location || '',
         description: event.description || '',
+        gcalEventId: event.id,
         startTime: fmtTime(startDT),
         endTime: fmtTime(endDT),
         startDT,

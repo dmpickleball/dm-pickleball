@@ -1794,8 +1794,9 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
     const map={};
     projectedMonthKeys.forEach(mk=>{map[mk]={total:0,count:0,rows:[]};});
     const add=(mk,row)=>{if(!map[mk])return;map[mk].total+=row.earnings;map[mk].count++;map[mk].rows.push(row);};
-    // Future calendar events (non-Stanford, non-pickup)
-    (projectedCalData?.events||[]).filter(e=>!e.isStanford&&!e.isPickup).forEach(e=>{
+    // Future calendar events (non-Stanford, non-pickup, not already covered by a portal lesson)
+    const projPortalIds=new Set(Object.values(allLessons).flat().filter(l=>l.gcalEventId).map(l=>l.gcalEventId));
+    (projectedCalData?.events||[]).filter(e=>!e.isStanford&&!e.isPickup&&!projPortalIds.has(e.gcalEventId)).forEach(e=>{
       const mk=e.date.substring(0,7);
       const k=e.date+"|"+e.summary;
       const earnings=calOverrides[k]!=null?calOverrides[k]:e.earnings;
@@ -2406,7 +2407,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[filterCancelled,setFilterCancelled]=useState(false);
   const[editingId,setEditingId]=useState(null);const[editPriceId,setEditPriceId]=useState(null);const[editPriceVal,setEditPriceVal]=useState("");
   const[editNotes,setEditNotes]=useState("");
-  const[confirmCancel,setConfirmCancel]=useState(null);const[confirmDelete,setConfirmDelete]=useState(null);const[confirmDeleteStudent,setConfirmDeleteStudent]=useState(false);
+  const[confirmCancel,setConfirmCancel]=useState(null);const[confirmDelete,setConfirmDelete]=useState(null);const[confirmDeleteStudent,setConfirmDeleteStudent]=useState(false);const[confirmCalDelete,setConfirmCalDelete]=useState(null);const[calDeleteLoading,setCalDeleteLoading]=useState(false);
   const[deleteLoading,setDeleteLoading]=useState(false);const[deletedToast,setDeletedToast]=useState(false);
   const[cancelLoading,setCancelLoading]=useState(false);
   const[coachRatingInput,setCoachRatingInput]=useState("");
@@ -2420,9 +2421,9 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[schedSlotIdx,setSchedSlotIdx]=useState(-1);
   const[schedFocus,setSchedFocus]=useState("");
   const[schedNotes,setSchedNotes]=useState("");
-  const[schedPartner,setSchedPartner]=useState({name:"",email:""});
+  const[schedPartner,setSchedPartner]=useState({firstName:"",lastName:"",email:""});
   const[schedGroupSize,setSchedGroupSize]=useState(3);
-  const[schedGroupMembers,setSchedGroupMembers]=useState([{name:"",email:""},{name:"",email:""},{name:"",email:""},{name:"",email:""}]);
+  const[schedGroupMembers,setSchedGroupMembers]=useState([{firstName:"",lastName:"",email:""},{firstName:"",lastName:"",email:""},{firstName:"",lastName:"",email:""},{firstName:"",lastName:"",email:""}]);
   const[schedBusyTimes,setSchedBusyTimes]=useState([]);
   const[schedLoadingSlots,setSchedLoadingSlots]=useState(false);
   const[schedFullyBookedDays,setSchedFullyBookedDays]=useState(new Set());
@@ -2482,6 +2483,9 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const allLessonsList=Object.entries(allLessons).flatMap(([email,lessons])=>
     lessons.map(l=>({...l,studentEmail:email,studentName:mockUsers[email]?.name||email,isMenlo:mockUsers[email]?.memberType==="menlo"}))
   ).sort((a,b)=>new Date(b.date)-new Date(a.date));
+
+  // GCal event IDs that belong to portal lessons — used to deduplicate calendar views
+  const portalGcalIds=new Set(allLessonsList.filter(l=>l.gcalEventId).map(l=>l.gcalEventId));
 
   const cancelledStatuses2=["cancelled","late_cancel","cancelled_forgiven"];
 
@@ -2591,7 +2595,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
     const timeStr=toTimeStr(schedSlot.s,schedSlot.e);
     const student=mockUsers[selectedStudent]||{};
     const lessonLabel=schedLessonType==="private"?"Private":schedLessonType==="semi"?"Semi-Private":"Group";
-    const memberNames=schedLessonType==="semi"?[student.name,schedPartner.name]:schedLessonType==="group"?[student.name,...schedGroupMembers.slice(0,schedGroupSize-1).map(m=>m.name)]:[student.name];
+    const schedPartnerFull=(schedPartner.firstName+" "+schedPartner.lastName).trim();
+    const memberNames=schedLessonType==="semi"?[student.name,schedPartnerFull]:schedLessonType==="group"?[student.name,...schedGroupMembers.slice(0,schedGroupSize-1).map(m=>(m.firstName+" "+m.lastName).trim())]:[student.name];
     const titleSuffix=schedLessonType==="group"?" pb group lesson":" pb lesson";
     const summary=memberNames.join("/")+titleSuffix;
     const location=customLocation&&schedLocation?schedLocation:(!schedIsMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City, CA 94063, USA":"Menlo Circus Club, 190 Park Ln, Atherton, CA 94027");
@@ -2607,16 +2612,16 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
     const endISO=schedDate+"T"+endTime+":00";
     const link="https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(summary)+"&dates="+startISO.replace(/[-:]/g,"").slice(0,15)+"/"+endISO.replace(/[-:]/g,"").slice(0,15)+"&details="+encodeURIComponent(description)+"&location="+encodeURIComponent(location);
     const sendEmail2=(to,subject,text,replyTo,calLink)=>{const html=makeEmailHtml(text,calLink);return fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to,subject,text,html,...(replyTo?{replyTo}:{})})}).catch(()=>{});};
-    const partnerInfo2=schedLessonType==="semi"&&schedPartner.name?"\nPartner: "+schedPartner.name+(schedPartner.email?" ("+schedPartner.email+")":""):"";
-    const groupInfo2=schedLessonType==="group"&&schedGroupMembers.slice(0,schedGroupSize-1).some(m=>m.name)?"\nGroup: "+schedGroupMembers.slice(0,schedGroupSize-1).filter(m=>m.name).map(m=>m.name+(m.email?" ("+m.email+")":"")).join(", "):"";
+    const partnerInfo2=schedLessonType==="semi"&&schedPartnerFull?"\nPartner: "+schedPartnerFull+(schedPartner.email?" ("+schedPartner.email+")":""):"";
+    const groupInfo2=schedLessonType==="group"&&schedGroupMembers.slice(0,schedGroupSize-1).some(m=>m.firstName)?"\nGroup: "+schedGroupMembers.slice(0,schedGroupSize-1).filter(m=>m.firstName).map(m=>(m.firstName+" "+m.lastName).trim()+(m.email?" ("+m.email+")":"")).join(", "):"";
     const schedPriceTotal=schedCustomPrice?parseFloat(schedCustomPrice):SCHED_PRICES[schedLessonType][schedDuration];
     const schedPriceNote=!schedCustomPrice&&schedLessonType==="semi"?" ($"+(schedPriceTotal/2)+"/person)":!schedCustomPrice&&schedLessonType==="group"?" (split equally)":"";
     const schedStudentText="Hi "+student.name+",\n\nDavid has scheduled a lesson for you!\n\nRef: "+ticketId2+"\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+schedDuration+" min\nPrice: $"+schedPriceTotal+" total"+schedPriceNote+"\nFocus: "+(schedFocus||"Not specified")+"\nLocation: "+location+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398";
     await sendEmail2(selectedStudent,"Your lesson is booked - "+fmtDateShort(schedDate),schedStudentText,"dmpickleball@gmail.com",link);
     const schedAdminText="You scheduled a lesson!\n\nRef: "+ticketId2+"\nStudent: "+student.name+"\nEmail: "+selectedStudent+"\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+schedDuration+" min\nPrice: $"+schedPriceTotal+" total"+schedPriceNote+"\nFocus: "+(schedFocus||"Not specified")+partnerInfo2+groupInfo2+"\nLocation: "+location;
     await sendEmail2("dmpickleball@gmail.com","Scheduled: "+summary+" - "+fmtDateShort(schedDate),schedAdminText,selectedStudent);
-    if(schedLessonType==="semi"&&schedPartner.email){const schedPartnerText="Hi "+schedPartner.name+",\n\n"+student.name+" has added you to a pickleball lesson with David Mok!\n\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nType: Semi-Private · "+schedDuration+" min\nFocus: "+(schedFocus||"Not specified")+"\nLocation: "+location+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398";await sendEmail2(schedPartner.email,"You've been added to a pickleball lesson - "+fmtDateShort(schedDate),schedPartnerText,"dmpickleball@gmail.com",link);}
-    if(schedLessonType==="group"){for(const m of schedGroupMembers.slice(0,schedGroupSize-1)){if(m.email){const schedGroupText="Hi "+m.name+",\n\n"+student.name+" has added you to a group pickleball lesson with David Mok!\n\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nLocation: "+location+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398";await sendEmail2(m.email,"You've been added to a group pickleball lesson - "+fmtDateShort(schedDate),schedGroupText,"dmpickleball@gmail.com",link);}}}
+    if(schedLessonType==="semi"&&schedPartner.email){const schedPartnerText="Hi "+schedPartnerFull+",\n\n"+student.name+" has added you to a pickleball lesson with David Mok!\n\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nType: Semi-Private · "+schedDuration+" min\nFocus: "+(schedFocus||"Not specified")+"\nLocation: "+location+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398";await sendEmail2(schedPartner.email,"You've been added to a pickleball lesson - "+fmtDateShort(schedDate),schedPartnerText,"dmpickleball@gmail.com",link);}
+    if(schedLessonType==="group"){for(const m of schedGroupMembers.slice(0,schedGroupSize-1)){if(m.email){const mFull=(m.firstName+" "+m.lastName).trim();const schedGroupText="Hi "+mFull+",\n\n"+student.name+" has added you to a group pickleball lesson with David Mok!\n\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nLocation: "+location+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398";await sendEmail2(m.email,"You've been added to a group pickleball lesson - "+fmtDateShort(schedDate),schedGroupText,"dmpickleball@gmail.com",link);}}}
     const finalPrice=schedCustomPrice?parseFloat(schedCustomPrice):null;
     const newLesson={id:Date.now(),date:schedDate,time:timeStr,type:lessonLabel,duration:schedDuration+" min",status:"confirmed",focus:schedFocus,notes:"",photos:[],videos:[],gcalEventId:eventId,ticketId:ticketId2,customPrice:finalPrice,partnerEmail:schedLessonType==="semi"?schedPartner.email:"",members:memberNames.slice(1)};
     onAddLesson(selectedStudent,newLesson);
@@ -3268,7 +3273,10 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 <div style={{background:"#f9f9f6",borderRadius:12,padding:"16px",marginBottom:16,border:"1.5px solid #e5e7eb"}}>
                   <div style={{fontWeight:700,fontSize:"0.88rem",color:G,marginBottom:12}}>👥 Partner</div>
                   <label style={lbl}>Partner Name</label>
-                  <input value={schedPartner.name} onChange={e=>setSchedPartner(p=>({...p,name:capWords(e.target.value)}))} placeholder="Full name" style={inp}/>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+                    <input value={schedPartner.firstName} onChange={e=>setSchedPartner(p=>({...p,firstName:capWords(e.target.value)}))} placeholder="First Name" style={{...inp,marginBottom:0}}/>
+                    <input value={schedPartner.lastName} onChange={e=>setSchedPartner(p=>({...p,lastName:capWords(e.target.value)}))} placeholder="Last Name" style={{...inp,marginBottom:0}}/>
+                  </div>
                   <label style={lbl}>Partner Email <span style={{fontWeight:400,color:"#9ca3af",textTransform:"none"}}>(optional — for confirmation email)</span></label>
                   <input type="email" value={schedPartner.email} onChange={e=>setSchedPartner(p=>({...p,email:e.target.value}))} placeholder="partner@email.com" style={{...inp,marginBottom:0}}/>
                 </div>
@@ -3287,7 +3295,10 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                     <div key={i} style={{background:"#f9f9f6",borderRadius:12,padding:"14px 16px",marginBottom:10,border:"1.5px solid #e5e7eb"}}>
                       <div style={{fontWeight:700,fontSize:"0.85rem",color:G,marginBottom:10}}>🏓 Player {i+2}</div>
                       <label style={lbl}>Name</label>
-                      <input value={schedGroupMembers[i]?.name||""} onChange={e=>{const a=[...schedGroupMembers];a[i]={...a[i],name:capWords(e.target.value)};setSchedGroupMembers(a);}} placeholder="Full name" style={inp}/>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+                        <input value={schedGroupMembers[i]?.firstName||""} onChange={e=>{const a=[...schedGroupMembers];a[i]={...a[i],firstName:capWords(e.target.value)};setSchedGroupMembers(a);}} placeholder="First Name" style={{...inp,marginBottom:0}}/>
+                        <input value={schedGroupMembers[i]?.lastName||""} onChange={e=>{const a=[...schedGroupMembers];a[i]={...a[i],lastName:capWords(e.target.value)};setSchedGroupMembers(a);}} placeholder="Last Name" style={{...inp,marginBottom:0}}/>
+                      </div>
                       <label style={lbl}>Email <span style={{fontWeight:400,color:"#9ca3af",textTransform:"none"}}>(optional)</span></label>
                       <input type="email" value={schedGroupMembers[i]?.email||""} onChange={e=>{const a=[...schedGroupMembers];a[i]={...a[i],email:e.target.value};setSchedGroupMembers(a);}} placeholder="player@email.com" style={{...inp,marginBottom:0}}/>
                     </div>
@@ -3329,8 +3340,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 <div style={{fontWeight:700,color:G,marginBottom:12}}>Booking Summary</div>
                 <div style={{fontSize:"0.9rem",color:"#374151",lineHeight:2}}>
                   <div>👤 {mockUsers[selectedStudent]?.name}</div>
-                  {schedLessonType==="semi"&&schedPartner.name&&<div>👥 Partner: {schedPartner.name}{schedPartner.email?" · "+schedPartner.email:""}</div>}
-                  {schedLessonType==="group"&&schedGroupMembers.slice(0,schedGroupSize-1).filter(m=>m.name).length>0&&<div>🏆 Group: {schedGroupMembers.slice(0,schedGroupSize-1).map(m=>m.name).filter(Boolean).join(", ")}</div>}
+                  {schedLessonType==="semi"&&(schedPartner.firstName||schedPartner.lastName)&&<div>👥 Partner: {(schedPartner.firstName+" "+schedPartner.lastName).trim()}{schedPartner.email?" · "+schedPartner.email:""}</div>}
+                  {schedLessonType==="group"&&schedGroupMembers.slice(0,schedGroupSize-1).filter(m=>m.firstName).length>0&&<div>🏆 Group: {schedGroupMembers.slice(0,schedGroupSize-1).map(m=>(m.firstName+" "+m.lastName).trim()).filter(Boolean).join(", ")}</div>}
                   <div>📅 {fmtDate(schedDate)}</div>
                   <div>⏱ {schedSlot&&toTimeStr(schedSlot.s,schedSlot.e)}</div>
                   <div>🎯 {schedLessonType==="private"?"Private":schedLessonType==="semi"?"Semi-Private":"Group"} · {schedDuration} min</div>
@@ -3382,6 +3393,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
               {/* Right: badges + actions */}
               <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
                 {missingCal&&!isCancelled&&<span title="This lesson has no linked Google Calendar event" style={{background:"#fff7ed",color:"#c2410c",border:"1px solid #fed7aa",padding:"2px 8px",borderRadius:50,fontSize:"0.68rem",fontWeight:700}}>⚠️ No Cal</span>}
+                {l.ticketId&&<span title={"Ticket: "+l.ticketId} style={{background:"#e8f0ee",color:G,padding:"2px 8px",borderRadius:50,fontSize:"0.68rem",fontWeight:700}}>🏷 Portal</span>}
                 {l.isMenlo&&<span style={{background:G,color:"white",padding:"2px 7px",borderRadius:50,fontSize:"0.68rem",fontWeight:700}}>MCC</span>}
                 <span style={{background:l.status==="confirmed"?"#e8f0ee":l.status==="late_cancel"?"#fff7ed":l.status==="cancelled_forgiven"?"#f3f4f6":l.status==="cancelled"?"#fef2f2":"#fffbea",color:l.status==="confirmed"?G:l.status==="late_cancel"?"#c2410c":l.status==="cancelled_forgiven"?"#6b7280":l.status==="cancelled"?"#dc2626":"#92400e",padding:"3px 9px",borderRadius:50,fontSize:"0.72rem",fontWeight:700}}>
                   {l.status==="confirmed"?"✓ Confirmed":l.status==="cancelled"?l.cancelledByGcal?"📅 Removed from Calendar":"✕ Cancelled":l.status==="late_cancel"?"⚠️ Late Cancel":l.status==="cancelled_forgiven"?"✓ Forgiven":"⏳ Pending"}
@@ -3451,35 +3463,64 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
           // Find linked student from attendee emails
           const linkedEmail=(e.attendeeEmails||[]).find(em=>mockUsers[em]);
           const linkedStudent=linkedEmail?mockUsers[linkedEmail]:null;
+          const isConfirmingCalDel=confirmCalDelete===e.gcalEventId;
           return(
-            <div key={"cal-"+idx} style={{background:rowBg,borderRadius:12,border:"1.5px solid "+rowBorder,padding:"16px 20px",marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
-              <div style={{display:"flex",alignItems:"center",gap:14}}>
-                <div style={{background:dateBg,borderRadius:10,padding:"10px 14px",textAlign:"center",minWidth:48}}>
-                  <div style={{fontSize:"1.2rem",fontWeight:900,color:dateColor,lineHeight:1}}>{d.getDate()}</div>
-                  <div style={{fontSize:"0.6rem",fontWeight:700,color:"#6b7280",textTransform:"uppercase"}}>{d.toLocaleString("default",{month:"short"})}</div>
+            <div key={"cal-"+idx} style={{background:rowBg,borderRadius:12,border:"1.5px solid "+rowBorder,marginBottom:10,overflow:"hidden"}}>
+              <div style={{padding:"16px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+                <div style={{display:"flex",alignItems:"center",gap:14}}>
+                  <div style={{background:dateBg,borderRadius:10,padding:"10px 14px",textAlign:"center",minWidth:48}}>
+                    <div style={{fontSize:"1.2rem",fontWeight:900,color:dateColor,lineHeight:1}}>{d.getDate()}</div>
+                    <div style={{fontSize:"0.6rem",fontWeight:700,color:"#6b7280",textTransform:"uppercase"}}>{d.toLocaleString("default",{month:"short"})}</div>
+                  </div>
+                  <div>
+                    <div style={{fontWeight:700,fontSize:"0.95rem",color:titleColor}}>{e.summary}</div>
+                    {linkedStudent&&(
+                      <div
+                        onClick={()=>{setSelectedStudent(linkedEmail);setTab("students");}}
+                        style={{display:"inline-flex",alignItems:"center",gap:5,marginTop:3,cursor:"pointer",background:G+"15",border:"1px solid "+G+"40",borderRadius:50,padding:"2px 10px 2px 4px"}}
+                        onMouseEnter={ev=>ev.currentTarget.style.background=G+"25"}
+                        onMouseLeave={ev=>ev.currentTarget.style.background=G+"15"}
+                      >
+                        {linkedStudent.picture
+                          ?<img src={linkedStudent.picture} style={{width:18,height:18,borderRadius:"50%",objectFit:"cover"}}/>
+                          :<div style={{width:18,height:18,borderRadius:"50%",background:G,color:"white",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.6rem",fontWeight:800}}>{(linkedStudent.name||"?")[0]}</div>
+                        }
+                        <span style={{fontSize:"0.75rem",fontWeight:700,color:G}}>{linkedStudent.name}</span>
+                      </div>
+                    )}
+                    {e.startTime&&<div style={{fontSize:"0.85rem",fontWeight:700,color:"#374151",marginTop:2}}>🕐 {e.startTime}{e.endTime?" – "+e.endTime:""}</div>}
+                    <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:1}}>{e.category}{e.hours?" · "+e.hours+"h":""}</div>
+                    {e.location&&<div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:2}}>📍 {e.location.split(",")[0]}</div>}
+                  </div>
                 </div>
-                <div>
-                  <div style={{fontWeight:700,fontSize:"0.95rem",color:titleColor}}>{e.summary}</div>
-                  {linkedStudent&&(
-                    <div
-                      onClick={()=>{setSelectedStudent(linkedEmail);setTab("students");}}
-                      style={{display:"inline-flex",alignItems:"center",gap:5,marginTop:3,cursor:"pointer",background:G+"15",border:"1px solid "+G+"40",borderRadius:50,padding:"2px 10px 2px 4px"}}
-                      onMouseEnter={ev=>ev.currentTarget.style.background=G+"25"}
-                      onMouseLeave={ev=>ev.currentTarget.style.background=G+"15"}
-                    >
-                      {linkedStudent.picture
-                        ?<img src={linkedStudent.picture} style={{width:18,height:18,borderRadius:"50%",objectFit:"cover"}}/>
-                        :<div style={{width:18,height:18,borderRadius:"50%",background:G,color:"white",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.6rem",fontWeight:800}}>{(linkedStudent.name||"?")[0]}</div>
-                      }
-                      <span style={{fontSize:"0.75rem",fontWeight:700,color:G}}>{linkedStudent.name}</span>
-                    </div>
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{background:badgeBg,color:badgeColor,padding:"3px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>{badgeLabel}</span>
+                  {e.gcalEventId&&!isStanford&&!isMenlo&&(
+                    <button onClick={()=>setConfirmCalDelete(isConfirmingCalDel?null:e.gcalEventId)} style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"4px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.75rem",fontWeight:700}}>🗑</button>
                   )}
-                  {e.startTime&&<div style={{fontSize:"0.85rem",fontWeight:700,color:"#374151",marginTop:2}}>🕐 {e.startTime}{e.endTime?" – "+e.endTime:""}</div>}
-                  <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:1}}>{e.category}{e.hours?" · "+e.hours+"h":""}</div>
-                  {e.location&&<div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:2}}>📍 {e.location.split(",")[0]}</div>}
                 </div>
               </div>
-              <span style={{background:badgeBg,color:badgeColor,padding:"3px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>{badgeLabel}</span>
+              {isConfirmingCalDel&&(
+                <div style={{background:"#fef2f2",borderTop:"2px solid #dc2626",padding:"14px 18px"}}>
+                  <div style={{fontWeight:800,color:"#991b1b",fontSize:"0.9rem",marginBottom:3}}>🗑 Remove from Google Calendar?</div>
+                  <div style={{fontSize:"0.8rem",color:"#b91c1c",marginBottom:10,fontWeight:600}}>⚠️ This is a manual calendar event — it will be permanently deleted from Google Calendar.</div>
+                  <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+                    <button onClick={()=>setConfirmCalDelete(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>Keep it</button>
+                    <button disabled={calDeleteLoading} onClick={async()=>{
+                      setCalDeleteLoading(true);
+                      try{await fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:e.gcalEventId,mode:"delete"})});}
+                      catch(err){console.error("Cal delete failed:",err);}
+                      // Remove from calendarItems state immediately
+                      setCalendarItems(prev=>prev.filter(c=>c.gcalEventId!==e.gcalEventId));
+                      setCalDeleteLoading(false);setConfirmCalDelete(null);
+                      setDeletedToast(true);setTimeout(()=>setDeletedToast(false),3000);
+                    }} style={{background:calDeleteLoading?"#9ca3af":"#dc2626",color:"white",border:"none",padding:"6px 14px",borderRadius:50,cursor:calDeleteLoading?"not-allowed":"pointer",fontSize:"0.8rem",fontWeight:700,display:"flex",alignItems:"center",gap:5}}>
+                      {calDeleteLoading&&<span style={{display:"inline-block",width:11,height:11,border:"2px solid white",borderTop:"2px solid transparent",borderRadius:"50%",animation:"spin 0.7s linear infinite"}}/>}
+                      {calDeleteLoading?"Deleting…":"Yes, Delete"}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           );
         };
@@ -3488,7 +3529,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
         const weekDays=getWeekDays(selectedDay);
         const monthGrid=getMonthGrid(calMonth);
         const dayPortal=(day)=>allLessonsList.filter(l=>l.date===day&&(filterCancelled||!cancelledStatuses2.includes(l.status)));
-        const dayCalItems=(day)=>showCalendar?calendarItems.filter(e=>e.date===day):[];
+        // Exclude GCal events that already have a corresponding portal lesson (avoid double-display)
+        const dayCalItems=(day)=>showCalendar?calendarItems.filter(e=>e.date===day&&!portalGcalIds.has(e.gcalEventId)):[];
         const hasDayActivity=(day)=>dayPortal(day).length>0||dayCalItems(day).length>0;
         const selPortal=dayPortal(selectedDay);
         const selCal=dayCalItems(selectedDay);
@@ -3752,8 +3794,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
             };
             // Portal: include today's lessons even if past (for greying); show today+future
             const portalFwd=allLessonsList.filter(l=>!cancelledStatuses2.includes(l.status)&&new Date(l.date+"T12:00:00")>=todayDT);
-            // Calendar: include all non-pickup from today onward (including Stanford + Menlo)
-            const calFwd=showCalendar?calendarItems.filter(c=>!c.isPickup&&new Date(c.date+"T12:00:00")>=todayDT):[];
+            // Calendar: include all non-pickup from today onward (excluding portal-linked events)
+            const calFwd=showCalendar?calendarItems.filter(c=>!c.isPickup&&new Date(c.date+"T12:00:00")>=todayDT&&!portalGcalIds.has(c.gcalEventId)):[];
             const merged2=[
               ...portalFwd.map(l=>({...l,_type:"portal",_isPast:isPast(l.date,l.time),_sortKey:l.date+(l.time||"")})),
               ...calFwd.map((c,i)=>({...c,_type:"cal",_idx:i,_isPast:isCalPast(c),_sortKey:c.date+(c.startTime||"")}))
