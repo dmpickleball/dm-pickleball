@@ -20,12 +20,13 @@ export default async function handler(req, res) {
   }
 
   // Detect contact-form mode: has name + email but no to/subject/text
-  let to, subject, text, replyTo, html;
+  let to, subject, text, replyTo, html, fromAlias;
   if (body.name && body.email && !body.to) {
     const { name, email, phone, message } = body;
     if (!name || !email) return res.status(400).json({ error: 'Name and email are required.' });
-    to      = gmailUser;
-    replyTo = email;
+    to        = gmailUser;
+    replyTo   = email;
+    fromAlias = 'info@dmpickleball.com';
     subject = `New contact form message from ${name}`;
     html = `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;background:#f4f9f6;border-radius:12px;">
@@ -41,7 +42,7 @@ export default async function handler(req, res) {
       </div>`;
   } else {
     // General mode
-    ({ to, subject, text, html, replyTo } = body);
+    ({ to, subject, text, html, replyTo, fromAlias } = body);
     if (!to || !subject || (!text && !html)) {
       return res.status(400).json({ error: 'to, subject, and text or html are required.' });
     }
@@ -54,7 +55,7 @@ export default async function handler(req, res) {
 
   try {
     await transporter.sendMail({
-      from: `"DM Pickleball" <${gmailUser}>`,
+      from: `"DM Pickleball" <${fromAlias || gmailUser}>`,
       to,
       subject,
       ...(html ? { html } : { text }),
