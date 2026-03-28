@@ -293,12 +293,14 @@ function LocationInput({value, onChange, placeholder, style}){
   );
 }
 function Nav({user,onLogin,onLogout,setPage,currentPage}){
+  const onAdminRoute=window.location.pathname==="/admin";
+  const goHome=()=>{if(onAdminRoute){window.location.href="/";}else{setPage("home");}};
   return(
     <nav style={{background:G,padding:"14px 32px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100}}>
-      <div onClick={()=>setPage("home")} style={{color:Y,fontWeight:900,fontSize:"1.3rem",letterSpacing:1,cursor:"pointer"}}>DM <span style={{color:"white"}}>Pickleball</span></div>
+      <div onClick={goHome} style={{color:Y,fontWeight:900,fontSize:"1.3rem",letterSpacing:1,cursor:"pointer"}}>DM <span style={{color:"white"}}>Pickleball</span></div>
       <div style={{display:"flex",gap:20,alignItems:"center",flexWrap:"wrap"}}>
         {[["home","Home"],["pricing","Pricing"],["gear","Paddle/Gear"],["contact","Contact"]].map(([p,label])=>(
-          <span key={p} onClick={()=>setPage(p)} style={{color:"white",cursor:"pointer",opacity:currentPage===p?1:0.7,fontWeight:currentPage===p?700:400,fontSize:"0.92rem"}}>{label}</span>
+          <span key={p} onClick={()=>p==="home"?goHome():setPage(p)} style={{color:"white",cursor:"pointer",opacity:currentPage===p?1:0.7,fontWeight:currentPage===p?700:400,fontSize:"0.92rem"}}>{label}</span>
         ))}
         {user?(
           <>
@@ -723,6 +725,10 @@ function AdminLoginPage({onAdminLogin}){
   const[username,setUsername]=useState("");
   const[password,setPassword]=useState("");
   const[error,setError]=useState("");
+  const attempt=()=>{
+    if(username===ADMIN_USER.email&&password===ADMIN_USER.password){onAdminLogin();}
+    else{setError("Invalid credentials.");}
+  };
   return(
     <div style={{minHeight:"100vh",background:"#f4f9f6",display:"flex",alignItems:"center",justifyContent:"center",padding:"24px"}}>
       <div style={{background:"white",borderRadius:16,padding:"40px 36px",boxShadow:"0 4px 24px rgba(0,0,0,0.08)",width:"100%",maxWidth:380}}>
@@ -732,12 +738,9 @@ function AdminLoginPage({onAdminLogin}){
           <p style={{color:"#6b7280",fontSize:"0.85rem"}}>DM Pickleball Dashboard</p>
         </div>
         {error&&<div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:8,padding:"10px 14px",color:"#991b1b",fontSize:"0.88rem",marginBottom:16}}>{error}</div>}
-        <input style={inp} type="text" placeholder="Username" value={username} onChange={e=>{setUsername(e.target.value);setError("");}}/>
-        <input style={inp} type="password" placeholder="Password" value={password} onChange={e=>{setPassword(e.target.value);setError("");}}/>
-        <button onClick={()=>{
-          if(username===ADMIN_USER.email&&password===ADMIN_USER.password){onAdminLogin();}
-          else{setError("Invalid credentials.");}
-        }} style={{width:"100%",background:G,color:"white",border:"none",padding:14,borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem"}}>
+        <input style={inp} type="text" placeholder="Username" value={username} onChange={e=>{setUsername(e.target.value);setError("");}} onKeyDown={e=>e.key==="Enter"&&attempt()}/>
+        <input style={inp} type="password" placeholder="Password" value={password} onChange={e=>{setPassword(e.target.value);setError("");}} onKeyDown={e=>e.key==="Enter"&&attempt()}/>
+        <button onClick={attempt} style={{width:"100%",background:G,color:"white",border:"none",padding:14,borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem"}}>
           Log In →
         </button>
       </div>
