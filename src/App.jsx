@@ -3714,9 +3714,19 @@ export default function App(){
     await fetch("/api/lessons?action=save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lesson:{...lesson,studentEmail:email}})});
     }catch(e){console.error("Admin save lesson error:",e);}
   };
-  const toggleMenlo=email=>setMockUsersState(prev=>({...prev,[email]:{...prev[email],memberType:prev[email]?.memberType==="menlo"?"public":"menlo"}}));
+  const toggleMenlo=email=>{
+    const next=mockUsersState[email]?.memberType==="menlo"?"public":"menlo";
+    setMockUsersState(prev=>({...prev,[email]:{...prev[email],memberType:next}}));
+    fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({email,updates:{member_type:next}})}).catch(()=>{});
+  };
   const toggleSaturday=email=>setMockUsersState(prev=>({...prev,[email]:{...prev[email],saturdayEnabled:!prev[email]?.saturdayEnabled}}));
-  const blockStudent=email=>setMockUsersState(prev=>({...prev,[email]:{...prev[email],blocked:!prev[email]?.blocked}}));
+  const blockStudent=email=>{
+    const next=!mockUsersState[email]?.blocked;
+    setMockUsersState(prev=>({...prev,[email]:{...prev[email],blocked:next}}));
+    fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({email,updates:{blocked:next}})}).catch(()=>{});
+  };
   const toggleGrandfathered=email=>{
     const next=!mockUsersState[email]?.grandfathered;
     setMockUsersState(prev=>({...prev,[email]:{...prev[email],grandfathered:next}}));
