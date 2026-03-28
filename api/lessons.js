@@ -26,6 +26,7 @@ export default async function handler(req, res) {
       focus: lesson.focus || '',
       notes: lesson.notes || '',
       gcal_event_id: lesson.gcalEventId || '',
+      ticket_id: lesson.ticketId || '',
       partner_email: lesson.partnerEmail || '',
       group_emails: lesson.groupEmails || [],
       members: lesson.members || [],

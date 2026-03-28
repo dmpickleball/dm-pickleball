@@ -69,6 +69,10 @@ const INIT_PENDING = [];
 function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
 function toDS(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;}
 function toTimeStrGlobal(s,e){const fmt=m=>{const h=Math.floor(m/60),mn=m%60,ampm=h>=12?"pm":"am",hr=h>12?h-12:h||12;return hr+(mn>0?":"+String(mn).padStart(2,"0"):"")+ampm;};return fmt(s)+" - "+fmt(e);}
+// Capitalize first letter of each word — applied to all name inputs
+const capWords=s=>(s||"").replace(/\b\w/g,c=>c.toUpperCase());
+// Generate a human-readable lesson ticket: PB-MMDD-XXXX
+function generateTicket(){const n=new Date();const mmdd=String(n.getMonth()+1).padStart(2,"0")+String(n.getDate()).padStart(2,"0");const rand=Math.random().toString(36).slice(2,6).toUpperCase();return"PB-"+mmdd+"-"+rand;}
 const NOW = new Date();
 const INIT_LESSONS = {
   "student@email.com":[
@@ -360,6 +364,7 @@ function LessonModal({lesson,isMenlo,onClose,onCancel}){
         </div>
         <div style={{padding:"14px 24px",borderBottom:"1px solid #f3f4f6",display:"flex",flexWrap:"wrap",gap:8,alignItems:"center"}}>
           <span style={{background:st.bg,color:st.color,padding:"4px 12px",borderRadius:50,fontSize:"0.82rem",fontWeight:700}}>{st.label}</span>
+          {lesson.ticketId&&<span style={{background:"#f3f4f6",color:"#374151",padding:"4px 12px",borderRadius:50,fontSize:"0.78rem",fontWeight:700,fontFamily:"monospace",letterSpacing:"0.5px"}}>🎫 {lesson.ticketId}</span>}
           {!isCancelled&&deadline&&(
             <span style={{fontSize:"0.78rem",color:withinGrace?"#92400e":cancellable?"#6b7280":"#dc2626",background:withinGrace?"#fffbea":cancellable?"#f9f9f6":"#fef2f2",padding:"3px 10px",borderRadius:50,border:`1px solid ${withinGrace?"#f4c430":cancellable?"#e5e7eb":"#fca5a5"}`}}>
               {withinGrace?"⚠️ Cancel within 15 min":cancellable?"Cancel by: "+fmtDeadline(deadline):"⛔ Cancellation closed"}
@@ -735,7 +740,7 @@ function ContactPage(){
     if(!form.name||!form.email){alert("Please enter your name and email.");return;}
     setStatus("sending");
     try{
-      const res=await fetch("/api/contact",{
+      const res=await fetch("/api/send-email",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify(form),
@@ -782,7 +787,7 @@ function ContactPage(){
         ):(
           <>
             {[["name","text","Your Name"],["email","email","Email Address"],["phone","tel","Phone Number (optional)"]].map(([key,type,ph])=>(
-              <input key={key} type={type} placeholder={ph} value={form[key]} onChange={e=>setForm({...form,[key]:e.target.value})} style={inp}/>
+              <input key={key} type={type} placeholder={ph} value={form[key]} onChange={e=>setForm({...form,[key]:key==="name"?capWords(e.target.value):e.target.value})} style={inp}/>
             ))}
             <textarea placeholder="Tell me about your experience level and what you'd like to work on..." value={form.message} onChange={e=>setForm({...form,message:e.target.value})} style={{...inp,height:100,resize:"vertical",fontFamily:"inherit"}}/>
             <button onClick={handleSubmit} disabled={status==="sending"}
@@ -986,8 +991,8 @@ function LoginPage({onLogin,onAdminLogin}){
         </div>
         {error&&<div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:8,padding:"10px 14px",color:"#991b1b",fontSize:"0.88rem",marginBottom:16}}>{error}</div>}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
-          <input style={{...inp,marginBottom:0}} type="text" placeholder="First Name *" value={firstName} onChange={e=>setFirstName(e.target.value)}/>
-          <input style={{...inp,marginBottom:0}} type="text" placeholder="Last Name *" value={lastName} onChange={e=>setLastName(e.target.value)}/>
+          <input style={{...inp,marginBottom:0}} type="text" placeholder="First Name *" value={firstName} onChange={e=>setFirstName(capWords(e.target.value))}/>
+          <input style={{...inp,marginBottom:0}} type="text" placeholder="Last Name *" value={lastName} onChange={e=>setLastName(capWords(e.target.value))}/>
         </div>
         <input style={inp} type="email" placeholder="Communication Email *" value={commEmail} onChange={e=>setCommEmail(e.target.value)}/>
         <div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:-10,marginBottom:14,paddingLeft:2}}>Where lesson confirmations & reminders will be sent</div>
@@ -1133,11 +1138,11 @@ function AccountPage({user,setPage,onUpdateUser}){
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
           <div>
             <label style={lbl}>First Name <span style={{color:"#dc2626"}}>*</span></label>
-            <input value={firstName} onChange={e=>setFirstName(e.target.value)} style={{...inp,marginBottom:0}} placeholder="First name"/>
+            <input value={firstName} onChange={e=>setFirstName(capWords(e.target.value))} style={{...inp,marginBottom:0}} placeholder="First name"/>
           </div>
           <div>
             <label style={lbl}>Last Name <span style={{color:"#dc2626"}}>*</span></label>
-            <input value={lastName} onChange={e=>setLastName(e.target.value)} style={{...inp,marginBottom:0}} placeholder="Last name"/>
+            <input value={lastName} onChange={e=>setLastName(capWords(e.target.value))} style={{...inp,marginBottom:0}} placeholder="Last name"/>
           </div>
         </div>
         <div style={{marginBottom:16,marginTop:16}}>
@@ -1310,7 +1315,8 @@ function BookingPage({user,setPage,onAddLesson}){
     const groupInfo=lessonType==="group"?"\nGroup: "+groupMembers.slice(0,groupSize-1).map(m=>(m.firstName+" "+m.lastName).trim()+(m.email?" ("+m.email+")":"")).join(", "):"";
     const partnerEmail=partner.email;
     const location=!isMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City, CA 94063, USA":"Stanford Redwood City";
-    const description="Student: "+user.name+"\nEmail: "+user.email+"\nType: "+lessonLabel+" "+duration+"min\nFocus: "+(focus||"Not specified")+"\nNotes: "+(notes||"None")+partnerInfo+groupInfo+"\nLocation: "+location+"\nManage: https://dmpickleball.com";
+    const ticketId=generateTicket();
+    const description="Ticket: "+ticketId+"\nStudent: "+user.name+"\nEmail: "+user.email+"\nType: "+lessonLabel+" "+duration+"min\nFocus: "+(focus||"Not specified")+"\nNotes: "+(notes||"None")+partnerInfo+groupInfo+"\nLocation: "+location+"\nManage: https://dmpickleball.com";
     let eventId="";
     try{
       const r=await fetch("/api/create-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({summary,description,date,startTime,endTime,location,studentEmail:user.email,studentName:user.name})});
@@ -1321,11 +1327,11 @@ function BookingPage({user,setPage,onAddLesson}){
     const endISO=date+"T"+endTime+":00";
     const link="https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(summary)+"&dates="+startISO.replace(/[-:]/g,"").slice(0,15)+"/"+endISO.replace(/[-:]/g,"").slice(0,15)+"&details="+encodeURIComponent(description)+"&location="+encodeURIComponent(location);
     const sendEmail=(to,subject,text,replyTo)=>fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to,subject,text,...(replyTo?{replyTo}:{})})}).catch(()=>{});
-    await sendEmail(user.email,"Your lesson is booked - "+fmtDateShort(date),"Hi "+user.name+",\n\nYour pickleball lesson is confirmed!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+duration+" min\nFocus: "+(focus||"Not specified")+"\nLocation: "+location+"\n\nManage your booking:\nhttps://dmpickleball.com\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398",user.email);
-    await sendEmail("dmpickleball@gmail.com","New booking: "+summary+" - "+fmtDateShort(date),"New lesson booked!\n\nStudent: "+user.name+"\nEmail: "+user.email+"\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+duration+" min\nFocus: "+(focus||"Not specified")+"\nNotes: "+(notes||"None")+partnerInfo+groupInfo+"\nPrice: $"+price+"\nLocation: "+location,user.email);
+    await sendEmail(user.email,"Your lesson is booked - "+fmtDateShort(date),"Hi "+user.name+",\n\nYour pickleball lesson is confirmed!\n\nRef: "+ticketId+"\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+duration+" min\nFocus: "+(focus||"Not specified")+"\nLocation: "+location+"\n\nManage your booking:\nhttps://dmpickleball.com\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398",user.email);
+    await sendEmail("dmpickleball@gmail.com","New booking: "+summary+" - "+fmtDateShort(date),"New lesson booked!\n\nRef: "+ticketId+"\nStudent: "+user.name+"\nEmail: "+user.email+"\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+duration+" min\nFocus: "+(focus||"Not specified")+"\nNotes: "+(notes||"None")+partnerInfo+groupInfo+"\nPrice: $"+price+"\nLocation: "+location,user.email);
     if(lessonType==="semi"&&partnerEmail){await sendEmail(partnerEmail,"You have been added to a pickleball lesson - "+fmtDateShort(date),"Hi "+partnerFull+",\n\n"+user.name+" has added you to a lesson!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: Semi-Private · "+duration+" min\nFocus: "+(focus||"Not specified")+"\nLocation: "+location+"\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398","dmpickleball@gmail.com");}
     if(lessonType==="group"){for(const m of groupMembers.slice(0,groupSize-1)){if(m.email){const mFull=(m.firstName+" "+m.lastName).trim();await sendEmail(m.email,"You have been added to a group pickleball lesson - "+fmtDateShort(date),"Hi "+mFull+",\n\n"+user.name+" has added you to a group lesson!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nLocation: "+location+"\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok","dmpickleball@gmail.com");}}}
-    const newLesson={id:Date.now(),date,time:timeStr,type:lessonLabel,duration:duration+" min",status:"confirmed",focus,notes:"",photos:[],videos:[],gcalEventId:eventId,partnerEmail:lessonType==="semi"?partnerEmail:"",groupEmails:lessonType==="group"?groupMembers.slice(0,groupSize-1).map(m=>m.email).filter(Boolean):[],members:memberNames.slice(1),createdAt:new Date().toISOString()};
+    const newLesson={id:Date.now(),date,time:timeStr,type:lessonLabel,duration:duration+" min",status:"confirmed",focus,notes:"",photos:[],videos:[],gcalEventId:eventId,ticketId,partnerEmail:lessonType==="semi"?partnerEmail:"",groupEmails:lessonType==="group"?groupMembers.slice(0,groupSize-1).map(m=>m.email).filter(Boolean):[],members:memberNames.slice(1),createdAt:new Date().toISOString()};
     onAddLesson(newLesson);
     setGcalLink(link);
     setBookedSummary({date,timeStr,lessonLabel,duration,focus,price,summary});
@@ -1463,8 +1469,8 @@ function BookingPage({user,setPage,onAddLesson}){
               <div style={{...lbl,marginBottom:8}}>Partner <span style={{color:"#dc2626",fontWeight:700}}>*</span></div>
               <div style={{background:"#f9f9f6",borderRadius:10,padding:"16px"}}>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
-                  <input placeholder="First Name" value={partner.firstName} onChange={e=>setPartner({...partner,firstName:e.target.value})} style={{...inp,marginBottom:0,border:partner.firstName?"1.5px solid #e5e7eb":"1.5px solid #fca5a5"}}/>
-                  <input placeholder="Last Name" value={partner.lastName} onChange={e=>setPartner({...partner,lastName:e.target.value})} style={{...inp,marginBottom:0,border:partner.lastName?"1.5px solid #e5e7eb":"1.5px solid #fca5a5"}}/>
+                  <input placeholder="First Name" value={partner.firstName} onChange={e=>setPartner({...partner,firstName:capWords(e.target.value)})} style={{...inp,marginBottom:0,border:partner.firstName?"1.5px solid #e5e7eb":"1.5px solid #fca5a5"}}/>
+                  <input placeholder="Last Name" value={partner.lastName} onChange={e=>setPartner({...partner,lastName:capWords(e.target.value)})} style={{...inp,marginBottom:0,border:partner.lastName?"1.5px solid #e5e7eb":"1.5px solid #fca5a5"}}/>
                 </div>
                 <input placeholder="Email (optional — sends calendar invite)" value={partner.email} onChange={e=>setPartner({...partner,email:e.target.value})} style={{...inp,marginBottom:0}}/>
               </div>
@@ -1478,8 +1484,8 @@ function BookingPage({user,setPage,onAddLesson}){
                 <div key={i} style={{background:"#f9f9f6",borderRadius:10,padding:"14px 16px",marginBottom:10}}>
                   <div style={{fontSize:"0.82rem",fontWeight:700,color:"#6b7280",marginBottom:8}}>Person {i+2}</div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
-                    <input placeholder="First Name" value={groupMembers[i]?.firstName||""} onChange={e=>{const m=[...groupMembers];m[i]={...m[i],firstName:e.target.value};setGroupMembers(m);}} style={{...inp,marginBottom:0,border:groupMembers[i]?.firstName?"1.5px solid #e5e7eb":"1.5px solid #fca5a5"}}/>
-                    <input placeholder="Last Name" value={groupMembers[i]?.lastName||""} onChange={e=>{const m=[...groupMembers];m[i]={...m[i],lastName:e.target.value};setGroupMembers(m);}} style={{...inp,marginBottom:0,border:groupMembers[i]?.lastName?"1.5px solid #e5e7eb":"1.5px solid #fca5a5"}}/>
+                    <input placeholder="First Name" value={groupMembers[i]?.firstName||""} onChange={e=>{const m=[...groupMembers];m[i]={...m[i],firstName:capWords(e.target.value)};setGroupMembers(m);}} style={{...inp,marginBottom:0,border:groupMembers[i]?.firstName?"1.5px solid #e5e7eb":"1.5px solid #fca5a5"}}/>
+                    <input placeholder="Last Name" value={groupMembers[i]?.lastName||""} onChange={e=>{const m=[...groupMembers];m[i]={...m[i],lastName:capWords(e.target.value)};setGroupMembers(m);}} style={{...inp,marginBottom:0,border:groupMembers[i]?.lastName?"1.5px solid #e5e7eb":"1.5px solid #fca5a5"}}/>
                   </div>
                   <input placeholder="Email (optional — sends calendar invite)" value={groupMembers[i]?.email||""} onChange={e=>{const m=[...groupMembers];m[i]={...m[i],email:e.target.value};setGroupMembers(m);}} style={{...inp,marginBottom:0}}/>
                 </div>
@@ -2533,7 +2539,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
     const titleSuffix=schedLessonType==="group"?" pb group lesson":" pb lesson";
     const summary=memberNames.join("/")+titleSuffix;
     const location=customLocation&&schedLocation?schedLocation:(!schedIsMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City, CA 94063, USA":"Menlo Circus Club, 190 Park Ln, Atherton, CA 94027");
-    const description="Student: "+student.name+"\nEmail: "+selectedStudent+"\nType: "+lessonLabel+" "+schedDuration+"min\nFocus: "+(schedFocus||"Not specified")+"\nNotes: "+(schedNotes||"None")+"\nLocation: "+location+"\nManage: https://dmpickleball.com";
+    const ticketId2=generateTicket();
+    const description="Ticket: "+ticketId2+"\nStudent: "+student.name+"\nEmail: "+selectedStudent+"\nType: "+lessonLabel+" "+schedDuration+"min\nFocus: "+(schedFocus||"Not specified")+"\nNotes: "+(schedNotes||"None")+"\nLocation: "+location+"\nManage: https://dmpickleball.com";
     let eventId="";
     try{
       const r=await fetch("/api/create-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({summary,description,date:schedDate,startTime,endTime,location,studentEmail:selectedStudent,studentName:student.name})});
@@ -2544,10 +2551,10 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
     const endISO=schedDate+"T"+endTime+":00";
     const link="https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(summary)+"&dates="+startISO.replace(/[-:]/g,"").slice(0,15)+"/"+endISO.replace(/[-:]/g,"").slice(0,15)+"&details="+encodeURIComponent(description)+"&location="+encodeURIComponent(location);
     const sendEmail2=(to,subject,text,replyTo)=>fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to,subject,text,...(replyTo?{replyTo}:{})})}).catch(()=>{});
-    await sendEmail2(selectedStudent,"Your lesson is booked - "+fmtDateShort(schedDate),"Hi "+student.name+",\n\nDavid has scheduled a lesson for you!\n\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+schedDuration+" min\nFocus: "+(schedFocus||"Not specified")+"\nLocation: "+location+"\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398","dmpickleball@gmail.com");
-    await sendEmail2("dmpickleball@gmail.com","Scheduled: "+summary+" - "+fmtDateShort(schedDate),"You scheduled a lesson!\n\nStudent: "+student.name+"\nEmail: "+selectedStudent+"\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+schedDuration+" min\nFocus: "+(schedFocus||"Not specified")+"\nLocation: "+location,selectedStudent);
+    await sendEmail2(selectedStudent,"Your lesson is booked - "+fmtDateShort(schedDate),"Hi "+student.name+",\n\nDavid has scheduled a lesson for you!\n\nRef: "+ticketId2+"\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+schedDuration+" min\nFocus: "+(schedFocus||"Not specified")+"\nLocation: "+location+"\n\nAdd to Google Calendar:\n"+link+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398","dmpickleball@gmail.com");
+    await sendEmail2("dmpickleball@gmail.com","Scheduled: "+summary+" - "+fmtDateShort(schedDate),"You scheduled a lesson!\n\nRef: "+ticketId2+"\nStudent: "+student.name+"\nEmail: "+selectedStudent+"\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+schedDuration+" min\nFocus: "+(schedFocus||"Not specified")+"\nLocation: "+location,selectedStudent);
     const finalPrice=schedCustomPrice?parseFloat(schedCustomPrice):null;
-    const newLesson={id:Date.now(),date:schedDate,time:timeStr,type:lessonLabel,duration:schedDuration+" min",status:"confirmed",focus:schedFocus,notes:"",photos:[],videos:[],gcalEventId:eventId,customPrice:finalPrice};
+    const newLesson={id:Date.now(),date:schedDate,time:timeStr,type:lessonLabel,duration:schedDuration+" min",status:"confirmed",focus:schedFocus,notes:"",photos:[],videos:[],gcalEventId:eventId,ticketId:ticketId2,customPrice:finalPrice};
     onAddLesson(selectedStudent,newLesson);
     setShowSchedule(false);
     setScheduleStep(1);setSchedLessonType("private");setSchedDuration(60);setSchedDate("");setSchedSlot(null);setSchedSlotIdx(-1);setSchedFocus("");setSchedNotes("");setSchedBusyTimes([]);setSchedCustomPrice("");setSchedQuickMins(null);
@@ -2801,8 +2808,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                   {editingStudent?(
                     <div>
                       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
-                        <input value={editStudentData.firstName||""} onChange={e=>setEditStudentData({...editStudentData,firstName:e.target.value})} style={{...inp,marginBottom:0,fontWeight:700}} placeholder="First Name"/>
-                        <input value={editStudentData.lastName||""} onChange={e=>setEditStudentData({...editStudentData,lastName:e.target.value})} style={{...inp,marginBottom:0,fontWeight:700}} placeholder="Last Name"/>
+                        <input value={editStudentData.firstName||""} onChange={e=>setEditStudentData({...editStudentData,firstName:capWords(e.target.value)})} style={{...inp,marginBottom:0,fontWeight:700}} placeholder="First Name"/>
+                        <input value={editStudentData.lastName||""} onChange={e=>setEditStudentData({...editStudentData,lastName:capWords(e.target.value)})} style={{...inp,marginBottom:0,fontWeight:700}} placeholder="Last Name"/>
                       </div>
                       <input value={selectedStudent} disabled style={{...inp,marginBottom:8,fontSize:"0.85rem",background:"#f3f4f6",color:"#9ca3af",cursor:"not-allowed"}} title="Google login email — cannot be changed"/>
                       <input value={editStudentData.commEmail||""} onChange={e=>setEditStudentData({...editStudentData,commEmail:e.target.value})} style={{...inp,marginBottom:8,fontSize:"0.85rem"}} placeholder="Communication Email" type="email"/>
@@ -3856,6 +3863,7 @@ export default function App(){
                 duration:l.duration,status:l.status,focus:l.focus||"",
                 notes:l.notes||"",photos:[],videos:[],
                 gcalEventId:l.gcal_event_id||"",
+                ticketId:l.ticket_id||"",
                 partnerEmail:l.partner_email||"",
                 groupEmails:l.group_emails||[],
                 members:l.members||[],
