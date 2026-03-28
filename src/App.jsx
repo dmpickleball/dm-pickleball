@@ -2389,7 +2389,7 @@ function AdminCalendarView(){
     </div>
   );
 }
-function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,onApprove,onDeny,mockUsers,onAddStudent,onAddLesson,onToggleMenlo,onToggleSaturday,onBlockStudent,onRemoveStudent,removedStudents,onRestoreStudent,onBlockRemoved,onToggleGrandfathered}){
+function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pendingStudents,onApprove,onDeny,mockUsers,onAddStudent,onAddLesson,onToggleMenlo,onToggleSaturday,onBlockStudent,onRemoveStudent,removedStudents,onRestoreStudent,onBlockRemoved,onToggleGrandfathered}){
   const[tab,setTab]=useState("students");
   const[studentSearch,setStudentSearch]=useState("");
   const[selectedStudent,setSelectedStudent]=useState(null);
@@ -3081,7 +3081,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                     <button onClick={()=>setConfirmDelete(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Keep it</button>
                     <button onClick={()=>{
                       // Remove from UI immediately — API calls fire in background
-                      setAllLessons(prev=>({...prev,[selectedStudent]:(prev[selectedStudent]||[]).filter(x=>x.id!==l.id)}));
+                      onDeleteLesson(selectedStudent,l.id);
                       setConfirmDelete(null);setDeletedToast(true);setTimeout(()=>setDeletedToast(false),3000);
                       if(l.gcalEventId){fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:l.gcalEventId,mode:"delete"})}).catch(e=>console.error("GCal delete failed:",e));}
                       fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})}).catch(e=>console.error("DB delete failed:",e));
@@ -3433,7 +3433,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                   <button onClick={()=>setConfirmDelete(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Keep it</button>
                   <button onClick={()=>{
                     // Remove from UI immediately — API calls fire in background
-                    setAllLessons(prev=>({...prev,[l.studentEmail]:(prev[l.studentEmail]||[]).filter(x=>x.id!==l.id)}));
+                    onDeleteLesson(l.studentEmail,l.id);
                     setConfirmDelete(null);setDeletedToast(true);setTimeout(()=>setDeletedToast(false),3000);
                     if(l.gcalEventId){fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:l.gcalEventId,mode:"delete"})}).catch(e=>console.error("GCal delete failed:",e));}
                     fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})}).catch(e=>console.error("DB delete failed:",e));
@@ -4101,6 +4101,10 @@ export default function App(){
     setAllLessons(prev=>({...prev,[user.email]:prev[user.email].map(l=>l.id===id?{...l,status:cancelStatus}:l)}));
     try{await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:id,updates:{status:cancelStatus,cancelled_by:"student",cancelled_at:cancelNow.toISOString()}})});}catch(e){console.error("Update lesson status error:",e);}
   };
+  // Remove a lesson from state (optimistic) — called from AdminPanel delete buttons
+  const deleteLesson=(email,id)=>{
+    setAllLessons(prev=>({...prev,[email]:(prev[email]||[]).filter(x=>x.id!==id)}));
+  };
   const adminCancel=async(email,id)=>{
     const lesson=(allLessons[email]||[]).find(l=>l.id===id);
     if(lesson?.gcalEventId){
@@ -4234,7 +4238,7 @@ export default function App(){
           <button onClick={logout} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.4)",color:"white",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem"}}>Log out</button>
         </div>
       </nav>
-      <AdminPanel allLessons={allLessons} onUpdateLesson={updateLesson} onCancelLesson={adminCancel} pendingStudents={pendingStudents} onApprove={approveStudent} onDeny={denyStudent} mockUsers={mockUsersState} onAddStudent={addStudent} onAddLesson={adminAddLesson} onToggleMenlo={toggleMenlo} onToggleSaturday={toggleSaturday} onBlockStudent={blockStudent} onRemoveStudent={removeStudent} removedStudents={removedStudents} onRestoreStudent={restoreStudent} onBlockRemoved={blockRemovedStudent} onToggleGrandfathered={toggleGrandfathered}/>
+      <AdminPanel allLessons={allLessons} onUpdateLesson={updateLesson} onCancelLesson={adminCancel} onDeleteLesson={deleteLesson} pendingStudents={pendingStudents} onApprove={approveStudent} onDeny={denyStudent} mockUsers={mockUsersState} onAddStudent={addStudent} onAddLesson={adminAddLesson} onToggleMenlo={toggleMenlo} onToggleSaturday={toggleSaturday} onBlockStudent={blockStudent} onRemoveStudent={removeStudent} removedStudents={removedStudents} onRestoreStudent={restoreStudent} onBlockRemoved={blockRemovedStudent} onToggleGrandfathered={toggleGrandfathered}/>
     </div>
   );
   return(
