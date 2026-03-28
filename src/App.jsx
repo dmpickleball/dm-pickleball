@@ -2425,6 +2425,9 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[schedGroupMembers,setSchedGroupMembers]=useState([{name:"",email:""},{name:"",email:""},{name:"",email:""},{name:"",email:""}]);
   const[schedBusyTimes,setSchedBusyTimes]=useState([]);
   const[schedLoadingSlots,setSchedLoadingSlots]=useState(false);
+  const[schedFullyBookedDays,setSchedFullyBookedDays]=useState(new Set());
+  const[schedSlotCounts,setSchedSlotCounts]=useState(new Map());
+  const[schedLoadingAvail,setSchedLoadingAvail]=useState(false);
   const[schedQuickMins,setSchedQuickMins]=useState(null); // target startMins pre-filled from week view click
   const[schedSubmitting,setSchedSubmitting]=useState(false);const[schedCustomPrice,setSchedCustomPrice]=useState("");const[customLocation,setCustomLocation]=useState(false);const[schedLocation,setSchedLocation]=useState("");
   
@@ -2545,6 +2548,37 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
 
   const schedIsMenlo=selectedStudent&&mockUsers[selectedStudent]?.memberType==="menlo";
   const SCHED_PRICES={private:{60:schedIsMenlo?115:120,90:schedIsMenlo?172.50:180},semi:{60:schedIsMenlo?120:140,90:schedIsMenlo?180:210},group:{60:140,90:210}};
+
+  // Pre-load 30-day availability for admin calendar (mirrors student booking behaviour)
+  useEffect(()=>{
+    const mt=schedIsMenlo?"menlo":"public";
+    const today=new Date();
+    const startStr=toDS(today);
+    const endStr=toDS(addDays(today,30));
+    setSchedLoadingAvail(true);
+    setSchedFullyBookedDays(new Set());
+    setSchedSlotCounts(new Map());
+    fetch("/api/get-busy-times?date="+startStr+"&endDate="+endStr+"&memberType="+mt)
+      .then(r=>r.json())
+      .then(data=>{
+        const busyAll=data.busy||[];
+        const busyByDay={};
+        busyAll.forEach(b=>{const day=b.start.substring(0,10);if(!busyByDay[day])busyByDay[day]=[];busyByDay[day].push(b);});
+        const fullyBooked=new Set();
+        const counts=new Map();
+        for(let i=0;i<=30;i++){
+          const d=addDays(today,i);const ds=toDS(d);
+          const busyForDay=busyByDay[ds]||[];
+          const avail=getSlots(ds,mt,schedDuration).filter(s=>!busyForDay.some(b=>{const bufA=b.bufferAfter??30;const bufB=b.bufferBefore??30;return s.s<(b.endMins+bufA)&&s.e>(b.startMins-bufB);}));
+          if(avail.length===0)fullyBooked.add(ds);
+          else counts.set(ds,avail.length);
+        }
+        setSchedFullyBookedDays(fullyBooked);
+        setSchedSlotCounts(counts);
+        setSchedLoadingAvail(false);
+      })
+      .catch(()=>setSchedLoadingAvail(false));
+  },[schedDuration,schedIsMenlo]);
   const schedSlots=schedDate?getSlots(schedDate,schedIsMenlo?"menlo":"public",schedDuration).filter(s=>!schedBusyTimes.some(b=>{const bufA=b.bufferAfter??30;const bufB=b.bufferBefore??30;return s.s<(b.endMins+bufA)&&s.e>(b.startMins-bufB);})):[];
   const toTime24=(mins)=>{const h=Math.floor(mins/60),m=mins%60;return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");};
   const toTimeStr=(s,e)=>fmt(s)+" - "+fmt(e);
@@ -3199,9 +3233,12 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
 
           {scheduleStep===2&&(
             <div>
-              <div style={{...lbl,marginBottom:12}}>Select a Date</div>
-              <div style={{marginBottom:20}}>
-                <CalendarPicker value={schedDate} onChange={async d=>{setSchedDate(d);setSchedSlot(null);setSchedSlotIdx(-1);setSchedLoadingSlots(true);try{const r=await fetch("/api/get-busy-times?date="+d);const data=await r.json();setSchedBusyTimes(data.busy||[]);}catch(e){setSchedBusyTimes([]);}setSchedLoadingSlots(false);}} memberType={schedIsMenlo?"menlo":"public"}/>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+                <div style={{...lbl,marginBottom:0}}>Select a Date</div>
+                {schedLoadingAvail&&<span style={{fontSize:"0.75rem",color:"#9ca3af",display:"flex",alignItems:"center",gap:4}}><span style={{display:"inline-block",width:10,height:10,border:"2px solid #9ca3af",borderTop:"2px solid transparent",borderRadius:"50%",animation:"spin 0.7s linear infinite"}}/> Checking availability…</span>}
+              </div>
+              <div style={{marginBottom:20,pointerEvents:schedLoadingAvail?"none":"auto",opacity:schedLoadingAvail?0.5:1,transition:"opacity 0.2s"}}>
+                <CalendarPicker value={schedDate} onChange={async d=>{setSchedDate(d);setSchedSlot(null);setSchedSlotIdx(-1);setSchedLoadingSlots(true);try{const r=await fetch("/api/get-busy-times?date="+d);const data=await r.json();setSchedBusyTimes(data.busy||[]);}catch(e){setSchedBusyTimes([]);}setSchedLoadingSlots(false);}} memberType={schedIsMenlo?"menlo":"public"} fullyBookedDays={schedFullyBookedDays} slotCounts={schedSlotCounts}/>
               </div>
               {schedDate&&(
                 <div style={{marginBottom:20}}>
