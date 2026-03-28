@@ -783,7 +783,7 @@ function LoginPage({onLogin,onAdminLogin}){
         return;
       }
       if(!data.student.approved){setLoadingProv(null);setError("Your account is pending approval from David.");return;}
-      if(data.student.deactivated){setLoadingProv(null);setError("This account has been deactivated. Please contact David.");return;}
+      if(data.student.blocked&&!data.student.approved){setLoadingProv(null);setError("Your account has been removed. Please contact David.");return;}
       if(data.student.blocked){setLoadingProv(null);setError("Your account has been blocked. Please contact David.");return;}
       setLoadingProv(null);
       onLogin({email,name:data.student.name||(info.firstName+" "+info.lastName).trim(),firstName:data.student.first_name||info.firstName||"",lastName:data.student.last_name||info.lastName||"",commEmail:data.student.comm_email||"",memberType:data.student.member_type,approved:true,picture:info.picture||data.student.picture||"",phone:data.student.phone||"",homeCourt:data.student.home_court||"",city:data.student.city||"",skillLevel:data.student.skill_level||"",duprRating:data.student.dupr_rating||"",grandfathered:!!(data.student.grandfathered)});
@@ -2081,7 +2081,7 @@ function AdminCalendarView(){
     </div>
   );
 }
-function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,onApprove,onDeny,mockUsers,onAddStudent,onAddLesson,onToggleMenlo,onToggleSaturday,onBlockStudent,onDeleteStudent,deactivatedStudents,onDeactivateStudent,onReactivateStudent,deletedStudents,onBlockDenied,onToggleGrandfathered}){
+function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,onApprove,onDeny,mockUsers,onAddStudent,onAddLesson,onToggleMenlo,onToggleSaturday,onBlockStudent,onRemoveStudent,removedStudents,onRestoreStudent,onBlockRemoved,onToggleGrandfathered}){
   const[tab,setTab]=useState("students");
   const[studentSearch,setStudentSearch]=useState("");
   const[selectedStudent,setSelectedStudent]=useState(null);
@@ -2122,9 +2122,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
   const[pendingMenlo,setPendingMenlo]=useState({}); // {[studentId]: boolean}
   const[showAddStudent,setShowAddStudent]=useState(false);
   const[newStudent,setNewStudent]=useState({name:"",email:"",memberType:"public"});
-  const[showDeactivated,setShowDeactivated]=useState(false);
-  const[studentView,setStudentView]=useState("active"); // "active" | "deactivated" | "deleted"
-  const[deactivatedSearch,setDeactivatedSearch]=useState("");
+  const[studentView,setStudentView]=useState("active"); // "active" | "removed"
   const[confirmDeleteLogin,setConfirmDeleteLogin]=useState(null); // email being confirmed for deletion
   const[showCalendar,setShowCalendar]=useState(true);
   const[calendarItems,setCalendarItems]=useState([]);
@@ -2378,10 +2376,10 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
               <div style={{height:1,background:"#e5e7eb",marginBottom:20}}/>
             </div>
           )}
-          {/* ── View toggle: Active / Deactivated / Deleted ── */}
+          {/* ── View toggle: Active / Removed ── */}
           <div style={{display:"flex",gap:0,marginBottom:16,borderRadius:50,overflow:"hidden",border:"1.5px solid #e5e7eb",alignSelf:"flex-start",width:"fit-content"}}>
-            {[["active","Active",filteredStudents.length],["deactivated","Deactivated",(deactivatedStudents||[]).length],["deleted","Denied/Deleted",(deletedStudents||[]).length]].map(([v,lbl,cnt],i)=>(
-              <button key={v} onClick={()=>{setStudentView(v);setConfirmDeleteLogin(null);}} style={{background:studentView===v?(v==="deleted"?"#7f1d1d":v==="deactivated"?"#6b7280":G):"white",color:studentView===v?"white":v==="deleted"?"#7f1d1d":v==="deactivated"?"#6b7280":"#374151",border:"none",padding:"7px 20px",cursor:"pointer",fontWeight:700,fontSize:"0.82rem",borderLeft:i>0?"1.5px solid #e5e7eb":"none"}}>{lbl} ({cnt})</button>
+            {[["active","Active",filteredStudents.length],["removed","Removed",(removedStudents||[]).length]].map(([v,lbl,cnt],i)=>(
+              <button key={v} onClick={()=>{setStudentView(v);setConfirmDeleteLogin(null);}} style={{background:studentView===v?(v==="removed"?"#7f1d1d":G):"white",color:studentView===v?"white":v==="removed"?"#7f1d1d":"#374151",border:"none",padding:"7px 20px",cursor:"pointer",fontWeight:700,fontSize:"0.82rem",borderLeft:i>0?"1.5px solid #e5e7eb":"none"}}>{lbl} ({cnt})</button>
             ))}
           </div>
 
@@ -2439,74 +2437,33 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
             </div>
           </>}
 
-          {/* Deactivated */}
-          {studentView==="deactivated"&&(
-            <div>
-              <input placeholder="🔍 Search deactivated..." value={deactivatedSearch} onChange={e=>setDeactivatedSearch(e.target.value)} style={{...inp,marginBottom:16,maxWidth:300}}/>
-              <div style={{display:"grid",gap:10}}>
-                {(deactivatedStudents||[]).filter(s=>(s.name||s.email).toLowerCase().includes(deactivatedSearch.toLowerCase())||s.email.toLowerCase().includes(deactivatedSearch.toLowerCase())).map(s=>(
-                  <div key={s.email} style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"16px 20px",opacity:0.85}}>
-                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
-                      <div style={{display:"flex",alignItems:"center",gap:14}}>
-                        <div style={{width:42,height:42,borderRadius:"50%",overflow:"hidden",background:"#f3f4f6",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:"1rem",color:"#9ca3af"}}>
-                          {s.picture?<img src={s.picture} alt={s.name} style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:"50%",filter:"grayscale(1)"}}/>:(s.name||s.email).charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <div style={{fontWeight:700,fontSize:"0.97rem",color:"#6b7280"}}>{s.lastName&&s.firstName?s.lastName+", "+s.firstName:s.name||s.email}</div>
-                          <div style={{fontSize:"0.8rem",color:"#9ca3af",marginTop:2}}>{s.email}</div>
-                          <div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:1}}>{(allLessons[s.email]||[]).length} lesson{(allLessons[s.email]||[]).length!==1?"s":""} on record</div>
-                        </div>
-                      </div>
-                      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                        <button onClick={async()=>{await onReactivateStudent(s.email);}} style={{background:"white",color:G,border:"1.5px solid "+G,padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>↩ Reactivate</button>
-                        <button onClick={()=>setConfirmDeleteLogin(confirmDeleteLogin===s.email?null:s.email)} style={{background:"white",color:"#7f1d1d",border:"1.5px solid #fca5a5",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>🗑 Delete Login</button>
-                      </div>
-                    </div>
-                    {/* Inline confirm */}
-                    {confirmDeleteLogin===s.email&&(
-                      <div style={{marginTop:12,background:"#fff8f8",border:"1.5px solid #fca5a5",borderRadius:10,padding:"14px 16px"}}>
-                        <div style={{fontWeight:700,color:"#7f1d1d",marginBottom:4,fontSize:"0.88rem"}}>Delete login for {s.name||s.email}?</div>
-                        <div style={{fontSize:"0.8rem",color:"#9ca3af",marginBottom:12}}>Their profile moves to Deleted Accounts. All {(allLessons[s.email]||[]).length} lessons are preserved. The email is freed — they could re-register with the same OAuth.</div>
-                        <div style={{display:"flex",gap:8}}>
-                          <button onClick={()=>setConfirmDeleteLogin(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Cancel</button>
-                          <button onClick={async()=>{setConfirmDeleteLogin(null);await onDeleteStudent(s.email);}} style={{background:"#7f1d1d",color:"white",border:"none",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>Yes, Delete Login</button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-                {(deactivatedStudents||[]).length===0&&<div style={{textAlign:"center",color:"#9ca3af",padding:"40px"}}>No deactivated accounts.</div>}
-              </div>
-            </div>
-          )}
-
-          {/* Deleted */}
-          {studentView==="deleted"&&(
+          {/* Removed */}
+          {studentView==="removed"&&(
             <div>
               <div style={{background:"#fff8f8",border:"1.5px solid #fca5a5",borderRadius:10,padding:"12px 16px",marginBottom:16,fontSize:"0.82rem",color:"#7f1d1d"}}>
-                Denied students can re-register unless blocked. Deleted accounts are fully archived — lesson history preserved.
+                Removed students can re-register unless blocked. Lesson history is always preserved.
               </div>
               <div style={{display:"grid",gap:10}}>
-                {(deletedStudents||[]).map(s=>{
+                {(removedStudents||[]).map(s=>{
                   const lessonCount=(allLessons[s.email]||[]).length;
                   const actionDate=s.isDenied
                     ?(s.deniedAt?new Date(s.deniedAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):"")
-                    :(s.deletedAt?new Date(s.deletedAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):"");
+                    :(s.deleted_at?new Date(s.deleted_at).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):"");
                   const borderCol=s.blocked?"#dc2626":s.isDenied?"#f97316":"#fca5a5";
                   return(
-                    <div key={s.email} style={{background:"white",borderRadius:12,border:"1.5px solid "+borderCol,padding:"16px 20px",opacity:s.blocked?1:0.8}}>
+                    <div key={s.email} style={{background:"white",borderRadius:12,border:"1.5px solid "+borderCol,padding:"16px 20px",opacity:s.blocked?1:0.85}}>
                       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
                         <div style={{display:"flex",alignItems:"center",gap:14}}>
                           <div style={{width:42,height:42,borderRadius:"50%",background:"#fef2f2",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:"1rem",color:"#9ca3af"}}>
                             {s.picture?<img src={s.picture} alt={s.name} style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:"50%",filter:"grayscale(1)"}}/>:(s.name||s.email).charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <div style={{fontWeight:700,fontSize:"0.97rem",color:"#6b7280"}}>{s.lastName&&s.firstName?s.lastName+", "+s.firstName:s.name||s.email}</div>
+                            <div style={{fontWeight:700,fontSize:"0.97rem",color:"#6b7280"}}>{s.last_name&&s.first_name?s.last_name+", "+s.first_name:s.lastName&&s.firstName?s.lastName+", "+s.firstName:s.name||s.email}</div>
                             <div style={{fontSize:"0.8rem",color:"#9ca3af",marginTop:2}}>{s.email}</div>
                             <div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:1}}>
                               {s.isDenied
                                 ?<>{actionDate?"Denied "+actionDate:""}{s.blocked?" · Blocked — cannot re-register":" · Can re-register"}</>
-                                :<>{lessonCount} lesson{lessonCount!==1?"s":""} on record{actionDate?" · Deleted "+actionDate:""}{s.blocked?" · Blocked":" · Email free to re-register"}</>
+                                :<>{lessonCount} lesson{lessonCount!==1?"s":""} on record{actionDate?" · Removed "+actionDate:""}{s.blocked?" · Blocked — cannot re-register":" · Can re-register"}</>
                               }
                             </div>
                           </div>
@@ -2514,21 +2471,24 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                         <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                           {s.blocked
                             ?<span style={{background:"#fef2f2",color:"#dc2626",padding:"3px 12px",borderRadius:50,fontSize:"0.72rem",fontWeight:700}}>⛔ Blocked</span>
-                            :<span style={{background:s.isDenied?"#fff7ed":"#fef2f2",color:s.isDenied?"#c2410c":"#dc2626",padding:"3px 12px",borderRadius:50,fontSize:"0.72rem",fontWeight:700}}>{s.isDenied?"✕ Denied":"Login Deleted"}</span>
+                            :<span style={{background:s.isDenied?"#fff7ed":"#fef2f2",color:s.isDenied?"#c2410c":"#9ca3af",padding:"3px 12px",borderRadius:50,fontSize:"0.72rem",fontWeight:700}}>{s.isDenied?"✕ Denied":"Removed"}</span>
                           }
-                          {/* Block / Unblock toggle — only meaningful for denied students */}
-                          {s.isDenied&&(
-                            <button onClick={()=>onBlockDenied&&onBlockDenied(s.email,!s.blocked)}
-                              style={{background:s.blocked?"white":"#fef2f2",color:s.blocked?"#374151":"#dc2626",border:"1.5px solid "+(s.blocked?"#d1d5db":"#fca5a5"),padding:"3px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.72rem",fontWeight:700}}>
-                              {s.blocked?"Unblock":"Block"}
+                          {!s.blocked&&!s.isDenied&&(
+                            <button onClick={async()=>{setConfirmDeleteLogin(null);await onRestoreStudent(s.email);}}
+                              style={{background:"white",color:G,border:"1.5px solid "+G,padding:"3px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.72rem",fontWeight:700}}>
+                              ↩ Restore
                             </button>
                           )}
+                          <button onClick={()=>onBlockRemoved&&onBlockRemoved(s.email,!s.blocked)}
+                            style={{background:s.blocked?"white":"#fef2f2",color:s.blocked?"#374151":"#dc2626",border:"1.5px solid "+(s.blocked?"#d1d5db":"#fca5a5"),padding:"3px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.72rem",fontWeight:700}}>
+                            {s.blocked?"Unblock":"Block"}
+                          </button>
                         </div>
                       </div>
                     </div>
                   );
                 })}
-                {(deletedStudents||[]).length===0&&<div style={{textAlign:"center",color:"#9ca3af",padding:"40px"}}>No denied or deleted accounts.</div>}
+                {(removedStudents||[]).length===0&&<div style={{textAlign:"center",color:"#9ca3af",padding:"40px"}}>No removed accounts.</div>}
               </div>
             </div>
           )}
@@ -2609,18 +2569,18 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                 <button onClick={()=>onBlockStudent(selectedStudent)} style={{background:mockUsers[selectedStudent]?.blocked?"#dc2626":"white",color:mockUsers[selectedStudent]?.blocked?"white":"#dc2626",border:"1.5px solid #dc2626",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.75rem",fontWeight:700}}>
                   {mockUsers[selectedStudent]?.blocked?"Unblock Student":"Block Student"}
                 </button>
-                <button onClick={()=>setConfirmDeleteStudent(true)} style={{background:"white",color:"#6b7280",border:"1.5px solid #d1d5db",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.75rem",fontWeight:700}}>⊘ Deactivate</button>
+                <button onClick={()=>setConfirmDeleteStudent(true)} style={{background:"white",color:"#6b7280",border:"1.5px solid #d1d5db",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.75rem",fontWeight:700}}>⊘ Remove Student</button>
               </div>
             </div>
             {confirmDeleteStudent&&(
               <div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:10,padding:"14px 18px",marginTop:10,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
                 <div>
-                  <div style={{fontWeight:700,color:"#991b1b",fontSize:"0.9rem"}}>Deactivate this account?</div>
-                  <div style={{fontSize:"0.8rem",color:"#b91c1c",marginTop:3}}>{mockUsers[selectedStudent]?.name||selectedStudent} won't be able to log in. You can reactivate anytime.</div>
+                  <div style={{fontWeight:700,color:"#991b1b",fontSize:"0.9rem"}}>Remove {mockUsers[selectedStudent]?.name||selectedStudent}?</div>
+                  <div style={{fontSize:"0.8rem",color:"#b91c1c",marginTop:3}}>Their account is archived and the email is freed — they can re-register. All lesson history is preserved. You can restore them or block re-registration from the Removed tab.</div>
                 </div>
                 <div style={{display:"flex",gap:8}}>
                   <button onClick={()=>setConfirmDeleteStudent(false)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Cancel</button>
-                  <button onClick={async()=>{await onDeactivateStudent(selectedStudent);setSelectedStudent(null);setConfirmDeleteStudent(false);}} style={{background:"#dc2626",color:"white",border:"none",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>Yes, Deactivate</button>
+                  <button onClick={async()=>{await onRemoveStudent(selectedStudent);setSelectedStudent(null);setConfirmDeleteStudent(false);}} style={{background:"#dc2626",color:"white",border:"none",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>Yes, Remove</button>
                 </div>
               </div>
             )}
@@ -3222,7 +3182,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,pendingStudents,on
                       }
                     }} defaultValue="" style={{border:"1.5px solid #d1d5db",borderRadius:8,padding:"5px 10px",fontSize:"0.82rem",background:"white",flex:1,minWidth:140}}>
                       <option value="">— pick student —</option>
-                      {sortedStudents.filter(em=>!mockUsers[em]?.deactivated).map(em=>(<option key={em} value={em}>{mockUsers[em]?.name||em}</option>))}
+                      {sortedStudents.map(em=>(<option key={em} value={em}>{mockUsers[em]?.name||em}</option>))}
                     </select>
                     <button onClick={()=>setQuickBook(null)} style={{background:"none",border:"none",color:"#9ca3af",cursor:"pointer",fontSize:"1rem",padding:"0 4px",marginLeft:"auto"}}>✕</button>
                   </div>
@@ -3550,20 +3510,18 @@ export default function App(){
   const[allLessons,setAllLessons]=useState({});
   const[pendingStudents,setPendingStudents]=useState([]);
   const[mockUsersState,setMockUsersState]=useState({});
-  const[deactivatedStudents,setDeactivatedStudents]=useState([]);
-  const[deletedStudents,setDeletedStudents]=useState([]);
+  const[removedStudents,setRemovedStudents]=useState([]);
   const[dbLoaded,setDbLoaded]=useState(false);
   const[locations,setLocations]=useState([]);
 
   useEffect(()=>{
     const loadFromSupabase=async()=>{
       try{
-        const [pr,lr,sr,locr,dr,xr]=await Promise.all([
+        const [pr,lr,sr,locr,xr]=await Promise.all([
           fetch("/api/students?action=pending").then(r=>r.json()).catch(()=>({})),
           fetch("/api/lessons?action=list").then(r=>r.json()).catch(()=>({})),
           fetch("/api/students?action=list").then(r=>r.json()).catch(()=>({})),
           fetch("/api/locations?action=list").then(r=>r.json()).catch(()=>({})),
-          fetch("/api/students?action=list-deactivated").then(r=>r.json()).catch(()=>({})),
           fetch("/api/students?action=list-deleted").then(r=>r.json()).catch(()=>({})),
         ]);
         if(pr.requests){
@@ -3620,8 +3578,7 @@ export default function App(){
           setMockUsersState(users);
         }
         if(locr.locations)setLocations(locr.locations);
-        if(dr.students)setDeactivatedStudents(dr.students.map(s=>({email:s.email,name:s.name||s.email,firstName:s.first_name||"",lastName:s.last_name||"",memberType:s.member_type||"public",phone:s.phone||"",city:s.city||"",homeCourt:s.home_court||"",picture:s.picture||""})));
-        if(xr.students)setDeletedStudents(xr.students.map(s=>({email:s.email,name:s.name||s.email,firstName:s.first_name||"",lastName:s.last_name||"",memberType:s.member_type||"public",phone:s.phone||"",city:s.city||"",homeCourt:s.home_court||"",picture:s.picture||"",deletedAt:s.deleted_at||""})));
+        if(xr.students)setRemovedStudents(xr.students.map(s=>({email:s.email,name:s.name||s.email,first_name:s.first_name||"",last_name:s.last_name||"",firstName:s.first_name||"",lastName:s.last_name||"",memberType:s.member_type||"public",phone:s.phone||"",city:s.city||"",homeCourt:s.home_court||"",picture:s.picture||"",deleted_at:s.deleted_at||"",blocked:!!s.blocked,isDenied:!!s.is_denied,deniedAt:s.denied_at||""})));
       }catch(e){console.error("Supabase load error:",e);}
       setDbLoaded(true);
     };
@@ -3688,23 +3645,24 @@ export default function App(){
       try{
         await fetch("/api/students?action=approve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({requestId:id,action:"deny"})});
       }catch(e){console.error("Deny error:",e);}
-      // Add to denied/deleted list so admin can see & optionally block
-      setDeletedStudents(prev=>[{
-        email:student.email,name:student.name,firstName:student.firstName||"",lastName:student.lastName||"",
+      // Add to removed list so admin can see & optionally block
+      setRemovedStudents(prev=>[{
+        email:student.email,name:student.name,first_name:student.firstName||"",last_name:student.lastName||"",
+        firstName:student.firstName||"",lastName:student.lastName||"",
         phone:student.phone||"",skillLevel:student.skillLevel||"",picture:student.picture||"",
         isDenied:true,deniedAt:new Date().toISOString(),blocked:false
       },...prev]);
     }
     setPendingStudents(prev=>prev.filter(s=>s.id!==id));
   };
-  const blockDeniedStudent=async(email,block)=>{
-    // Update local denied/deleted state
-    setDeletedStudents(prev=>prev.map(s=>s.email===email?{...s,blocked:block}:s));
-    // Persist: create/update a minimal blocked record so re-registration is rejected
+  const blockRemovedStudent=async(email,block)=>{
+    // Update local removed state
+    setRemovedStudents(prev=>prev.map(s=>s.email===email?{...s,blocked:block}:s));
+    // Persist: upsert/remove a blocked sentinel in students table
     try{
-      await fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({email,updates:{blocked:block,approved:false}})});
-    }catch(e){console.error("Block denied error:",e);}
+      await fetch("/api/students?action=block-removed",{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({email,block})});
+    }catch(e){console.error("Block removed error:",e);}
   };
   const addStudent=({name,email,memberType})=>{setMockUsersState(prev=>({...prev,[email]:{name,memberType,approved:true,password:""}}));setAllLessons(prev=>({...prev,[email]:[]}));};
   const adminAddLesson=async(email,lesson)=>{
@@ -3733,28 +3691,33 @@ export default function App(){
     fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({email,updates:{grandfathered:next}})}).catch(()=>{});
   };
-  const deleteStudent=async(email)=>{
-    // API archives to deleted_students then removes from students (frees email for re-registration)
+  const removeStudent=async(email)=>{
+    // Archives to deleted_students, removes from students — frees email for re-registration
     await fetch("/api/students?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email})});
-    // Move from deactivated → deleted in local state; lesson data stays in allLessons
-    const s=deactivatedStudents.find(x=>x.email===email)||{email,name:email};
-    setDeletedStudents(prev=>[{...s,deletedAt:new Date().toISOString()},...prev]);
-    setDeactivatedStudents(prev=>prev.filter(x=>x.email!==email));
-    // Also remove from active state if somehow called from there
-    setMockUsersState(prev=>{const next={...prev};delete next[email];return next;});
-  };
-  const deactivateStudent=async(email)=>{
-    await fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,updates:{deactivated:true}})});
     const u=mockUsersState[email];
-    if(u)setDeactivatedStudents(prev=>[...prev,{...u,email,lessons:allLessons[email]||[]}]);
+    const now=new Date().toISOString();
+    setRemovedStudents(prev=>[{
+      email,name:u?.name||email,first_name:u?.firstName||"",last_name:u?.lastName||"",
+      firstName:u?.firstName||"",lastName:u?.lastName||"",
+      memberType:u?.memberType||"public",phone:u?.phone||"",city:u?.city||"",
+      homeCourt:u?.homeCourt||"",picture:u?.picture||"",deleted_at:now,blocked:false
+    },...prev]);
     setMockUsersState(prev=>{const next={...prev};delete next[email];return next;});
-    // Keep allLessons intact — lesson history is preserved
+    // allLessons preserved for history
   };
-  const reactivateStudent=async(email)=>{
-    await fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,updates:{deactivated:false}})});
-    const s=deactivatedStudents.find(x=>x.email===email);
-    if(s){setMockUsersState(prev=>({...prev,[email]:{name:s.name,firstName:s.firstName,lastName:s.lastName,commEmail:s.commEmail||"",skillLevel:s.skillLevel||"",duprRating:s.duprRating||"",memberType:s.memberType,approved:true,phone:s.phone,city:s.city,homeCourt:s.homeCourt,picture:s.picture}}));setAllLessons(prev=>({...prev,[email]:[]}));}
-    setDeactivatedStudents(prev=>prev.filter(x=>x.email!==email));
+  const restoreStudent=async(email)=>{
+    // Moves from deleted_students back to students (active)
+    await fetch("/api/students?action=restore",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email})});
+    const s=removedStudents.find(x=>x.email===email);
+    if(s){
+      setMockUsersState(prev=>({...prev,[email]:{
+        name:s.name,firstName:s.firstName||s.first_name||"",lastName:s.lastName||s.last_name||"",
+        commEmail:s.commEmail||s.comm_email||"",skillLevel:s.skillLevel||"",duprRating:"",
+        memberType:s.memberType||"public",approved:true,blocked:false,
+        phone:s.phone||"",city:s.city||"",homeCourt:s.homeCourt||"",picture:s.picture||""
+      }}));
+    }
+    setRemovedStudents(prev=>prev.filter(x=>x.email!==email));
   };
   const logout=()=>{setUser(null);setIsAdmin(false);setPage("home");};
   if(isAdmin)return(
@@ -3766,7 +3729,7 @@ export default function App(){
           <button onClick={logout} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.4)",color:"white",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem"}}>Log out</button>
         </div>
       </nav>
-      <AdminPanel allLessons={allLessons} onUpdateLesson={updateLesson} onCancelLesson={adminCancel} pendingStudents={pendingStudents} onApprove={approveStudent} onDeny={denyStudent} mockUsers={mockUsersState} onAddStudent={addStudent} onAddLesson={adminAddLesson} onToggleMenlo={toggleMenlo} onToggleSaturday={toggleSaturday} onBlockStudent={blockStudent} onDeleteStudent={deleteStudent} deactivatedStudents={deactivatedStudents} onDeactivateStudent={deactivateStudent} onReactivateStudent={reactivateStudent} deletedStudents={deletedStudents} onBlockDenied={blockDeniedStudent} onToggleGrandfathered={toggleGrandfathered}/>
+      <AdminPanel allLessons={allLessons} onUpdateLesson={updateLesson} onCancelLesson={adminCancel} pendingStudents={pendingStudents} onApprove={approveStudent} onDeny={denyStudent} mockUsers={mockUsersState} onAddStudent={addStudent} onAddLesson={adminAddLesson} onToggleMenlo={toggleMenlo} onToggleSaturday={toggleSaturday} onBlockStudent={blockStudent} onRemoveStudent={removeStudent} removedStudents={removedStudents} onRestoreStudent={restoreStudent} onBlockRemoved={blockRemovedStudent} onToggleGrandfathered={toggleGrandfathered}/>
     </div>
   );
   return(
