@@ -149,7 +149,7 @@ function getLessonStart(dateStr,timeStr){
   const d=new Date(dateStr+"T12:00:00");
   d.setHours(h,m,0,0);return d;
 }
-function getCancelDeadline(ds,ts){return new Date(getLessonStart(ds,ts).getTime()-24*60*60*1000);}
+function getCancelDeadline(ds,ts){return new Date(getLessonStart(ds,ts).getTime()-12*60*60*1000);}
 function fmtDeadline(d){return d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})+" at "+d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});}
 function canCancel(ds,ts,bookedAt){
   const now=new Date();
@@ -584,9 +584,9 @@ function Homepage({setPage}){
             <h2 style={{fontSize:"1.8rem",fontWeight:900}}>Lesson Types</h2>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:16}}>
-            {[["🎯","Private","1-on-1 coaching",null,null],["👥","Semi-Private","2 students","$140 / $210","$70 / $105 per person"],["🏆","Group Lesson","3–5 students",null,"split equally"]].map(([icon,title,desc,price,sub])=>(
-              <div key={title} style={{border:"2px solid #e5e7eb",borderRadius:12,padding:24,textAlign:"center"}}>
-                <div style={{fontSize:32,marginBottom:10}}>{icon}</div>
+            {[["INDIVIDUAL","Private","1-on-1 coaching",null,null],["DUO","Semi-Private","2 students","$140 / $210","$70 / $105 per person"],["GROUP","Group Lesson","3–5 students",null,"split equally"]].map(([label,title,desc,price,sub])=>(
+              <div key={title} style={{border:"2px solid #e5e7eb",borderTop:"4px solid "+G,borderRadius:12,padding:24,textAlign:"center"}}>
+                <div style={{fontSize:"0.65rem",fontWeight:800,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>{label}</div>
                 <div style={{fontWeight:700,marginBottom:6}}>{title}</div>
                 <div style={{fontSize:"0.83rem",color:"#6b7280",marginBottom:12}}>{desc}</div>
                 <div style={{fontWeight:800,color:G,fontSize:"1.1rem"}}>{price}</div>
@@ -621,29 +621,32 @@ function PricingPage(){
         <h2 style={{fontSize:"2rem",fontWeight:900}}>Lesson Rates</h2>
         <p style={{color:"#6b7280",marginTop:8}}>SF Peninsula, Bay Area</p>
       </div>
-      <div style={{display:"grid",gap:16}}>
-        {[["🎯","Private Lesson","1-on-1 personalized coaching","$120/hr",null],["👥","Semi-Private","2 students","$140/hr total","$70/person"],["🏆","Group Lesson","3–5 students","$140/hr total","split equally"]].map(([icon,title,desc,price,sub])=>(
-          <div key={title} style={{background:"white",border:"2px solid #e5e7eb",borderRadius:12,padding:"24px 28px",display:"flex",alignItems:"center",gap:20}}>
-            <div style={{fontSize:36}}>{icon}</div>
+      <div style={{display:"grid",gap:12}}>
+        {[["INDIVIDUAL","Private Lesson","1-on-1 personalized coaching","$120/hr",null],["DUO","Semi-Private","2 students","$140/hr","$70/person"],["GROUP","Group Lesson","3–5 students","$140/hr","split equally"]].map(([label,title,desc,price,sub])=>(
+          <div key={title} style={{background:"white",border:"1.5px solid #e5e7eb",borderLeft:"4px solid "+G,borderRadius:10,padding:"22px 28px",display:"flex",alignItems:"center",gap:20}}>
             <div style={{flex:1}}>
+              <div style={{fontSize:"0.65rem",fontWeight:800,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:5}}>{label}</div>
               <div style={{fontWeight:700,fontSize:"1.05rem"}}>{title}</div>
               <div style={{fontSize:"0.85rem",color:"#6b7280",marginTop:2}}>{desc}</div>
               <div style={{fontSize:"0.78rem",color:"#9ca3af",marginTop:4}}>60 & 90 min sessions available</div>
             </div>
-            <div style={{textAlign:"right"}}>
-              <div style={{fontWeight:700,color:G,fontSize:"1.1rem"}}>{price}</div>
+            <div style={{textAlign:"right",flexShrink:0}}>
+              <div style={{fontWeight:700,color:G,fontSize:"1.15rem"}}>{price}</div>
               {sub&&<div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:2}}>{sub}</div>}
             </div>
           </div>
         ))}
-        <div style={{background:"white",border:"2px solid #e5e7eb",borderRadius:12,padding:"24px 28px",display:"flex",alignItems:"center",gap:20}}>
-          <div style={{fontSize:36}}>🏢</div>
-          <div style={{flex:1}}><div style={{fontWeight:700,fontSize:"1.05rem"}}>Corporate Events</div><div style={{fontSize:"0.85rem",color:"#6b7280",marginTop:2}}>Group clinics & events for companies and teams</div></div>
-          <div style={{fontWeight:700,color:G,fontSize:"1.05rem"}}>Contact for pricing</div>
+        <div style={{background:"white",border:"1.5px solid #e5e7eb",borderLeft:"4px solid #9ca3af",borderRadius:10,padding:"22px 28px",display:"flex",alignItems:"center",gap:20}}>
+          <div style={{flex:1}}>
+            <div style={{fontSize:"0.65rem",fontWeight:800,color:"#9ca3af",textTransform:"uppercase",letterSpacing:2,marginBottom:5}}>CORPORATE</div>
+            <div style={{fontWeight:700,fontSize:"1.05rem"}}>Corporate Events</div>
+            <div style={{fontSize:"0.85rem",color:"#6b7280",marginTop:2}}>Group clinics & events for companies and teams</div>
+          </div>
+          <div style={{fontWeight:700,color:G,fontSize:"1.05rem",flexShrink:0}}>Contact for pricing</div>
         </div>
       </div>
       <div style={{background:"#fffbea",border:"1.5px solid #f4c430",borderRadius:10,padding:"16px 20px",marginTop:24,fontSize:"0.88rem",color:"#7a5800",textAlign:"center"}}>
-        ⚠️ Cancellations must be made at least <strong>24 hours before</strong> your lesson start time.
+        ⚠️ Cancellations must be made at least <strong>12 hours before</strong> your lesson start time.
       </div>
     </div>
   );
@@ -1500,9 +1503,9 @@ function BookingPage({user,setPage,onAddLesson}){
               }
             </div>
           )}
-          {slot&&date&&(()=>{const lh=Math.floor(slot.s/60),lm=slot.s%60;const lessonDt=new Date(date+"T"+String(lh).padStart(2,"0")+":"+String(lm).padStart(2,"0")+":00");const hrs=(lessonDt-new Date())/(1000*60*60);return hrs<24?(
+          {slot&&date&&(()=>{const lh=Math.floor(slot.s/60),lm=slot.s%60;const lessonDt=new Date(date+"T"+String(lh).padStart(2,"0")+":"+String(lm).padStart(2,"0")+":00");const hrs=(lessonDt-new Date())/(1000*60*60);return hrs<12?(
             <div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:8,padding:"12px 16px",marginBottom:16,fontSize:"0.85rem",color:"#991b1b",fontWeight:600}}>
-              ⚠️ This slot is within 24 hours. You'll have 15 minutes after booking to cancel if it was accidental — after that, cancellation is closed.
+              ⚠️ This slot is within 12 hours. You'll have 15 minutes after booking to cancel if it was accidental — after that, cancellation is closed.
             </div>
           ):null;})()}
           <div style={{display:"flex",gap:10}}>
@@ -1582,14 +1585,14 @@ function BookingPage({user,setPage,onAddLesson}){
           {(()=>{
             const lh=Math.floor((slot?.s||0)/60),lm=(slot?.s||0)%60;
             const lessonDt=new Date(date+"T"+String(lh).padStart(2,"0")+":"+String(lm).padStart(2,"0")+":00");
-            const within24=slot&&date&&((lessonDt-new Date())/(1000*60*60))<24;
+            const within24=slot&&date&&((lessonDt-new Date())/(1000*60*60))<12;
             return within24?(
               <div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:8,padding:"12px 16px",marginBottom:20,fontSize:"0.85rem",color:"#991b1b",fontWeight:600}}>
-                ⚠️ This lesson is within 24 hours. You'll have 15 minutes after booking to cancel if it was accidental — after that, cancellation is closed.
+                ⚠️ This lesson is within 12 hours. You'll have 15 minutes after booking to cancel if it was accidental — after that, cancellation is closed.
               </div>
             ):(
               <div style={{background:"#fffbea",border:"1.5px solid #f4c430",borderRadius:8,padding:"10px 16px",marginBottom:20,fontSize:"0.85rem",color:"#7a5800"}}>
-                ⚠️ Cancellation Policy: Please cancel at least 24 hours before your lesson.
+                ⚠️ Cancellation Policy: Please cancel at least 12 hours before your lesson.
               </div>
             );
           })()}
@@ -4144,7 +4147,7 @@ export default function App(){
   const cancelLesson=async(id)=>{
     const lesson=userLessons.find(l=>l.id===id);
     // Optimistic update immediately so UI reflects change right away
-    const cancelNow=new Date();const lDeadline=new Date(getLessonStart(lesson.date,lesson.time).getTime()-24*60*60*1000);const withinGrace=lesson.createdAt&&((cancelNow-new Date(lesson.createdAt))/60000)<15;const cancelStatus=(!withinGrace&&cancelNow>lDeadline)?"late_cancel":"cancelled";
+    const cancelNow=new Date();const lDeadline=new Date(getLessonStart(lesson.date,lesson.time).getTime()-12*60*60*1000);const withinGrace=lesson.createdAt&&((cancelNow-new Date(lesson.createdAt))/60000)<15;const cancelStatus=(!withinGrace&&cancelNow>lDeadline)?"late_cancel":"cancelled";
     setAllLessons(prev=>({...prev,[user.email]:prev[user.email].map(l=>l.id===id?{...l,status:cancelStatus}:l)}));
     // GCal removal — await this so calendar is cleaned up before modal closes
     if(lesson?.gcalEventId){
@@ -4176,7 +4179,7 @@ export default function App(){
         await fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:lesson.gcalEventId,mode:"delete"})});
       }catch(e){console.error("Admin GCal cancel failed:",e);}
     }
-    const cancelNow2=new Date();const lDeadline2=new Date(getLessonStart(lesson.date,lesson.time).getTime()-24*60*60*1000);const withinGrace2=lesson.createdAt&&((cancelNow2-new Date(lesson.createdAt))/60000)<15;const cancelStatus2=(!withinGrace2&&cancelNow2>lDeadline2)?"late_cancel":"cancelled";
+    const cancelNow2=new Date();const lDeadline2=new Date(getLessonStart(lesson.date,lesson.time).getTime()-12*60*60*1000);const withinGrace2=lesson.createdAt&&((cancelNow2-new Date(lesson.createdAt))/60000)<15;const cancelStatus2=(!withinGrace2&&cancelNow2>lDeadline2)?"late_cancel":"cancelled";
     setAllLessons(prev=>({...prev,[email]:prev[email].map(l=>l.id===id?{...l,status:cancelStatus2}:l)}));
     try{await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:id,updates:{status:cancelStatus2,cancelled_by:"admin",cancelled_at:cancelNow2.toISOString()}})});}catch(e){console.error("Update lesson status error:",e);}
     // Send cancellation emails
