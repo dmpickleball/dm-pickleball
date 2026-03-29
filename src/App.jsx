@@ -85,7 +85,7 @@ function makeCancelEmailHtml(text){
   }).join('');
   return`<!DOCTYPE html><html><body style="margin:0;padding:20px;background:#fff5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
 <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.07);">
-  <div style="background:#991b1b;padding:20px 28px;"><div style="color:white;font-weight:800;font-size:1.05rem;letter-spacing:0.3px;">Lesson Cancelled</div><div style="color:rgba(255,255,255,0.7);font-size:0.8rem;margin-top:3px;">DM Pickleball</div></div>
+  <div style="background:#991b1b;padding:18px 28px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;"><span style="color:white;font-weight:800;font-size:1.2rem;letter-spacing:3px;">DMPB</span><span style="color:rgba(255,255,255,0.45);font-size:0.75rem;letter-spacing:1px;font-weight:400;">PICKLEBALL</span></div><div style="color:rgba(255,255,255,0.85);font-weight:700;font-size:0.95rem;">Lesson Cancelled</div></div>
   <div style="padding:28px 32px;">${rows}<div style="margin-top:22px;padding-top:16px;border-top:1px solid #f3f4f6;font-size:0.75rem;color:#9ca3af;">DM Pickleball · <a href="https://dmpickleball.com" style="color:#991b1b;text-decoration:none;">dmpickleball.com</a></div></div>
 </div></body></html>`;
 }
@@ -101,7 +101,7 @@ function makeEmailHtml(text,calLink){
   const btn=calLink?`<div style="margin:24px 0;"><a href="${calLink}" style="display:inline-block;background:#1a3c34;color:white;padding:12px 28px;border-radius:50px;text-decoration:none;font-weight:700;font-size:0.88rem;">Add to Google Calendar</a></div>`:'';
   return`<!DOCTYPE html><html><body style="margin:0;padding:20px;background:#f4f9f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
 <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.07);">
-  <div style="background:#1a3c34;padding:20px 28px;"><span style="color:white;font-weight:800;font-size:1.05rem;letter-spacing:0.3px;">DM Pickleball</span></div>
+  <div style="background:#1a3c34;padding:18px 28px;display:flex;align-items:center;gap:10px;"><span style="color:white;font-weight:800;font-size:1.2rem;letter-spacing:3px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">DMPB</span><span style="color:rgba(255,255,255,0.45);font-size:0.75rem;letter-spacing:1px;font-weight:400;">PICKLEBALL</span></div>
   <div style="padding:28px 32px;">${rows}${btn}<div style="margin-top:22px;padding-top:16px;border-top:1px solid #f3f4f6;font-size:0.75rem;color:#9ca3af;">DM Pickleball · <a href="https://dmpickleball.com" style="color:#1a3c34;text-decoration:none;">dmpickleball.com</a></div></div>
 </div></body></html>`;
 }
@@ -331,7 +331,9 @@ function Nav({user,onLogin,onLogout,setPage,currentPage}){
   const goHome=()=>{if(onAdminRoute){window.location.href="/";}else{setPage("home");}};
   return(
     <nav style={{background:G,padding:"14px 32px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100}}>
-      <div onClick={goHome} style={{color:Y,fontWeight:900,fontSize:"1.3rem",letterSpacing:1,cursor:"pointer"}}>DM <span style={{color:"white"}}>Pickleball</span></div>
+      <div onClick={goHome} style={{cursor:"pointer",display:"flex",alignItems:"center"}}>
+        <img src="/images/logo-white.svg" alt="DMPB" style={{height:36,width:"auto",display:"block"}}/>
+      </div>
       <div style={{display:"flex",gap:20,alignItems:"center",flexWrap:"wrap"}}>
         {[["home","Home"],["pricing","Pricing"],["gear","Paddle/Gear"],["contact","Contact"]].map(([p,label])=>(
           <span key={p} onClick={()=>p==="home"?goHome():setPage(p)} style={{color:"white",cursor:"pointer",opacity:currentPage===p?1:0.7,fontWeight:currentPage===p?700:400,fontSize:"0.92rem"}}>{label}</span>
