@@ -777,7 +777,7 @@ function GearPage(){
 // ─── CONTACT PAGE ────────────────────────────────────────────────────────────
 function ContactPage(){
   const[status,setStatus]=useState("idle"); // idle | sending | success | error
-  const[form,setForm]=useState({name:"",email:"",phone:"",message:""});
+  const[form,setForm]=useState({name:"",email:"",message:""});
 
   const handleSubmit=async()=>{
     if(!form.name||!form.email){alert("Please enter your name and email.");return;}
@@ -786,7 +786,7 @@ function ContactPage(){
       const res=await fetch("/api/send-email",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify(form),
+        body:JSON.stringify({...form,to:"info@dmpickleball.com",subject:"Website contact from "+form.name,fromAlias:"info@dmpickleball.com"}),
       });
       if(res.ok){setStatus("success");}
       else{setStatus("error");}
@@ -800,19 +800,14 @@ function ContactPage(){
       <div style={{textAlign:"center",marginBottom:36}}>
         <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>Get In Touch</div>
         <h2 style={{fontSize:"2rem",fontWeight:900}}>Contact David</h2>
-        <p style={{color:"#6b7280",marginTop:8,lineHeight:1.7}}>Interested in lessons? Reach out and David will get back to you directly.</p>
+        <p style={{color:"#6b7280",marginTop:8,lineHeight:1.7}}>Interested in lessons? Send a message and David will get back to you directly.</p>
       </div>
       <div style={{background:"white",borderRadius:12,padding:"28px 32px",boxShadow:"0 2px 16px rgba(0,0,0,0.07)"}}>
-        <div style={{display:"flex",gap:16,marginBottom:20}}>
-          <div style={{flex:1,background:"#e8f0ee",border:`1.5px solid ${G}`,borderRadius:10,padding:"14px 18px",textAlign:"center"}}>
-            <div style={{fontSize:24,marginBottom:4}}>📱</div>
-            <div style={{fontWeight:700,fontSize:"0.9rem"}}>Text or Call</div>
-            <div style={{color:G,fontWeight:700,marginTop:4}}>(650) 839-3398</div>
-          </div>
-          <div style={{flex:1,background:"#e8f0ee",border:`1.5px solid ${G}`,borderRadius:10,padding:"14px 18px",textAlign:"center"}}>
+        <div style={{marginBottom:20}}>
+          <div style={{background:"#e8f0ee",border:`1.5px solid ${G}`,borderRadius:10,padding:"14px 18px",textAlign:"center"}}>
             <div style={{fontSize:24,marginBottom:4}}>📧</div>
             <div style={{fontWeight:700,fontSize:"0.9rem"}}>Email</div>
-            <div style={{color:G,fontWeight:700,marginTop:4,fontSize:"0.85rem"}}>hello@dmpickleball.com</div>
+            <div style={{color:G,fontWeight:700,marginTop:4,fontSize:"0.9rem"}}>info@dmpickleball.com</div>
           </div>
         </div>
 
@@ -824,12 +819,12 @@ function ContactPage(){
           </div>
         ):status==="error"?(
           <div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:8,padding:"14px 16px",color:"#991b1b",fontSize:"0.88rem",marginBottom:14,textAlign:"center"}}>
-            Something went wrong. Please try again or reach out directly via phone.
+            Something went wrong. Please try again or email David directly.
             <button onClick={()=>setStatus("idle")} style={{display:"block",margin:"10px auto 0",background:"white",border:"1.5px solid #fca5a5",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem",color:"#991b1b"}}>Try Again</button>
           </div>
         ):(
           <>
-            {[["name","text","Your Name"],["email","email","Email Address"],["phone","tel","Phone Number (optional)"]].map(([key,type,ph])=>(
+            {[["name","text","Your Name"],["email","email","Email Address"]].map(([key,type,ph])=>(
               <input key={key} type={type} placeholder={ph} value={form[key]} onChange={e=>setForm({...form,[key]:key==="name"?capWords(e.target.value):e.target.value})} style={inp}/>
             ))}
             <textarea placeholder="Tell me about your experience level and what you'd like to work on..." value={form.message} onChange={e=>setForm({...form,message:e.target.value})} style={{...inp,height:100,resize:"vertical",fontFamily:"inherit"}}/>
@@ -2421,6 +2416,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
   const[selectedStudent,setSelectedStudent]=useState(null);
   const[editingStudent,setEditingStudent]=useState(false);
   const[editStudentData,setEditStudentData]=useState({});
+  const[studentSaveStatus,setStudentSaveStatus]=useState("idle"); // idle | saving | error
   const[showSchedule,setShowSchedule]=useState(false);
   const[earningsRange,setEarningsRange]=useState("month");
   const[financeRange,setFinanceRange]=useState("month");const[showNetStanford,setShowNetStanford]=useState(false);
@@ -2823,6 +2819,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                       <div>
                         <div style={{fontWeight:700,fontSize:"0.97rem"}}>{u.lastName&&u.firstName?u.lastName+", "+u.firstName:u.name||email}</div>
                         <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:2}}>{email}</div>
+                        {u.phone&&<div style={{fontSize:"0.78rem",color:"#9ca3af",marginTop:1}}>📱 {formatPhone(u.phone)}</div>}
                       </div>
                     </div>
                     <div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -2935,11 +2932,22 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                 {editingStudent?(
                   <>
-                    <button onClick={()=>setEditingStudent(false)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.82rem"}}>Cancel</button>
-                    <button onClick={()=>{const fullName=(editStudentData.firstName+" "+editStudentData.lastName).trim()||editStudentData.name;
-              fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:selectedStudent,updates:{name:fullName,first_name:editStudentData.firstName,last_name:editStudentData.lastName,comm_email:(editStudentData.commEmail||"").toLowerCase(),phone:editStudentData.phone,city:editStudentData.city,home_court:editStudentData.homeCourt,skill_level:editStudentData.duprRating?"":editStudentData.skillLevel||"",dupr_rating:editStudentData.duprRating||""}})}).catch(()=>{});
-              onAddStudent({name:fullName,firstName:editStudentData.firstName,lastName:editStudentData.lastName,commEmail:(editStudentData.commEmail||"").toLowerCase(),phone:editStudentData.phone,city:editStudentData.city,homeCourt:editStudentData.homeCourt,skillLevel:editStudentData.duprRating?"":editStudentData.skillLevel||"",duprRating:editStudentData.duprRating||"",email:selectedStudent,memberType:mockUsers[selectedStudent]?.memberType||"public"});
-              setEditingStudent(false);}} style={{background:G,color:"white",border:"none",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.82rem"}}>Save ✓</button>
+                    <button onClick={()=>{setEditingStudent(false);setStudentSaveStatus("idle");}} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.82rem"}}>Cancel</button>
+                    <button onClick={async()=>{
+              setStudentSaveStatus("saving");
+              const firstName=(editStudentData.firstName||"").trim();
+              const lastName=(editStudentData.lastName||"").trim();
+              const fullName=(firstName+" "+lastName).trim()||editStudentData.name||"";
+              try{
+                const r=await fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:selectedStudent,updates:{name:fullName,first_name:firstName,last_name:lastName,comm_email:(editStudentData.commEmail||"").toLowerCase(),phone:editStudentData.phone||"",city:editStudentData.city||"",home_court:editStudentData.homeCourt||"",skill_level:editStudentData.duprRating?"":editStudentData.skillLevel||"",dupr_rating:editStudentData.duprRating||""}})});
+                if(!r.ok)throw new Error("Save failed");
+                onAddStudent({name:fullName,firstName,lastName,commEmail:(editStudentData.commEmail||"").toLowerCase(),phone:editStudentData.phone||"",city:editStudentData.city||"",homeCourt:editStudentData.homeCourt||"",skillLevel:editStudentData.duprRating?"":editStudentData.skillLevel||"",duprRating:editStudentData.duprRating||"",email:selectedStudent,memberType:mockUsers[selectedStudent]?.memberType||"public"});
+                setStudentSaveStatus("idle");
+                setEditingStudent(false);
+              }catch{setStudentSaveStatus("error");}
+            }} disabled={studentSaveStatus==="saving"} style={{background:studentSaveStatus==="error"?"#dc2626":studentSaveStatus==="saving"?"#9ca3af":G,color:"white",border:"none",padding:"7px 16px",borderRadius:50,cursor:studentSaveStatus==="saving"?"not-allowed":"pointer",fontWeight:700,fontSize:"0.82rem"}}>
+              {studentSaveStatus==="saving"?"Saving…":studentSaveStatus==="error"?"Retry ↩":"Save ✓"}
+            </button>
                   </>
                 ):(
                   <button onClick={()=>{
@@ -2948,6 +2956,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                     const parsedFirst=nameParts[0]||"";
                     const parsedLast=nameParts.slice(1).join(" ")||"";
                     setEditStudentData({name:u.name||"",firstName:u.firstName||parsedFirst,lastName:u.lastName||parsedLast,commEmail:u.commEmail||"",phone:u.phone||"",city:u.city||"",homeCourt:u.homeCourt||"",skillLevel:u.skillLevel||"",duprRating:u.duprRating||""});
+                    setStudentSaveStatus("idle");
                     setEditingStudent(true);}} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.82rem"}}>✏️ Edit</button>
                 )}
                 <button onClick={()=>setShowSchedule(true)} style={{background:G,color:"white",border:"none",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.82rem"}}>+ Schedule Lesson</button>
