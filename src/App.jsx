@@ -613,7 +613,7 @@ function Homepage({setPage}){
   );
 }
 
-function PricingPage(){
+function PricingPage({setPage}){
   return(
     <div style={{maxWidth:700,margin:"0 auto",padding:"60px 24px"}}>
       <div style={{textAlign:"center",marginBottom:40}}>
@@ -642,7 +642,7 @@ function PricingPage(){
             <div style={{fontWeight:700,fontSize:"1.05rem"}}>Corporate Events</div>
             <div style={{fontSize:"0.85rem",color:"#6b7280",marginTop:2}}>Group clinics & events for companies and teams</div>
           </div>
-          <div style={{fontWeight:700,color:G,fontSize:"1.05rem",flexShrink:0}}>Contact for pricing</div>
+          <button onClick={()=>setPage("contact")} style={{background:G,color:"white",border:"none",padding:"10px 22px",borderRadius:50,fontWeight:700,fontSize:"0.88rem",cursor:"pointer",flexShrink:0}}>Get in Touch →</button>
         </div>
       </div>
       <div style={{background:"#fffbea",border:"1.5px solid #f4c430",borderRadius:10,padding:"16px 20px",marginTop:24,fontSize:"0.88rem",color:"#7a5800",textAlign:"center"}}>
@@ -4338,7 +4338,7 @@ export default function App(){
       <Nav user={user} onLogin={()=>setPage("login")} onLogout={logout} setPage={setPage} currentPage={page}/>
       {page==="adminlogin"&&<AdminLoginPage onAdminLogin={()=>setIsAdmin(true)}/>}
       {page==="home"&&!isAdminRoute&&<Homepage setPage={setPage}/>}
-      {page==="pricing"&&<PricingPage/>}
+      {page==="pricing"&&<PricingPage setPage={setPage}/>}
       {page==="gear"&&<GearPage/>}
       {page==="contact"&&<ContactPage/>}
       {page==="login"&&<LoginPage onLogin={u=>{setUser(u);setPage("dashboard");}} onAdminLogin={()=>setIsAdmin(true)}/>}
