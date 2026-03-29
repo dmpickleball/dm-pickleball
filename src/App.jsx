@@ -350,6 +350,7 @@ function LessonModal({lesson,isMenlo,onClose,onCancel}){
   const closed=!isCancelled&&!cancellable&&!withinGrace;
   const deadline=!isCancelled?getCancelDeadline(lesson.date,lesson.time):null;
   const[confirmCancel,setConfirmCancel]=useState(false);
+  const[cancelling,setCancelling]=useState(false);
   const location=isMenlo?"Stanford Redwood City":"Andrew Spinas Park, Redwood City";
   const dateObj=new Date(lesson.date+"T12:00:00");
   const statusMap={
@@ -417,8 +418,10 @@ function LessonModal({lesson,isMenlo,onClose,onCancel}){
                 <div style={{fontWeight:700,color:"#991b1b",marginBottom:6,fontSize:"0.9rem"}}>Cancel this lesson?</div>
                 <div style={{fontSize:"0.83rem",color:"#7f1d1d",marginBottom:12}}>{lesson.type} on {fmtDateShort(lesson.date)} at {lesson.time.split("–")[0].trim()}</div>
                 <div style={{display:"flex",gap:8}}>
-                  <button onClick={()=>setConfirmCancel(false)} style={{flex:1,background:"white",border:"1.5px solid #e5e7eb",padding:"9px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:600}}>Keep it</button>
-                  <button onClick={()=>{onCancel(lesson.id);onClose();}} style={{flex:1,background:"#dc2626",color:"white",border:"none",padding:"9px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:700}}>Yes, Cancel</button>
+                  <button onClick={()=>setConfirmCancel(false)} disabled={cancelling} style={{flex:1,background:"white",border:"1.5px solid #e5e7eb",padding:"9px",borderRadius:50,cursor:cancelling?"not-allowed":"pointer",fontSize:"0.85rem",fontWeight:600,opacity:cancelling?0.5:1}}>Keep it</button>
+                  <button onClick={async()=>{setCancelling(true);await onCancel(lesson.id);onClose();}} disabled={cancelling} style={{flex:1,background:"#dc2626",color:"white",border:"none",padding:"9px",borderRadius:50,cursor:cancelling?"not-allowed":"pointer",fontSize:"0.85rem",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                    {cancelling?<><span style={{display:"inline-block",width:12,height:12,border:"2px solid white",borderTop:"2px solid transparent",borderRadius:"50%",animation:"spin 0.7s linear infinite"}}/>Cancelling...</>:"Yes, Cancel"}
+                  </button>
                 </div>
               </div>
             ):(
@@ -435,6 +438,14 @@ function LessonModal({lesson,isMenlo,onClose,onCancel}){
           </div>
         )}
       </div>
+      {cancelling&&(
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(255,255,255,0.88)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",zIndex:10000,backdropFilter:"blur(4px)"}}>
+          <div style={{width:48,height:48,border:"5px solid #e8f0ee",borderTop:"5px solid #1a3c34",borderRadius:"50%",animation:"spin 0.9s linear infinite",marginBottom:20}}/>
+          <div style={{fontWeight:700,fontSize:"1.1rem",color:"#1a3c34"}}>Cancelling your lesson...</div>
+          <div style={{fontSize:"0.88rem",color:"#6b7280",marginTop:8}}>Removing your calendar event, hang tight!</div>
+          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        </div>
+      )}
     </div>
   );
 }
@@ -4097,19 +4108,22 @@ export default function App(){
   const userLessons=user?allLessons[user.email]||[]:[]; const updateUser=(updatedUser)=>setUser(updatedUser);
   const cancelLesson=async(id)=>{
     const lesson=userLessons.find(l=>l.id===id);
+    // Optimistic update immediately so UI reflects change right away
+    const cancelNow=new Date();const lDeadline=new Date(getLessonStart(lesson.date,lesson.time).getTime()-24*60*60*1000);const withinGrace=lesson.createdAt&&((cancelNow-new Date(lesson.createdAt))/60000)<15;const cancelStatus=(!withinGrace&&cancelNow>lDeadline)?"late_cancel":"cancelled";
+    setAllLessons(prev=>({...prev,[user.email]:prev[user.email].map(l=>l.id===id?{...l,status:cancelStatus}:l)}));
+    // GCal removal — await this so calendar is cleaned up before modal closes
     if(lesson?.gcalEventId){
       try{await fetch('/api/cancel-booking',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({eventId:lesson.gcalEventId,mode:"delete"})});}
       catch(e){console.error('Calendar cancel failed:',e);}
     }
-    const cancelMsg="Your pickleball lesson on "+fmtDateShort(lesson.date)+" at "+lesson.time+" has been cancelled.\n\nIf you have any questions, please contact David at (650) 839-3398.";
+    // Emails and DB update fire in background — don't block the UI
     const sendEmail3=(to,subject,text,fromAlias)=>fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to,subject,text,...(fromAlias?{fromAlias}:{})})}).catch(()=>{});
-    await sendEmail3(user.email,"Lesson Cancelled - "+fmtDateShort(lesson.date),"Hi "+user.name+",\n\n"+cancelMsg,"noreply@dmpickleball.com");
-    await sendEmail3("david@dmpickleball.com","Lesson Cancelled: "+user.name+" - "+fmtDateShort(lesson.date),user.name+" has cancelled their lesson on "+fmtDateShort(lesson.date)+" at "+lesson.time+".","noreply@dmpickleball.com");
-    if(lesson.partnerEmail){await sendEmail3(lesson.partnerEmail,"Lesson Cancelled - "+fmtDateShort(lesson.date),"Hi,\n\n"+cancelMsg,"noreply@dmpickleball.com");}
-    if(lesson.groupEmails){for(const email of lesson.groupEmails){if(email){await sendEmail3(email,"Lesson Cancelled - "+fmtDateShort(lesson.date),"Hi,\n\n"+cancelMsg,"noreply@dmpickleball.com");}}}
-    const cancelNow=new Date();const lDeadline=new Date(getLessonStart(lesson.date,lesson.time).getTime()-24*60*60*1000);const withinGrace=lesson.createdAt&&((cancelNow-new Date(lesson.createdAt))/60000)<15;const cancelStatus=(!withinGrace&&cancelNow>lDeadline)?"late_cancel":"cancelled";
-    setAllLessons(prev=>({...prev,[user.email]:prev[user.email].map(l=>l.id===id?{...l,status:cancelStatus}:l)}));
-    try{await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:id,updates:{status:cancelStatus,cancelled_by:"student",cancelled_at:cancelNow.toISOString()}})});}catch(e){console.error("Update lesson status error:",e);}
+    const cancelMsg="Your pickleball lesson on "+fmtDateShort(lesson.date)+" at "+lesson.time+" has been cancelled.\n\nIf you have any questions, please contact David at (650) 839-3398.";
+    sendEmail3(user.email,"Lesson Cancelled - "+fmtDateShort(lesson.date),"Hi "+user.name+",\n\n"+cancelMsg,"noreply@dmpickleball.com");
+    sendEmail3("david@dmpickleball.com","Lesson Cancelled: "+user.name+" - "+fmtDateShort(lesson.date),user.name+" has cancelled their lesson on "+fmtDateShort(lesson.date)+" at "+lesson.time+".","noreply@dmpickleball.com");
+    if(lesson.partnerEmail){sendEmail3(lesson.partnerEmail,"Lesson Cancelled - "+fmtDateShort(lesson.date),"Hi,\n\n"+cancelMsg,"noreply@dmpickleball.com");}
+    if(lesson.groupEmails){for(const email of lesson.groupEmails){if(email){sendEmail3(email,"Lesson Cancelled - "+fmtDateShort(lesson.date),"Hi,\n\n"+cancelMsg,"noreply@dmpickleball.com");}}}
+    fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:id,updates:{status:cancelStatus,cancelled_by:"student",cancelled_at:cancelNow.toISOString()}})}).catch(e=>console.error("Update lesson status error:",e));
   };
   // Remove a lesson from state (optimistic) — called from AdminPanel delete buttons
   const deleteLesson=(email,id)=>{
