@@ -332,7 +332,7 @@ function Nav({user,onLogin,onLogout,setPage,currentPage}){
   return(
     <nav style={{background:G,padding:"14px 32px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100}}>
       <div onClick={goHome} style={{cursor:"pointer",display:"flex",alignItems:"center"}}>
-        <img src="/images/logo-white.svg" alt="DMPB" style={{height:36,width:"auto",display:"block"}}/>
+        <img src="/DMPBlogo-white.png" alt="DMPB" style={{height:34,width:"auto",display:"block"}}/>
       </div>
       <div style={{display:"flex",gap:20,alignItems:"center",flexWrap:"wrap"}}>
         {[["home","Home"],["pricing","Pricing"],["gear","Paddle/Gear"],["contact","Contact"]].map(([p,label])=>(
