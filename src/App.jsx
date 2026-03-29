@@ -74,6 +74,21 @@ const capWords=s=>(s||"").replace(/\b\w/g,c=>c.toUpperCase());
 // Generate a human-readable lesson ticket: PB-MMDD-XXXX
 function generateTicket(){const n=new Date();const mmdd=String(n.getMonth()+1).padStart(2,"0")+String(n.getDate()).padStart(2,"0");const rand=Math.random().toString(36).slice(2,6).toUpperCase();return"PB-"+mmdd+"-"+rand;}
 // Generate branded HTML email — calLink is optional (renders as a button if provided)
+function makeCancelEmailHtml(text){
+  const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  const rows=text.split('\n').map(line=>{
+    if(!line.trim())return'<div style="height:8px"></div>';
+    if(/^Ref: PB-/.test(line))return`<div style="display:inline-block;background:#fef2f2;color:#991b1b;font-family:monospace;font-weight:800;font-size:0.9rem;padding:6px 14px;border-radius:6px;margin:8px 0;letter-spacing:0.5px;">🎫 ${esc(line)}</div>`;
+    const ci=line.indexOf(': ');
+    if(ci>0&&ci<22&&!/^(Hi |See |David |Your |You |New |If |A )/.test(line)){const lbl=esc(line.slice(0,ci));const val=esc(line.slice(ci+2));return`<div style="padding:3px 0;"><span style="color:#6b7280;font-weight:700;display:inline-block;min-width:90px;">${lbl}:</span> <span style="color:#1a1a1a;">${val}</span></div>`;}
+    return`<div style="padding:2px 0;color:#374151;">${esc(line)}</div>`;
+  }).join('');
+  return`<!DOCTYPE html><html><body style="margin:0;padding:20px;background:#fff5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+<div style="max-width:520px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.07);">
+  <div style="background:#991b1b;padding:20px 28px;"><div style="color:white;font-weight:800;font-size:1.05rem;letter-spacing:0.3px;">❌ Lesson Cancelled</div><div style="color:rgba(255,255,255,0.7);font-size:0.8rem;margin-top:3px;">DM Pickleball</div></div>
+  <div style="padding:28px 32px;">${rows}<div style="margin-top:22px;padding-top:16px;border-top:1px solid #f3f4f6;font-size:0.75rem;color:#9ca3af;">DM Pickleball · <a href="https://dmpickleball.com" style="color:#991b1b;text-decoration:none;">dmpickleball.com</a> · (650) 839-3398</div></div>
+</div></body></html>`;
+}
 function makeEmailHtml(text,calLink){
   const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
   const rows=text.split('\n').map(line=>{
@@ -4117,16 +4132,17 @@ export default function App(){
       catch(e){console.error('Calendar cancel failed:',e);}
     }
     // Emails and DB update fire in background — don't block the UI
-    const sendEmail3=(to,subject,text,fromAlias)=>fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to,subject,text,...(fromAlias?{fromAlias}:{})})}).catch(()=>{});
+    const sendEmail3=(to,subject,text,fromAlias)=>{const html=makeCancelEmailHtml(text);return fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to,subject,text,html,...(fromAlias?{fromAlias}:{})})}).catch(()=>{});};
     const cancelLocation=user.memberType==="menlo"?"Stanford Redwood City":"Andrew Spinas Park, 3003 Bay Rd, Redwood City";
     const cancelDetails=(lesson.ticketId?"\nRef: "+lesson.ticketId:"")+"\nDate: "+fmtDate(lesson.date)+"\nTime: "+lesson.time+"\nType: "+lesson.type+(lesson.duration?" · "+lesson.duration:"")+"\nLocation: "+cancelLocation+(lesson.focus?"\nFocus: "+lesson.focus:"")+(lesson.members&&lesson.members.length>0?"\nWith: "+lesson.members.join(", "):"");
     const cancelMsg="Your pickleball lesson has been cancelled.\n"+cancelDetails+"\n\nIf you have any questions, reply to this email or contact David at (650) 839-3398.\n\nDavid Mok\n(650) 839-3398";
     const partnerMsg="A pickleball lesson you were part of has been cancelled.\n"+cancelDetails+"\n\nIf you have any questions, please contact David at (650) 839-3398.\n\nDavid Mok\n(650) 839-3398";
     const adminCancelMsg=user.name+" cancelled their lesson.\n"+cancelDetails+"\nStudent email: "+user.email;
-    sendEmail3(user.email,"Lesson Cancelled - "+fmtDateShort(lesson.date),"Hi "+user.name+",\n\n"+cancelMsg,"noreply@dmpickleball.com");
-    sendEmail3("david@dmpickleball.com","Lesson Cancelled: "+user.name+" - "+fmtDateShort(lesson.date),adminCancelMsg,"noreply@dmpickleball.com");
-    if(lesson.partnerEmail){sendEmail3(lesson.partnerEmail,"Lesson Cancelled - "+fmtDateShort(lesson.date),"Hi,\n\n"+partnerMsg,"noreply@dmpickleball.com");}
-    if(lesson.groupEmails){for(const email of lesson.groupEmails){if(email){sendEmail3(email,"Lesson Cancelled - "+fmtDateShort(lesson.date),"Hi,\n\n"+partnerMsg,"noreply@dmpickleball.com");}}}
+    const cancelSubject="Lesson Cancelled: "+lesson.type+" — "+fmtDateShort(lesson.date);
+    sendEmail3(user.email,cancelSubject,"Hi "+user.name+",\n\n"+cancelMsg,"noreply@dmpickleball.com");
+    sendEmail3("david@dmpickleball.com","Cancelled: "+user.name+" — "+lesson.type+" "+fmtDateShort(lesson.date),adminCancelMsg,"noreply@dmpickleball.com");
+    if(lesson.partnerEmail){sendEmail3(lesson.partnerEmail,cancelSubject,"Hi,\n\n"+partnerMsg,"noreply@dmpickleball.com");}
+    if(lesson.groupEmails){for(const email of lesson.groupEmails){if(email){sendEmail3(email,cancelSubject,"Hi,\n\n"+partnerMsg,"noreply@dmpickleball.com");}}}
     fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:id,updates:{status:cancelStatus,cancelled_by:"student",cancelled_at:cancelNow.toISOString()}})}).catch(e=>console.error("Update lesson status error:",e));
   };
   // Remove a lesson from state (optimistic) — called from AdminPanel delete buttons
@@ -4144,17 +4160,18 @@ export default function App(){
     setAllLessons(prev=>({...prev,[email]:prev[email].map(l=>l.id===id?{...l,status:cancelStatus2}:l)}));
     try{await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:id,updates:{status:cancelStatus2,cancelled_by:"admin",cancelled_at:cancelNow2.toISOString()}})});}catch(e){console.error("Update lesson status error:",e);}
     // Send cancellation emails
-    const sendCancelEmail=(to,subject,text)=>fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to,subject,text,fromAlias:"noreply@dmpickleball.com"})}).catch(()=>{});
+    const sendCancelEmail=(to,subject,text)=>{const html=makeCancelEmailHtml(text);return fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to,subject,text,html,fromAlias:"noreply@dmpickleball.com"})}).catch(()=>{});};
     const studentName=mockUsersState[email]?.name||email;
     const adminCancelLocation=mockUsersState[email]?.memberType==="menlo"?"Stanford Redwood City":"Andrew Spinas Park, 3003 Bay Rd, Redwood City";
     const adminCancelDetails=(lesson.ticketId?"\nRef: "+lesson.ticketId:"")+"\nDate: "+fmtDate(lesson.date)+"\nTime: "+lesson.time+"\nType: "+lesson.type+(lesson.duration?" · "+lesson.duration:"")+"\nLocation: "+adminCancelLocation+(lesson.focus?"\nFocus: "+lesson.focus:"")+(lesson.members&&lesson.members.length>0?"\nWith: "+lesson.members.join(", "):"");
     const cancelMsg="Your pickleball lesson has been cancelled by David.\n"+adminCancelDetails+"\n\nIf you have any questions, reply to this email or contact David at (650) 839-3398.\n\nDavid Mok\n(650) 839-3398";
     const partnerMsg="A pickleball lesson you were part of has been cancelled.\n"+adminCancelDetails+"\n\nIf you have any questions, please contact David at (650) 839-3398.\n\nDavid Mok\n(650) 839-3398";
     const adminNotifyMsg="You cancelled "+studentName+"'s lesson.\n"+adminCancelDetails+"\nStudent email: "+email;
-    sendCancelEmail(email,"Lesson Cancelled - "+fmtDateShort(lesson.date),"Hi "+studentName+",\n\n"+cancelMsg);
-    sendCancelEmail("david@dmpickleball.com","Cancelled: "+studentName+" - "+fmtDateShort(lesson.date),adminNotifyMsg);
-    if(lesson.partnerEmail)sendCancelEmail(lesson.partnerEmail,"Lesson Cancelled - "+fmtDateShort(lesson.date),"Hi,\n\n"+partnerMsg);
-    if(lesson.groupEmails){for(const em of lesson.groupEmails){if(em)sendCancelEmail(em,"Lesson Cancelled - "+fmtDateShort(lesson.date),"Hi,\n\n"+partnerMsg);}}
+    const adminCancelSubject="Lesson Cancelled: "+lesson.type+" — "+fmtDateShort(lesson.date);
+    sendCancelEmail(email,adminCancelSubject,"Hi "+studentName+",\n\n"+cancelMsg);
+    sendCancelEmail("david@dmpickleball.com","Cancelled: "+studentName+" — "+lesson.type+" "+fmtDateShort(lesson.date),adminNotifyMsg);
+    if(lesson.partnerEmail)sendCancelEmail(lesson.partnerEmail,adminCancelSubject,"Hi,\n\n"+partnerMsg);
+    if(lesson.groupEmails){for(const em of lesson.groupEmails){if(em)sendCancelEmail(em,adminCancelSubject,"Hi,\n\n"+partnerMsg);}}
   };
   const addLesson=async lesson=>{
     try{
