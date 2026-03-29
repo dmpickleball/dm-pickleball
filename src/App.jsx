@@ -3091,6 +3091,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                       setConfirmDelete(null);setDeletedToast(true);setTimeout(()=>setDeletedToast(false),3000);
                       if(l.gcalEventId){fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:l.gcalEventId,mode:"delete"})}).catch(e=>console.error("GCal delete failed:",e));}
                       fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})}).catch(e=>console.error("DB delete failed:",e));
+                      // Admin-only notification — no email to student on delete
+                      fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:"david@dmpickleball.com",subject:"Deleted: "+(mockUsers[selectedStudent]?.name||selectedStudent)+" - "+fmtDateShort(l.date),text:"You permanently deleted a lesson.\n\nStudent: "+(mockUsers[selectedStudent]?.name||selectedStudent)+"\nDate: "+fmtDate(l.date)+"\nTime: "+(l.time||"")+"\nType: "+(l.type||""),fromAlias:"noreply@dmpickleball.com"})}).catch(()=>{});
                     }} style={{background:"#dc2626",color:"white",border:"none",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>
                       Yes, Delete Permanently
                     </button>
@@ -3443,6 +3445,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                     setConfirmDelete(null);setDeletedToast(true);setTimeout(()=>setDeletedToast(false),3000);
                     if(l.gcalEventId){fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:l.gcalEventId,mode:"delete"})}).catch(e=>console.error("GCal delete failed:",e));}
                     fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})}).catch(e=>console.error("DB delete failed:",e));
+                    // Admin-only notification — no email to student on delete
+                    fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:"david@dmpickleball.com",subject:"Deleted: "+(mockUsers[l.studentEmail]?.name||l.studentEmail)+" - "+fmtDateShort(l.date),text:"You permanently deleted a lesson.\n\nStudent: "+(mockUsers[l.studentEmail]?.name||l.studentEmail)+"\nDate: "+fmtDate(l.date)+"\nTime: "+(l.time||"")+"\nType: "+(l.type||""),fromAlias:"noreply@dmpickleball.com"})}).catch(()=>{});
                   }} style={{background:"#dc2626",color:"white",border:"none",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>
                     Yes, Delete Permanently
                   </button>
@@ -4121,6 +4125,14 @@ export default function App(){
     const cancelNow2=new Date();const lDeadline2=new Date(getLessonStart(lesson.date,lesson.time).getTime()-24*60*60*1000);const withinGrace2=lesson.createdAt&&((cancelNow2-new Date(lesson.createdAt))/60000)<15;const cancelStatus2=(!withinGrace2&&cancelNow2>lDeadline2)?"late_cancel":"cancelled";
     setAllLessons(prev=>({...prev,[email]:prev[email].map(l=>l.id===id?{...l,status:cancelStatus2}:l)}));
     try{await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:id,updates:{status:cancelStatus2,cancelled_by:"admin",cancelled_at:cancelNow2.toISOString()}})});}catch(e){console.error("Update lesson status error:",e);}
+    // Send cancellation emails
+    const sendCancelEmail=(to,subject,text)=>fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to,subject,text,fromAlias:"noreply@dmpickleball.com"})}).catch(()=>{});
+    const studentName=mockUsersState[email]?.name||email;
+    const cancelMsg="Your pickleball lesson on "+fmtDateShort(lesson.date)+" at "+lesson.time+" has been cancelled by David.\n\nIf you have any questions, please contact David at (650) 839-3398.";
+    sendCancelEmail(email,"Lesson Cancelled - "+fmtDateShort(lesson.date),"Hi "+studentName+",\n\n"+cancelMsg);
+    sendCancelEmail("david@dmpickleball.com","Cancelled: "+studentName+" - "+fmtDateShort(lesson.date),"You cancelled "+studentName+"'s lesson on "+fmtDateShort(lesson.date)+" at "+lesson.time+".");
+    if(lesson.partnerEmail)sendCancelEmail(lesson.partnerEmail,"Lesson Cancelled - "+fmtDateShort(lesson.date),"Hi,\n\n"+cancelMsg);
+    if(lesson.groupEmails){for(const em of lesson.groupEmails){if(em)sendCancelEmail(em,"Lesson Cancelled - "+fmtDateShort(lesson.date),"Hi,\n\n"+cancelMsg);}}
   };
   const addLesson=async lesson=>{
     try{
