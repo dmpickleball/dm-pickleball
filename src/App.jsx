@@ -2916,7 +2916,13 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
               setEditingStudent(false);}} style={{background:G,color:"white",border:"none",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.82rem"}}>Save ✓</button>
                   </>
                 ):(
-                  <button onClick={()=>{setEditStudentData({name:mockUsers[selectedStudent]?.name||"",firstName:mockUsers[selectedStudent]?.firstName||"",lastName:mockUsers[selectedStudent]?.lastName||"",commEmail:mockUsers[selectedStudent]?.commEmail||"",phone:mockUsers[selectedStudent]?.phone||"",city:mockUsers[selectedStudent]?.city||"",homeCourt:mockUsers[selectedStudent]?.homeCourt||"",skillLevel:mockUsers[selectedStudent]?.skillLevel||"",duprRating:mockUsers[selectedStudent]?.duprRating||""});setEditingStudent(true);}} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.82rem"}}>✏️ Edit</button>
+                  <button onClick={()=>{
+                    const u=mockUsers[selectedStudent]||{};
+                    const nameParts=(u.name||"").split(" ");
+                    const parsedFirst=nameParts[0]||"";
+                    const parsedLast=nameParts.slice(1).join(" ")||"";
+                    setEditStudentData({name:u.name||"",firstName:u.firstName||parsedFirst,lastName:u.lastName||parsedLast,commEmail:u.commEmail||"",phone:u.phone||"",city:u.city||"",homeCourt:u.homeCourt||"",skillLevel:u.skillLevel||"",duprRating:u.duprRating||""});
+                    setEditingStudent(true);}} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.82rem"}}>✏️ Edit</button>
                 )}
                 <button onClick={()=>setShowSchedule(true)} style={{background:G,color:"white",border:"none",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.82rem"}}>+ Schedule Lesson</button>
               </div>
@@ -4169,7 +4175,19 @@ export default function App(){
         body:JSON.stringify({email,block})});
     }catch(e){console.error("Block removed error:",e);}
   };
-  const addStudent=({name,email,memberType})=>{setMockUsersState(prev=>({...prev,[email]:{name,memberType,approved:true,password:""}}));setAllLessons(prev=>({...prev,[email]:[]}));};
+  const addStudent=({name,email,memberType,firstName,lastName,commEmail,phone,city,homeCourt,skillLevel,duprRating})=>{
+    setMockUsersState(prev=>{
+      const existing=prev[email];
+      if(existing){
+        // Update existing student — merge all profile fields, preserve memberType/approved/blocked/etc.
+        return{...prev,[email]:{...existing,name,firstName:firstName||"",lastName:lastName||"",commEmail:commEmail||"",phone:phone||"",city:city||"",homeCourt:homeCourt||"",skillLevel:skillLevel||"",duprRating:duprRating||"",memberType:memberType||existing.memberType}};
+      }
+      // New student
+      return{...prev,[email]:{name,memberType:memberType||"public",approved:true,password:"",firstName:firstName||"",lastName:lastName||"",commEmail:commEmail||"",phone:phone||"",city:city||"",homeCourt:homeCourt||"",skillLevel:skillLevel||"",duprRating:duprRating||""}};
+    });
+    // Only initialize lessons array if this is a new student
+    setAllLessons(prev=>({...prev,[email]:prev[email]||[]}));
+  };
   const adminAddLesson=async(email,lesson)=>{
     try{
       const r=await fetch("/api/lessons?action=save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lesson:{...lesson,studentEmail:email}})});
