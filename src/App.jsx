@@ -642,7 +642,7 @@ function PricingPage({setPage}){
             <div style={{fontWeight:700,fontSize:"1.05rem"}}>Corporate Events</div>
             <div style={{fontSize:"0.85rem",color:"#6b7280",marginTop:2}}>Group clinics & events for companies and teams</div>
           </div>
-          <button onClick={()=>setPage("contact")} style={{background:G,color:"white",border:"none",padding:"10px 22px",borderRadius:50,fontWeight:700,fontSize:"0.88rem",cursor:"pointer",flexShrink:0}}>Get in Touch →</button>
+          <button onClick={()=>setPage("contact")} style={{background:"none",border:"none",color:G,fontWeight:700,fontSize:"1.05rem",cursor:"pointer",flexShrink:0,padding:0,textDecoration:"underline",textUnderlineOffset:"3px"}}>Contact for pricing</button>
         </div>
       </div>
       <div style={{background:"#fffbea",border:"1.5px solid #f4c430",borderRadius:10,padding:"16px 20px",marginTop:24,fontSize:"0.88rem",color:"#7a5800",textAlign:"center"}}>
