@@ -404,7 +404,7 @@ function LessonModal({lesson,isMenlo,onClose,onCancel}){
               <div>
                 <div style={{fontSize:"0.7rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>Participants</div>
                 <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                  {participants.map((p,i)=><span key={i} style={{background:"#f0faf5",color:G,padding:"3px 10px",borderRadius:50,fontSize:"0.82rem",fontWeight:600}}>{fmtParticipantName(p)}</span>)}
+                  {participants.map((p,i)=><span key={i} style={{background:"#f0faf5",color:G,padding:"3px 10px",borderRadius:50,fontSize:"0.82rem",fontWeight:600}}>{p}</span>)}
                 </div>
               </div>
             </div>
