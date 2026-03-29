@@ -35,7 +35,7 @@ const KNOWN_LOCATIONS = [
   "Mitchell Park, 600 E Meadow Dr, Palo Alto, CA 94303",
   "Nealon Park, 800 Middle Ave, Menlo Park, CA 94025",
 ];
-const FOCUS_AREAS = ["Dinking & kitchen game","Third shot drops","Serve & return","Volleys & net play","Footwork & movement","Transition game","Overhead smash","Singles strategy","Doubles strategy","Tennis-to-pickleball transition","Drives"];
+const FOCUS_AREAS = ["Dinking & kitchen game","Third shot drops","Third shot drives","Resets & soft game","Speed-ups & hands battles","Serve & return","Volleys & net play","Footwork & movement","Transition game","Overhead smash","Singles strategy","Doubles strategy","Tennis-to-pickleball transition"];
 
 // ─── BRANDS ──────────────────────────────────────────────────────────────────
 const BRANDS = [
@@ -1531,8 +1531,8 @@ function BookingPage({user,setPage,onAddLesson}){
             </select>
           </div>
           <div style={{marginBottom:20}}>
-            <div style={{...lbl,marginBottom:6}}>Notes for David <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(optional)</span></div>
-            <textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Anything David should know..." style={{...inp,height:72,resize:"vertical",fontFamily:"inherit",marginBottom:0}}/>
+            <div style={{...lbl,marginBottom:6}}>Notes for Coach David <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none"}}>(optional)</span></div>
+            <textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Anything Coach David should know..." style={{...inp,height:72,resize:"vertical",fontFamily:"inherit",marginBottom:0}}/>
           </div>
           <div style={{background:"#f9f9f6",borderRadius:12,padding:"24px",marginBottom:20,border:"1.5px solid #e5e7eb"}}>
             <div style={{fontWeight:700,color:G,marginBottom:16,fontSize:"1rem"}}>Booking Summary</div>
