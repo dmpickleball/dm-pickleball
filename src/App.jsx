@@ -46,7 +46,7 @@ const BRANDS = [
 ];
 
 const BAG_ITEMS = [
-  { id:"paddle", label:"Current Paddle", name:"CRBN² Barrage", detail:"TruFoam Core · Carbon Fiber Face", icon:"🏓", link:"https://crbnpickleball.com" },
+  { id:"paddle", label:"Current Paddle", name:"CRBN² Barrage", detail:"TruFoam Core · Carbon Fiber Face", icon:"🎾", link:"https://crbnpickleball.com" },
   { id:"bag",    label:"Current Bag",    name:"CRBN Tour Bag", detail:"Pear Colorway",                    icon:"🎒", link:"https://crbnpickleball.com" },
 ];
 
@@ -78,31 +78,31 @@ function makeCancelEmailHtml(text){
   const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
   const rows=text.split('\n').map(line=>{
     if(!line.trim())return'<div style="height:8px"></div>';
-    if(/^Ref: PB-/.test(line))return`<div style="display:inline-block;background:#fef2f2;color:#991b1b;font-family:monospace;font-weight:800;font-size:0.9rem;padding:6px 14px;border-radius:6px;margin:8px 0;letter-spacing:0.5px;">🎫 ${esc(line)}</div>`;
+    if(/^Ref: PB-/.test(line))return`<div style="display:inline-block;background:#fef2f2;color:#991b1b;font-family:monospace;font-weight:800;font-size:0.9rem;padding:6px 14px;border-radius:6px;margin:8px 0;letter-spacing:0.5px;">${esc(line)}</div>`;
     const ci=line.indexOf(': ');
     if(ci>0&&ci<22&&!/^(Hi |See |David |Your |You |New |If |A )/.test(line)){const lbl=esc(line.slice(0,ci));const val=esc(line.slice(ci+2));return`<div style="padding:3px 0;"><span style="color:#6b7280;font-weight:700;display:inline-block;min-width:90px;">${lbl}:</span> <span style="color:#1a1a1a;">${val}</span></div>`;}
     return`<div style="padding:2px 0;color:#374151;">${esc(line)}</div>`;
   }).join('');
   return`<!DOCTYPE html><html><body style="margin:0;padding:20px;background:#fff5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
 <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.07);">
-  <div style="background:#991b1b;padding:20px 28px;"><div style="color:white;font-weight:800;font-size:1.05rem;letter-spacing:0.3px;">❌ Lesson Cancelled</div><div style="color:rgba(255,255,255,0.7);font-size:0.8rem;margin-top:3px;">DM Pickleball</div></div>
-  <div style="padding:28px 32px;">${rows}<div style="margin-top:22px;padding-top:16px;border-top:1px solid #f3f4f6;font-size:0.75rem;color:#9ca3af;">DM Pickleball · <a href="https://dmpickleball.com" style="color:#991b1b;text-decoration:none;">dmpickleball.com</a> · (650) 839-3398</div></div>
+  <div style="background:#991b1b;padding:20px 28px;"><div style="color:white;font-weight:800;font-size:1.05rem;letter-spacing:0.3px;">Lesson Cancelled</div><div style="color:rgba(255,255,255,0.7);font-size:0.8rem;margin-top:3px;">DM Pickleball</div></div>
+  <div style="padding:28px 32px;">${rows}<div style="margin-top:22px;padding-top:16px;border-top:1px solid #f3f4f6;font-size:0.75rem;color:#9ca3af;">DM Pickleball · <a href="https://dmpickleball.com" style="color:#991b1b;text-decoration:none;">dmpickleball.com</a></div></div>
 </div></body></html>`;
 }
 function makeEmailHtml(text,calLink){
   const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
   const rows=text.split('\n').map(line=>{
     if(!line.trim())return'<div style="height:8px"></div>';
-    if(/^Ref: PB-/.test(line))return`<div style="display:inline-block;background:#e8f0ee;color:#1a3c34;font-family:monospace;font-weight:800;font-size:0.9rem;padding:6px 14px;border-radius:6px;margin:8px 0;letter-spacing:0.5px;">🎫 ${esc(line)}</div>`;
+    if(/^Ref: PB-/.test(line))return`<div style="display:inline-block;background:#e8f0ee;color:#1a3c34;font-family:monospace;font-weight:800;font-size:0.9rem;padding:6px 14px;border-radius:6px;margin:8px 0;letter-spacing:0.5px;">${esc(line)}</div>`;
     const ci=line.indexOf(': ');
     if(ci>0&&ci<22&&!/^(Hi |See |David |Your |You |New )/.test(line)){const lbl=esc(line.slice(0,ci));const val=esc(line.slice(ci+2));return`<div style="padding:3px 0;"><span style="color:#6b7280;font-weight:700;display:inline-block;min-width:70px;">${lbl}:</span> <span style="color:#1a1a1a;">${val}</span></div>`;}
     return`<div style="padding:2px 0;color:#374151;">${esc(line)}</div>`;
   }).join('');
-  const btn=calLink?`<div style="margin:24px 0;"><a href="${calLink}" style="display:inline-block;background:#1a3c34;color:white;padding:12px 28px;border-radius:50px;text-decoration:none;font-weight:700;font-size:0.88rem;">📅 Add to Google Calendar</a></div>`:'';
+  const btn=calLink?`<div style="margin:24px 0;"><a href="${calLink}" style="display:inline-block;background:#1a3c34;color:white;padding:12px 28px;border-radius:50px;text-decoration:none;font-weight:700;font-size:0.88rem;">Add to Google Calendar</a></div>`:'';
   return`<!DOCTYPE html><html><body style="margin:0;padding:20px;background:#f4f9f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
 <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.07);">
-  <div style="background:#1a3c34;padding:20px 28px;"><span style="color:white;font-weight:800;font-size:1.05rem;letter-spacing:0.3px;">🏓 DM Pickleball</span></div>
-  <div style="padding:28px 32px;">${rows}${btn}<div style="margin-top:22px;padding-top:16px;border-top:1px solid #f3f4f6;font-size:0.75rem;color:#9ca3af;">DM Pickleball · <a href="https://dmpickleball.com" style="color:#1a3c34;text-decoration:none;">dmpickleball.com</a> · (650) 839-3398</div></div>
+  <div style="background:#1a3c34;padding:20px 28px;"><span style="color:white;font-weight:800;font-size:1.05rem;letter-spacing:0.3px;">DM Pickleball</span></div>
+  <div style="padding:28px 32px;">${rows}${btn}<div style="margin-top:22px;padding-top:16px;border-top:1px solid #f3f4f6;font-size:0.75rem;color:#9ca3af;">DM Pickleball · <a href="https://dmpickleball.com" style="color:#1a3c34;text-decoration:none;">dmpickleball.com</a></div></div>
 </div></body></html>`;
 }
 const NOW = new Date();
@@ -379,11 +379,11 @@ function LessonModal({lesson,isMenlo,onClose,onCancel}){
   const st=statusMap[lesson.status]||{bg:"#f3f4f6",color:"#6b7280",label:lesson.status};
   const participants=(lesson.members||[]).filter(Boolean);
   const detailRows=[
-    ["📅","Date & Time",dateObj.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"})+" · "+lesson.time],
-    ["👨‍🏫","Coach","David Mok"],
-    ["📍","Location",location],
-    ...(lesson.focus?[["🎯","Focus / Drill",lesson.focus]]:[]),
-    ...(lesson.notes?[["📝","Coaching Notes",lesson.notes]]:[]),
+    ["›","Date & Time",dateObj.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"})+" · "+lesson.time],
+    ["›","Coach","David Mok"],
+    ["›","Location",location],
+    ...(lesson.focus?[["›","Focus / Drill",lesson.focus]]:[]),
+    ...(lesson.notes?[["›","Coaching Notes",lesson.notes]]:[]),
   ];
   return(
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:20,backdropFilter:"blur(3px)"}}>
@@ -397,17 +397,17 @@ function LessonModal({lesson,isMenlo,onClose,onCancel}){
         </div>
         <div style={{padding:"14px 24px",borderBottom:"1px solid #f3f4f6",display:"flex",flexWrap:"wrap",gap:8,alignItems:"center"}}>
           <span style={{background:st.bg,color:st.color,padding:"4px 12px",borderRadius:50,fontSize:"0.82rem",fontWeight:700}}>{st.label}</span>
-          {lesson.ticketId&&<span style={{background:"#f3f4f6",color:"#374151",padding:"4px 12px",borderRadius:50,fontSize:"0.78rem",fontWeight:700,fontFamily:"monospace",letterSpacing:"0.5px"}}>🎫 {lesson.ticketId}</span>}
+          {lesson.ticketId&&<span style={{background:"#f3f4f6",color:"#374151",padding:"4px 12px",borderRadius:50,fontSize:"0.78rem",fontWeight:700,fontFamily:"monospace",letterSpacing:"0.5px"}}>{lesson.ticketId}</span>}
           {!isCancelled&&deadline&&(
             <span style={{fontSize:"0.78rem",color:withinGrace?"#92400e":cancellable?"#6b7280":"#dc2626",background:withinGrace?"#fffbea":cancellable?"#f9f9f6":"#fef2f2",padding:"3px 10px",borderRadius:50,border:`1px solid ${withinGrace?"#f4c430":cancellable?"#e5e7eb":"#fca5a5"}`}}>
-              {withinGrace?"⚠️ Cancel within 15 min":cancellable?"Cancel by: "+fmtDeadline(deadline):"⛔ Cancellation closed"}
+              {withinGrace?"⚠️ Cancel within 15 min":cancellable?"Cancel by: "+fmtDeadline(deadline):"Cancellation closed"}
             </span>
           )}
         </div>
         <div style={{padding:"18px 24px"}}>
           {detailRows.map(([icon,label,val])=>(
             <div key={label} style={{display:"flex",gap:12,marginBottom:14,alignItems:"flex-start"}}>
-              <span style={{fontSize:"1.1rem",lineHeight:"1.4",flexShrink:0,width:24,textAlign:"center"}}>{icon}</span>
+              <span style={{fontSize:"1rem",lineHeight:"1.4",flexShrink:0,width:20,textAlign:"center",color:G,fontWeight:700}}>{icon}</span>
               <div>
                 <div style={{fontSize:"0.7rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>{label}</div>
                 <div style={{fontSize:"0.9rem",color:"#374151",lineHeight:1.5}}>{val}</div>
@@ -416,7 +416,7 @@ function LessonModal({lesson,isMenlo,onClose,onCancel}){
           ))}
           {participants.length>0&&(
             <div style={{display:"flex",gap:12,marginBottom:14,alignItems:"flex-start"}}>
-              <span style={{fontSize:"1.1rem",lineHeight:"1.4",flexShrink:0,width:24,textAlign:"center"}}>👥</span>
+              <span style={{fontSize:"1rem",lineHeight:"1.4",flexShrink:0,width:20,textAlign:"center",color:G,fontWeight:700}}>›</span>
               <div>
                 <div style={{fontSize:"0.7rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>Participants</div>
                 <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
@@ -487,7 +487,7 @@ function LessonCard({lesson,isMenlo,isHistory,onCancel}){
             <div>
               <div style={{fontWeight:700,fontSize:"0.97rem"}}>{lesson.type} · {lesson.duration}</div>
               <div style={{fontSize:"0.85rem",color:"#6b7280",marginTop:2}}>⏱ {lesson.time}</div>
-              {lesson.focus&&<div style={{fontSize:"0.8rem",color:G,marginTop:3,fontWeight:600}}>🎯 {lesson.focus}</div>}
+              {lesson.focus&&<div style={{fontSize:"0.8rem",color:G,marginTop:3,fontWeight:600}}>{lesson.focus}</div>}
               <div style={{marginTop:5,display:"flex",flexWrap:"wrap",gap:6,alignItems:"center"}}>
                 {isCancelled?(
                   <span style={{background:lesson.status==="late_cancel"?"#fff7ed":lesson.status==="cancelled_forgiven"?"#f3f4f6":"#fef2f2",color:lesson.status==="late_cancel"?"#c2410c":lesson.status==="cancelled_forgiven"?"#6b7280":"#dc2626",padding:"2px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>
@@ -565,7 +565,6 @@ function Homepage({setPage}){
             <p style={{color:"#4b5563",lineHeight:1.8,marginBottom:14,fontSize:"0.97rem"}}>With 15+ years of competitive tennis experience, David Mok brings a unique edge to pickleball coaching. As a 5.0+ rated tournament player and CRBN Ambassador, David has an insider's understanding of what it takes to elevate your game.</p>
             <p style={{color:"#4b5563",lineHeight:1.8,fontSize:"0.97rem"}}>David specializes in coaching tennis players making the transition to pickleball — he knows exactly the habits that help and the ones that hurt. Whether you're a complete beginner or a seasoned competitor, David coaches all skill levels in both doubles and singles across the SF Peninsula.</p>
             <div style={{background:"#e8f0ee",border:`1px solid ${G}20`,borderRadius:10,padding:"10px 16px",marginTop:14,display:"inline-flex",alignItems:"center",gap:8}}>
-              <span style={{fontSize:"1.1rem"}}>🥇</span>
               <span style={{fontSize:"0.83rem",fontWeight:700,color:G}}>Multiple Gold Medals · Tournament Competitor</span>
             </div>
             <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:14}}>
@@ -657,7 +656,7 @@ function GearPage(){
         <div style={{position:"relative",zIndex:1,padding:"32px 48px",display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%",maxWidth:960,margin:"0 auto"}}>
           <div>
             <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
-              <span style={{background:"#f97316",color:"white",padding:"3px 12px",borderRadius:50,fontSize:"0.68rem",fontWeight:800,letterSpacing:1,textTransform:"uppercase"}}>🔥 Pre-Order Live</span>
+              <span style={{background:"#f97316",color:"white",padding:"3px 12px",borderRadius:50,fontSize:"0.68rem",fontWeight:800,letterSpacing:1,textTransform:"uppercase"}}>New</span>
               <span style={{background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.85)",padding:"3px 12px",borderRadius:50,fontSize:"0.68rem",fontWeight:600}}>Ships Mid-March</span>
             </div>
             <div style={{fontSize:"0.65rem",color:"rgba(255,255,255,0.4)",letterSpacing:3,textTransform:"uppercase",marginBottom:4}}>CRBN Pickleball</div>
@@ -816,8 +815,7 @@ function ContactPage(){
       <div style={{background:"white",borderRadius:12,padding:"28px 32px",boxShadow:"0 2px 16px rgba(0,0,0,0.07)"}}>
         <div style={{marginBottom:20}}>
           <div style={{background:"#e8f0ee",border:`1.5px solid ${G}`,borderRadius:10,padding:"14px 18px",textAlign:"center"}}>
-            <div style={{fontSize:24,marginBottom:4}}>📧</div>
-            <div style={{fontWeight:700,fontSize:"0.9rem"}}>Email</div>
+            <div style={{fontWeight:700,fontSize:"0.9rem",color:"#374151"}}>Email</div>
             <div style={{color:G,fontWeight:700,marginTop:4,fontSize:"0.9rem"}}>info@dmpickleball.com</div>
           </div>
         </div>
@@ -862,9 +860,9 @@ function AdminLoginPage({onAdminLogin}){
     <div style={{minHeight:"100vh",background:"#f4f9f6",display:"flex",alignItems:"center",justifyContent:"center",padding:"24px"}}>
       <div style={{background:"white",borderRadius:16,padding:"40px 36px",boxShadow:"0 4px 24px rgba(0,0,0,0.08)",width:"100%",maxWidth:380}}>
         <div style={{textAlign:"center",marginBottom:28}}>
-          <div style={{fontSize:36,marginBottom:8}}>🏓</div>
-          <h2 style={{fontWeight:900,color:G,marginBottom:4}}>Admin Login</h2>
-          <p style={{color:"#6b7280",fontSize:"0.85rem"}}>DM Pickleball Dashboard</p>
+          <div style={{fontSize:"0.7rem",fontWeight:800,color:G,letterSpacing:3,textTransform:"uppercase",marginBottom:8}}>DM Pickleball</div>
+          <h2 style={{fontWeight:900,color:"#1a1a1a",marginBottom:4}}>Admin Login</h2>
+          <p style={{color:"#6b7280",fontSize:"0.85rem"}}>Dashboard</p>
         </div>
         {error&&<div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:8,padding:"10px 14px",color:"#991b1b",fontSize:"0.88rem",marginBottom:16}}>{error}</div>}
         <input style={inp} type="text" placeholder="Username" value={username} onChange={e=>{setUsername(e.target.value);setError("");}} onKeyDown={e=>e.key==="Enter"&&attempt()}/>
@@ -1004,7 +1002,7 @@ function LoginPage({onLogin,onAdminLogin}){
             {icon:"🔍",text:"Coach David will review your request and be in touch soon"},
             {icon:"📧",text:<>You'll get an email at <strong>{commEmail||providerInfo?.email}</strong> once approved</>,},
             {icon:"⏱",text:"Reviews typically take 1–2 business days"},
-            {icon:"🏓",text:"Once approved, you'll have full access to book lessons and view your schedule"},
+            {icon:"✓",text:"Once approved, you'll have full access to book lessons and view your schedule"},
           ].map((item,i)=>(
             <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"10px 0",borderBottom:i<3?"1px solid #e5e7eb":"none"}}>
               <span style={{fontSize:18,flexShrink:0,marginTop:1}}>{item.icon}</span>
@@ -1108,8 +1106,8 @@ function LoginPage({onLogin,onAdminLogin}){
       <div style={{background:"white",borderRadius:20,padding:"36px 32px",boxShadow:"0 4px 24px rgba(0,0,0,0.08)"}}>
         <StepBar step={1}/>
         <div style={{textAlign:"center",marginBottom:28}}>
-          <div style={{fontSize:36,marginBottom:8}}>🏓</div>
-          <h2 style={{fontWeight:900,color:G,marginBottom:6}}>Sign In</h2>
+          <div style={{fontSize:"0.7rem",fontWeight:800,color:G,letterSpacing:3,textTransform:"uppercase",marginBottom:8}}>DM Pickleball</div>
+          <h2 style={{fontWeight:900,color:"#1a1a1a",marginBottom:6}}>Sign In</h2>
           <p style={{color:"#6b7280",fontSize:"0.88rem",lineHeight:1.6}}>Sign in or request access to your account</p>
         </div>
         {error&&<div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:8,padding:"10px 14px",color:"#991b1b",fontSize:"0.88rem",marginBottom:16}}>{error}</div>}
@@ -1394,22 +1392,22 @@ function BookingPage({user,setPage,onAddLesson}){
   if(done)return(
     <div style={{maxWidth:560,margin:"60px auto",padding:"0 24px",textAlign:"center"}}>
       <div style={{background:"white",borderRadius:16,padding:"40px 32px",boxShadow:"0 4px 24px rgba(0,0,0,0.08)"}}>
-        <div style={{fontSize:56,marginBottom:16}}>🎉</div>
+        <div style={{width:64,height:64,borderRadius:"50%",background:G,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",fontSize:"1.8rem",color:"white",fontWeight:900}}>✓</div>
         <h2 style={{fontWeight:900,color:G,marginBottom:8}}>You are booked!</h2>
         <p style={{color:"#6b7280",marginBottom:24,lineHeight:1.7}}>Confirmation sent to <strong>{user.email}</strong>.</p>
         <div style={{background:"#f9f9f6",borderRadius:12,padding:"20px",marginBottom:24,textAlign:"left"}}>
           <div style={{fontWeight:700,marginBottom:12,color:G}}>Booking Summary</div>
           <div style={{fontSize:"0.9rem",color:"#4b5563",lineHeight:2}}>
-            <div>📅 {bookedSummary&&fmtDate(bookedSummary.date)}</div>
-            <div>⏱ {bookedSummary?.timeStr}</div>
-            <div>🎯 {bookedSummary?.lessonLabel} · {bookedSummary?.duration} min</div>
-            {bookedSummary?.focus&&<div>🏓 {bookedSummary.focus}</div>}
-            <div>💰 <strong>${bookedSummary?.price} total</strong>{lessonType==="semi"&&<span style={{color:"#9ca3af"}}> · ${bookedSummary.price/2}/person</span>}{lessonType==="group"&&<span style={{color:"#9ca3af"}}> · split equally</span>}</div>
-            <div>📍 <a href={!isMenlo?"https://maps.google.com/?q=Andrew+Spinas+Park,+3003+Bay+Rd,+Redwood+City,+CA+94063":"https://maps.google.com/?q=Stanford+Redwood+City+Recreation+and+Wellness+Center"} target="_blank" rel="noreferrer" style={{color:G,fontWeight:600}}>{!isMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City":"Stanford Redwood City"}</a></div>
+            <div>{bookedSummary&&fmtDate(bookedSummary.date)}</div>
+            <div>{bookedSummary?.timeStr}</div>
+            <div>{bookedSummary?.lessonLabel} · {bookedSummary?.duration} min</div>
+            {bookedSummary?.focus&&<div style={{color:G,fontWeight:600}}>{bookedSummary.focus}</div>}
+            <div><strong>${bookedSummary?.price} total</strong>{lessonType==="semi"&&<span style={{color:"#9ca3af"}}> · ${bookedSummary.price/2}/person</span>}{lessonType==="group"&&<span style={{color:"#9ca3af"}}> · split equally</span>}</div>
+            <div><a href={!isMenlo?"https://maps.google.com/?q=Andrew+Spinas+Park,+3003+Bay+Rd,+Redwood+City,+CA+94063":"https://maps.google.com/?q=Stanford+Redwood+City+Recreation+and+Wellness+Center"} target="_blank" rel="noreferrer" style={{color:G,fontWeight:600}}>{!isMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City":"Stanford Redwood City"}</a></div>
           </div>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
-          <a href={gcalLink} target="_blank" rel="noreferrer" style={{background:G,color:"white",padding:"13px",borderRadius:50,fontWeight:700,textDecoration:"none",fontSize:"0.95rem"}}>📅 Add to Google Calendar</a>
+          <a href={gcalLink} target="_blank" rel="noreferrer" style={{background:G,color:"white",padding:"13px",borderRadius:50,fontWeight:700,textDecoration:"none",fontSize:"0.95rem"}}>Add to Google Calendar</a>
           <button onClick={()=>setPage("dashboard")} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"13px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"0.95rem"}}>View My Lessons</button>
         </div>
       </div>
@@ -1569,14 +1567,14 @@ function BookingPage({user,setPage,onAddLesson}){
           <div style={{background:"#f9f9f6",borderRadius:12,padding:"24px",marginBottom:20,border:"1.5px solid #e5e7eb"}}>
             <div style={{fontWeight:700,color:G,marginBottom:16,fontSize:"1rem"}}>Booking Summary</div>
             <div style={{fontSize:"0.92rem",color:"#374151",lineHeight:2.2}}>
-              <div>📅 <strong style={{fontSize:"1rem"}}>{fmtDate(date)}</strong></div>
-              <div>⏱ <strong style={{fontSize:"1rem"}}>{slot&&toTimeStr(slot.s,slot.e)}</strong></div>
-              <div>🎯 <strong>{lessonType==="private"?"Private":lessonType==="semi"?"Semi-Private":"Group"} · {duration} min</strong></div>
-              {focus&&<div>🏓 Focus: {focus}</div>}
-              <div>💰 <strong>${price} total</strong>{lessonType==="semi"&&<span style={{color:"#9ca3af",fontWeight:400,fontSize:"0.85rem"}}> · ${price/2}/person</span>}{lessonType==="group"&&<span style={{color:"#9ca3af",fontWeight:400,fontSize:"0.85rem"}}> · split equally</span>}</div>
-              <div>📍 <a href={!isMenlo?"https://maps.google.com/?q=Andrew+Spinas+Park,+3003+Bay+Rd,+Redwood+City,+CA+94063":"https://maps.google.com/?q=Stanford+Redwood+City+Recreation+and+Wellness+Center"} target="_blank" rel="noreferrer" style={{color:G,fontWeight:600}}>{!isMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City":"Stanford Redwood City"}</a></div>
-              {lessonType==="semi"&&<div>👥 Partner: {(partner.firstName+" "+partner.lastName).trim()}</div>}
-              {lessonType==="group"&&<div>👥 Group: {[user.name,...groupMembers.slice(0,groupSize-1).map(m=>(m.firstName+" "+m.lastName).trim())].join(", ")}</div>}
+              <div><strong style={{fontSize:"1rem"}}>{fmtDate(date)}</strong></div>
+              <div><strong style={{fontSize:"1rem"}}>{slot&&toTimeStr(slot.s,slot.e)}</strong></div>
+              <div><strong>{lessonType==="private"?"Private":lessonType==="semi"?"Semi-Private":"Group"} · {duration} min</strong></div>
+              {focus&&<div style={{color:G,fontWeight:600}}>Focus: {focus}</div>}
+              <div><strong>${price} total</strong>{lessonType==="semi"&&<span style={{color:"#9ca3af",fontWeight:400,fontSize:"0.85rem"}}> · ${price/2}/person</span>}{lessonType==="group"&&<span style={{color:"#9ca3af",fontWeight:400,fontSize:"0.85rem"}}> · split equally</span>}</div>
+              <div><a href={!isMenlo?"https://maps.google.com/?q=Andrew+Spinas+Park,+3003+Bay+Rd,+Redwood+City,+CA+94063":"https://maps.google.com/?q=Stanford+Redwood+City+Recreation+and+Wellness+Center"} target="_blank" rel="noreferrer" style={{color:G,fontWeight:600}}>{!isMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City":"Stanford Redwood City"}</a></div>
+              {lessonType==="semi"&&<div>Partner: {(partner.firstName+" "+partner.lastName).trim()}</div>}
+              {lessonType==="group"&&<div>Group: {[user.name,...groupMembers.slice(0,groupSize-1).map(m=>(m.firstName+" "+m.lastName).trim())].join(", ")}</div>}
             </div>
           </div>
           {(()=>{
@@ -2745,10 +2743,10 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{fontWeight:700,fontSize:"0.97rem"}}>{student.firstName&&student.lastName?student.lastName+", "+student.firstName:student.name}</div>
                       <div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>{student.email}{student.commEmail&&student.commEmail!==student.email?" · "+student.commEmail:""}</div>
-                      {student.phone&&<div style={{fontSize:"0.8rem",color:"#9ca3af",marginTop:1}}>📱 {formatPhone(student.phone)}{student.homeCourt?" · 🏓 "+student.homeCourt:""}</div>}
+                      {student.phone&&<div style={{fontSize:"0.8rem",color:"#9ca3af",marginTop:1}}>📱 {formatPhone(student.phone)}{student.homeCourt?" · "+student.homeCourt:""}</div>}
                       {student.skillLevel&&<div style={{marginTop:2,fontSize:"0.75rem",color:"#9ca3af"}}>Self-rated: {(SELF_RATINGS.find(r=>r.value===student.skillLevel)||{label:student.skillLevel}).label}</div>}
-                      {student.goals&&<div style={{marginTop:1,fontSize:"0.75rem",color:"#9ca3af"}}>🎯 {({fun:"Just for fun",improve:"Improve my game",compete:"Compete locally",serious:"Train seriously"})[student.goals]||student.goals}</div>}
-                      {student.referralSource&&<div style={{marginTop:1,fontSize:"0.75rem",color:"#9ca3af"}}>📣 {({word_of_mouth:"Word of mouth",club:"Club / court",instagram:"Instagram",google:"Google",other:"Other"})[student.referralSource]||student.referralSource}</div>}
+                      {student.goals&&<div style={{marginTop:1,fontSize:"0.75rem",color:"#9ca3af"}}>{({fun:"Just for fun",improve:"Improve my game",compete:"Compete locally",serious:"Train seriously"})[student.goals]||student.goals}</div>}
+                      {student.referralSource&&<div style={{marginTop:1,fontSize:"0.75rem",color:"#9ca3af"}}>{({word_of_mouth:"Word of mouth",club:"Club / court",instagram:"Instagram",google:"Google",other:"Other"})[student.referralSource]||student.referralSource}</div>}
                     </div>
                     {/* Approval controls */}
                     <div style={{display:"flex",flexDirection:"column",gap:8,alignItems:"flex-end",flexShrink:0}}>
@@ -2934,7 +2932,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                       {mockUsers[selectedStudent]?.commEmail&&<div style={{fontSize:"0.83rem",color:"#374151",marginTop:2}}>✉️ {mockUsers[selectedStudent].commEmail}</div>}
                       {mockUsers[selectedStudent]?.phone&&<div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>📱 {formatPhone(mockUsers[selectedStudent].phone)}</div>}
                       {mockUsers[selectedStudent]?.city&&<div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>📍 {mockUsers[selectedStudent].city}</div>}
-                      {mockUsers[selectedStudent]?.homeCourt&&<div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>🏓 {mockUsers[selectedStudent].homeCourt}</div>}
+                      {mockUsers[selectedStudent]?.homeCourt&&<div style={{fontSize:"0.83rem",color:"#6b7280",marginTop:2}}>📍 {mockUsers[selectedStudent].homeCourt}</div>}
                       {mockUsers[selectedStudent]?.skillLevel&&<div style={{fontSize:"0.78rem",color:"#9ca3af",marginTop:2}}>Self-rated: {(SELF_RATINGS.find(r=>r.value===mockUsers[selectedStudent].skillLevel)||{label:mockUsers[selectedStudent].skillLevel}).label}</div>}
                     </div>
                   )}
@@ -3087,7 +3085,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
               <div style={{padding:"14px 18px",display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,flexWrap:"wrap"}}>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontWeight:700,fontSize:"0.93rem"}}>{fmtDateShort(l.date)} · {l.time}</div>
-                  <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:2}}>{l.type} · {l.duration}{l.focus?" · 🎯 "+l.focus:""}</div>
+                  <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:2}}>{l.type} · {l.duration}{l.focus?" · "+l.focus:""}</div>
                   {l.customPrice&&<div style={{fontSize:"0.75rem",color:"#0ea5e9",marginTop:2,fontWeight:600}}>💰 Custom: ${l.customPrice}</div>}
                   {l.notes&&editingId!==l.id&&<div style={{background:"#f9f9f6",borderRadius:6,padding:"7px 10px",marginTop:8,fontSize:"0.82rem",color:"#374151",lineHeight:1.5}}>{l.notes}</div>}
                 </div>
@@ -3325,7 +3323,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
               <p style={{fontSize:"0.85rem",color:"#6b7280",marginBottom:16}}>Add the other participants for this lesson.</p>
               {schedLessonType==="semi"&&(
                 <div style={{background:"#f9f9f6",borderRadius:12,padding:"16px",marginBottom:16,border:"1.5px solid #e5e7eb"}}>
-                  <div style={{fontWeight:700,fontSize:"0.88rem",color:G,marginBottom:12}}>👥 Partner</div>
+                  <div style={{fontWeight:700,fontSize:"0.88rem",color:G,marginBottom:12}}>Partner</div>
                   <label style={lbl}>Partner Name</label>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
                     <input value={schedPartner.firstName} onChange={e=>setSchedPartner(p=>({...p,firstName:capWords(e.target.value)}))} placeholder="First Name" style={{...inp,marginBottom:0}}/>
@@ -3347,7 +3345,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                   </div>
                   {Array.from({length:schedGroupSize-1}).map((_,i)=>(
                     <div key={i} style={{background:"#f9f9f6",borderRadius:12,padding:"14px 16px",marginBottom:10,border:"1.5px solid #e5e7eb"}}>
-                      <div style={{fontWeight:700,fontSize:"0.85rem",color:G,marginBottom:10}}>🏓 Player {i+2}</div>
+                      <div style={{fontWeight:700,fontSize:"0.85rem",color:G,marginBottom:10}}>Player {i+2}</div>
                       <label style={lbl}>Name</label>
                       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
                         <input value={schedGroupMembers[i]?.firstName||""} onChange={e=>{const a=[...schedGroupMembers];a[i]={...a[i],firstName:capWords(e.target.value)};setSchedGroupMembers(a);}} placeholder="First Name" style={{...inp,marginBottom:0}}/>
@@ -3393,15 +3391,15 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
               <div style={{background:"#f9f9f6",borderRadius:12,padding:"20px",marginBottom:20,border:"1.5px solid #e5e7eb"}}>
                 <div style={{fontWeight:700,color:G,marginBottom:12}}>Booking Summary</div>
                 <div style={{fontSize:"0.9rem",color:"#374151",lineHeight:2}}>
-                  <div>👤 {mockUsers[selectedStudent]?.name}</div>
-                  {schedLessonType==="semi"&&(schedPartner.firstName||schedPartner.lastName)&&<div>👥 Partner: {(schedPartner.firstName+" "+schedPartner.lastName).trim()}{schedPartner.email?" · "+schedPartner.email:""}</div>}
-                  {schedLessonType==="group"&&schedGroupMembers.slice(0,schedGroupSize-1).filter(m=>m.firstName).length>0&&<div>🏆 Group: {schedGroupMembers.slice(0,schedGroupSize-1).map(m=>(m.firstName+" "+m.lastName).trim()).filter(Boolean).join(", ")}</div>}
-                  <div>📅 {fmtDate(schedDate)}</div>
-                  <div>⏱ {schedSlot&&toTimeStr(schedSlot.s,schedSlot.e)}</div>
-                  <div>🎯 {schedLessonType==="private"?"Private":schedLessonType==="semi"?"Semi-Private":"Group"} · {schedDuration} min</div>
-                  {schedFocus&&<div>🏓 {schedFocus}</div>}
-                  <div>💰 {schedCustomPrice?"$"+schedCustomPrice+" (custom)":"$"+SCHED_PRICES[schedLessonType][schedDuration]+" total"}{!schedCustomPrice&&schedLessonType==="semi"?" ($"+(SCHED_PRICES[schedLessonType][schedDuration]/2)+"/person)":!schedCustomPrice&&schedLessonType==="group"?" (split equally)":""}</div>
-                  <div>📍 {customLocation&&schedLocation?schedLocation:(!schedIsMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City":"Menlo Circus Club, Atherton")}</div>
+                  <div><strong>{mockUsers[selectedStudent]?.name}</strong></div>
+                  {schedLessonType==="semi"&&(schedPartner.firstName||schedPartner.lastName)&&<div>Partner: {(schedPartner.firstName+" "+schedPartner.lastName).trim()}{schedPartner.email?" · "+schedPartner.email:""}</div>}
+                  {schedLessonType==="group"&&schedGroupMembers.slice(0,schedGroupSize-1).filter(m=>m.firstName).length>0&&<div>Group: {schedGroupMembers.slice(0,schedGroupSize-1).map(m=>(m.firstName+" "+m.lastName).trim()).filter(Boolean).join(", ")}</div>}
+                  <div>{fmtDate(schedDate)}</div>
+                  <div>{schedSlot&&toTimeStr(schedSlot.s,schedSlot.e)}</div>
+                  <div>{schedLessonType==="private"?"Private":schedLessonType==="semi"?"Semi-Private":"Group"} · {schedDuration} min</div>
+                  {schedFocus&&<div style={{color:G,fontWeight:600}}>Focus: {schedFocus}</div>}
+                  <div>{schedCustomPrice?"$"+schedCustomPrice+" (custom)":"$"+SCHED_PRICES[schedLessonType][schedDuration]+" total"}{!schedCustomPrice&&schedLessonType==="semi"?" ($"+(SCHED_PRICES[schedLessonType][schedDuration]/2)+"/person)":!schedCustomPrice&&schedLessonType==="group"?" (split equally)":""}</div>
+                  <div>{customLocation&&schedLocation?schedLocation:(!schedIsMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City":"Menlo Circus Club, Atherton")}</div>
                 </div>
               </div>
               <div style={{display:"flex",gap:10}}>
@@ -3441,7 +3439,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                   <div onClick={()=>{setSelectedStudent(l.studentEmail);setTab("students");}} style={{fontWeight:700,fontSize:"0.95rem",cursor:"pointer",color:G,textDecoration:"underline",textDecorationColor:"transparent",transition:"text-decoration-color 0.15s"}} onMouseEnter={e=>e.target.style.textDecorationColor=G} onMouseLeave={e=>e.target.style.textDecorationColor="transparent"}>{l.studentName}</div>
                   {l.time&&<div style={{fontSize:"0.85rem",fontWeight:700,color:"#374151",marginTop:2}}>🕐 {l.time}</div>}
                   <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:1}}>{l.type}{l.duration?" · "+l.duration:""}</div>
-                  {l.focus&&<div style={{fontSize:"0.75rem",color:G,marginTop:1,fontWeight:600}}>🎯 {l.focus}</div>}
+                  {l.focus&&<div style={{fontSize:"0.75rem",color:G,marginTop:1,fontWeight:600}}>{l.focus}</div>}
                 </div>
               </div>
               {/* Right: badges + actions */}
