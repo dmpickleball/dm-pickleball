@@ -335,7 +335,7 @@ function Nav({user,onLogin,onLogout,setPage,currentPage}){
         <img src="/DMPBlogo-white.png" alt="DMPB" style={{height:34,width:"auto",display:"block"}}/>
       </div>
       <div style={{display:"flex",gap:20,alignItems:"center",flexWrap:"wrap"}}>
-        {[["home","Home"],["pricing","Pricing"],["gear","Paddle/Gear"],["contact","Contact"]].map(([p,label])=>(
+        {[["home","Home"],["pricing","Rates"],["gear","Paddle/Gear"],["contact","Contact"]].map(([p,label])=>(
           <span key={p} onClick={()=>p==="home"?goHome():setPage(p)} style={{color:"white",cursor:"pointer",opacity:currentPage===p?1:0.7,fontWeight:currentPage===p?700:400,fontSize:"0.92rem"}}>{label}</span>
         ))}
         {user?(
@@ -576,7 +576,7 @@ function Homepage({setPage}){
           <h1 style={{fontSize:"3rem",fontWeight:900,lineHeight:1.15,marginBottom:16}}>Level Up With One of the<br/><span style={{color:Y}}>Bay Area's Top Competitive Pickleball Coaches</span></h1>
           <p style={{fontSize:"1.1rem",opacity:0.9,maxWidth:500,margin:"0 auto 32px",lineHeight:1.7}}>Private, semi-private & group lessons on the SF Peninsula. Personalized coaching from a tournament competitor who knows what it takes to win.</p>
           <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
-            <button onClick={()=>setPage("pricing")} style={{background:Y,color:G,border:"none",padding:"13px 30px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem"}}>View Pricing</button>
+            <button onClick={()=>setPage("pricing")} style={{background:Y,color:G,border:"none",padding:"13px 30px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem"}}>View Rates</button>
             <button onClick={()=>setPage("contact")} style={{background:"transparent",color:"white",border:"2px solid rgba(255,255,255,0.5)",padding:"13px 30px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem"}}>Get in Touch</button>
           </div>
         </div>
@@ -659,7 +659,7 @@ function PricingPage({setPage}){
   return(
     <div style={{maxWidth:700,margin:"0 auto",padding:"60px 24px"}}>
       <div style={{textAlign:"center",marginBottom:40}}>
-        <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>Transparent Pricing</div>
+        <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>SF Peninsula · Bay Area</div>
         <h2 style={{fontSize:"2rem",fontWeight:900}}>Lesson Rates</h2>
         <p style={{color:"#6b7280",marginTop:8}}>SF Peninsula, Bay Area</p>
       </div>
@@ -4385,7 +4385,7 @@ export default function App(){
   };
   const logout=()=>{setUser(null);setIsAdmin(false);setPage("home");};
   if(isAdmin)return(
-    <div style={{fontFamily:"'Josefin Sans',sans-serif",background:"#f4f9f6",minHeight:"100vh"}}>
+    <div style={{fontFamily:"'DM Sans',sans-serif",background:"#f4f9f6",minHeight:"100vh"}}>
       <nav style={{background:G,padding:"14px 32px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
         <div style={{color:Y,fontWeight:900,fontSize:"1.3rem",letterSpacing:1}}>DM <span style={{color:"white"}}>Pickleball</span> <span style={{fontSize:"0.75rem",color:"rgba(255,255,255,0.6)",fontWeight:400}}>· Admin</span></div>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
@@ -4397,7 +4397,7 @@ export default function App(){
     </div>
   );
   return(
-    <div style={{fontFamily:"'Josefin Sans',sans-serif",background:"#f4f9f6",minHeight:"100vh"}}>
+    <div style={{fontFamily:"'DM Sans',sans-serif",background:"#f4f9f6",minHeight:"100vh"}}>
       <Nav user={user} onLogin={()=>setPage("login")} onLogout={logout} setPage={setPage} currentPage={page}/>
       {page==="adminlogin"&&<AdminLoginPage onAdminLogin={()=>setIsAdmin(true)}/>}
       {page==="home"&&!isAdminRoute&&<Homepage setPage={setPage}/>}
