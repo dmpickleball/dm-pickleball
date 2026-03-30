@@ -642,7 +642,7 @@ function PricingPage({setPage}){
             <div style={{fontWeight:700,fontSize:"1.05rem"}}>Corporate Events</div>
             <div style={{fontSize:"0.85rem",color:"#6b7280",marginTop:2}}>Group clinics & events for companies and teams</div>
           </div>
-          <button onClick={()=>setPage("contact")} style={{background:"none",border:"none",color:G,fontWeight:700,fontSize:"1.05rem",cursor:"pointer",flexShrink:0,padding:0,textDecoration:"underline",textUnderlineOffset:"3px"}}>Contact for pricing</button>
+          <button onClick={()=>setPage("contact")} style={{background:"none",border:"none",color:G,fontWeight:600,fontSize:"0.88rem",cursor:"pointer",flexShrink:0,padding:"8px 0",letterSpacing:"0.5px",textTransform:"uppercase",display:"flex",alignItems:"center",gap:5}}>Contact for pricing <span style={{fontSize:"0.75rem"}}>→</span></button>
         </div>
       </div>
       <div style={{background:"#fffbea",border:"1.5px solid #f4c430",borderRadius:10,padding:"16px 20px",marginTop:24,fontSize:"0.88rem",color:"#7a5800",textAlign:"center"}}>
@@ -4322,7 +4322,7 @@ export default function App(){
   };
   const logout=()=>{setUser(null);setIsAdmin(false);setPage("home");};
   if(isAdmin)return(
-    <div style={{fontFamily:"Segoe UI,sans-serif",background:"#f4f9f6",minHeight:"100vh"}}>
+    <div style={{fontFamily:"'Josefin Sans',sans-serif",background:"#f4f9f6",minHeight:"100vh"}}>
       <nav style={{background:G,padding:"14px 32px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
         <div style={{color:Y,fontWeight:900,fontSize:"1.3rem",letterSpacing:1}}>DM <span style={{color:"white"}}>Pickleball</span> <span style={{fontSize:"0.75rem",color:"rgba(255,255,255,0.6)",fontWeight:400}}>· Admin</span></div>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
@@ -4334,7 +4334,7 @@ export default function App(){
     </div>
   );
   return(
-    <div style={{fontFamily:"Segoe UI,sans-serif",background:"#f4f9f6",minHeight:"100vh"}}>
+    <div style={{fontFamily:"'Josefin Sans',sans-serif",background:"#f4f9f6",minHeight:"100vh"}}>
       <Nav user={user} onLogin={()=>setPage("login")} onLogout={logout} setPage={setPage} currentPage={page}/>
       {page==="adminlogin"&&<AdminLoginPage onAdminLogin={()=>setIsAdmin(true)}/>}
       {page==="home"&&!isAdminRoute&&<Homepage setPage={setPage}/>}
