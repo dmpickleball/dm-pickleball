@@ -329,24 +329,33 @@ function LocationInput({value, onChange, placeholder, style}){
 function Nav({user,onLogin,onLogout,setPage,currentPage}){
   const onAdminRoute=window.location.pathname==="/admin";
   const goHome=()=>{if(onAdminRoute){window.location.href="/";}else{setPage("home");}};
+  const [mob,setMob]=useState(window.innerWidth<=640);
+  useEffect(()=>{const h=()=>setMob(window.innerWidth<=640);window.addEventListener("resize",h);return()=>window.removeEventListener("resize",h);},[]);
+  const fs=mob?"0.78rem":"0.92rem";
+  const gap=mob?12:20;
+  const pad=mob?"10px 16px":"14px 32px";
+  // On mobile: drop "Home" (logo handles it), shorten "Paddle/Gear"→"Gear"
+  const links=mob
+    ?[["pricing","Rates"],["gear","Gear"],["contact","Contact"]]
+    :[["home","Home"],["pricing","Rates"],["gear","Paddle/Gear"],["contact","Contact"]];
   return(
-    <nav style={{background:G,padding:"14px 32px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100}}>
+    <nav style={{background:G,padding:pad,display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100}}>
       <div onClick={goHome} style={{cursor:"pointer",display:"flex",alignItems:"center"}}>
-        <img src="/DMPBlogo-white.png" alt="DMPB" style={{height:34,width:"auto",display:"block"}}/>
+        <img src="/DMPBlogo-white.png" alt="DMPB" style={{height:mob?28:34,width:"auto",display:"block"}}/>
       </div>
-      <div style={{display:"flex",gap:20,alignItems:"center",flexWrap:"wrap"}}>
-        {[["home","Home"],["pricing","Rates"],["gear","Paddle/Gear"],["contact","Contact"]].map(([p,label])=>(
-          <span key={p} onClick={()=>p==="home"?goHome():setPage(p)} style={{color:"white",cursor:"pointer",opacity:currentPage===p?1:0.7,fontWeight:currentPage===p?700:400,fontSize:"0.92rem"}}>{label}</span>
+      <div style={{display:"flex",gap,alignItems:"center",flexWrap:"nowrap"}}>
+        {links.map(([p,label])=>(
+          <span key={p} onClick={()=>p==="home"?goHome():setPage(p)} style={{color:"white",cursor:"pointer",opacity:currentPage===p?1:0.7,fontWeight:currentPage===p?700:400,fontSize:fs,whiteSpace:"nowrap"}}>{label}</span>
         ))}
         {user?(
           <>
-            <span onClick={()=>setPage("dashboard")} style={{color:Y,cursor:"pointer",fontWeight:700,fontSize:"0.92rem"}}>My Lessons</span>
-            <span onClick={()=>setPage("account")} title="Account Settings" style={{color:"white",cursor:"pointer",opacity:currentPage==="account"?1:0.7,fontSize:"1.2rem",lineHeight:1}}>⚙️</span>
-            <span onClick={()=>setPage("booking")} style={{background:"rgba(255,255,255,0.15)",color:"white",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.88rem"}}>Book</span>
-            <button onClick={onLogout} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.4)",color:"white",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem"}}>Log out</button>
+            <span onClick={()=>setPage("dashboard")} style={{color:Y,cursor:"pointer",fontWeight:700,fontSize:fs,whiteSpace:"nowrap"}}>{mob?"Lessons":"My Lessons"}</span>
+            {!mob&&<span onClick={()=>setPage("account")} title="Account Settings" style={{color:"white",cursor:"pointer",opacity:currentPage==="account"?1:0.7,fontSize:"1.2rem",lineHeight:1}}>⚙️</span>}
+            <span onClick={()=>setPage("booking")} style={{background:"rgba(255,255,255,0.15)",color:"white",padding:mob?"5px 10px":"7px 16px",borderRadius:50,cursor:"pointer",fontSize:fs,whiteSpace:"nowrap"}}>Book</span>
+            {!mob&&<button onClick={onLogout} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.4)",color:"white",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem"}}>Log out</button>}
           </>
         ):(
-          <button onClick={onLogin} style={{background:Y,color:G,border:"none",padding:"8px 20px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"0.88rem"}}>Student Login</button>
+          <button onClick={onLogin} style={{background:Y,color:G,border:"none",padding:mob?"6px 12px":"8px 20px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:fs,whiteSpace:"nowrap"}}>{mob?"Login":"Student Login"}</button>
         )}
       </div>
     </nav>
@@ -4387,7 +4396,10 @@ export default function App(){
   if(isAdmin)return(
     <div style={{fontFamily:"'DM Sans',sans-serif",background:"#f4f9f6",minHeight:"100vh"}}>
       <nav style={{background:G,padding:"14px 32px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <div style={{color:Y,fontWeight:900,fontSize:"1.3rem",letterSpacing:1}}>DM <span style={{color:"white"}}>Pickleball</span> <span style={{fontSize:"0.75rem",color:"rgba(255,255,255,0.6)",fontWeight:400}}>· Admin</span></div>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <img src="/DMPBlogo-white.png" alt="DMPB" style={{height:34,width:"auto",display:"block"}}/>
+          <span style={{fontSize:"0.75rem",color:"rgba(255,255,255,0.6)",fontWeight:400}}>· Admin</span>
+        </div>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
           {pendingStudents.length>0&&<span style={{background:"#dc2626",color:"white",borderRadius:50,padding:"3px 10px",fontSize:"0.75rem",fontWeight:800}}>{pendingStudents.length} pending</span>}
           <button onClick={logout} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.4)",color:"white",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem"}}>Log out</button>
