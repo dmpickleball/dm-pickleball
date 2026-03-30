@@ -361,7 +361,7 @@ function fmtParticipantName(fullName){
   return last?first+" "+last[0].toUpperCase()+".":first;
 }
 function LessonModal({lesson,isMenlo,onClose,onCancel}){
-  const isCancelled=["cancelled","late_cancel","cancelled_forgiven"].includes(lesson.status);
+  const isCancelled=["cancelled","late_cancel","cancelled_forgiven","weather_cancel","no_show"].includes(lesson.status);
   const cancellable=!isCancelled&&canCancel(lesson.date,lesson.time,lesson.createdAt);
   const withinGrace=!isCancelled&&!canCancel(lesson.date,lesson.time)&&canCancel(lesson.date,lesson.time,lesson.createdAt);
   const closed=!isCancelled&&!cancellable&&!withinGrace;
@@ -376,6 +376,8 @@ function LessonModal({lesson,isMenlo,onClose,onCancel}){
     completed:{bg:"#e8f0ee",color:G,label:"✓ Completed"},
     cancelled:{bg:"#fef2f2",color:"#dc2626",label:"✕ Cancelled"},
     late_cancel:{bg:"#fff7ed",color:"#c2410c",label:"⚠️ Late Cancel"},
+    no_show:{bg:"#fef2f2",color:"#7f1d1d",label:"✕ No-Show"},
+    weather_cancel:{bg:"#eff6ff",color:"#1d4ed8",label:"🌧 Weather Cancel"},
     cancelled_forgiven:{bg:"#f3f4f6",color:"#6b7280",label:"✓ Cancelled (forgiven)"},
   };
   const st=statusMap[lesson.status]||{bg:"#f3f4f6",color:"#6b7280",label:lesson.status};
@@ -448,16 +450,20 @@ function LessonModal({lesson,isMenlo,onClose,onCancel}){
             )}
           </div>
         )}
-        {lesson.status==="late_cancel"&&(()=>{
+        {(lesson.status==="late_cancel"||lesson.status==="no_show")&&(()=>{
           const rawPrice=lesson.customPrice!=null?lesson.customPrice:({"Private":{60:120,90:180},"Semi-Private":{60:140,90:210},"Group Lesson":{60:140,90:210},"Group":{60:140,90:210}}[lesson.type]||{})[parseInt(lesson.duration)]||120;
-          const fee=Math.round(rawPrice*0.5);
-          const note=encodeURIComponent("Late cancellation fee — lesson on "+fmtDateShort(lesson.date));
+          const isNoShow=lesson.status==="no_show";
+          const fee=isNoShow?rawPrice:Math.round(rawPrice*0.5);
+          const pct=isNoShow?"100%":"50%";
+          const note=encodeURIComponent((isNoShow?"No-show fee":"Late cancellation fee")+" — lesson on "+fmtDateShort(lesson.date));
           const venmoUrl="https://venmo.com/"+VENMO+"?txn=pay&amount="+fee+"&note="+note;
           return(
             <div style={{padding:"0 24px 24px"}}>
-              <div style={{background:"#fff7ed",border:"1.5px solid #fb923c",borderRadius:12,padding:"18px 20px"}}>
-                <div style={{fontWeight:800,color:"#c2410c",fontSize:"0.92rem",marginBottom:4}}>⚠️ Late Cancellation Fee</div>
-                <div style={{fontSize:"0.83rem",color:"#7c2d12",lineHeight:1.7,marginBottom:14}}>This lesson was cancelled after the 12-hour window. Per our cancellation policy, a fee of <strong>${fee}</strong> (50% of ${rawPrice}) is owed.</div>
+              <div style={{background:isNoShow?"#fef2f2":"#fff7ed",border:"1.5px solid "+(isNoShow?"#fca5a5":"#fb923c"),borderRadius:12,padding:"18px 20px"}}>
+                <div style={{fontWeight:800,color:isNoShow?"#991b1b":"#c2410c",fontSize:"0.92rem",marginBottom:4}}>{isNoShow?"✕ No-Show Fee":"⚠️ Late Cancellation Fee"}</div>
+                <div style={{fontSize:"0.83rem",color:isNoShow?"#7f1d1d":"#7c2d12",lineHeight:1.7,marginBottom:14}}>
+                  {isNoShow?"This lesson was not attended without notice.":"This lesson was cancelled after the 12-hour window."} Per our policy, a fee of <strong>${fee}</strong> ({pct} of ${rawPrice}) is owed.
+                </div>
                 <a href={venmoUrl} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,background:"#3d95ce",color:"white",padding:"11px 20px",borderRadius:50,fontWeight:700,textDecoration:"none",fontSize:"0.9rem"}}>
                   Pay ${fee} via Venmo →
                 </a>
@@ -466,6 +472,14 @@ function LessonModal({lesson,isMenlo,onClose,onCancel}){
             </div>
           );
         })()}
+      {lesson.status==="weather_cancel"&&(
+          <div style={{padding:"0 24px 24px"}}>
+            <div style={{background:"#eff6ff",border:"1.5px solid #93c5fd",borderRadius:12,padding:"18px 20px"}}>
+              <div style={{fontWeight:800,color:"#1d4ed8",fontSize:"0.92rem",marginBottom:4}}>🌧 Weather Cancellation</div>
+              <div style={{fontSize:"0.83rem",color:"#1e3a5f",lineHeight:1.7}}>This lesson was cancelled due to inclement weather. No charge — Coach David will be in touch to reschedule.</div>
+            </div>
+          </div>
+        )}
         {isCancelled&&lesson.notes&&(
           <div style={{padding:"0 24px 24px"}}>
             <div style={{...lbl,marginBottom:8}}>📝 Coaching Notes</div>
@@ -486,7 +500,7 @@ function LessonModal({lesson,isMenlo,onClose,onCancel}){
 }
 function LessonCard({lesson,isMenlo,isHistory,onCancel}){
   const[showModal,setShowModal]=useState(false);
-  const isCancelled=["cancelled","late_cancel","cancelled_forgiven"].includes(lesson.status);
+  const isCancelled=["cancelled","late_cancel","cancelled_forgiven","weather_cancel","no_show"].includes(lesson.status);
   const cancellable=!isHistory&&!isCancelled&&canCancel(lesson.date,lesson.time,lesson.createdAt);
   const withinGrace=!isHistory&&!isCancelled&&!canCancel(lesson.date,lesson.time)&&canCancel(lesson.date,lesson.time,lesson.createdAt);
   const deadline=!isHistory&&!isCancelled?getCancelDeadline(lesson.date,lesson.time):null;
@@ -510,8 +524,8 @@ function LessonCard({lesson,isMenlo,isHistory,onCancel}){
               {lesson.focus&&<div style={{fontSize:"0.8rem",color:G,marginTop:3,fontWeight:600}}>{lesson.focus}</div>}
               <div style={{marginTop:5,display:"flex",flexWrap:"wrap",gap:6,alignItems:"center"}}>
                 {isCancelled?(
-                  <span style={{background:lesson.status==="late_cancel"?"#fff7ed":lesson.status==="cancelled_forgiven"?"#f3f4f6":"#fef2f2",color:lesson.status==="late_cancel"?"#c2410c":lesson.status==="cancelled_forgiven"?"#6b7280":"#dc2626",padding:"2px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>
-                    {lesson.status==="late_cancel"?"⚠️ Cancelled (late)":lesson.status==="cancelled_forgiven"?"✓ Cancelled (forgiven)":lesson.cancelledByGcal?"📅 Removed from Calendar":"✕ Cancelled"}
+                  <span style={{background:lesson.status==="late_cancel"?"#fff7ed":lesson.status==="no_show"?"#fef2f2":lesson.status==="weather_cancel"?"#eff6ff":lesson.status==="cancelled_forgiven"?"#f3f4f6":"#fef2f2",color:lesson.status==="late_cancel"?"#c2410c":lesson.status==="no_show"?"#7f1d1d":lesson.status==="weather_cancel"?"#1d4ed8":lesson.status==="cancelled_forgiven"?"#6b7280":"#dc2626",padding:"2px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>
+                    {lesson.status==="late_cancel"?"⚠️ Cancelled (late)":lesson.status==="no_show"?"✕ No-Show":lesson.status==="weather_cancel"?"🌧 Weather Cancel":lesson.status==="cancelled_forgiven"?"✓ Cancelled (forgiven)":lesson.cancelledByGcal?"📅 Removed from Calendar":"✕ Cancelled"}
                   </span>
                 ):!isHistory&&(
                   <>
@@ -584,12 +598,15 @@ function Homepage({setPage}){
             <h2 style={{fontSize:"1.8rem",fontWeight:900,marginBottom:16,lineHeight:1.3}}>From Tennis Courts to Pickleball Pro</h2>
             <p style={{color:"#4b5563",lineHeight:1.8,marginBottom:14,fontSize:"0.97rem"}}>With 15+ years of competitive tennis experience, Coach David brings a unique edge to pickleball coaching. As a 5.0+ rated tournament player and CRBN Ambassador, Coach David has an insider's understanding of what it takes to elevate your game.</p>
             <p style={{color:"#4b5563",lineHeight:1.8,fontSize:"0.97rem"}}>Coach David specializes in coaching tennis players making the transition to pickleball — he knows exactly the habits that help and the ones that hurt. Whether you're a complete beginner or a seasoned competitor, Coach David coaches all skill levels in both doubles and singles across the SF Peninsula.</p>
-            <div style={{background:"#e8f0ee",border:`1px solid ${G}20`,borderRadius:10,padding:"10px 16px",marginTop:14,display:"inline-flex",alignItems:"center",gap:8}}>
-              <span style={{fontSize:"0.83rem",fontWeight:700,color:G}}>Multiple Gold Medals · Tournament Competitor</span>
-            </div>
             <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:14}}>
+              <div style={{background:"#1a3c34",color:"white",borderRadius:10,padding:"10px 16px",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+                <div>
+                  <div style={{fontSize:"0.6rem",fontWeight:700,letterSpacing:2,textTransform:"uppercase",opacity:0.6,marginBottom:2}}>IPTPA Certified</div>
+                  <div style={{fontSize:"0.88rem",fontWeight:800,letterSpacing:0.5}}>Level 3 Teaching Pro</div>
+                </div>
+              </div>
               {["Multiple Gold Medalist","Tournament Competitor","CRBN Ambassador","Tennis Convert Specialist","All Skill Levels","SF Peninsula"].map(tag=>(
-                <span key={tag} style={{background:"#e8f0ee",color:G,padding:"6px 14px",borderRadius:50,fontSize:"0.8rem",fontWeight:600}}>{tag}</span>
+                <span key={tag} style={{background:"#e8f0ee",color:G,padding:"6px 14px",borderRadius:50,fontSize:"0.8rem",fontWeight:600,display:"inline-flex",alignItems:"center"}}>{tag}</span>
               ))}
             </div>
           </div>
@@ -670,14 +687,16 @@ function PricingPage({setPage}){
         </div>
         <div style={{display:"grid",gap:12}}>
           {[
-            {icon:"⏰",title:"Cancellation",body:"Cancel at least 12 hours before your lesson at no charge. Cancellations can be made directly from your student dashboard."},
+            {icon:"⏰",title:"Cancellation & Rescheduling",body:"At least 12 hours' notice is required to cancel or reschedule a lesson at no charge. Cancellations can be made directly from your student dashboard."},
             {icon:"⚠️",title:"Late Cancellation",body:(
-              <span>Cancellations made within the 12-hour window are subject to a <strong>50% lesson fee</strong>. Payment is due via Venmo: <a href={"https://venmo.com/"+VENMO} target="_blank" rel="noreferrer" style={{color:G,fontWeight:700,textDecoration:"none"}}>@{VENMO}</a>. The fee will be shown in your dashboard when applicable.</span>
+              <span>Cancellations made within the 12-hour window are subject to a <strong>50% lesson fee</strong>, payable via Venmo: <a href={"https://venmo.com/"+VENMO} target="_blank" rel="noreferrer" style={{color:G,fontWeight:700,textDecoration:"none"}}>@{VENMO}</a>. The fee amount will be shown in your dashboard with a direct payment link.</span>
             )},
-            {icon:"✕",title:"No-Show",body:"Failing to show up without any notice will be charged the full lesson rate. Please always reach out if something comes up — life happens."},
-            {icon:"🌧️",title:"Weather",body:"If conditions are unplayable, Coach David will notify you as early as possible. The lesson will be rescheduled at no charge."},
-            {icon:"🕐",title:"Late Arrivals",body:"The lesson ends at its scheduled time regardless of when you arrive. Please plan to be on the court a few minutes early."},
-            {icon:"💳",title:"Payment",body:"Lesson payment is due on the day of your session. Coach David accepts Venmo (@"+VENMO+"), cash, or check."},
+            {icon:"✕",title:"No-Show",body:(
+              <span>Failure to show up for a scheduled lesson without any notice will result in a charge of <strong>100% of the lesson cost</strong>, payable via Venmo: <a href={"https://venmo.com/"+VENMO} target="_blank" rel="noreferrer" style={{color:G,fontWeight:700,textDecoration:"none"}}>@{VENMO}</a>.</span>
+            )},
+            {icon:"🌧️",title:"Inclement Weather",body:"Coach David will determine if court conditions are unplayable, typically 1 hour before the start time. In the event of a weather-related cancellation, the lesson will be rescheduled at no additional charge."},
+            {icon:"💳",title:"Payment",body:(<span>Payment is expected after the lesson is completed. Accepted methods: <strong>Cash</strong> or <strong>Venmo</strong> (<a href={"https://venmo.com/"+VENMO} target="_blank" rel="noreferrer" style={{color:G,fontWeight:700,textDecoration:"none"}}>@{VENMO}</a>).</span>)},
+            {icon:"🎾",title:"Equipment",body:"Students are encouraged to bring the paddle they are most comfortable with. Loaner paddles are available upon request — just add a note when booking. High-quality balls are provided by Coach David for all sessions."},
           ].map(({icon,title,body})=>(
             <div key={title} style={{background:"white",border:"1.5px solid #e5e7eb",borderLeft:"4px solid "+G,borderRadius:10,padding:"18px 24px",display:"flex",gap:16,alignItems:"flex-start"}}>
               <span style={{fontSize:"1.1rem",flexShrink:0,marginTop:1}}>{icon}</span>
@@ -1244,7 +1263,7 @@ function AccountPage({user,setPage,onUpdateUser}){
 }
 
 function Dashboard({user,setPage,lessons,onCancel,dbLoaded}){
-  const cancelledStatuses=["cancelled","late_cancel","cancelled_forgiven"];
+  const cancelledStatuses=["cancelled","late_cancel","cancelled_forgiven","weather_cancel","no_show"];
   const upcoming=lessons.filter(l=>!isPast(l.date,l.time)&&!cancelledStatuses.includes(l.status));
   const history=lessons.filter(l=>isPast(l.date,l.time)||l.status==="completed"||cancelledStatuses.includes(l.status));
   return(
@@ -2539,7 +2558,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
   // GCal event IDs that belong to portal lessons — used to deduplicate calendar views
   const portalGcalIds=new Set(allLessonsList.filter(l=>l.gcalEventId).map(l=>l.gcalEventId));
 
-  const cancelledStatuses2=["cancelled","late_cancel","cancelled_forgiven"];
+  const cancelledStatuses2=["cancelled","late_cancel","cancelled_forgiven","weather_cancel","no_show"];
 
   const fetchCalendarItems=async()=>{
     setCalLoading(true);
@@ -3112,10 +3131,10 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
                   {missingCal&&!isCancelled&&<span title="No linked Google Calendar event" style={{background:"#fff7ed",color:"#c2410c",border:"1px solid #fed7aa",padding:"2px 7px",borderRadius:50,fontSize:"0.65rem",fontWeight:700}}>⚠️ No Cal</span>}
-                  <span style={{background:l.status==="confirmed"?"#e8f0ee":l.status==="late_cancel"?"#fff7ed":l.status==="cancelled_forgiven"?"#f3f4f6":l.status==="cancelled"?"#fef2f2":"#fffbea",color:l.status==="confirmed"?G:l.status==="late_cancel"?"#c2410c":l.status==="cancelled_forgiven"?"#6b7280":l.status==="cancelled"?"#dc2626":"#92400e",padding:"3px 9px",borderRadius:50,fontSize:"0.72rem",fontWeight:700}}>
-                    {l.status==="confirmed"?"✓ Confirmed":l.status==="cancelled"?l.cancelledByGcal?"📅 Removed from Calendar":"✕ Cancelled":l.status==="late_cancel"?"⚠️ Late Cancel":l.status==="cancelled_forgiven"?"✓ Forgiven":"⏳ Pending"}
+                  <span style={{background:l.status==="confirmed"?"#e8f0ee":l.status==="late_cancel"?"#fff7ed":l.status==="no_show"?"#fef2f2":l.status==="weather_cancel"?"#eff6ff":l.status==="cancelled_forgiven"?"#f3f4f6":l.status==="cancelled"?"#fef2f2":"#fffbea",color:l.status==="confirmed"?G:l.status==="late_cancel"?"#c2410c":l.status==="no_show"?"#7f1d1d":l.status==="weather_cancel"?"#1d4ed8":l.status==="cancelled_forgiven"?"#6b7280":l.status==="cancelled"?"#dc2626":"#92400e",padding:"3px 9px",borderRadius:50,fontSize:"0.72rem",fontWeight:700}}>
+                    {l.status==="confirmed"?"✓ Confirmed":l.status==="cancelled"?l.cancelledByGcal?"📅 Removed":"✕ Cancelled":l.status==="late_cancel"?"⚠️ Late Cancel":l.status==="no_show"?"✕ No-Show":l.status==="weather_cancel"?"🌧 Weather":l.status==="cancelled_forgiven"?"✓ Forgiven":"⏳ Pending"}
                   </span>
-                  {l.status==="late_cancel"&&<button onClick={()=>onUpdateLesson(selectedStudent,l.id,{status:"cancelled_forgiven"})} style={{background:"white",color:"#6b7280",border:"1.5px solid #d1d5db",padding:"4px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:700}}>✓ Forgive</button>}
+                  {(l.status==="late_cancel"||l.status==="no_show")&&<button onClick={()=>onUpdateLesson(selectedStudent,l.id,{status:"cancelled_forgiven"})} style={{background:"white",color:"#6b7280",border:"1.5px solid #d1d5db",padding:"4px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:700}}>✓ Forgive</button>}
                   <button onClick={()=>setActiveMenu(isMenuOpen?null:smk)} style={{background:isMenuOpen?"#f3f4f6":"white",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"5px 10px",cursor:"pointer",fontSize:"1rem",lineHeight:1,color:"#6b7280",fontWeight:700}}>⋯</button>
                 </div>
               </div>
@@ -3125,6 +3144,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                   <button onClick={()=>{setEditingId(editingId===l.id?null:l.id);setEditNotes(l.notes||"");setActiveMenu(null);}} style={{background:G,color:"white",border:"none",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>✏️ Notes</button>
                   <button onClick={()=>{setEditPriceId(editPriceId===l.id?null:l.id);setEditPriceVal(String(l.customPrice||getRate(l.type,parseInt(l.duration))));setActiveMenu(null);}} style={{background:G,color:"white",border:"none",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>💰 Price</button>
                   {!isCancelled&&<button onClick={()=>{setConfirmCancel(l.id);setActiveMenu(null);}} style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>✕ Cancel</button>}
+                  {!isCancelled&&<button onClick={async()=>{await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id,updates:{status:"no_show"}})});onUpdateLesson(selectedStudent,l.id,{status:"no_show"});setActiveMenu(null);}} style={{background:"white",color:"#7f1d1d",border:"1.5px solid #fca5a5",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>✕ No-Show</button>}
+                  {!isCancelled&&<button onClick={async()=>{await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id,updates:{status:"weather_cancel"}})});onUpdateLesson(selectedStudent,l.id,{status:"weather_cancel"});setActiveMenu(null);}} style={{background:"white",color:"#1d4ed8",border:"1.5px solid #93c5fd",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>🌧 Weather</button>}
                   <button onClick={()=>{setConfirmDelete(l.id);setActiveMenu(null);}} style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>🗑 Delete</button>
                   <span style={{flex:1}}/>
                   <button onClick={()=>setActiveMenu(null)} style={{background:"none",border:"none",color:"#9ca3af",cursor:"pointer",fontSize:"0.8rem"}}>Close</button>
