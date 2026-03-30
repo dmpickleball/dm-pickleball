@@ -685,25 +685,22 @@ function PricingPage({setPage}){
           <div style={{fontSize:"0.75rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>Policies</div>
           <h2 style={{fontSize:"1.6rem",fontWeight:900}}>What to Know</h2>
         </div>
-        <div style={{display:"grid",gap:12}}>
+        <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
           {[
-            {icon:"⏰",title:"Cancellation & Rescheduling",body:"At least 12 hours' notice is required to cancel or reschedule a lesson at no charge. Cancellations can be made directly from your student dashboard."},
-            {icon:"⚠️",title:"Late Cancellation",body:(
+            {title:"Cancellation & Rescheduling",body:"At least 12 hours' notice is required to cancel or reschedule a lesson at no charge. Cancellations can be made directly from your student dashboard."},
+            {title:"Late Cancellation",body:(
               <span>Cancellations made within the 12-hour window are subject to a <strong>50% lesson fee</strong>, payable via Venmo: <a href={"https://venmo.com/"+VENMO} target="_blank" rel="noreferrer" style={{color:G,fontWeight:700,textDecoration:"none"}}>@{VENMO}</a>. The fee amount will be shown in your dashboard with a direct payment link.</span>
             )},
-            {icon:"✕",title:"No-Show",body:(
-              <span>Failure to show up for a scheduled lesson without any notice will result in a charge of <strong>100% of the lesson cost</strong>, payable via Venmo: <a href={"https://venmo.com/"+VENMO} target="_blank" rel="noreferrer" style={{color:G,fontWeight:700,textDecoration:"none"}}>@{VENMO}</a>.</span>
+            {title:"No-Show",body:(
+              <span>Failure to show up without any notice will result in a charge of <strong>100% of the lesson cost</strong>, payable via Venmo: <a href={"https://venmo.com/"+VENMO} target="_blank" rel="noreferrer" style={{color:G,fontWeight:700,textDecoration:"none"}}>@{VENMO}</a>.</span>
             )},
-            {icon:"🌧️",title:"Inclement Weather",body:"Coach David will determine if court conditions are unplayable, typically 1 hour before the start time. In the event of a weather-related cancellation, the lesson will be rescheduled at no additional charge."},
-            {icon:"💳",title:"Payment",body:(<span>Payment is expected after the lesson is completed. Accepted methods: <strong>Cash</strong> or <strong>Venmo</strong> (<a href={"https://venmo.com/"+VENMO} target="_blank" rel="noreferrer" style={{color:G,fontWeight:700,textDecoration:"none"}}>@{VENMO}</a>).</span>)},
-            {icon:"🎾",title:"Equipment",body:"Students are encouraged to bring the paddle they are most comfortable with. Loaner paddles are available upon request — just add a note when booking. High-quality balls are provided by Coach David for all sessions."},
-          ].map(({icon,title,body})=>(
-            <div key={title} style={{background:"white",border:"1.5px solid #e5e7eb",borderLeft:"4px solid "+G,borderRadius:10,padding:"18px 24px",display:"flex",gap:16,alignItems:"flex-start"}}>
-              <span style={{fontSize:"1.1rem",flexShrink:0,marginTop:1}}>{icon}</span>
-              <div>
-                <div style={{fontWeight:700,fontSize:"0.95rem",marginBottom:4}}>{title}</div>
-                <div style={{fontSize:"0.85rem",color:"#6b7280",lineHeight:1.7}}>{body}</div>
-              </div>
+            {title:"Inclement Weather",body:"Coach David will determine if court conditions are unplayable, typically 1 hour before the start time. In the event of a weather-related cancellation, the lesson will be rescheduled at no additional charge."},
+            {title:"Payment",body:(<span>Payment is expected after the lesson is completed. Accepted methods: <strong>Cash</strong> or <strong>Venmo</strong> (<a href={"https://venmo.com/"+VENMO} target="_blank" rel="noreferrer" style={{color:G,fontWeight:700,textDecoration:"none"}}>@{VENMO}</a>).</span>)},
+            {title:"Equipment",body:"Students are encouraged to bring the paddle they are most comfortable with. Loaner paddles are available upon request — just add a note when booking. Balls are provided by Coach David for all sessions."},
+          ].map(({title,body},i,arr)=>(
+            <div key={title} style={{display:"grid",gridTemplateColumns:"200px 1fr",gap:24,padding:"20px 28px",borderBottom:i<arr.length-1?"1px solid #f3f4f6":"none",alignItems:"baseline"}}>
+              <div style={{fontSize:"0.78rem",fontWeight:700,color:"#374151",textTransform:"uppercase",letterSpacing:"0.8px",paddingTop:2}}>{title}</div>
+              <div style={{fontSize:"0.88rem",color:"#4b5563",lineHeight:1.75}}>{body}</div>
             </div>
           ))}
         </div>
