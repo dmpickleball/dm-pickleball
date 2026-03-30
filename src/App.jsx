@@ -618,14 +618,21 @@ function Homepage({setPage}){
             <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>What's Available</div>
             <h2 style={{fontSize:"1.8rem",fontWeight:900}}>Lesson Types</h2>
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:16}}>
-            {[["INDIVIDUAL","Private","1-on-1 coaching",null,null],["DUO","Semi-Private","2 students","$140 / $210","$70 / $105 per person"],["GROUP","Group Lesson","3–5 students",null,"split equally"]].map(([label,title,desc,price,sub])=>(
-              <div key={title} style={{border:"2px solid #e5e7eb",borderTop:"4px solid "+G,borderRadius:12,padding:24,textAlign:"center"}}>
-                <div style={{fontSize:"0.65rem",fontWeight:800,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>{label}</div>
-                <div style={{fontWeight:700,marginBottom:6}}>{title}</div>
-                <div style={{fontSize:"0.83rem",color:"#6b7280",marginBottom:12}}>{desc}</div>
-                <div style={{fontWeight:800,color:G,fontSize:"1.1rem"}}>{price}</div>
-                {sub&&<div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:3}}>{sub}</div>}
+          <div style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:12,overflow:"hidden"}}>
+            {[
+              {title:"Private Lesson",desc:"One-on-one instruction tailored entirely to your skill level, goals, and playing style.",price:"$120/hr"},
+              {title:"Semi-Private",desc:"Train alongside a partner. Same focused coaching, shared investment.",price:"$140/hr",sub:"$70 per person"},
+              {title:"Group Lesson",desc:"Small-group training for 3–4 players. Drill-focused sessions with live play and individual feedback.",price:"$140/hr",sub:"split equally"},
+            ].map(({title,desc,price,sub},i,arr)=>(
+              <div key={title} style={{display:"grid",gridTemplateColumns:"1fr auto",gap:16,padding:"20px 24px",borderBottom:i<arr.length-1?"1px solid #f3f4f6":"none",alignItems:"center"}}>
+                <div>
+                  <div style={{fontWeight:700,fontSize:"0.95rem",marginBottom:3}}>{title}</div>
+                  <div style={{fontSize:"0.82rem",color:"#6b7280",lineHeight:1.6}}>{desc}</div>
+                </div>
+                <div style={{textAlign:"right",flexShrink:0}}>
+                  <div style={{fontWeight:700,color:G,fontSize:"1rem"}}>{price}</div>
+                  {sub&&<div style={{fontSize:"0.72rem",color:"#9ca3af",marginTop:1}}>{sub}</div>}
+                </div>
               </div>
             ))}
           </div>
@@ -656,28 +663,30 @@ function PricingPage({setPage}){
         <h2 style={{fontSize:"2rem",fontWeight:900}}>Lesson Rates</h2>
         <p style={{color:"#6b7280",marginTop:8}}>SF Peninsula, Bay Area</p>
       </div>
-      <div style={{display:"grid",gap:12}}>
-        {[["INDIVIDUAL","Private Lesson","1-on-1 personalized coaching","$120/hr",null],["DUO","Semi-Private","2 students","$140/hr","$70/person"],["GROUP","Group Lesson","3–5 students","$140/hr","split equally"]].map(([label,title,desc,price,sub])=>(
-          <div key={title} style={{background:"white",border:"1.5px solid #e5e7eb",borderLeft:"4px solid "+G,borderRadius:10,padding:"22px 28px",display:"flex",alignItems:"center",gap:20}}>
-            <div style={{flex:1}}>
-              <div style={{fontSize:"0.65rem",fontWeight:800,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:5}}>{label}</div>
-              <div style={{fontWeight:700,fontSize:"1.05rem"}}>{title}</div>
-              <div style={{fontSize:"0.85rem",color:"#6b7280",marginTop:2}}>{desc}</div>
-              <div style={{fontSize:"0.78rem",color:"#9ca3af",marginTop:4}}>60 & 90 min sessions available</div>
+      <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
+        {[
+          {title:"Private Lesson",desc:"One-on-one instruction tailored entirely to your skill level, goals, and playing style.",price:"$120/hr",sub:null},
+          {title:"Semi-Private",desc:"Train alongside a partner. Same focused coaching, shared investment.",price:"$140/hr",sub:"$70 per person"},
+          {title:"Group Lesson",desc:"Small-group training for 3–4 players. Drill-focused sessions with live play and individual feedback.",price:"$140/hr",sub:"split equally"},
+        ].map(({title,desc,price,sub},i,arr)=>(
+          <div key={title} style={{display:"grid",gridTemplateColumns:"1fr auto",gap:20,padding:"24px 28px",borderBottom:i<arr.length-1?"1px solid #f3f4f6":"none",alignItems:"center"}}>
+            <div>
+              <div style={{fontWeight:700,fontSize:"1rem",marginBottom:4}}>{title}</div>
+              <div style={{fontSize:"0.85rem",color:"#6b7280",lineHeight:1.65,marginBottom:6}}>{desc}</div>
+              <div style={{fontSize:"0.75rem",color:"#9ca3af"}}>60 & 90 min sessions available</div>
             </div>
             <div style={{textAlign:"right",flexShrink:0}}>
-              <div style={{fontWeight:700,color:G,fontSize:"1.15rem"}}>{price}</div>
+              <div style={{fontWeight:700,color:G,fontSize:"1.1rem"}}>{price}</div>
               {sub&&<div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:2}}>{sub}</div>}
             </div>
           </div>
         ))}
-        <div style={{background:"white",border:"1.5px solid #e5e7eb",borderLeft:"4px solid #9ca3af",borderRadius:10,padding:"22px 28px",display:"flex",alignItems:"center",gap:20}}>
-          <div style={{flex:1}}>
-            <div style={{fontSize:"0.65rem",fontWeight:800,color:"#9ca3af",textTransform:"uppercase",letterSpacing:2,marginBottom:5}}>CORPORATE</div>
-            <div style={{fontWeight:700,fontSize:"1.05rem"}}>Corporate Events</div>
-            <div style={{fontSize:"0.85rem",color:"#6b7280",marginTop:2}}>Group clinics & events for companies and teams</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:20,padding:"24px 28px",borderTop:"1px solid #f3f4f6",alignItems:"center",background:"#fafaf9"}}>
+          <div>
+            <div style={{fontWeight:700,fontSize:"1rem",marginBottom:4}}>Corporate &amp; Events</div>
+            <div style={{fontSize:"0.85rem",color:"#6b7280",lineHeight:1.65}}>Custom pickleball programming for companies and private events. Clinics, mini-tournaments, and team-building on the court.</div>
           </div>
-          <button onClick={()=>setPage("contact")} style={{background:"none",border:"none",color:G,fontWeight:600,fontSize:"0.88rem",cursor:"pointer",flexShrink:0,padding:"8px 0",letterSpacing:"0.5px",textTransform:"uppercase",display:"flex",alignItems:"center",gap:5}}>Contact for pricing <span style={{fontSize:"0.75rem"}}>→</span></button>
+          <button onClick={()=>setPage("contact")} style={{background:"none",border:"none",color:G,fontWeight:600,fontSize:"0.82rem",cursor:"pointer",flexShrink:0,padding:0,letterSpacing:"0.5px",textTransform:"uppercase",whiteSpace:"nowrap"}}>Contact →</button>
         </div>
       </div>
       <div style={{marginTop:48}}>
