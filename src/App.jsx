@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, Fragment } from "react";
 
 // ─── IMAGE PATHS ────────────────────────────────────────────────────────────
 // All images live in /public/images/ — drop your files there with these names:
-const BARRAGE_IMG  = "/images/barrage.png";       // was: 1773169775757_image.png
 const LOGO_CRBN    = "/images/logo-crbn.png";     // was: IMG_5034.png
 const LOGO_VATIC   = "/images/logo-vatic.png";    // was: IMG_5036.png
 const LOGO_SIXZERO = "/images/logo-sixzero.png";  // was: IMG_5035.png
@@ -655,31 +654,6 @@ function PricingPage({setPage}){
 function GearPage(){
   return(
     <div style={{background:"#f5f5f3",minHeight:"100vh"}}>
-      <div style={{position:"relative",width:"100%",minHeight:220,overflow:"hidden",display:"flex",alignItems:"center"}}>
-        <img src={BARRAGE_IMG} alt="CRBN² Barrage" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",objectPosition:"center 35%"}}/>
-        <div style={{position:"absolute",inset:0,background:"linear-gradient(to right, rgba(0,0,0,0.92) 45%, rgba(0,0,0,0.15))"}}/>
-        <div style={{position:"relative",zIndex:1,padding:"32px 48px",display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%",maxWidth:960,margin:"0 auto"}}>
-          <div>
-            <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
-              <span style={{background:"#f97316",color:"white",padding:"3px 12px",borderRadius:50,fontSize:"0.68rem",fontWeight:800,letterSpacing:1,textTransform:"uppercase"}}>New</span>
-              <span style={{background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.85)",padding:"3px 12px",borderRadius:50,fontSize:"0.68rem",fontWeight:600}}>Ships Mid-March</span>
-            </div>
-            <div style={{fontSize:"0.65rem",color:"rgba(255,255,255,0.4)",letterSpacing:3,textTransform:"uppercase",marginBottom:4}}>CRBN Pickleball</div>
-            <h2 style={{fontSize:"2rem",fontWeight:900,color:"white",lineHeight:1.1,marginBottom:4,letterSpacing:-0.5}}>CRBN² TRUFOAM BARRAGE</h2>
-            <p style={{color:"rgba(255,255,255,0.45)",fontSize:"0.78rem",letterSpacing:2,textTransform:"uppercase"}}>Relentless Power and Pop</p>
-          </div>
-          <div style={{display:"flex",gap:12,alignItems:"center",flexShrink:0,marginLeft:32}}>
-            <div style={{background:"rgba(255,255,255,0.07)",border:"1.5px solid rgba(255,255,255,0.15)",borderRadius:10,padding:"10px 18px",textAlign:"center"}}>
-              <div style={{fontSize:"0.6rem",color:"rgba(255,255,255,0.4)",textTransform:"uppercase",letterSpacing:1,marginBottom:3}}>Use Code</div>
-              <div style={{color:"#f97316",fontWeight:900,fontSize:"1.05rem",letterSpacing:2}}>DMPICKLEBALL</div>
-            </div>
-            <a href="https://crbnpickleball.com/collections/barrage" target="_blank" rel="noreferrer"
-              style={{background:"#f97316",color:"white",padding:"11px 22px",borderRadius:50,fontWeight:800,textDecoration:"none",fontSize:"0.88rem",whiteSpace:"nowrap"}}>
-              Pre-Order →
-            </a>
-          </div>
-        </div>
-      </div>
       <div style={{background:"white",borderBottom:"1.5px solid #e5e7eb",padding:"0 24px"}}>
         <div style={{maxWidth:960,margin:"0 auto",display:"flex",gap:0,alignItems:"center"}}>
           <span style={{fontSize:"0.78rem",color:"#9ca3af",fontWeight:600,paddingRight:16,borderRight:"1px solid #e5e7eb",margin:"12px 0"}}>Jump to</span>
