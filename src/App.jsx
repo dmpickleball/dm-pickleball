@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, Fragment } from "react";
 
 // ─── IMAGE PATHS ────────────────────────────────────────────────────────────
+const VENMO = "dmpickleball"; // Venmo username (no @)
 // All images live in /public/images/ — drop your files there with these names:
 const LOGO_CRBN    = "/images/logo-crbn.png";     // was: IMG_5034.png
 const LOGO_VATIC   = "/images/logo-vatic.png";    // was: IMG_5036.png
@@ -447,6 +448,24 @@ function LessonModal({lesson,isMenlo,onClose,onCancel}){
             )}
           </div>
         )}
+        {lesson.status==="late_cancel"&&(()=>{
+          const rawPrice=lesson.customPrice!=null?lesson.customPrice:({"Private":{60:120,90:180},"Semi-Private":{60:140,90:210},"Group Lesson":{60:140,90:210},"Group":{60:140,90:210}}[lesson.type]||{})[parseInt(lesson.duration)]||120;
+          const fee=Math.round(rawPrice*0.5);
+          const note=encodeURIComponent("Late cancellation fee — lesson on "+fmtDateShort(lesson.date));
+          const venmoUrl="https://venmo.com/"+VENMO+"?txn=pay&amount="+fee+"&note="+note;
+          return(
+            <div style={{padding:"0 24px 24px"}}>
+              <div style={{background:"#fff7ed",border:"1.5px solid #fb923c",borderRadius:12,padding:"18px 20px"}}>
+                <div style={{fontWeight:800,color:"#c2410c",fontSize:"0.92rem",marginBottom:4}}>⚠️ Late Cancellation Fee</div>
+                <div style={{fontSize:"0.83rem",color:"#7c2d12",lineHeight:1.7,marginBottom:14}}>This lesson was cancelled after the 12-hour window. Per our cancellation policy, a fee of <strong>${fee}</strong> (50% of ${rawPrice}) is owed.</div>
+                <a href={venmoUrl} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,background:"#3d95ce",color:"white",padding:"11px 20px",borderRadius:50,fontWeight:700,textDecoration:"none",fontSize:"0.9rem"}}>
+                  Pay ${fee} via Venmo →
+                </a>
+                <div style={{fontSize:"0.75rem",color:"#9ca3af",textAlign:"center",marginTop:8}}>@{VENMO} · amount pre-filled in the Venmo app</div>
+              </div>
+            </div>
+          );
+        })()}
         {isCancelled&&lesson.notes&&(
           <div style={{padding:"0 24px 24px"}}>
             <div style={{...lbl,marginBottom:8}}>📝 Coaching Notes</div>
@@ -644,8 +663,31 @@ function PricingPage({setPage}){
           <button onClick={()=>setPage("contact")} style={{background:"none",border:"none",color:G,fontWeight:600,fontSize:"0.88rem",cursor:"pointer",flexShrink:0,padding:"8px 0",letterSpacing:"0.5px",textTransform:"uppercase",display:"flex",alignItems:"center",gap:5}}>Contact for pricing <span style={{fontSize:"0.75rem"}}>→</span></button>
         </div>
       </div>
-      <div style={{background:"#fffbea",border:"1.5px solid #f4c430",borderRadius:10,padding:"16px 20px",marginTop:24,fontSize:"0.88rem",color:"#7a5800",textAlign:"center"}}>
-        ⚠️ Cancellations must be made at least <strong>12 hours before</strong> your lesson start time.
+      <div style={{marginTop:48}}>
+        <div style={{textAlign:"center",marginBottom:28}}>
+          <div style={{fontSize:"0.75rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>Policies</div>
+          <h2 style={{fontSize:"1.6rem",fontWeight:900}}>What to Know</h2>
+        </div>
+        <div style={{display:"grid",gap:12}}>
+          {[
+            {icon:"⏰",title:"Cancellation",body:"Cancel at least 12 hours before your lesson at no charge. Cancellations can be made directly from your student dashboard."},
+            {icon:"⚠️",title:"Late Cancellation",body:(
+              <span>Cancellations made within the 12-hour window are subject to a <strong>50% lesson fee</strong>. Payment is due via Venmo: <a href={"https://venmo.com/"+VENMO} target="_blank" rel="noreferrer" style={{color:G,fontWeight:700,textDecoration:"none"}}>@{VENMO}</a>. The fee will be shown in your dashboard when applicable.</span>
+            )},
+            {icon:"✕",title:"No-Show",body:"Failing to show up without any notice will be charged the full lesson rate. Please always reach out if something comes up — life happens."},
+            {icon:"🌧️",title:"Weather",body:"If conditions are unplayable, Coach David will notify you as early as possible. The lesson will be rescheduled at no charge."},
+            {icon:"🕐",title:"Late Arrivals",body:"The lesson ends at its scheduled time regardless of when you arrive. Please plan to be on the court a few minutes early."},
+            {icon:"💳",title:"Payment",body:"Lesson payment is due on the day of your session. Coach David accepts Venmo (@"+VENMO+"), cash, or check."},
+          ].map(({icon,title,body})=>(
+            <div key={title} style={{background:"white",border:"1.5px solid #e5e7eb",borderLeft:"4px solid "+G,borderRadius:10,padding:"18px 24px",display:"flex",gap:16,alignItems:"flex-start"}}>
+              <span style={{fontSize:"1.1rem",flexShrink:0,marginTop:1}}>{icon}</span>
+              <div>
+                <div style={{fontWeight:700,fontSize:"0.95rem",marginBottom:4}}>{title}</div>
+                <div style={{fontSize:"0.85rem",color:"#6b7280",lineHeight:1.7}}>{body}</div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
