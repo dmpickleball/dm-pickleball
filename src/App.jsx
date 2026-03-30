@@ -906,7 +906,7 @@ function AdminLoginPage({onAdminLogin}){
     <div style={{minHeight:"100vh",background:"#f4f9f6",display:"flex",alignItems:"center",justifyContent:"center",padding:"24px"}}>
       <div style={{background:"white",borderRadius:16,padding:"40px 36px",boxShadow:"0 4px 24px rgba(0,0,0,0.08)",width:"100%",maxWidth:380}}>
         <div style={{textAlign:"center",marginBottom:28}}>
-          <div style={{fontSize:"0.7rem",fontWeight:800,color:G,letterSpacing:3,textTransform:"uppercase",marginBottom:8}}>DM Pickleball</div>
+          <img src="/DMPBlogo.png" alt="DM Pickleball" style={{height:36,marginBottom:16,objectFit:"contain"}}/>
           <h2 style={{fontWeight:900,color:"#1a1a1a",marginBottom:4}}>Admin Login</h2>
           <p style={{color:"#6b7280",fontSize:"0.85rem"}}>Dashboard</p>
         </div>
@@ -1312,7 +1312,7 @@ function Dashboard({user,setPage,lessons,onCancel,dbLoaded}){
   );
 }
 
-function BookingPage({user,setPage,onAddLesson}){
+function BookingPage({user,setPage,onAddLesson,stanfordEnabled=true}){
   const isMenlo=user.memberType==="menlo";
   const isGrandfathered=!!(user.grandfathered);
   const[step,setStep]=useState(1);
@@ -1459,6 +1459,18 @@ function BookingPage({user,setPage,onAddLesson}){
       </div>
     </div>
   );
+
+  if(isMenlo&&!stanfordEnabled){
+    return(
+      <div style={{maxWidth:620,margin:"0 auto",padding:"32px 24px"}}>
+        <div style={{background:"#fffbea",border:"1.5px solid #f4c430",borderRadius:12,padding:"28px 32px",textAlign:"center"}}>
+          <div style={{fontWeight:800,fontSize:"1.05rem",color:"#92400e",marginBottom:8}}>Stanford Lessons Temporarily Unavailable</div>
+          <p style={{color:"#7a5800",fontSize:"0.9rem",lineHeight:1.7,marginBottom:16}}>Coach David has temporarily paused Stanford Redwood City bookings. Please check back soon or get in touch directly.</p>
+          <button onClick={()=>setPage("contact")} style={{background:G,color:"white",border:"none",padding:"10px 24px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"0.9rem"}}>Contact Coach David</button>
+        </div>
+      </div>
+    );
+  }
 
   return(
     <div style={{maxWidth:620,margin:"0 auto",padding:"32px 24px"}}>
@@ -2465,7 +2477,7 @@ function AdminCalendarView(){
     </div>
   );
 }
-function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pendingStudents,onApprove,onDeny,mockUsers,onAddStudent,onAddLesson,onToggleMenlo,onToggleSaturday,onBlockStudent,onRemoveStudent,removedStudents,onRestoreStudent,onBlockRemoved,onToggleGrandfathered}){
+function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pendingStudents,onApprove,onDeny,mockUsers,onAddStudent,onAddLesson,onToggleMenlo,onToggleSaturday,onBlockStudent,onRemoveStudent,removedStudents,onRestoreStudent,onBlockRemoved,onToggleGrandfathered,stanfordEnabled=true,onToggleStanford}){
   const[tab,setTab]=useState("students");
   const[studentSearch,setStudentSearch]=useState("");
   const[selectedStudent,setSelectedStudent]=useState(null);
@@ -2760,14 +2772,19 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
         </div>
       </div>
 
-      <div style={{display:"flex",gap:0,borderBottom:"2px solid #e5e7eb",marginBottom:28,flexWrap:"wrap"}}>
-        {[["students","Students"],["lessons","Lessons"],["finances","Finances"]].map(([t,label])=>(
-          <button key={t} onClick={()=>{setTab(t);setSelectedStudent(null);setShowSchedule(false);}}
-            style={{background:"none",border:"none",borderBottom:"2px solid "+(tab===t?G:"transparent"),marginBottom:-2,padding:"10px 20px",fontSize:"0.88rem",fontWeight:tab===t?700:500,color:tab===t?G:"#6b7280",cursor:"pointer"}}>
-            {label}
-            {t==="students"&&pendingStudents.length>0&&<span style={{background:"#dc2626",color:"white",borderRadius:50,padding:"1px 7px",fontSize:"0.7rem",fontWeight:800,marginLeft:6}}>{pendingStudents.length}</span>}
-          </button>
-        ))}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:"2px solid #e5e7eb",marginBottom:28,flexWrap:"wrap",gap:8}}>
+        <div style={{display:"flex",gap:0}}>
+          {[["students","Students"],["lessons","Lessons"],["finances","Finances"]].map(([t,label])=>(
+            <button key={t} onClick={()=>{setTab(t);setSelectedStudent(null);setShowSchedule(false);}}
+              style={{background:"none",border:"none",borderBottom:"2px solid "+(tab===t?G:"transparent"),marginBottom:-2,padding:"10px 20px",fontSize:"0.88rem",fontWeight:tab===t?700:500,color:tab===t?G:"#6b7280",cursor:"pointer"}}>
+              {label}
+              {t==="students"&&pendingStudents.length>0&&<span style={{background:"#dc2626",color:"white",borderRadius:50,padding:"1px 7px",fontSize:"0.7rem",fontWeight:800,marginLeft:6}}>{pendingStudents.length}</span>}
+            </button>
+          ))}
+        </div>
+        <button onClick={onToggleStanford} style={{marginBottom:6,background:stanfordEnabled?"#e8f0ee":"#fef2f2",color:stanfordEnabled?G:"#dc2626",border:"1.5px solid "+(stanfordEnabled?G:"#fca5a5"),padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700,whiteSpace:"nowrap"}}>
+          {stanfordEnabled?"Stanford: On":"Stanford: Off"}
+        </button>
       </div>
 
       {tab==="students"&&!selectedStudent&&(
@@ -4093,6 +4110,9 @@ export default function App(){
   const[removedStudents,setRemovedStudents]=useState([]);
   const[dbLoaded,setDbLoaded]=useState(false);
   const[locations,setLocations]=useState([]);
+  const[stanfordEnabled,setStanfordEnabled]=useState(()=>{try{return localStorage.getItem("stanfordEnabled")!=="false";}catch{return true;}});
+
+  useEffect(()=>{window.scrollTo(0,0);},[page]);
 
   useEffect(()=>{
     const loadFromSupabase=async()=>{
@@ -4373,7 +4393,7 @@ export default function App(){
           <button onClick={logout} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.4)",color:"white",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem"}}>Log out</button>
         </div>
       </nav>
-      <AdminPanel allLessons={allLessons} onUpdateLesson={updateLesson} onCancelLesson={adminCancel} onDeleteLesson={deleteLesson} pendingStudents={pendingStudents} onApprove={approveStudent} onDeny={denyStudent} mockUsers={mockUsersState} onAddStudent={addStudent} onAddLesson={adminAddLesson} onToggleMenlo={toggleMenlo} onToggleSaturday={toggleSaturday} onBlockStudent={blockStudent} onRemoveStudent={removeStudent} removedStudents={removedStudents} onRestoreStudent={restoreStudent} onBlockRemoved={blockRemovedStudent} onToggleGrandfathered={toggleGrandfathered}/>
+      <AdminPanel allLessons={allLessons} onUpdateLesson={updateLesson} onCancelLesson={adminCancel} onDeleteLesson={deleteLesson} pendingStudents={pendingStudents} onApprove={approveStudent} onDeny={denyStudent} mockUsers={mockUsersState} onAddStudent={addStudent} onAddLesson={adminAddLesson} onToggleMenlo={toggleMenlo} onToggleSaturday={toggleSaturday} onBlockStudent={blockStudent} onRemoveStudent={removeStudent} removedStudents={removedStudents} onRestoreStudent={restoreStudent} onBlockRemoved={blockRemovedStudent} onToggleGrandfathered={toggleGrandfathered} stanfordEnabled={stanfordEnabled} onToggleStanford={()=>{const next=!stanfordEnabled;setStanfordEnabled(next);try{localStorage.setItem("stanfordEnabled",String(next));}catch{};}}/>
     </div>
   );
   return(
@@ -4387,7 +4407,7 @@ export default function App(){
       {page==="login"&&<LoginPage onLogin={u=>{setUser(u);setPage("dashboard");}} onAdminLogin={()=>setIsAdmin(true)}/>}
       {page==="account"&&(user?<AccountPage user={user} setPage={setPage} onUpdateUser={updateUser}/>:<LoginPage onLogin={u=>{setUser(u);setPage("dashboard");}} onAdminLogin={()=>setIsAdmin(true)}/>)}
       {page==="dashboard"&&(user?<Dashboard user={user} setPage={setPage} lessons={userLessons} onCancel={cancelLesson} dbLoaded={dbLoaded}/>:<LoginPage onLogin={u=>{setUser(u);setPage("dashboard");}} onAdminLogin={()=>setIsAdmin(true)}/>)}
-      {page==="booking"&&(user?<BookingPage user={user} setPage={setPage} onAddLesson={addLesson}/>:<LoginPage onLogin={u=>{setUser(u);setPage("dashboard");}} onAdminLogin={()=>setIsAdmin(true)}/>)}
+      {page==="booking"&&(user?<BookingPage user={user} setPage={setPage} onAddLesson={addLesson} stanfordEnabled={stanfordEnabled}/>:<LoginPage onLogin={u=>{setUser(u);setPage("dashboard");}} onAdminLogin={()=>setIsAdmin(true)}/>)}
       <footer style={{textAlign:"center",padding:24,color:"#9ca3af",fontSize:"0.82rem",borderTop:"1px solid #e5e7eb",marginTop:20}}>
         © 2026 DM Pickleball — David Mok · SF Peninsula, Bay Area
       </footer>
