@@ -163,6 +163,30 @@ function isPast(ds,ts){return new Date()>getLessonStart(ds,ts);}
 
 // ─── COMPONENTS ──────────────────────────────────────────────────────────────
 
+function IosSwitch({on,onClick,label}){
+  return(
+    <div onClick={onClick} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",userSelect:"none"}}>
+      <div style={{width:36,height:20,borderRadius:10,background:on?G:"#d1d5db",position:"relative",transition:"background 0.2s",flexShrink:0}}>
+        <div style={{position:"absolute",top:2,left:on?16:2,width:16,height:16,borderRadius:"50%",background:"white",transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.25)"}}/>
+      </div>
+      <span style={{fontSize:"0.78rem",fontWeight:600,color:on?"#374151":"#9ca3af",whiteSpace:"nowrap"}}>{label}</span>
+    </div>
+  );
+}
+
+function DelBtn({onClick,children,style:extraStyle}){
+  const[hov,setHov]=useState(false);
+  return(
+    <button onClick={onClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
+      style={{background:"white",color:hov?"#dc2626":"#6b7280",border:"1.5px solid "+(hov?"#fca5a5":"#e5e7eb"),padding:"5px 10px",borderRadius:6,cursor:"pointer",fontSize:"0.8rem",fontWeight:500,display:"inline-flex",alignItems:"center",gap:5,transition:"all 0.15s",...extraStyle}}>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+      </svg>
+      {children}
+    </button>
+  );
+}
+
 function CopyButton({code}){
   const[copied,setCopied]=useState(false);
   return(
@@ -2791,9 +2815,6 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
             </button>
           ))}
         </div>
-        <button onClick={onToggleStanford} style={{marginBottom:6,background:stanfordEnabled?"#e8f0ee":"#fef2f2",color:stanfordEnabled?G:"#dc2626",border:"1.5px solid "+(stanfordEnabled?G:"#fca5a5"),padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700,whiteSpace:"nowrap"}}>
-          {stanfordEnabled?"Stanford: On":"Stanford: Off"}
-        </button>
       </div>
 
       {tab==="students"&&!selectedStudent&&(
@@ -3178,7 +3199,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                   {!isCancelled&&<button onClick={()=>{setConfirmCancel(l.id);setActiveMenu(null);}} style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>✕ Cancel</button>}
                   {!isCancelled&&<button onClick={async()=>{await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id,updates:{status:"no_show"}})});onUpdateLesson(selectedStudent,l.id,{status:"no_show"});setActiveMenu(null);}} style={{background:"white",color:"#7f1d1d",border:"1.5px solid #fca5a5",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>✕ No-Show</button>}
                   {!isCancelled&&<button onClick={async()=>{await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id,updates:{status:"weather_cancel"}})});onUpdateLesson(selectedStudent,l.id,{status:"weather_cancel"});setActiveMenu(null);}} style={{background:"white",color:"#1d4ed8",border:"1.5px solid #93c5fd",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>🌧 Weather</button>}
-                  <button onClick={()=>{setConfirmDelete(l.id);setActiveMenu(null);}} style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>🗑 Delete</button>
+                  <DelBtn onClick={()=>{setConfirmDelete(l.id);setActiveMenu(null);}}>Delete</DelBtn>
                   <span style={{flex:1}}/>
                   <button onClick={()=>setActiveMenu(null)} style={{background:"none",border:"none",color:"#9ca3af",cursor:"pointer",fontSize:"0.8rem"}}>Close</button>
                 </div>
@@ -3199,7 +3220,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
               {/* Delete confirm */}
               {confirmDelete===l.id&&(
                 <div style={{background:"#fef2f2",borderTop:"2px solid #dc2626",padding:"16px 18px"}}>
-                  <div style={{fontWeight:800,color:"#991b1b",fontSize:"0.95rem",marginBottom:4}}>🗑 Delete this lesson?</div>
+                  <div style={{fontWeight:800,color:"#991b1b",fontSize:"0.95rem",marginBottom:4}}>Delete this lesson?</div>
                   <div style={{fontSize:"0.82rem",color:"#b91c1c",marginBottom:12,fontWeight:600}}>⚠️ This is permanent and cannot be undone. The calendar event will also be removed.</div>
                   <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
                     <button onClick={()=>setConfirmDelete(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Keep it</button>
@@ -3532,7 +3553,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
             {isMenuOpen&&(
               <div style={{borderTop:"1px solid #f3f4f6",background:"#fafafa",padding:"10px 18px",display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
                 {!isCancelled&&!isPast(l.date,l.time)&&<button onClick={()=>{setConfirmCancel(mk);setActiveMenu(null);}} style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>✕ Cancel Lesson</button>}
-                <button onClick={()=>{setConfirmDelete(mk);setActiveMenu(null);}} style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>🗑 Delete Lesson</button>
+                <DelBtn onClick={()=>{setConfirmDelete(mk);setActiveMenu(null);}}>Delete Lesson</DelBtn>
                 <span style={{flex:1}}/>
                 <button onClick={()=>setActiveMenu(null)} style={{background:"none",border:"none",color:"#9ca3af",cursor:"pointer",fontSize:"0.8rem"}}>Close</button>
               </div>
@@ -3553,7 +3574,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
             {/* Delete confirm */}
             {confirmDelete===mk&&(
               <div style={{background:"#fef2f2",borderTop:"2px solid #dc2626",padding:"16px 18px"}}>
-                <div style={{fontWeight:800,color:"#991b1b",fontSize:"0.95rem",marginBottom:4}}>🗑 Delete this lesson?</div>
+                <div style={{fontWeight:800,color:"#991b1b",fontSize:"0.95rem",marginBottom:4}}>Delete this lesson?</div>
                 <div style={{fontSize:"0.82rem",color:"#b91c1c",marginBottom:12,fontWeight:600}}>⚠️ This is permanent and cannot be undone. The calendar event will also be removed.</div>
                 <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
                   <button onClick={()=>setConfirmDelete(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Keep it</button>
@@ -3624,13 +3645,13 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                 <div style={{display:"flex",alignItems:"center",gap:6}}>
                   <span style={{background:badgeBg,color:badgeColor,padding:"3px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>{badgeLabel}</span>
                   {e.gcalEventId&&!isStanford&&!isMenlo&&(
-                    <button onClick={()=>setConfirmCalDelete(isConfirmingCalDel?null:e.gcalEventId)} style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"4px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.75rem",fontWeight:700}}>🗑</button>
+                    <DelBtn onClick={()=>setConfirmCalDelete(isConfirmingCalDel?null:e.gcalEventId)} style={{padding:"4px 8px",fontSize:"0.75rem"}}></DelBtn>
                   )}
                 </div>
               </div>
               {isConfirmingCalDel&&(
                 <div style={{background:"#fef2f2",borderTop:"2px solid #dc2626",padding:"14px 18px"}}>
-                  <div style={{fontWeight:800,color:"#991b1b",fontSize:"0.9rem",marginBottom:3}}>🗑 Remove from Google Calendar?</div>
+                  <div style={{fontWeight:800,color:"#991b1b",fontSize:"0.9rem",marginBottom:3}}>Remove from Google Calendar?</div>
                   <div style={{fontSize:"0.8rem",color:"#b91c1c",marginBottom:10,fontWeight:600}}>⚠️ This is a manual calendar event — it will be permanently deleted from Google Calendar.</div>
                   <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
                     <button onClick={()=>setConfirmCalDelete(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>Keep it</button>
@@ -3714,9 +3735,13 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
               {upcomingView!=="upcoming"&&upcomingView!=="events"&&<button onClick={()=>setFilterCancelled(p=>!p)} style={{background:filterCancelled?"#fef2f2":"white",color:filterCancelled?"#dc2626":"#6b7280",border:"1.5px solid "+(filterCancelled?"#fca5a5":"#e5e7eb"),padding:"5px 13px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:filterCancelled?700:500}}>
                 {filterCancelled?"✕ Hide Cancelled":"Show Cancelled"}
               </button>}
-              {upcomingView!=="events"&&<button onClick={()=>setShowCalendar(p=>!p)} style={{background:showCalendar?"#e8f0ee":"white",color:showCalendar?G:"#6b7280",border:"1.5px solid "+(showCalendar?G:"#e5e7eb"),padding:"5px 13px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:showCalendar?700:500}}>
-                {calLoading?<span style={{display:"inline-block",width:10,height:10,border:"2px solid "+G,borderTop:"2px solid transparent",borderRadius:"50%",animation:"spin 0.7s linear infinite",verticalAlign:"middle",marginRight:4}}/>:"📅 "}{showCalendar?"Cal On":"Cal Off"}
-              </button>}
+              {upcomingView!=="events"&&(
+                <div style={{display:"flex",alignItems:"center",gap:16,padding:"4px 12px",background:"white",border:"1.5px solid #e5e7eb",borderRadius:50}}>
+                  <IosSwitch on={stanfordEnabled} onClick={onToggleStanford} label="Stanford"/>
+                  <div style={{width:1,height:16,background:"#e5e7eb"}}/>
+                  <IosSwitch on={showCalendar} onClick={()=>setShowCalendar(p=>!p)} label={calLoading?"Cal…":"Calendar"}/>
+                </div>
+              )}
               {upcomingView==="events"&&<button onClick={()=>{const s=toDS(new Date());const e=toDS(addDays(new Date(),90));setEventsLoading(true);fetch("/api/calendar-events?start="+s+"&end="+e+"&keywords=rental,tournament").then(r=>r.json()).then(d=>{setEventsData(d.events||[]);setEventsLoading(false);}).catch(()=>setEventsLoading(false));}} style={{background:"white",color:G,border:"1.5px solid "+G,padding:"5px 13px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>↺ Refresh</button>}
             </div>
           </div>
