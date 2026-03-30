@@ -38,10 +38,10 @@ const FOCUS_AREAS = ["Dinking & kitchen game","Third shot drops","Third shot dri
 
 // ─── BRANDS ──────────────────────────────────────────────────────────────────
 const BRANDS = [
-  { id:"crbn",    name:"CRBN Pickleball",    tagline:"David's #1 Recommended Paddle",  description:"As a CRBN Ambassador, David uses and trusts CRBN paddles at every level of play — from training sessions to 5.0+ tournament competition. Use his code for a discount on your next order.", code:"DMPICKLEBALL", deal:"Discount off your order", link:"https://crbnpickleball.com",   logo:LOGO_CRBN,    logoBg:"#000000", logoPad:"20px 28px", shopBg:"#000000", shopColor:"white", codeColor:"#ffffff", codeBg:"#1a1a1a", codeText:"#9ca3af" },
+  { id:"crbn",    name:"CRBN Pickleball",    tagline:"Coach David's #1 Recommended Paddle",  description:"As a CRBN Ambassador, Coach David uses and trusts CRBN paddles at every level of play — from training sessions to 5.0+ tournament competition. Use his code for a discount on your next order.", code:"DMPICKLEBALL", deal:"Discount off your order", link:"https://crbnpickleball.com",   logo:LOGO_CRBN,    logoBg:"#000000", logoPad:"20px 28px", shopBg:"#000000", shopColor:"white", codeColor:"#ffffff", codeBg:"#1a1a1a", codeText:"#9ca3af" },
   { id:"vatic",   name:"Vatic Pro",           tagline:"High Performance at Every Level", description:"Vatic Pro paddles deliver exceptional feel and control for players serious about improving their game. Trusted by competitive players across all skill levels.",                            code:"DMPICKLEBALL", deal:"Discount off your order", link:"https://vaticpro.com",         logo:LOGO_VATIC,   logoBg:"#ffffff", logoPad:"16px 24px", shopBg:"#e85d04", shopColor:"white", codeColor:"#e85d04", codeBg:"#fff5f0", codeText:"#9ca3af" },
   { id:"sixzero", name:"Six Zero Pickleball", tagline:"Engineered for Competitive Play", description:"Six Zero paddles are built for players who want precision, power, and consistency in every shot. A go-to brand for serious competitors on the court.",                                   code:"DAVIDMUK10",   deal:"10% off your order",      link:"https://sixzero.co",          logo:LOGO_SIXZERO, logoBg:"#ffffff", logoPad:"20px 24px", shopBg:"#111111", shopColor:"white", codeColor:"#111111", codeBg:"#f5f5f5", codeText:"#9ca3af" },
-  { id:"engage",  name:"Engage Pickleball",   tagline:"Engage. Believe. Perform.",       description:"David is a signed Teaching Pro with Engage Pickleball. Use his code to get a discount on their full lineup of paddles and gear.",                                                         code:"20MOK",        deal:"20% off your order",      link:"https://engagepickleball.com", logo:LOGO_ENGAGE,  logoBg:"#ffffff", logoPad:"16px 24px", shopBg:"#111111", shopColor:"white", codeColor:"#cc0000", codeBg:"#f9f9f9", codeText:"#9ca3af" },
+  { id:"engage",  name:"Engage Pickleball",   tagline:"Engage. Believe. Perform.",       description:"Coach David is a signed Teaching Pro with Engage Pickleball. Use his code to get a discount on their full lineup of paddles and gear.",                                                         code:"20MOK",        deal:"20% off your order",      link:"https://engagepickleball.com", logo:LOGO_ENGAGE,  logoBg:"#ffffff", logoPad:"16px 24px", shopBg:"#111111", shopColor:"white", codeColor:"#cc0000", codeBg:"#f9f9f9", codeText:"#9ca3af" },
 ];
 
 const BAG_ITEMS = [
@@ -561,10 +561,10 @@ function Homepage({setPage}){
             <img src={DAVID_PHOTO} alt="David Mok — Honolulu Open Gold Medal" style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top"}}/>
           </div>
           <div>
-            <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:10}}>About David</div>
+            <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:10}}>About Coach David</div>
             <h2 style={{fontSize:"1.8rem",fontWeight:900,marginBottom:16,lineHeight:1.3}}>From Tennis Courts to Pickleball Pro</h2>
-            <p style={{color:"#4b5563",lineHeight:1.8,marginBottom:14,fontSize:"0.97rem"}}>With 15+ years of competitive tennis experience, David Mok brings a unique edge to pickleball coaching. As a 5.0+ rated tournament player and CRBN Ambassador, David has an insider's understanding of what it takes to elevate your game.</p>
-            <p style={{color:"#4b5563",lineHeight:1.8,fontSize:"0.97rem"}}>David specializes in coaching tennis players making the transition to pickleball — he knows exactly the habits that help and the ones that hurt. Whether you're a complete beginner or a seasoned competitor, David coaches all skill levels in both doubles and singles across the SF Peninsula.</p>
+            <p style={{color:"#4b5563",lineHeight:1.8,marginBottom:14,fontSize:"0.97rem"}}>With 15+ years of competitive tennis experience, Coach David brings a unique edge to pickleball coaching. As a 5.0+ rated tournament player and CRBN Ambassador, Coach David has an insider's understanding of what it takes to elevate your game.</p>
+            <p style={{color:"#4b5563",lineHeight:1.8,fontSize:"0.97rem"}}>Coach David specializes in coaching tennis players making the transition to pickleball — he knows exactly the habits that help and the ones that hurt. Whether you're a complete beginner or a seasoned competitor, Coach David coaches all skill levels in both doubles and singles across the SF Peninsula.</p>
             <div style={{background:"#e8f0ee",border:`1px solid ${G}20`,borderRadius:10,padding:"10px 16px",marginTop:14,display:"inline-flex",alignItems:"center",gap:8}}>
               <span style={{fontSize:"0.83rem",fontWeight:700,color:G}}>Multiple Gold Medals · Tournament Competitor</span>
             </div>
@@ -599,14 +599,14 @@ function Homepage({setPage}){
         <div style={{maxWidth:700,margin:"0 auto",textAlign:"center"}}>
           <div style={{fontSize:"0.78rem",fontWeight:700,color:"#f97316",textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>Gear I Trust</div>
           <h2 style={{fontSize:"1.8rem",fontWeight:900,color:"white",marginBottom:12}}>Paddle & Gear Discounts</h2>
-          <p style={{color:"rgba(255,255,255,0.55)",marginBottom:28,lineHeight:1.7,maxWidth:480,margin:"0 auto 28px"}}>Get discounts on the paddles and gear David uses and recommends.</p>
+          <p style={{color:"rgba(255,255,255,0.55)",marginBottom:28,lineHeight:1.7,maxWidth:480,margin:"0 auto 28px"}}>Get discounts on the paddles and gear Coach David uses and recommends.</p>
           <button onClick={()=>setPage("gear")} style={{background:"#f97316",color:"white",border:"none",padding:"12px 28px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"0.95rem"}}>View All Codes →</button>
         </div>
       </div>
       <div style={{background:`linear-gradient(135deg,${G},#0d2620)`,color:"white",textAlign:"center",padding:"60px 24px"}}>
         <h2 style={{fontSize:"1.8rem",fontWeight:900,marginBottom:12}}>Ready to Improve Your Game?</h2>
         <p style={{opacity:0.9,marginBottom:24}}>Reach out via text or call to get started.</p>
-        <button onClick={()=>setPage("contact")} style={{background:Y,color:G,border:"none",padding:"13px 32px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem"}}>Contact David</button>
+        <button onClick={()=>setPage("contact")} style={{background:Y,color:G,border:"none",padding:"13px 32px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem"}}>Contact Coach David</button>
       </div>
     </div>
   );
@@ -707,7 +707,7 @@ function GearPage(){
           <div style={{textAlign:"center",marginBottom:40}}>
             <div style={{fontSize:"0.72rem",fontWeight:700,color:"#f97316",textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>Updated March 2026</div>
             <h2 style={{fontSize:"2rem",fontWeight:900,color:"white",marginBottom:10}}>What's In My Bag</h2>
-            <p style={{color:"rgba(255,255,255,0.45)",fontSize:"0.92rem",maxWidth:420,margin:"0 auto"}}>The exact gear David plays and competes with right now.</p>
+            <p style={{color:"rgba(255,255,255,0.45)",fontSize:"0.92rem",maxWidth:420,margin:"0 auto"}}>The exact gear Coach David plays and competes with right now.</p>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(300px,1fr))",gap:16,marginBottom:56}}>
             {BAG_ITEMS.map(item=>(
@@ -788,8 +788,8 @@ function ContactPage(){
     <div style={{maxWidth:560,margin:"0 auto",padding:"60px 24px"}}>
       <div style={{textAlign:"center",marginBottom:36}}>
         <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>Get In Touch</div>
-        <h2 style={{fontSize:"2rem",fontWeight:900}}>Contact David</h2>
-        <p style={{color:"#6b7280",marginTop:8,lineHeight:1.7}}>Interested in lessons? Send a message and David will get back to you directly.</p>
+        <h2 style={{fontSize:"2rem",fontWeight:900}}>Contact Coach David</h2>
+        <p style={{color:"#6b7280",marginTop:8,lineHeight:1.7}}>Interested in lessons? Send a message and Coach David will get back to you directly.</p>
       </div>
       <div style={{background:"white",borderRadius:12,padding:"28px 32px",boxShadow:"0 2px 16px rgba(0,0,0,0.07)"}}>
         <div style={{marginBottom:20}}>
@@ -803,11 +803,11 @@ function ContactPage(){
           <div style={{textAlign:"center",padding:"24px 0"}}>
             <div style={{fontSize:40,marginBottom:12}}>✅</div>
             <div style={{fontWeight:700,color:G}}>Message sent!</div>
-            <div style={{color:"#6b7280",fontSize:"0.9rem",marginTop:6}}>David will be in touch soon.</div>
+            <div style={{color:"#6b7280",fontSize:"0.9rem",marginTop:6}}>Coach Coach David will be in touch soon.</div>
           </div>
         ):status==="error"?(
           <div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:8,padding:"14px 16px",color:"#991b1b",fontSize:"0.88rem",marginBottom:14,textAlign:"center"}}>
-            Something went wrong. Please try again or email David directly.
+            Something went wrong. Please try again or email Coach David directly.
             <button onClick={()=>setStatus("idle")} style={{display:"block",margin:"10px auto 0",background:"white",border:"1.5px solid #fca5a5",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem",color:"#991b1b"}}>Try Again</button>
           </div>
         ):(
@@ -903,9 +903,9 @@ function LoginPage({onLogin,onAdminLogin}){
         setLoadingProv(null);
         return;
       }
-      if(!data.student.approved){setLoadingProv(null);setError("Your account is pending approval from David.");return;}
-      if(data.student.blocked&&!data.student.approved){setLoadingProv(null);setError("Your account has been removed. Please contact David.");return;}
-      if(data.student.blocked){setLoadingProv(null);setError("Your account has been blocked. Please contact David.");return;}
+      if(!data.student.approved){setLoadingProv(null);setError("Your account is pending approval from Coach David.");return;}
+      if(data.student.blocked&&!data.student.approved){setLoadingProv(null);setError("Your account has been removed. Please contact Coach David.");return;}
+      if(data.student.blocked){setLoadingProv(null);setError("Your account has been blocked. Please contact Coach David.");return;}
       setLoadingProv(null);
       onLogin({email,name:data.student.name||(info.firstName+" "+info.lastName).trim(),firstName:data.student.first_name||info.firstName||"",lastName:data.student.last_name||info.lastName||"",commEmail:data.student.comm_email||"",memberType:data.student.member_type,approved:true,picture:info.picture||data.student.picture||"",phone:data.student.phone||"",homeCourt:data.student.home_court||"",city:data.student.city||"",skillLevel:data.student.skill_level||"",duprRating:data.student.dupr_rating||"",grandfathered:!!(data.student.grandfathered)});
       fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,updates:{picture:info.picture||"",auth_provider:provKey}})}).catch(()=>{});
@@ -1068,8 +1068,8 @@ function LoginPage({onLogin,onAdminLogin}){
             body:JSON.stringify({email:providerInfo.email,name:fullName,firstName:firstName.trim(),lastName:lastName.trim(),commEmail:commEmail.trim().toLowerCase(),phone,homeCourt,skillLevel,goals,referralSource,duprRating:"",authProvider:providerInfo.provider})
           }).then(r=>r.json()).then(data=>{
             if(data.error==="already_exists"){setError("You already have an account. Please sign in.");return;}
-            if(data.error==="already_requested"){setError("You already have a pending request. David will be in touch soon.");return;}
-            if(data.error==="blocked"||data.student?.blocked){setError("Your registration request was not accepted. Please contact David directly.");return;}
+            if(data.error==="already_requested"){setError("You already have a pending request. Coach Coach David will be in touch soon.");return;}
+            if(data.error==="blocked"||data.student?.blocked){setError("Your registration request was not accepted. Please contact Coach David directly.");return;}
             fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:"david@dmpickleball.com",subject:"New access request: "+fullName,text:fullName+" has requested access.\nProvider: "+PROV_LABELS[providerInfo.provider]+"\nLogin Email: "+providerInfo.email+"\nComm Email: "+commEmail+"\nPhone: "+phone+"\nHome Court: "+(homeCourt||"Not specified")+"\nSkill: "+(skillLevel||"Not specified")+"\nGoal: "+(goals||"Not specified")+"\nReferral: "+(referralSource||"Not specified")+"\n\nApprove at: https://dmpickleball.com/admin",fromAlias:"noreply@dmpickleball.com"})}).catch(()=>{});
             setSignedUp(true);
           }).catch(()=>setSignedUp(true));
@@ -2626,12 +2626,12 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
     const groupInfo2=schedLessonType==="group"&&schedGroupMembers.slice(0,schedGroupSize-1).some(m=>m.firstName)?"\nGroup: "+schedGroupMembers.slice(0,schedGroupSize-1).filter(m=>m.firstName).map(m=>(m.firstName+" "+m.lastName).trim()+(m.email?" ("+m.email+")":"")).join(", "):"";
     const schedPriceTotal=schedCustomPrice?parseFloat(schedCustomPrice):SCHED_PRICES[schedLessonType][schedDuration];
     const schedPriceNote=!schedCustomPrice&&schedLessonType==="semi"?" ($"+(schedPriceTotal/2)+"/person)":!schedCustomPrice&&schedLessonType==="group"?" (split equally)":"";
-    const schedStudentText="Hi "+student.name+",\n\nDavid has scheduled a lesson for you!\n\nRef: "+ticketId2+"\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+schedDuration+" min\nPrice: $"+schedPriceTotal+" total"+schedPriceNote+"\nFocus: "+(schedFocus||"Not specified")+"\nLocation: "+location+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398";
+    const schedStudentText="Hi "+student.name+",\n\nCoach David has scheduled a lesson for you!\n\nRef: "+ticketId2+"\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+schedDuration+" min\nPrice: $"+schedPriceTotal+" total"+schedPriceNote+"\nFocus: "+(schedFocus||"Not specified")+"\nLocation: "+location+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398";
     await sendEmail2(selectedStudent,"Your lesson is booked - "+fmtDateShort(schedDate),schedStudentText,"book@dmpickleball.com",link,"book@dmpickleball.com");
     const schedAdminText="You scheduled a lesson!\n\nRef: "+ticketId2+"\nStudent: "+student.name+"\nEmail: "+selectedStudent+"\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+schedDuration+" min\nPrice: $"+schedPriceTotal+" total"+schedPriceNote+"\nFocus: "+(schedFocus||"Not specified")+partnerInfo2+groupInfo2+"\nLocation: "+location;
     await sendEmail2("david@dmpickleball.com","Scheduled: "+summary+" - "+fmtDateShort(schedDate),schedAdminText,selectedStudent,null,"noreply@dmpickleball.com");
-    if(schedLessonType==="semi"&&schedPartner.email){const schedPartnerText="Hi "+schedPartnerFull+",\n\n"+student.name+" has added you to a pickleball lesson with David Mok!\n\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nType: Semi-Private · "+schedDuration+" min\nFocus: "+(schedFocus||"Not specified")+"\nLocation: "+location+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398";await sendEmail2(schedPartner.email,"You've been added to a pickleball lesson - "+fmtDateShort(schedDate),schedPartnerText,"book@dmpickleball.com",link,"book@dmpickleball.com");}
-    if(schedLessonType==="group"){for(const m of schedGroupMembers.slice(0,schedGroupSize-1)){if(m.email){const mFull=(m.firstName+" "+m.lastName).trim();const schedGroupText="Hi "+mFull+",\n\n"+student.name+" has added you to a group pickleball lesson with David Mok!\n\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nLocation: "+location+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398";await sendEmail2(m.email,"You've been added to a group pickleball lesson - "+fmtDateShort(schedDate),schedGroupText,"book@dmpickleball.com",link,"book@dmpickleball.com");}}}
+    if(schedLessonType==="semi"&&schedPartner.email){const schedPartnerText="Hi "+schedPartnerFull+",\n\n"+student.name+" has added you to a pickleball lesson with Coach David!\n\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nType: Semi-Private · "+schedDuration+" min\nFocus: "+(schedFocus||"Not specified")+"\nLocation: "+location+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398";await sendEmail2(schedPartner.email,"You've been added to a pickleball lesson - "+fmtDateShort(schedDate),schedPartnerText,"book@dmpickleball.com",link,"book@dmpickleball.com");}
+    if(schedLessonType==="group"){for(const m of schedGroupMembers.slice(0,schedGroupSize-1)){if(m.email){const mFull=(m.firstName+" "+m.lastName).trim();const schedGroupText="Hi "+mFull+",\n\n"+student.name+" has added you to a group pickleball lesson with Coach David!\n\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nLocation: "+location+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398";await sendEmail2(m.email,"You've been added to a group pickleball lesson - "+fmtDateShort(schedDate),schedGroupText,"book@dmpickleball.com",link,"book@dmpickleball.com");}}}
     const finalPrice=schedCustomPrice?parseFloat(schedCustomPrice):null;
     const newLesson={id:Date.now(),date:schedDate,time:timeStr,type:lessonLabel,duration:schedDuration+" min",status:"confirmed",focus:schedFocus,notes:"",photos:[],videos:[],gcalEventId:eventId,ticketId:ticketId2,customPrice:finalPrice,partnerEmail:schedLessonType==="semi"?schedPartner.email:"",members:memberNames.slice(1)};
     onAddLesson(selectedStudent,newLesson);
@@ -4132,8 +4132,8 @@ export default function App(){
     const sendEmail3=(to,subject,text,fromAlias)=>{const html=makeCancelEmailHtml(text);return fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to,subject,text,html,...(fromAlias?{fromAlias}:{})})}).catch(()=>{});};
     const cancelLocation=user.memberType==="menlo"?"Stanford Redwood City":"Andrew Spinas Park, 3003 Bay Rd, Redwood City";
     const cancelDetails=(lesson.ticketId?"\nRef: "+lesson.ticketId:"")+"\nDate: "+fmtDate(lesson.date)+"\nTime: "+lesson.time+"\nType: "+lesson.type+(lesson.duration?" · "+lesson.duration:"")+"\nLocation: "+cancelLocation+(lesson.focus?"\nFocus: "+lesson.focus:"")+(lesson.members&&lesson.members.length>0?"\nWith: "+lesson.members.join(", "):"");
-    const cancelMsg="Your pickleball lesson has been cancelled.\n"+cancelDetails+"\n\nIf you have any questions, reply to this email or contact David at (650) 839-3398.\n\nDavid Mok\n(650) 839-3398";
-    const partnerMsg="A pickleball lesson you were part of has been cancelled.\n"+cancelDetails+"\n\nIf you have any questions, please contact David at (650) 839-3398.\n\nDavid Mok\n(650) 839-3398";
+    const cancelMsg="Your pickleball lesson has been cancelled.\n"+cancelDetails+"\n\nIf you have any questions, reply to this email or contact Coach David at (650) 839-3398.\n\nDavid Mok\n(650) 839-3398";
+    const partnerMsg="A pickleball lesson you were part of has been cancelled.\n"+cancelDetails+"\n\nIf you have any questions, please contact Coach David at (650) 839-3398.\n\nDavid Mok\n(650) 839-3398";
     const adminCancelMsg=user.name+" cancelled their lesson.\n"+cancelDetails+"\nStudent email: "+user.email;
     const cancelSubject="Lesson Cancelled: "+lesson.type+" — "+fmtDateShort(lesson.date);
     sendEmail3(user.email,cancelSubject,"Hi "+user.name+",\n\n"+cancelMsg,"noreply@dmpickleball.com");
@@ -4161,8 +4161,8 @@ export default function App(){
     const studentName=mockUsersState[email]?.name||email;
     const adminCancelLocation=mockUsersState[email]?.memberType==="menlo"?"Stanford Redwood City":"Andrew Spinas Park, 3003 Bay Rd, Redwood City";
     const adminCancelDetails=(lesson.ticketId?"\nRef: "+lesson.ticketId:"")+"\nDate: "+fmtDate(lesson.date)+"\nTime: "+lesson.time+"\nType: "+lesson.type+(lesson.duration?" · "+lesson.duration:"")+"\nLocation: "+adminCancelLocation+(lesson.focus?"\nFocus: "+lesson.focus:"")+(lesson.members&&lesson.members.length>0?"\nWith: "+lesson.members.join(", "):"");
-    const cancelMsg="Your pickleball lesson has been cancelled by David.\n"+adminCancelDetails+"\n\nIf you have any questions, reply to this email or contact David at (650) 839-3398.\n\nDavid Mok\n(650) 839-3398";
-    const partnerMsg="A pickleball lesson you were part of has been cancelled.\n"+adminCancelDetails+"\n\nIf you have any questions, please contact David at (650) 839-3398.\n\nDavid Mok\n(650) 839-3398";
+    const cancelMsg="Your pickleball lesson has been cancelled by Coach David.\n"+adminCancelDetails+"\n\nIf you have any questions, reply to this email or contact Coach David at (650) 839-3398.\n\nDavid Mok\n(650) 839-3398";
+    const partnerMsg="A pickleball lesson you were part of has been cancelled.\n"+adminCancelDetails+"\n\nIf you have any questions, please contact Coach David at (650) 839-3398.\n\nDavid Mok\n(650) 839-3398";
     const adminNotifyMsg="You cancelled "+studentName+"'s lesson.\n"+adminCancelDetails+"\nStudent email: "+email;
     const adminCancelSubject="Lesson Cancelled: "+lesson.type+" — "+fmtDateShort(lesson.date);
     sendCancelEmail(email,adminCancelSubject,"Hi "+studentName+",\n\n"+cancelMsg);
