@@ -355,13 +355,13 @@ function Nav({user,onLogin,onLogout,setPage,currentPage}){
   const goHome=()=>{if(onAdminRoute){window.location.href="/";}else{setPage("home");}};
   const [mob,setMob]=useState(window.innerWidth<=640);
   useEffect(()=>{const h=()=>setMob(window.innerWidth<=640);window.addEventListener("resize",h);return()=>window.removeEventListener("resize",h);},[]);
-  const fs=mob?"0.78rem":"0.92rem";
+  const fs=mob?"0.82rem":"0.92rem";
   const gap=mob?12:20;
   const pad=mob?"10px 16px":"14px 32px";
-  // On mobile: drop "Home" (logo handles it), shorten "Paddle/Gear"→"Gear"
+  // Logo handles home on all screen sizes — "Home" removed from nav links
   const links=mob
-    ?[["pricing","Rates"],["gear","Gear"],["contact","Contact"]]
-    :[["home","Home"],["pricing","Rates"],["gear","Paddle/Gear"],["contact","Contact"]];
+    ?[["pricing","Rates"],["gear","Paddle/Gear"],["contact","Contact"]]
+    :[["pricing","Rates"],["gear","Paddle/Gear"],["contact","Contact"]];
   return(
     <nav style={{background:G,padding:pad,display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100}}>
       <div onClick={goHome} style={{cursor:"pointer",display:"flex",alignItems:"center"}}>
