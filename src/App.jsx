@@ -76,24 +76,30 @@ function generateTicket(){const n=new Date();const mmdd=String(n.getMonth()+1).p
 // Generate branded HTML email — calLink is optional (renders as a button if provided)
 function makeCancelEmailHtml(text){
   const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-  const rows=text.split('\n').map(line=>{
+  const lines=text.split('\n');
+  const refLine=lines.find(l=>/^Ref: PB-/.test(l))||'';
+  const refNum=refLine?refLine.replace('Ref: ',''):'';
+  const rows=lines.map(line=>{
     if(!line.trim())return'<div style="height:8px"></div>';
-    if(/^Ref: PB-/.test(line))return`<div style="display:inline-block;background:#fef2f2;color:#991b1b;font-family:monospace;font-weight:800;font-size:0.9rem;padding:6px 14px;border-radius:6px;margin:8px 0;letter-spacing:0.5px;">${esc(line)}</div>`;
+    if(/^Ref: PB-/.test(line))return'';
     const ci=line.indexOf(': ');
     if(ci>0&&ci<22&&!/^(Hi |See |David |Your |You |New |If |A )/.test(line)){const lbl=esc(line.slice(0,ci));const val=esc(line.slice(ci+2));return`<div style="padding:3px 0;"><span style="color:#6b7280;font-weight:700;display:inline-block;min-width:90px;">${lbl}:</span> <span style="color:#1a1a1a;">${val}</span></div>`;}
     return`<div style="padding:2px 0;color:#374151;">${esc(line)}</div>`;
   }).join('');
   return`<!DOCTYPE html><html><body style="margin:0;padding:20px;background:#fff5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
 <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.07);">
-  <div style="background:#991b1b;padding:18px 28px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;"><span style="color:white;font-weight:800;font-size:1.2rem;letter-spacing:3px;">DMPB</span><span style="color:rgba(255,255,255,0.45);font-size:0.75rem;letter-spacing:1px;font-weight:400;">PICKLEBALL</span></div><div style="color:rgba(255,255,255,0.85);font-weight:700;font-size:0.95rem;">Lesson Cancelled</div></div>
-  <div style="padding:28px 32px;">${rows}<div style="margin-top:22px;padding-top:16px;border-top:1px solid #f3f4f6;font-size:0.75rem;color:#9ca3af;">DM Pickleball · <a href="https://dmpickleball.com" style="color:#991b1b;text-decoration:none;">dmpickleball.com</a></div></div>
+  <div style="background:#991b1b;padding:18px 28px;text-align:center;"><img src="https://dmpickleball.com/DMPBlogo-white.png" alt="DM Pickleball" style="height:36px;width:auto;display:inline-block;" /><div style="color:rgba(255,255,255,0.85);font-weight:700;font-size:0.95rem;margin-top:8px;">Lesson Cancelled</div></div>
+  <div style="padding:28px 32px;">${rows}<div style="margin-top:22px;padding-top:16px;border-top:1px solid #f3f4f6;font-size:0.75rem;color:#9ca3af;">DM Pickleball · <a href="https://dmpickleball.com" style="color:#991b1b;text-decoration:none;">dmpickleball.com</a>${refNum?' · <span style="font-family:monospace;">'+refNum+'</span>':''}</div></div>
 </div></body></html>`;
 }
 function makeEmailHtml(text,calLink){
   const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-  const rows=text.split('\n').map(line=>{
+  const lines=text.split('\n');
+  const refLine=lines.find(l=>/^Ref: PB-/.test(l))||'';
+  const refNum=refLine?refLine.replace('Ref: ',''):'';
+  const rows=lines.map(line=>{
     if(!line.trim())return'<div style="height:8px"></div>';
-    if(/^Ref: PB-/.test(line))return`<div style="display:inline-block;background:#e8f0ee;color:#1a3c34;font-family:monospace;font-weight:800;font-size:0.9rem;padding:6px 14px;border-radius:6px;margin:8px 0;letter-spacing:0.5px;">${esc(line)}</div>`;
+    if(/^Ref: PB-/.test(line))return'';
     const ci=line.indexOf(': ');
     if(ci>0&&ci<22&&!/^(Hi |See |David |Your |You |New )/.test(line)){const lbl=esc(line.slice(0,ci));const val=esc(line.slice(ci+2));return`<div style="padding:3px 0;"><span style="color:#6b7280;font-weight:700;display:inline-block;min-width:70px;">${lbl}:</span> <span style="color:#1a1a1a;">${val}</span></div>`;}
     return`<div style="padding:2px 0;color:#374151;">${esc(line)}</div>`;
@@ -101,8 +107,8 @@ function makeEmailHtml(text,calLink){
   const btn=calLink?`<div style="margin:24px 0;"><a href="${calLink}" style="display:inline-block;background:#1a3c34;color:white;padding:12px 28px;border-radius:50px;text-decoration:none;font-weight:700;font-size:0.88rem;">Add to Google Calendar</a></div>`:'';
   return`<!DOCTYPE html><html><body style="margin:0;padding:20px;background:#f4f9f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
 <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.07);">
-  <div style="background:#1a3c34;padding:18px 28px;display:flex;align-items:center;gap:10px;"><span style="color:white;font-weight:800;font-size:1.2rem;letter-spacing:3px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">DMPB</span><span style="color:rgba(255,255,255,0.45);font-size:0.75rem;letter-spacing:1px;font-weight:400;">PICKLEBALL</span></div>
-  <div style="padding:28px 32px;">${rows}${btn}<div style="margin-top:22px;padding-top:16px;border-top:1px solid #f3f4f6;font-size:0.75rem;color:#9ca3af;">DM Pickleball · <a href="https://dmpickleball.com" style="color:#1a3c34;text-decoration:none;">dmpickleball.com</a></div></div>
+  <div style="background:#1a3c34;padding:18px 28px;text-align:center;"><img src="https://dmpickleball.com/DMPBlogo-white.png" alt="DM Pickleball" style="height:36px;width:auto;display:inline-block;" /></div>
+  <div style="padding:28px 32px;">${rows}${btn}<div style="margin-top:22px;padding-top:16px;border-top:1px solid #f3f4f6;font-size:0.75rem;color:#9ca3af;">DM Pickleball · <a href="https://dmpickleball.com" style="color:#1a3c34;text-decoration:none;">dmpickleball.com</a>${refNum?' · <span style="font-family:monospace;">'+refNum+'</span>':''}</div></div>
 </div></body></html>`;
 }
 const NOW = new Date();
@@ -374,7 +380,7 @@ function Nav({user,onLogin,onLogout,setPage,currentPage}){
         {user?(
           <>
             <span onClick={()=>setPage("dashboard")} style={{color:Y,cursor:"pointer",fontWeight:700,fontSize:fs,whiteSpace:"nowrap"}}>{mob?"Lessons":"My Lessons"}</span>
-            {!mob&&<span onClick={()=>setPage("account")} title="Account Settings" style={{color:"white",cursor:"pointer",opacity:currentPage==="account"?1:0.7,fontSize:"1.2rem",lineHeight:1}}>⚙️</span>}
+            {!mob&&<span onClick={()=>setPage("account")} title="Account Settings" style={{color:"white",cursor:"pointer",opacity:currentPage==="account"?1:0.7,lineHeight:1,display:"inline-flex",alignItems:"center"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>}
             <span onClick={()=>setPage("booking")} style={{background:"rgba(255,255,255,0.15)",color:"white",padding:mob?"5px 10px":"7px 16px",borderRadius:50,cursor:"pointer",fontSize:fs,whiteSpace:"nowrap"}}>Book</span>
             {!mob&&<button onClick={onLogout} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.4)",color:"white",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem"}}>Log out</button>}
           </>
@@ -773,7 +779,7 @@ function GearPage(){
           <h2 style={{fontSize:"2.2rem",fontWeight:900,marginBottom:14}}>Paddle & Gear Discounts</h2>
           <p style={{color:"#6b7280",maxWidth:520,margin:"0 auto",lineHeight:1.8,fontSize:"0.97rem"}}>These are the brands I personally use and recommend. Use my exclusive codes to save on your next purchase.</p>
         </div>
-        <div style={{maxWidth:960,margin:"0 auto",display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(420px,1fr))",gap:24}}>
+        <div style={{maxWidth:960,margin:"0 auto",display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(420px,100%),1fr))",gap:24}}>
           {BRANDS.map(brand=>(
             <div key={brand.id} style={{background:"white",borderRadius:20,overflow:"hidden",boxShadow:"0 4px 24px rgba(0,0,0,0.07)",border:"1.5px solid #ebebeb",display:"flex",flexDirection:"column"}}>
               <div style={{background:brand.logoBg,padding:brand.logoPad,display:"flex",alignItems:"center",justifyContent:"center",minHeight:110}}>
@@ -1733,7 +1739,7 @@ function getEarnings(allLessons,mockUsers,range,customStart,customEnd){
       const net=l.customPrice!=null?l.customPrice:(u.memberType==="menlo"?getMenloNet(gross):gross);
       total+=net;
       if(u.memberType==="menlo"){menloGross+=gross;menloNet+=net;}
-      rows.push({email,id:l.id,name:u.name||email,date:l.date,type:l.type,duration:l.duration,gross,net,isMenlo:u.memberType==="menlo"});
+      rows.push({email,id:l.id,name:u.name||email,date:l.date,type:l.type,duration:l.duration,gross,net,isMenlo:u.memberType==="menlo",ticketId:l.ticketId||"",focus:l.focus||"",notes:l.notes||"",customPrice:l.customPrice});
     });
   });
   return{total,menloGross,menloNet,rows};
@@ -2069,15 +2075,10 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
             )}
           </div>
         </div>
-        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-          {includeStanford&&(
-            <button onClick={()=>setShowNetStanford(!showNetStanford)} style={{background:showNetStanford?"#6d28d9":"white",color:showNetStanford?"white":"#374151",border:"1.5px solid "+(showNetStanford?"#6d28d9":"#e5e7eb"),padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:600}}>
-              {showNetStanford?"Stanford: Net (after tax)":"Stanford: Gross"}
-            </button>
-          )}
-          <button onClick={handleStanfordToggle} style={{background:includeStanford?"#8b5cf6":"white",color:includeStanford?"white":"#374151",border:"1.5px solid "+(includeStanford?"#8b5cf6":"#e5e7eb"),padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem",fontWeight:600}}>
-            {includeStanford?"✓ Stanford Included":"+ Include Stanford"}
-          </button>
+        <div style={{display:"flex",gap:16,alignItems:"center",padding:"8px 14px",background:"white",border:"1.5px solid #e5e7eb",borderRadius:50,flexWrap:"wrap"}}>
+          <IosSwitch on={showNetStanford} onClick={()=>setShowNetStanford(p=>!p)} label={showNetStanford?"Net Pay":"Gross Pay"}/>
+          <div style={{width:1,height:16,background:"#e5e7eb"}}/>
+          <IosSwitch on={includeStanford} onClick={handleStanfordToggle} label="Stanford"/>
         </div>
       </div>
       {/* Summary cards */}
@@ -2149,6 +2150,11 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
               </div>
             </div>
           )}
+          {financeView!=="year"&&(
+            <div style={{marginBottom:16}}>
+              <input value={financeSearch} onChange={e=>setFinanceSearch(e.target.value)} placeholder="Search by student, event, or ref #…" style={{width:"100%",boxSizing:"border-box",border:"1.5px solid #e5e7eb",borderRadius:50,padding:"9px 18px",fontSize:"0.88rem",background:"white",outline:"none"}}/>
+            </div>
+          )}
           {financeView!=="year"&&calendarLessons.length>0&&(
             <div style={{marginBottom:24}}>
               <div style={{fontSize:"0.8rem",fontWeight:700,color:"#1a3c34",textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Calendar Lessons</div>
@@ -2156,7 +2162,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:"0.88rem"}}>
                   <thead><tr style={{background:"#f9f9f6",borderBottom:"1.5px solid #e5e7eb"}}>{["Date","Event","Type","Hours","Earnings"].map(h=>(<th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#6b7280",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>))}</tr></thead>
                   <tbody>
-                    {adjustedCalLessons.map((e,i)=>{
+                    {adjustedCalLessons.filter(e=>{if(!financeSearch)return true;const q=financeSearch.toLowerCase();return e.summary?.toLowerCase().includes(q)||e.date?.includes(q);}).map((e,i)=>{
                       const calKey=e.date+"|"+e.summary;
                       const isOverridden=calOverrides[calKey]!=null;
                       const isTypeOverridden=calTypeOverrides[calKey]!=null;
@@ -2201,18 +2207,36 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
               <div style={{fontSize:"0.8rem",fontWeight:700,color:"#1a3c34",textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Portal Lessons</div>
               <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:"0.88rem"}}>
-                  <thead><tr style={{background:"#f9f9f6",borderBottom:"1.5px solid #e5e7eb"}}>{["Date","Student","Type","Duration","Income"].map(h=>(<th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#6b7280",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>))}</tr></thead>
+                  <thead><tr style={{background:"#f9f9f6",borderBottom:"1.5px solid #e5e7eb"}}>{["Date","Student","Type","Duration","Income",""].map(h=>(<th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#6b7280",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>))}</tr></thead>
                   <tbody>
-                    {portalEarnings.rows.map((r,i)=>{
+                    {portalEarnings.rows.filter(r=>{if(!financeSearch)return true;const q=financeSearch.toLowerCase();return r.name?.toLowerCase().includes(q)||r.ticketId?.toLowerCase().includes(q)||r.type?.toLowerCase().includes(q);}).map((r,i)=>{
                       const isCustom=r.customPrice!=null;
+                      const rowKey=r.id+"_"+r.date;
+                      const isExpanded=expandedFinRow===rowKey;
                       return(
-                      <tr key={i} style={{borderBottom:"1px solid #f3f4f6",background:r.isMenlo?"#f0faf5":"white"}}>
+                      <React.Fragment key={i}>
+                      <tr style={{borderBottom:isExpanded?"none":"1px solid #f3f4f6",background:r.isMenlo?"#f0faf5":"white"}}>
                         <td style={{padding:"12px 16px"}}>{fmtDateShort(r.date)}</td>
                         <td style={{padding:"12px 16px"}}>{r.name}{r.isMenlo&&<span style={{background:"#1a3c34",color:"white",fontSize:"0.65rem",fontWeight:700,padding:"1px 6px",borderRadius:50,marginLeft:6}}>MCC</span>}</td>
                         <td style={{padding:"12px 16px"}}>{r.type}</td>
                         <td style={{padding:"12px 16px"}}>{r.duration}</td>
                         <td onClick={()=>{editRowRef.current=r;setEditPriceVal(String(r.gross));dialogRef.current?.showModal();}} style={{padding:"12px 16px",fontWeight:700,color:isCustom?"#0ea5e9":"#1a3c34",cursor:"pointer",userSelect:"none"}} title="Click to edit">${typeof r.net==="number"?r.net.toFixed(2):r.net}<span style={{fontSize:"0.7rem",color:isCustom?"#0ea5e9":"#9ca3af",marginLeft:5,opacity:0.7}}>✎</span></td>
+                        <td style={{padding:"12px 16px"}}><button onClick={()=>setExpandedFinRow(isExpanded?null:rowKey)} style={{background:"none",border:"none",color:G,fontSize:"0.75rem",fontWeight:600,cursor:"pointer",padding:0,whiteSpace:"nowrap"}}>{isExpanded?"▲ Hide":"▼ Details"}</button></td>
                       </tr>
+                      {isExpanded&&(
+                        <tr style={{borderBottom:"1px solid #f3f4f6",background:"#f9f9f6"}}>
+                          <td colSpan={6} style={{padding:"12px 20px 16px"}}>
+                            <div style={{display:"flex",gap:24,flexWrap:"wrap",fontSize:"0.82rem",color:"#374151"}}>
+                              {r.ticketId&&<div><span style={{color:"#9ca3af",fontWeight:700,marginRight:6}}>Ref</span><span style={{fontFamily:"monospace",fontWeight:700,color:"#1a3c34"}}>{r.ticketId}</span></div>}
+                              {r.focus&&<div><span style={{color:"#9ca3af",fontWeight:700,marginRight:6}}>Focus</span>{r.focus}</div>}
+                              {r.notes&&<div><span style={{color:"#9ca3af",fontWeight:700,marginRight:6}}>Notes</span>{r.notes}</div>}
+                              <div><span style={{color:"#9ca3af",fontWeight:700,marginRight:6}}>Gross</span>${typeof r.gross==="number"?r.gross.toFixed(2):r.gross}</div>
+                              <div><span style={{color:"#9ca3af",fontWeight:700,marginRight:6}}>Net</span>${typeof r.net==="number"?r.net.toFixed(2):r.net}</div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                      </React.Fragment>
                     );})}
                   </tbody>
                 </table>
@@ -2521,6 +2545,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
   const[earningsRange,setEarningsRange]=useState("month");
   const[financeRange,setFinanceRange]=useState("month");const[showNetStanford,setShowNetStanford]=useState(false);
   const[includeStanford,setIncludeStanford]=useState(true);
+  const[financeSearch,setFinanceSearch]=useState("");
+  const[expandedFinRow,setExpandedFinRow]=useState(null);
   const[financeData,setFinanceData]=useState(null);
   const[financeLoading,setFinanceLoading]=useState(false);
   const[showNialExport,setShowNialExport]=useState(false);
@@ -4267,6 +4293,9 @@ export default function App(){
   };
   // Remove a lesson from state (optimistic) — called from AdminPanel delete buttons
   const deleteLesson=(email,id)=>{
+    // Also evict the calendar item so it doesn't ghost as a "calendar lesson"
+    const gcalId=((allLessons[email]||[]).find(x=>x.id===id)||{}).gcalEventId;
+    if(gcalId)setCalendarItems(prev=>prev.filter(c=>c.gcalEventId!==gcalId));
     setAllLessons(prev=>({...prev,[email]:(prev[email]||[]).filter(x=>x.id!==id)}));
   };
   const adminCancel=async(email,id)=>{
