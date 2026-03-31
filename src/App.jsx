@@ -3705,7 +3705,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
         const monthGrid=getMonthGrid(calMonth);
         const dayPortal=(day)=>allLessonsList.filter(l=>l.date===day&&(filterCancelled||!cancelledStatuses2.includes(l.status)));
         // Exclude GCal events that already have a corresponding portal lesson (avoid double-display)
-        const dayCalItems=(day)=>showCalendar?calendarItems.filter(e=>e.date===day&&!portalGcalIds.has(e.gcalEventId)):[];
+        const dayCalItems=(day)=>showCalendar?calendarItems.filter(e=>e.date===day&&!portalGcalIds.has(e.gcalEventId)&&(stanfordEnabled||!e.isStanford)):[];
         const hasDayActivity=(day)=>dayPortal(day).length>0||dayCalItems(day).length>0;
         const selPortal=dayPortal(selectedDay);
         const selCal=dayCalItems(selectedDay);
@@ -3974,7 +3974,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
             // Portal: include today's lessons even if past (for greying); show today+future
             const portalFwd=allLessonsList.filter(l=>!cancelledStatuses2.includes(l.status)&&new Date(l.date+"T12:00:00")>=todayDT);
             // Calendar: include all non-pickup from today onward (excluding portal-linked events)
-            const calFwd=showCalendar?calendarItems.filter(c=>!c.isPickup&&new Date(c.date+"T12:00:00")>=todayDT&&!portalGcalIds.has(c.gcalEventId)):[];
+            const calFwd=showCalendar?calendarItems.filter(c=>!c.isPickup&&new Date(c.date+"T12:00:00")>=todayDT&&!portalGcalIds.has(c.gcalEventId)&&(stanfordEnabled||!c.isStanford)):[];
             const merged2=[
               ...portalFwd.map(l=>({...l,_type:"portal",_isPast:isPast(l.date,l.time),_sortKey:l.date+(l.time||"")})),
               ...calFwd.map((c,i)=>({...c,_type:"cal",_idx:i,_isPast:isCalPast(c),_sortKey:c.date+(c.startTime||"")}))
