@@ -2553,6 +2553,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
   const[nialStart,setNialStart]=useState("");
   const[nialEnd,setNialEnd]=useState("");
   const[filterCancelled,setFilterCancelled]=useState(false);
+  const[showStanford,setShowStanford]=useState(true);
   const[editingId,setEditingId]=useState(null);const[editPriceId,setEditPriceId]=useState(null);const[editPriceVal,setEditPriceVal]=useState("");
   const[editNotes,setEditNotes]=useState("");
   const[confirmCancel,setConfirmCancel]=useState(null);const[confirmDelete,setConfirmDelete]=useState(null);const[confirmDeleteStudent,setConfirmDeleteStudent]=useState(false);const[confirmCalDelete,setConfirmCalDelete]=useState(null);const[calDeleteLoading,setCalDeleteLoading]=useState(false);
@@ -3705,7 +3706,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
         const monthGrid=getMonthGrid(calMonth);
         const dayPortal=(day)=>allLessonsList.filter(l=>l.date===day&&(filterCancelled||!cancelledStatuses2.includes(l.status)));
         // Exclude GCal events that already have a corresponding portal lesson (avoid double-display)
-        const dayCalItems=(day)=>showCalendar?calendarItems.filter(e=>e.date===day&&!portalGcalIds.has(e.gcalEventId)&&(stanfordEnabled||!e.isStanford)):[];
+        const dayCalItems=(day)=>showCalendar?calendarItems.filter(e=>e.date===day&&!portalGcalIds.has(e.gcalEventId)&&(showStanford||!e.isStanford)):[];
         const hasDayActivity=(day)=>dayPortal(day).length>0||dayCalItems(day).length>0;
         const selPortal=dayPortal(selectedDay);
         const selCal=dayCalItems(selectedDay);
@@ -3763,7 +3764,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
               </button>}
               {upcomingView!=="events"&&(
                 <div style={{display:"flex",alignItems:"center",gap:16,padding:"4px 12px",background:"white",border:"1.5px solid #e5e7eb",borderRadius:50}}>
-                  <IosSwitch on={stanfordEnabled} onClick={onToggleStanford} label="Stanford"/>
+                  <IosSwitch on={showStanford} onClick={()=>setShowStanford(p=>!p)} label="Stanford"/>
                   <div style={{width:1,height:16,background:"#e5e7eb"}}/>
                   <IosSwitch on={showCalendar} onClick={()=>setShowCalendar(p=>!p)} label={calLoading?"Cal…":"Calendar"}/>
                 </div>
@@ -3974,7 +3975,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
             // Portal: include today's lessons even if past (for greying); show today+future
             const portalFwd=allLessonsList.filter(l=>!cancelledStatuses2.includes(l.status)&&new Date(l.date+"T12:00:00")>=todayDT);
             // Calendar: include all non-pickup from today onward (excluding portal-linked events)
-            const calFwd=showCalendar?calendarItems.filter(c=>!c.isPickup&&new Date(c.date+"T12:00:00")>=todayDT&&!portalGcalIds.has(c.gcalEventId)&&(stanfordEnabled||!c.isStanford)):[];
+            const calFwd=showCalendar?calendarItems.filter(c=>!c.isPickup&&new Date(c.date+"T12:00:00")>=todayDT&&!portalGcalIds.has(c.gcalEventId)&&(showStanford||!c.isStanford)):[];
             const merged2=[
               ...portalFwd.map(l=>({...l,_type:"portal",_isPast:isPast(l.date,l.time),_sortKey:l.date+(l.time||"")})),
               ...calFwd.map((c,i)=>({...c,_type:"cal",_idx:i,_isPast:isCalPast(c),_sortKey:c.date+(c.startTime||"")}))
