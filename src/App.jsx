@@ -171,12 +171,12 @@ function isPast(ds,ts){return new Date()>getLessonStart(ds,ts);}
 
 function IosSwitch({on,onClick,label}){
   return(
-    <div onClick={onClick} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",userSelect:"none"}}>
+    <button type="button" onClick={e=>{e.stopPropagation();onClick&&onClick();}} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",userSelect:"none",background:"none",border:"none",padding:0,font:"inherit"}}>
       <div style={{width:36,height:20,borderRadius:10,background:on?G:"#d1d5db",position:"relative",transition:"background 0.2s",flexShrink:0}}>
         <div style={{position:"absolute",top:2,left:on?16:2,width:16,height:16,borderRadius:"50%",background:"white",transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.25)"}}/>
       </div>
       <span style={{fontSize:"0.78rem",fontWeight:600,color:on?"#374151":"#9ca3af",whiteSpace:"nowrap"}}>{label}</span>
-    </div>
+    </button>
   );
 }
 
