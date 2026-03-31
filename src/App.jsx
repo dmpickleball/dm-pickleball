@@ -1867,6 +1867,8 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
   const[viewYear,setViewYear]=useState(now.getFullYear());
   const[viewYearOnly,setViewYearOnly]=useState(now.getFullYear());
   const[projectedMode,setProjectedMode]=useState(false);
+  const[financeSearch,setFinanceSearch]=useState("");
+  const[expandedFinRow,setExpandedFinRow]=useState(null);
   const[projectedCalData,setProjectedCalData]=useState(null);
   const[projectedCalLoading,setProjectedCalLoading]=useState(false);
   const dialogRef=useRef(null);
@@ -2545,8 +2547,6 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
   const[earningsRange,setEarningsRange]=useState("month");
   const[financeRange,setFinanceRange]=useState("month");const[showNetStanford,setShowNetStanford]=useState(false);
   const[includeStanford,setIncludeStanford]=useState(true);
-  const[financeSearch,setFinanceSearch]=useState("");
-  const[expandedFinRow,setExpandedFinRow]=useState(null);
   const[financeData,setFinanceData]=useState(null);
   const[financeLoading,setFinanceLoading]=useState(false);
   const[showNialExport,setShowNialExport]=useState(false);
