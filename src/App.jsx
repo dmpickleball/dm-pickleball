@@ -2588,6 +2588,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
   const[studentView,setStudentView]=useState("active"); // "active" | "removed"
   const[confirmDeleteLogin,setConfirmDeleteLogin]=useState(null); // email being confirmed for deletion
   const[showCalendar,setShowCalendar]=useState(true);
+  const[showEvents,setShowEvents]=useState(true);
   const[calendarItems,setCalendarItems]=useState([]);
   const[calLoading,setCalLoading]=useState(false);
   const[weather,setWeather]=useState(null);
@@ -2674,6 +2675,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
   // Load calendar on mount so dashboard earnings + upcoming are always populated
   useEffect(()=>{fetchCalendarItems();},[]);
   useEffect(()=>{if(tab==="lessons"&&calendarItems.length===0&&!calLoading)fetchCalendarItems();},[tab]);
+  useEffect(()=>{if(tab==="lessons"&&eventsData.length===0&&!eventsLoading){const s=toDS(new Date());const e=toDS(addDays(new Date(),90));setEventsLoading(true);fetch("/api/calendar-events?start="+s+"&end="+e+"&keywords=rental,tournament").then(r=>r.json()).then(d=>{setEventsData(d.events||[]);setEventsLoading(false);}).catch(()=>setEventsLoading(false));}},[tab]);
   useEffect(()=>{
     if(tab!=="lessons"||upcomingView!=="week")return;
     const days=getWeekDays(selectedDay);
@@ -3746,8 +3748,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
           {/* ── Controls row: view switcher + filters ──────────────────── */}
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:8}}>
             <div style={{display:"flex",gap:4,background:"#f3f4f6",padding:4,borderRadius:10}}>
-              {[["day","Day"],["week","Week"],["month","Month"],["upcoming","Upcoming"],["events","Events"]].map(([v,lbl])=>(
-                <button key={v} onClick={()=>{setUpcomingView(v);if(v==="day")setSelectedDay(todayStr);if(v==="events"&&eventsData.length===0&&!eventsLoading){const s=toDS(new Date());const e=toDS(addDays(new Date(),90));setEventsLoading(true);fetch("/api/calendar-events?start="+s+"&end="+e+"&keywords=rental,tournament").then(r=>r.json()).then(d=>{setEventsData(d.events||[]);setEventsLoading(false);}).catch(()=>setEventsLoading(false));}}} style={{background:upcomingView===v?"white":"transparent",color:upcomingView===v?G:"#6b7280",border:"none",padding:"6px 16px",borderRadius:8,cursor:"pointer",fontSize:"0.85rem",fontWeight:upcomingView===v?700:500,boxShadow:upcomingView===v?"0 1px 4px rgba(0,0,0,0.1)":"none",transition:"all 0.15s"}}>{lbl}</button>
+              {[["day","Day"],["week","Week"],["month","Month"],["upcoming","Upcoming"]].map(([v,lbl])=>(
+                <button key={v} onClick={()=>{setUpcomingView(v);if(v==="day")setSelectedDay(todayStr);}} style={{background:upcomingView===v?"white":"transparent",color:upcomingView===v?G:"#6b7280",border:"none",padding:"6px 16px",borderRadius:8,cursor:"pointer",fontSize:"0.85rem",fontWeight:upcomingView===v?700:500,boxShadow:upcomingView===v?"0 1px 4px rgba(0,0,0,0.1)":"none",transition:"all 0.15s"}}>{lbl}</button>
               ))}
             </div>
             <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
@@ -3758,18 +3760,17 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                   <button onClick={()=>{const[y,m]=calMonth.split("-").map(Number);const next=new Date(y,m,1);setCalMonth(toDS(next).slice(0,7));}} style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"5px 10px",cursor:"pointer",fontWeight:700}}>›</button>
                 </div>
               )}
-              {/* Filter pills — hidden in Upcoming/Events view */}
-              {upcomingView!=="upcoming"&&upcomingView!=="events"&&<button onClick={()=>setFilterCancelled(p=>!p)} style={{background:filterCancelled?"#fef2f2":"white",color:filterCancelled?"#dc2626":"#6b7280",border:"1.5px solid "+(filterCancelled?"#fca5a5":"#e5e7eb"),padding:"5px 13px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:filterCancelled?700:500}}>
+              {/* Filter pills — hidden in Upcoming view */}
+              {upcomingView!=="upcoming"&&<button onClick={()=>setFilterCancelled(p=>!p)} style={{background:filterCancelled?"#fef2f2":"white",color:filterCancelled?"#dc2626":"#6b7280",border:"1.5px solid "+(filterCancelled?"#fca5a5":"#e5e7eb"),padding:"5px 13px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:filterCancelled?700:500}}>
                 {filterCancelled?"✕ Hide Cancelled":"Show Cancelled"}
               </button>}
-              {upcomingView!=="events"&&(
-                <div style={{display:"flex",alignItems:"center",gap:16,padding:"4px 12px",background:"white",border:"1.5px solid #e5e7eb",borderRadius:50}}>
-                  <IosSwitch on={showStanford} onClick={()=>setShowStanford(p=>!p)} label="Stanford"/>
-                  <div style={{width:1,height:16,background:"#e5e7eb"}}/>
-                  <IosSwitch on={showCalendar} onClick={()=>setShowCalendar(p=>!p)} label={calLoading?"Cal…":"Calendar"}/>
-                </div>
-              )}
-              {upcomingView==="events"&&<button onClick={()=>{const s=toDS(new Date());const e=toDS(addDays(new Date(),90));setEventsLoading(true);fetch("/api/calendar-events?start="+s+"&end="+e+"&keywords=rental,tournament").then(r=>r.json()).then(d=>{setEventsData(d.events||[]);setEventsLoading(false);}).catch(()=>setEventsLoading(false));}} style={{background:"white",color:G,border:"1.5px solid "+G,padding:"5px 13px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>↺ Refresh</button>}
+              <div style={{display:"flex",alignItems:"center",gap:16,padding:"4px 12px",background:"white",border:"1.5px solid #e5e7eb",borderRadius:50,flexWrap:"wrap"}}>
+                <IosSwitch on={showStanford} onClick={()=>setShowStanford(p=>!p)} label="Stanford"/>
+                <div style={{width:1,height:16,background:"#e5e7eb"}}/>
+                <IosSwitch on={showCalendar} onClick={()=>setShowCalendar(p=>!p)} label={calLoading?"Cal…":"Calendar"}/>
+                <div style={{width:1,height:16,background:"#e5e7eb"}}/>
+                <IosSwitch on={showEvents} onClick={()=>setShowEvents(p=>!p)} label={eventsLoading?"Events…":"Events"}/>
+              </div>
             </div>
           </div>
 
@@ -3976,9 +3977,12 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
             const portalFwd=allLessonsList.filter(l=>!cancelledStatuses2.includes(l.status)&&new Date(l.date+"T12:00:00")>=todayDT);
             // Calendar: include all non-pickup from today onward (excluding portal-linked events)
             const calFwd=showCalendar?calendarItems.filter(c=>!c.isPickup&&new Date(c.date+"T12:00:00")>=todayDT&&!portalGcalIds.has(c.gcalEventId)&&(showStanford||!c.isStanford)):[];
+            const todayDT2=new Date(todayStr+"T00:00:00");
+            const eventsFwd=showEvents?eventsData.filter(e=>new Date(e.date+"T12:00:00")>=todayDT2):[];
             const merged2=[
               ...portalFwd.map(l=>({...l,_type:"portal",_isPast:isPast(l.date,l.time),_sortKey:l.date+(l.time||"")})),
-              ...calFwd.map((c,i)=>({...c,_type:"cal",_idx:i,_isPast:isCalPast(c),_sortKey:c.date+(c.startTime||"")}))
+              ...calFwd.map((c,i)=>({...c,_type:"cal",_idx:i,_isPast:isCalPast(c),_sortKey:c.date+(c.startTime||"")})),
+              ...eventsFwd.map(e=>({...e,_type:"event",_isPast:false,_sortKey:e.date+(e.startTime||"")}))
             ].sort((a,b)=>a._sortKey.localeCompare(b._sortKey));
             // Group by date
             const byDate={};
@@ -4007,66 +4011,26 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                         const rowStyle=item._isPast?{opacity:0.45,filter:"grayscale(40%)"}:{};
                         return(
                           <div key={i} style={rowStyle}>
-                            {item._type==="portal"?LessonRow(item):CalRow(item,item._idx??i)}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })()}
-
-          {/* ── EVENTS view ────────────────────────────────────────────── */}
-          {upcomingView==="events"&&(()=>{
-            if(eventsLoading)return(
-              <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"40px",textAlign:"center",color:"#9ca3af"}}>
-                <span style={{display:"inline-block",width:18,height:18,border:"2px solid "+G,borderTop:"2px solid transparent",borderRadius:"50%",animation:"spin 0.7s linear infinite",verticalAlign:"middle",marginRight:8}}/>
-                Loading events…
-              </div>
-            );
-            if(eventsData.length===0)return(
-              <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"40px",textAlign:"center"}}>
-                <div style={{fontSize:"2rem",marginBottom:12}}>🏆</div>
-                <div style={{fontWeight:700,color:"#374151",marginBottom:6}}>No Upcoming Events</div>
-                <div style={{color:"#9ca3af",fontSize:"0.85rem"}}>No rentals or tournaments found in the next 3 months.</div>
-              </div>
-            );
-            // Group by date
-            const evByDate={};
-            eventsData.forEach(e=>{if(!evByDate[e.date])evByDate[e.date]=[];evByDate[e.date].push(e);});
-            const evDates=Object.keys(evByDate).sort();
-            return(
-              <div>
-                <div style={{fontSize:"0.78rem",color:"#9ca3af",marginBottom:16}}>{eventsData.length} event{eventsData.length!==1?"s":""} · next 3 months</div>
-                {evDates.map(day=>{
-                  const isToday2=day===todayStr;
-                  const dObj=new Date(day+"T12:00:00");
-                  const dayLabel2=isToday2?"Today — "+dObj.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"}):dObj.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"});
-                  return(
-                    <div key={day} style={{marginBottom:20}}>
-                      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-                        <div style={{fontWeight:800,fontSize:"0.8rem",color:isToday2?G:"#374151",textTransform:"uppercase",letterSpacing:1}}>{dayLabel2}</div>
-                        {isToday2&&<span style={{background:G,color:"white",fontSize:"0.65rem",fontWeight:800,padding:"1px 8px",borderRadius:50}}>TODAY</span>}
-                      </div>
-                      {evByDate[day].map((ev,i)=>{
-                        const isTournament=(ev.summary||"").toLowerCase().includes("tournament");
-                        const isRental=(ev.summary||"").toLowerCase().includes("rental");
-                        const tagBg=isTournament?"#fef3c7":isRental?"#e0f2fe":"#f3f4f6";
-                        const tagColor=isTournament?"#92400e":isRental?"#075985":"#374151";
-                        const tagLabel=isTournament?"🏆 Tournament":isRental?"🎾 Rental":"📅 Event";
-                        return(
-                          <div key={i} style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:10,padding:"12px 16px",marginBottom:8,display:"flex",alignItems:"center",gap:14}}>
-                            <div style={{background:tagBg,borderRadius:8,padding:"8px 14px",minWidth:80,textAlign:"center",flexShrink:0}}>
-                              <div style={{fontSize:"0.65rem",fontWeight:700,color:tagColor,textTransform:"uppercase",letterSpacing:0.5}}>{isTournament?"TOURN":"RENTAL"}</div>
-                            </div>
-                            <div style={{flex:1,minWidth:0}}>
-                              <div style={{fontWeight:700,fontSize:"0.92rem",color:"#1a1a1a",marginBottom:2}}>{ev.summary}</div>
-                              {(ev.startTime||ev.endTime)&&<div style={{fontSize:"0.8rem",color:"#6b7280"}}>{ev.startTime}{ev.endTime&&ev.endTime!==ev.startTime?" – "+ev.endTime:""}</div>}
-                              {ev.location&&<div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:2}}>📍 {ev.location}</div>}
-                            </div>
-                            <span style={{background:tagBg,color:tagColor,fontSize:"0.7rem",fontWeight:800,padding:"3px 10px",borderRadius:50,flexShrink:0}}>{tagLabel}</span>
+                            {item._type==="portal"?LessonRow(item):item._type==="event"?(()=>{
+                              const isTournament=(item.summary||"").toLowerCase().includes("tournament");
+                              const isRental=(item.summary||"").toLowerCase().includes("rental");
+                              const tagBg=isTournament?"#fef3c7":isRental?"#e0f2fe":"#f3f4f6";
+                              const tagColor=isTournament?"#92400e":isRental?"#075985":"#374151";
+                              const tagLabel=isTournament?"🏆 Tournament":isRental?"🎾 Rental":"📅 Event";
+                              return(
+                                <div style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:10,padding:"12px 16px",marginBottom:8,display:"flex",alignItems:"center",gap:14}}>
+                                  <div style={{background:tagBg,borderRadius:8,padding:"8px 14px",minWidth:80,textAlign:"center",flexShrink:0}}>
+                                    <div style={{fontSize:"0.65rem",fontWeight:700,color:tagColor,textTransform:"uppercase",letterSpacing:0.5}}>{isTournament?"TOURN":"RENTAL"}</div>
+                                  </div>
+                                  <div style={{flex:1,minWidth:0}}>
+                                    <div style={{fontWeight:700,fontSize:"0.92rem",color:"#1a1a1a",marginBottom:2}}>{item.summary}</div>
+                                    {(item.startTime||item.endTime)&&<div style={{fontSize:"0.8rem",color:"#6b7280"}}>{item.startTime}{item.endTime&&item.endTime!==item.startTime?" – "+item.endTime:""}</div>}
+                                    {item.location&&<div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:2}}>📍 {item.location}</div>}
+                                  </div>
+                                  <span style={{background:tagBg,color:tagColor,fontSize:"0.7rem",fontWeight:800,padding:"3px 10px",borderRadius:50,flexShrink:0}}>{tagLabel}</span>
+                                </div>
+                              );
+                            })():CalRow(item,item._idx??i)}
                           </div>
                         );
                       })}
