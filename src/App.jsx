@@ -757,7 +757,50 @@ function PricingPage({setPage}){
   );
 }
 
+// SVG icons for the bag section
+function PaddleIcon({size=28,color="white"}){
+  return(
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="10" cy="10" rx="7" ry="7" stroke={color} strokeWidth="1.8" fill="none"/>
+      <circle cx="10" cy="10" r="2" fill={color} opacity="0.5"/>
+      <line x1="15.5" y1="15.5" x2="21" y2="21" stroke={color} strokeWidth="2.2" strokeLinecap="round"/>
+    </svg>
+  );
+}
+function BagIcon({size=28,color="white"}){
+  return(
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="3" y="8" width="18" height="13" rx="2.5" stroke={color} strokeWidth="1.8" fill="none"/>
+      <path d="M8 8V6a4 4 0 0 1 8 0v2" stroke={color} strokeWidth="1.8" strokeLinecap="round"/>
+      <line x1="3" y1="13" x2="21" y2="13" stroke={color} strokeWidth="1.4" opacity="0.5"/>
+    </svg>
+  );
+}
+
 function GearPage(){
+  const[gearData,setGearData]=useState(null);
+  const[gearLoading,setGearLoading]=useState(true);
+
+  useEffect(()=>{
+    fetch("/api/gear").then(r=>r.json()).then(d=>{
+      if(d.gear)setGearData(d.gear);
+    }).catch(()=>{}).finally(()=>setGearLoading(false));
+  },[]);
+
+  // Merge API data over hardcoded defaults
+  const paddle={
+    name: gearData?.paddle_name || BAG_ITEMS[0].name,
+    detail: BAG_ITEMS[0].detail,
+    link: gearData?.paddle_link || BAG_ITEMS[0].link,
+  };
+  const bag={
+    name: gearData?.bag_name || BAG_ITEMS[1].name,
+    detail: gearData?.bag_detail || BAG_ITEMS[1].detail,
+    link: gearData?.bag_link || BAG_ITEMS[1].link,
+  };
+  const paddleHistory = gearData?.paddle_history || PADDLE_HISTORY;
+  const updatedAt = gearData?.updated_at || "March 2026";
+
   return(
     <div style={{background:"#f5f5f3",minHeight:"100vh"}}>
       <div style={{background:"white",borderBottom:"1.5px solid #e5e7eb",padding:"0 24px"}}>
@@ -811,21 +854,24 @@ function GearPage(){
       <div id="whats-in-my-bag" style={{background:"#111111",padding:"64px 24px"}}>
         <div style={{maxWidth:960,margin:"0 auto"}}>
           <div style={{textAlign:"center",marginBottom:40}}>
-            <div style={{fontSize:"0.72rem",fontWeight:700,color:"#f97316",textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>Updated March 2026</div>
+            <div style={{fontSize:"0.72rem",fontWeight:700,color:"#f97316",textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>Updated {updatedAt}</div>
             <h2 style={{fontSize:"2rem",fontWeight:900,color:"white",marginBottom:10}}>What's In My Bag</h2>
             <p style={{color:"rgba(255,255,255,0.45)",fontSize:"0.92rem",maxWidth:420,margin:"0 auto"}}>The exact gear Coach David plays and competes with right now.</p>
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(300px,1fr))",gap:16,marginBottom:56}}>
-            {BAG_ITEMS.map(item=>(
-              <div key={item.id} style={{background:"rgba(255,255,255,0.04)",border:"1.5px solid rgba(255,255,255,0.09)",borderRadius:16,padding:"24px 28px",display:"flex",alignItems:"center",gap:20}}>
-                <div style={{width:54,height:54,background:"#f97316",borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{item.icon}</div>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:"0.67rem",fontWeight:700,color:"rgba(255,255,255,0.35)",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>{item.label}</div>
-                  <div style={{color:"white",fontWeight:800,fontSize:"1.05rem",marginBottom:2}}>{item.name}</div>
-                  <div style={{color:"rgba(255,255,255,0.45)",fontSize:"0.82rem"}}>{item.detail}</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(300px,100%),1fr))",gap:16,marginBottom:56}}>
+            {[
+              {id:"paddle",label:"Current Paddle",icon:<PaddleIcon/>,item:paddle},
+              {id:"bag",   label:"Current Bag",   icon:<BagIcon/>,   item:bag},
+            ].map(({id,label,icon,item})=>(
+              <div key={id} style={{background:"rgba(255,255,255,0.04)",border:"1.5px solid rgba(255,255,255,0.09)",borderRadius:16,padding:"20px 24px",display:"flex",alignItems:"center",gap:18}}>
+                <div style={{width:50,height:50,background:"#f97316",borderRadius:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{icon}</div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:"0.67rem",fontWeight:700,color:"rgba(255,255,255,0.35)",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>{label}</div>
+                  <div style={{color:"white",fontWeight:800,fontSize:"1rem",marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{gearLoading?"…":item.name}</div>
+                  <div style={{color:"rgba(255,255,255,0.45)",fontSize:"0.8rem",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.detail}</div>
                 </div>
                 <a href={item.link} target="_blank" rel="noreferrer"
-                  style={{background:"rgba(255,255,255,0.07)",color:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.12)",padding:"7px 14px",borderRadius:50,textDecoration:"none",fontSize:"0.78rem",fontWeight:600,whiteSpace:"nowrap"}}>
+                  style={{background:"rgba(255,255,255,0.07)",color:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.12)",padding:"6px 13px",borderRadius:50,textDecoration:"none",fontSize:"0.77rem",fontWeight:600,whiteSpace:"nowrap",flexShrink:0}}>
                   Shop →
                 </a>
               </div>
@@ -838,8 +884,8 @@ function GearPage(){
             </div>
             <div style={{maxWidth:600,margin:"0 auto",position:"relative"}}>
               <div style={{position:"absolute",left:24,top:8,bottom:8,width:2,background:"rgba(255,255,255,0.07)",borderRadius:2}}/>
-              {PADDLE_HISTORY.map((p,i)=>(
-                <div key={i} style={{display:"flex",alignItems:"center",gap:20,marginBottom:i<PADDLE_HISTORY.length-1?16:0,position:"relative"}}>
+              {paddleHistory.map((p,i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:20,marginBottom:i<paddleHistory.length-1?16:0,position:"relative"}}>
                   <div style={{width:50,flexShrink:0,display:"flex",justifyContent:"center"}}>
                     <div style={{width:14,height:14,borderRadius:"50%",background:p.current?"#f97316":"rgba(255,255,255,0.15)",border:`2px solid ${p.current?"#f97316":"rgba(255,255,255,0.1)"}`,boxShadow:p.current?"0 0 14px rgba(249,115,22,0.6)":"none"}}/>
                   </div>
@@ -2856,7 +2902,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
 
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:"2px solid #e5e7eb",marginBottom:28,flexWrap:"wrap",gap:8}}>
         <div style={{display:"flex",gap:0}}>
-          {[["students","Students"],["lessons","Lessons"],["finances","Finances"]].map(([t,label])=>(
+          {[["students","Students"],["lessons","Lessons"],["finances","Finances"],["gear","Gear"]].map(([t,label])=>(
             <button key={t} onClick={()=>{setTab(t);setSelectedStudent(null);setShowSchedule(false);}}
               style={{background:"none",border:"none",borderBottom:"2px solid "+(tab===t?G:"transparent"),marginBottom:-2,padding:"10px 20px",fontSize:"0.88rem",fontWeight:tab===t?700:500,color:tab===t?G:"#6b7280",cursor:"pointer"}}>
               {label}
@@ -4140,6 +4186,185 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
           setNialEnd={setNialEnd}
         />
       )}
+
+      {tab==="gear"&&<GearAdminTab/>}
+    </div>
+  );
+}
+
+// ─── GEAR ADMIN TAB ───────────────────────────────────────────────────────────
+function GearAdminTab(){
+  const now=new Date();
+  const fmtMonth=d=>d.toLocaleString("en-US",{month:"short",year:"numeric"});
+
+  // Load current gear from API
+  const[loading,setLoading]=useState(true);
+  const[saving,setSaving]=useState(false);
+  const[saved,setSaved]=useState(false);
+  const[error,setError]=useState("");
+
+  // Paddle fields
+  const[paddleName,setPaddleName]=useState("");
+  const[paddleLink,setPaddleLink]=useState("");
+  const[paddleStart,setPaddleStart]=useState("");
+
+  // Bag fields
+  const[bagName,setBagName]=useState("");
+  const[bagDetail,setBagDetail]=useState("");
+  const[bagLink,setBagLink]=useState("");
+
+  // History (local copy for preview/editing)
+  const[history,setHistory]=useState(PADDLE_HISTORY);
+
+  useEffect(()=>{
+    fetch("/api/gear").then(r=>r.json()).then(d=>{
+      if(d.gear){
+        const g=d.gear;
+        setPaddleName(g.paddle_name||BAG_ITEMS[0].name);
+        setPaddleLink(g.paddle_link||BAG_ITEMS[0].link);
+        setPaddleStart(g.paddle_start||"Mar 2026");
+        setBagName(g.bag_name||BAG_ITEMS[1].name);
+        setBagDetail(g.bag_detail||BAG_ITEMS[1].detail);
+        setBagLink(g.bag_link||BAG_ITEMS[1].link);
+        setHistory(g.paddle_history||PADDLE_HISTORY);
+      }else{
+        // No DB data yet — prefill from hardcoded defaults
+        setPaddleName(BAG_ITEMS[0].name);
+        setPaddleLink(BAG_ITEMS[0].link);
+        const curr=PADDLE_HISTORY.find(p=>p.current);
+        setPaddleStart(curr?.from||fmtMonth(now));
+        setBagName(BAG_ITEMS[1].name);
+        setBagDetail(BAG_ITEMS[1].detail);
+        setBagLink(BAG_ITEMS[1].link);
+        setHistory(PADDLE_HISTORY);
+      }
+    }).catch(()=>{}).finally(()=>setLoading(false));
+  },[]);
+
+  const handleSave=async()=>{
+    if(!paddleName){setError("Paddle name is required.");return;}
+    if(!paddleStart){setError("Paddle start date is required.");return;}
+    setSaving(true);setError("");
+
+    // Build updated history: retire old current, add/update new current
+    const prev=history.find(p=>p.current);
+    let newHistory=[...history];
+    if(prev&&prev.name!==paddleName){
+      // Retire the old current paddle
+      newHistory=newHistory.map(p=>p.current
+        ?{...p,to:paddleStart,current:false}
+        :p
+      );
+      // Add the new paddle
+      newHistory.push({name:paddleName,from:paddleStart,to:"Present",current:true});
+    }else if(!prev){
+      newHistory.push({name:paddleName,from:paddleStart,to:"Present",current:true});
+    }else{
+      // Same paddle — just update name/link/start in place
+      newHistory=newHistory.map(p=>p.current?{...p,name:paddleName,from:paddleStart}:p);
+    }
+
+    try{
+      const res=await fetch("/api/gear",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          paddle_name:paddleName,
+          paddle_link:paddleLink,
+          paddle_start:paddleStart,
+          bag_name:bagName,
+          bag_detail:bagDetail,
+          bag_link:bagLink,
+          paddle_history:newHistory,
+        }),
+      });
+      const data=await res.json();
+      if(data.success){
+        setHistory(newHistory);
+        setSaved(true);
+        setTimeout(()=>setSaved(false),3000);
+      }else{setError(data.error||"Save failed.");}
+    }catch(e){setError("Save failed. Please try again.");}
+    setSaving(false);
+  };
+
+  const lbl={fontSize:"0.72rem",fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:0.8,marginBottom:6,display:"block"};
+  const field={width:"100%",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"9px 12px",fontSize:"0.9rem",fontFamily:"inherit",outline:"none",boxSizing:"border-box"};
+
+  if(loading)return<div style={{textAlign:"center",padding:"60px 0",color:"#9ca3af"}}>Loading gear settings…</div>;
+
+  return(
+    <div style={{maxWidth:680,margin:"0 auto"}}>
+      <h3 style={{fontWeight:800,fontSize:"1.15rem",color:"#1a1a1a",marginBottom:4}}>Gear Settings</h3>
+      <p style={{color:"#6b7280",fontSize:"0.88rem",marginBottom:28}}>Changes save to the database and go live on the site immediately.</p>
+
+      {error&&<div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:8,padding:"10px 14px",color:"#991b1b",fontSize:"0.85rem",marginBottom:16}}>{error}</div>}
+      {saved&&<div style={{background:"#e8f0ee",border:"1.5px solid "+G,borderRadius:8,padding:"10px 14px",color:G,fontSize:"0.85rem",fontWeight:600,marginBottom:16}}>✓ Saved! Site updated.</div>}
+
+      {/* Paddle */}
+      <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"22px 24px",marginBottom:16}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:18}}>
+          <div style={{width:36,height:36,background:"#f97316",borderRadius:9,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><PaddleIcon size={20}/></div>
+          <div style={{fontWeight:800,fontSize:"1rem",color:"#1a1a1a"}}>Current Paddle</div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+          <div>
+            <label style={lbl}>Paddle Name</label>
+            <input value={paddleName} onChange={e=>setPaddleName(e.target.value)} style={field} placeholder="e.g. CRBN² Barrage"/>
+          </div>
+          <div>
+            <label style={lbl}>Using Since</label>
+            <input value={paddleStart} onChange={e=>setPaddleStart(e.target.value)} style={field} placeholder="e.g. Apr 2026"/>
+          </div>
+        </div>
+        <div>
+          <label style={lbl}>Shop Link</label>
+          <input value={paddleLink} onChange={e=>setPaddleLink(e.target.value)} style={field} placeholder="https://…"/>
+        </div>
+      </div>
+
+      {/* Bag */}
+      <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"22px 24px",marginBottom:24}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:18}}>
+          <div style={{width:36,height:36,background:"#f97316",borderRadius:9,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><BagIcon size={20}/></div>
+          <div style={{fontWeight:800,fontSize:"1rem",color:"#1a1a1a"}}>Current Bag</div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+          <div>
+            <label style={lbl}>Bag Name</label>
+            <input value={bagName} onChange={e=>setBagName(e.target.value)} style={field} placeholder="e.g. CRBN Tour Bag"/>
+          </div>
+          <div>
+            <label style={lbl}>Detail / Colorway</label>
+            <input value={bagDetail} onChange={e=>setBagDetail(e.target.value)} style={field} placeholder="e.g. Pear Colorway"/>
+          </div>
+        </div>
+        <div>
+          <label style={lbl}>Shop Link</label>
+          <input value={bagLink} onChange={e=>setBagLink(e.target.value)} style={field} placeholder="https://…"/>
+        </div>
+      </div>
+
+      <button onClick={handleSave} disabled={saving} style={{width:"100%",background:saving?"#9ca3af":G,color:"white",border:"none",padding:"13px",borderRadius:50,fontWeight:700,cursor:saving?"not-allowed":"pointer",fontSize:"0.95rem",marginBottom:32}}>
+        {saving?"Saving…":"Save Gear Settings"}
+      </button>
+
+      {/* Paddle History Preview */}
+      <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"22px 24px"}}>
+        <div style={{fontWeight:700,fontSize:"0.92rem",color:"#374151",marginBottom:16}}>Paddle History Preview</div>
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {[...history].reverse().map((p,i)=>(
+            <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",background:p.current?"#f0faf5":"#f9f9f6",borderRadius:8,border:"1.5px solid "+(p.current?G:"#e5e7eb")}}>
+              <div>
+                <div style={{fontWeight:700,fontSize:"0.9rem",color:p.current?G:"#374151"}}>{p.name}</div>
+                <div style={{fontSize:"0.78rem",color:"#9ca3af",marginTop:2}}>{p.from} — {p.to}</div>
+              </div>
+              {p.current&&<span style={{background:G,color:"white",fontSize:"0.68rem",fontWeight:800,padding:"3px 10px",borderRadius:50,textTransform:"uppercase"}}>Current</span>}
+            </div>
+          ))}
+        </div>
+        <p style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:12,marginBottom:0}}>When you save a new paddle name, the old one is automatically retired with today's date.</p>
+      </div>
     </div>
   );
 }
