@@ -1216,6 +1216,7 @@ function AccountPage({user,setPage,onUpdateUser}){
   const nameParts=(user.name||"").split(" ");
   const[firstName,setFirstName]=useState(user.firstName||nameParts[0]||"");
   const[lastName,setLastName]=useState(user.lastName||nameParts.slice(1).join(" ")||"");
+  const[diffEmail,setDiffEmail]=useState(!!(user.commEmail&&user.commEmail.toLowerCase()!==user.email.toLowerCase()));
   const[commEmail,setCommEmail]=useState(user.commEmail||"");
   const[phone,setPhone]=useState(user.phone||"");
   const[city,setCity]=useState(user.city||"");
@@ -1224,20 +1225,22 @@ function AccountPage({user,setPage,onUpdateUser}){
   const[saved,setSaved]=useState(false);
   const[error,setError]=useState("");
 
+  const effectiveCommEmail=diffEmail?commEmail.trim().toLowerCase():user.email.toLowerCase();
+
   const handleSave=async()=>{
     if(!firstName||!lastName){setError("First and last name are required.");return;}
-    if(commEmail&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(commEmail)){setError("Please enter a valid communication email.");return;}
+    if(diffEmail&&(!commEmail||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(commEmail))){setError("Please enter a valid notification email.");return;}
     setSaving(true);setError("");
     const fullName=firstName.trim()+" "+lastName.trim();
     try{
       const r=await fetch("/api/students?action=update",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({email:user.email,updates:{name:fullName,first_name:firstName.trim(),last_name:lastName.trim(),comm_email:commEmail.trim().toLowerCase(),phone,city,home_court:homeCourt}})
+        body:JSON.stringify({email:user.email,updates:{name:fullName,first_name:firstName.trim(),last_name:lastName.trim(),comm_email:effectiveCommEmail,phone,city,home_court:homeCourt}})
       });
       const data=await r.json();
       if(data.success){
-        onUpdateUser({...user,name:fullName,firstName:firstName.trim(),lastName:lastName.trim(),commEmail:commEmail.trim().toLowerCase(),phone,city,homeCourt});
+        onUpdateUser({...user,name:fullName,firstName:firstName.trim(),lastName:lastName.trim(),commEmail:effectiveCommEmail,phone,city,homeCourt});
         setSaved(true);
         setTimeout(()=>setSaved(false),3000);
       }else{setError("Failed to save. Please try again.");}
@@ -1283,9 +1286,18 @@ function AccountPage({user,setPage,onUpdateUser}){
           <div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:4}}>Used to sign in — managed by your account provider.</div>
         </div>
         <div style={{marginBottom:16}}>
-          <label style={lbl}>Communication Email <span style={{color:"#dc2626"}}>*</span></label>
-          <input value={commEmail} onChange={e=>setCommEmail(e.target.value)} style={inp} placeholder="Where to send lesson confirmations & reminders" type="email"/>
-          <div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:-10,marginBottom:4}}>All lesson notifications will be sent here.</div>
+          <label style={lbl}>Notification Email</label>
+          <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",marginBottom:diffEmail?12:0,userSelect:"none"}}>
+            <input type="checkbox" checked={diffEmail} onChange={e=>{setDiffEmail(e.target.checked);if(!e.target.checked)setCommEmail("");}} style={{width:16,height:16,accentColor:G,cursor:"pointer",flexShrink:0}}/>
+            <span style={{fontSize:"0.85rem",color:"#374151"}}>My notification email is different from my login email</span>
+          </label>
+          {diffEmail&&(
+            <>
+              <input value={commEmail} onChange={e=>setCommEmail(e.target.value)} style={inp} placeholder="Where to send lesson confirmations & reminders" type="email"/>
+              <div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:-10,marginBottom:4}}>All lesson notifications will be sent here instead.</div>
+            </>
+          )}
+          {!diffEmail&&<div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:4}}>Notifications will go to your login email: <strong>{user.email}</strong></div>}
         </div>
         <div style={{marginBottom:16}}>
           <label style={lbl}>Phone Number <span style={{color:"#dc2626"}}>*</span></label>
