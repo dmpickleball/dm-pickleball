@@ -1199,7 +1199,7 @@ function LoginPage({onLogin,onAdminLogin}){
         <div style={{display:"flex",flexDirection:"column",gap:12}}>
           {["google","microsoft","yahoo"].map(pk=>(
             <button key={pk} onClick={HANDLERS[pk]} disabled={!!loadingProv}
-              style={{width:"100%",background:loadingProv===pk?"#f3f4f6":"white",color:"#374151",border:"1.5px solid #e5e7eb",padding:"13px 20px",borderRadius:50,fontWeight:700,cursor:loadingProv?"not-allowed":"pointer",fontSize:"0.95rem",display:"flex",alignItems:"center",justifyContent:"center",gap:10,transition:"border-color 0.12s",opacity:loadingProv&&loadingProv!==pk?0.5:1}}
+              style={{width:"100%",background:loadingProv===pk?"#f3f4f6":"white",color:"#374151",border:"1.5px solid #e5e7eb",padding:"9px 16px",borderRadius:50,fontWeight:600,cursor:loadingProv?"not-allowed":"pointer",fontSize:"0.88rem",display:"flex",alignItems:"center",justifyContent:"center",gap:8,transition:"border-color 0.12s",opacity:loadingProv&&loadingProv!==pk?0.5:1}}
               onMouseEnter={e=>{if(!loadingProv)e.currentTarget.style.borderColor=PROV_COLORS[pk];}}
               onMouseLeave={e=>{e.currentTarget.style.borderColor="#e5e7eb";}}>
               {loadingProv===pk?<span style={{color:"#6b7280"}}>Connecting…</span>:<>{PROV_ICONS[pk]}<span>Continue with {PROV_LABELS[pk]}</span></>}
