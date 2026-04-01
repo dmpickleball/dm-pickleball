@@ -1278,9 +1278,9 @@ function AccountPage({user,setPage,onUpdateUser}){
           </div>
         </div>
         <div style={{marginBottom:16,marginTop:16}}>
-          <label style={lbl}>Google Login Email</label>
+          <label style={lbl}>Login Email</label>
           <input value={user.email} disabled style={{...inp,background:"#f3f4f6",color:"#9ca3af",cursor:"not-allowed"}}/>
-          <div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:4}}>Managed by Google — used to sign in only.</div>
+          <div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:4}}>Used to sign in — managed by your account provider.</div>
         </div>
         <div style={{marginBottom:16}}>
           <label style={lbl}>Communication Email <span style={{color:"#dc2626"}}>*</span></label>
