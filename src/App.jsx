@@ -1879,6 +1879,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
   const[viewYear,setViewYear]=useState(now.getFullYear());
   const[viewYearOnly,setViewYearOnly]=useState(now.getFullYear());
   const[projectedMode,setProjectedMode]=useState(false);
+  const[projectedRange,setProjectedRange]=useState("month");
   const[financeSearch,setFinanceSearch]=useState("");
   const[expandedFinRow,setExpandedFinRow]=useState(null);
   const[projectedCalData,setProjectedCalData]=useState(null);
@@ -1968,74 +1969,79 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
       {/* Projected View */}
       {projectedMode&&(
         <div>
-          {/* Summary bar */}
-          <div style={{display:"flex",gap:16,marginBottom:24,flexWrap:"wrap"}}>
-            <div style={{background:"white",borderRadius:12,padding:"20px 28px",border:"1.5px solid #e5e7eb",flex:"0 0 auto"}}>
-              <div style={{fontSize:"0.7rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>6-Month Projected</div>
-              <div style={{fontSize:"1.9rem",fontWeight:900,color:"#1a3c34"}}>{projectedCalLoading?"…":"$"+projectedTotal.toFixed(2)}</div>
-              <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:3}}>{projectedCalLoading?"Loading…":projectedTotalCount+" total lessons"}</div>
-            </div>
-            {/* Mini month totals bar */}
-            {!projectedCalLoading&&<div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"stretch"}}>
-              {projectedByMonth.map(([mk,data])=>{
-                const[yr,mo]=mk.split("-");
-                const isCurrentMonth=now.getFullYear()===parseInt(yr)&&(now.getMonth()+1)===parseInt(mo);
-                return(
-                  <div key={mk} style={{background:isCurrentMonth?"#f0faf5":"white",borderRadius:10,padding:"12px 16px",border:"1.5px solid "+(isCurrentMonth?"#1a3c34":"#e5e7eb"),minWidth:90,textAlign:"center"}}>
-                    <div style={{fontSize:"0.72rem",fontWeight:700,color:isCurrentMonth?"#1a3c34":"#9ca3af",textTransform:"uppercase",marginBottom:4}}>{MON[parseInt(mo)-1]}</div>
-                    <div style={{fontSize:"1.1rem",fontWeight:900,color:data.count>0?"#1a3c34":"#d1d5db"}}>{data.count>0?"$"+Math.round(data.total):"—"}</div>
-                    <div style={{fontSize:"0.7rem",color:"#9ca3af",marginTop:2}}>{data.count} lesson{data.count!==1?"s":""}</div>
-                  </div>
-                );
-              })}
-            </div>}
+          {/* Week / Month toggle */}
+          <div style={{display:"flex",gap:0,marginBottom:20,background:"#f3f4f6",borderRadius:50,padding:4,width:"fit-content"}}>
+            <button onClick={()=>setProjectedRange("week")} style={{padding:"6px 20px",borderRadius:50,border:"none",cursor:"pointer",fontWeight:700,fontSize:"0.83rem",background:projectedRange==="week"?"white":"transparent",color:projectedRange==="week"?"#1a3c34":"#9ca3af",boxShadow:projectedRange==="week"?"0 1px 4px rgba(0,0,0,0.10)":"none",transition:"all 0.15s"}}>This Week</button>
+            <button onClick={()=>setProjectedRange("month")} style={{padding:"6px 20px",borderRadius:50,border:"none",cursor:"pointer",fontWeight:700,fontSize:"0.83rem",background:projectedRange==="month"?"white":"transparent",color:projectedRange==="month"?"#1a3c34":"#9ca3af",boxShadow:projectedRange==="month"?"0 1px 4px rgba(0,0,0,0.10)":"none",transition:"all 0.15s"}}>This Month</button>
           </div>
-          {/* Month-by-month breakdown */}
           {projectedCalLoading?(
             <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"40px",textAlign:"center",color:"#9ca3af"}}>Loading calendar data…</div>
-          ):(
-            <div style={{display:"flex",flexDirection:"column",gap:12}}>
-              {projectedByMonth.map(([mk,data])=>{
-                const[yr,mo]=mk.split("-");
-                const monthLabel=MONFULL[parseInt(mo)-1]+" "+yr;
-                const isCurrentMonth=now.getFullYear()===parseInt(yr)&&(now.getMonth()+1)===parseInt(mo);
-                return(
-                  <div key={mk} style={{background:"white",borderRadius:12,border:"1.5px solid "+(isCurrentMonth?"#1a3c34":"#e5e7eb"),overflow:"hidden"}}>
-                    <div style={{background:isCurrentMonth?"#1a3c34":"#f9f9f6",borderBottom:"1.5px solid "+(isCurrentMonth?"#1a3c34":"#e5e7eb"),padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
-                      <div style={{display:"flex",alignItems:"center",gap:12}}>
-                        <span style={{fontWeight:800,fontSize:"1rem",color:isCurrentMonth?"white":"#1a3c34"}}>{monthLabel}</span>
-                        <span style={{background:isCurrentMonth?"rgba(255,255,255,0.2)":"#e5e7eb",color:isCurrentMonth?"white":"#6b7280",fontSize:"0.75rem",fontWeight:700,padding:"2px 10px",borderRadius:50}}>
-                          {data.count} lesson{data.count!==1?"s":""}
-                        </span>
-                      </div>
-                      <span style={{fontWeight:900,fontSize:"1.1rem",color:isCurrentMonth?"white":data.count>0?"#1a3c34":"#9ca3af"}}>{data.count>0?"$"+data.total.toFixed(2):"No lessons"}</span>
-                    </div>
-                    {data.rows.length>0&&(
-                      <table style={{width:"100%",borderCollapse:"collapse",fontSize:"0.87rem"}}>
-                        <thead><tr style={{background:"#f9f9f6",borderBottom:"1px solid #e5e7eb"}}>{["Date","Description","Type","Details","Est. Income"].map(h=>(<th key={h} style={{padding:"10px 16px",textAlign:"left",fontWeight:700,color:"#6b7280",fontSize:"0.75rem",textTransform:"uppercase"}}>{h}</th>))}</tr></thead>
-                        <tbody>
-                          {data.rows.sort((a,b)=>a.date.localeCompare(b.date)).map((r,i)=>(
-                            <tr key={i} style={{borderBottom:"1px solid #f3f4f6",background:r.isMenlo?"#f0faf5":"white"}}>
-                              <td style={{padding:"10px 16px",whiteSpace:"nowrap"}}>{fmtDateShort(r.date)}</td>
-                              <td style={{padding:"10px 16px",maxWidth:180,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                                {r.label}
-                                {r.isMenlo&&<span style={{background:"#1a3c34",color:"white",fontSize:"0.62rem",fontWeight:700,padding:"1px 6px",borderRadius:50,marginLeft:6}}>MCC</span>}
-                              </td>
-                              <td style={{padding:"10px 16px"}}>
-                                <span style={{background:(typeColors[r.category?.toLowerCase()]||"#1a3c34")+"22",color:typeColors[r.category?.toLowerCase()]||"#1a3c34",padding:"2px 8px",borderRadius:50,fontSize:"0.72rem",fontWeight:700}}>{r.category||"—"}</span>
-                              </td>
-                              <td style={{padding:"10px 16px",color:"#6b7280",fontSize:"0.82rem"}}>{r.source==="calendar"?(r.hours!=null?r.hours+"h":"—"):r.duration||"—"}</td>
-                              <td style={{padding:"10px 16px",fontWeight:700,color:"#1a3c34"}}>${r.earnings.toFixed(2)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
+          ):(()=>{
+            // Build flat list of all projected rows filtered to the chosen range
+            const weekEnd=new Date(now);weekEnd.setDate(now.getDate()+7);
+            const monthEnd=new Date(now.getFullYear(),now.getMonth()+1,0);
+            const cutoff=projectedRange==="week"?weekEnd:monthEnd;
+            const cutoffStr=fmtD(cutoff);
+            const todayStr=fmtD(now);
+            const allRows=projectedByMonth.flatMap(([,v])=>v.rows).filter(r=>r.date>=todayStr&&r.date<=cutoffStr).sort((a,b)=>a.date.localeCompare(b.date));
+            const rangeTotal=allRows.reduce((s,r)=>s+r.earnings,0);
+            const rangeLabel=projectedRange==="week"?"Next 7 Days":"This Month ("+MONFULL[now.getMonth()]+")";
+            // Group by date for nicer display
+            const byDate={};
+            allRows.forEach(r=>{if(!byDate[r.date])byDate[r.date]=[];byDate[r.date].push(r);});
+            const dates=Object.keys(byDate).sort();
+            return(
+              <div>
+                {/* Summary card */}
+                <div style={{background:"#1a3c34",borderRadius:12,padding:"20px 28px",marginBottom:20,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
+                  <div>
+                    <div style={{fontSize:"0.7rem",fontWeight:700,color:"rgba(255,255,255,0.6)",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>{rangeLabel}</div>
+                    <div style={{fontSize:"2rem",fontWeight:900,color:"white"}}>${rangeTotal.toFixed(2)}</div>
+                    <div style={{fontSize:"0.78rem",color:"rgba(255,255,255,0.7)",marginTop:3}}>{allRows.length} lesson{allRows.length!==1?"s":""} scheduled</div>
                   </div>
-                );
-              })}
-            </div>
-          )}
+                  <div style={{fontSize:"2rem",opacity:0.4}}>📈</div>
+                </div>
+                {/* Day-by-day breakdown */}
+                {dates.length===0?(
+                  <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"32px",textAlign:"center",color:"#9ca3af"}}>No lessons scheduled for {projectedRange==="week"?"the next 7 days":"this month"}.</div>
+                ):(
+                  <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                    {dates.map(day=>{
+                      const rows=byDate[day];
+                      const dayTotal=rows.reduce((s,r)=>s+r.earnings,0);
+                      const dObj=new Date(day+"T12:00:00");
+                      const isToday=day===todayStr;
+                      const dayLabel2=isToday?"Today":dObj.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
+                      return(
+                        <div key={day} style={{background:"white",borderRadius:12,border:"1.5px solid "+(isToday?"#1a3c34":"#e5e7eb"),overflow:"hidden"}}>
+                          <div style={{background:isToday?"#f0faf5":"#f9f9f6",borderBottom:"1px solid "+(isToday?"#1a3c34":"#e5e7eb"),padding:"10px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                            <span style={{fontWeight:800,fontSize:"0.88rem",color:isToday?"#1a3c34":"#374151"}}>{dayLabel2}{isToday&&<span style={{marginLeft:8,background:"#1a3c34",color:"white",fontSize:"0.62rem",fontWeight:800,padding:"2px 8px",borderRadius:50}}>TODAY</span>}</span>
+                            <span style={{fontWeight:900,fontSize:"0.95rem",color:"#1a3c34"}}>${dayTotal.toFixed(2)}</span>
+                          </div>
+                          <table style={{width:"100%",borderCollapse:"collapse",fontSize:"0.86rem"}}>
+                            <tbody>
+                              {rows.map((r,i)=>(
+                                <tr key={i} style={{borderBottom:i<rows.length-1?"1px solid #f3f4f6":"none",background:r.isMenlo?"#f0faf5":"white"}}>
+                                  <td style={{padding:"9px 16px",maxWidth:180,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                                    {r.label}{r.isMenlo&&<span style={{background:"#1a3c34",color:"white",fontSize:"0.62rem",fontWeight:700,padding:"1px 6px",borderRadius:50,marginLeft:6}}>MCC</span>}
+                                  </td>
+                                  <td style={{padding:"9px 16px"}}>
+                                    <span style={{background:(typeColors[r.category?.toLowerCase()]||"#1a3c34")+"22",color:typeColors[r.category?.toLowerCase()]||"#1a3c34",padding:"2px 8px",borderRadius:50,fontSize:"0.72rem",fontWeight:700}}>{r.category||"—"}</span>
+                                  </td>
+                                  <td style={{padding:"9px 16px",color:"#6b7280",fontSize:"0.82rem"}}>{r.source==="calendar"?(r.hours!=null?r.hours+"h":"—"):r.duration||"—"}</td>
+                                  <td style={{padding:"9px 16px",fontWeight:700,color:"#1a3c34",textAlign:"right"}}>${r.earnings.toFixed(2)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
       )}
       {/* Actual View */}
