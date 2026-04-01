@@ -1426,7 +1426,7 @@ function BookingPage({user,setPage,onAddLesson,stanfordEnabled=true}){
     semi:   {60:isMenlo?120:140, 90:isMenlo?180:210},
     group:  {60:140, 90:210},
   };
-  const LESSONS=[{id:"private",icon:"🎯",label:"Private",desc:"1-on-1 coaching"},{id:"semi",icon:"👥",label:"Semi-Private",desc:"2 students"},{id:"group",icon:"🏆",label:"Group",desc:"3-5 students"}];
+  const LESSONS=[{id:"private",icon:"🎯",label:"Private",desc:"1-on-1 coaching"},{id:"semi",icon:"👥",label:"Semi-Private",desc:"2 students"},{id:"group",icon:"🏆",label:"Group",desc:"3-4 students"}];
   const price=lessonType&&duration?PRICES[lessonType][duration]:null;
   const slots=date?getSlots(date,isMenlo?"menlo":"public",duration||60).filter(s=>!busyTimes.some(b=>{const bufA=b.bufferAfter??30;const bufB=b.bufferBefore??30;return s.s<(b.endMins+bufA)&&s.e>(b.startMins-bufB);})):[];
   const toTime24=(mins)=>{const h=Math.floor(mins/60),m=mins%60;return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");};
