@@ -907,9 +907,11 @@ function ContactPage(){
 
         {status==="success"?(
           <div style={{textAlign:"center",padding:"24px 0"}}>
-            <div style={{fontSize:40,marginBottom:12}}>✅</div>
-            <div style={{fontWeight:700,color:G}}>Message sent!</div>
-            <div style={{color:"#6b7280",fontSize:"0.9rem",marginTop:6}}>Coach Coach David will be in touch soon.</div>
+            <div style={{width:52,height:52,borderRadius:"50%",background:"#e8f0ee",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px"}}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={G} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div style={{fontWeight:700,fontSize:"1.05rem",color:"#1a1a1a",marginBottom:6}}>Message sent!</div>
+            <div style={{color:"#6b7280",fontSize:"0.88rem"}}>Coach David will be in touch soon.</div>
           </div>
         ):status==="error"?(
           <div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:8,padding:"14px 16px",color:"#991b1b",fontSize:"0.88rem",marginBottom:14,textAlign:"center"}}>
@@ -1174,7 +1176,7 @@ function LoginPage({onLogin,onAdminLogin}){
             body:JSON.stringify({email:providerInfo.email,name:fullName,firstName:firstName.trim(),lastName:lastName.trim(),commEmail:commEmail.trim().toLowerCase(),phone,homeCourt,skillLevel,goals,referralSource,duprRating:"",authProvider:providerInfo.provider})
           }).then(r=>r.json()).then(data=>{
             if(data.error==="already_exists"){setError("You already have an account. Please sign in.");return;}
-            if(data.error==="already_requested"){setError("You already have a pending request. Coach Coach David will be in touch soon.");return;}
+            if(data.error==="already_requested"){setError("You already have a pending request. Coach David will be in touch soon.");return;}
             if(data.error==="blocked"||data.student?.blocked){setError("Your registration request was not accepted. Please contact Coach David directly.");return;}
             fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:"david@dmpickleball.com",subject:"New access request: "+fullName,text:fullName+" has requested access.\nProvider: "+PROV_LABELS[providerInfo.provider]+"\nLogin Email: "+providerInfo.email+"\nComm Email: "+commEmail+"\nPhone: "+phone+"\nHome Court: "+(homeCourt||"Not specified")+"\nSkill: "+(skillLevel||"Not specified")+"\nGoal: "+(goals||"Not specified")+"\nReferral: "+(referralSource||"Not specified")+"\n\nApprove at: https://dmpickleball.com/admin",fromAlias:"noreply@dmpickleball.com"})}).catch(()=>{});
             setSignedUp(true);
