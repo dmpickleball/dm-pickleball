@@ -3979,10 +3979,11 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
             const calFwd=showCalendar?calendarItems.filter(c=>!c.isPickup&&new Date(c.date+"T12:00:00")>=todayDT&&!portalGcalIds.has(c.gcalEventId)&&(showStanford||!c.isStanford)):[];
             const todayDT2=new Date(todayStr+"T00:00:00");
             const eventsFwd=showEvents?eventsData.filter(e=>new Date(e.date+"T12:00:00")>=todayDT2):[];
+            const t2mins=t=>{if(!t)return 9999;const m=t.match(/(\d+):(\d+)\s*(AM|PM)/i);if(!m)return 9999;let h=parseInt(m[1]),mn=parseInt(m[2]),ap=m[3].toUpperCase();if(ap==="PM"&&h!==12)h+=12;if(ap==="AM"&&h===12)h=0;return h*60+mn;};
             const merged2=[
-              ...portalFwd.map(l=>({...l,_type:"portal",_isPast:isPast(l.date,l.time),_sortKey:l.date+(l.time||"")})),
-              ...calFwd.map((c,i)=>({...c,_type:"cal",_idx:i,_isPast:isCalPast(c),_sortKey:c.date+(c.startTime||"")})),
-              ...eventsFwd.map(e=>({...e,_type:"event",_isPast:false,_sortKey:e.date+(e.startTime||"")}))
+              ...portalFwd.map(l=>({...l,_type:"portal",_isPast:isPast(l.date,l.time),_sortKey:l.date+String(t2mins(l.time)).padStart(4,"0")})),
+              ...calFwd.map((c,i)=>({...c,_type:"cal",_idx:i,_isPast:isCalPast(c),_sortKey:c.date+String(t2mins(c.startTime)).padStart(4,"0")})),
+              ...eventsFwd.map(e=>({...e,_type:"event",_isPast:false,_sortKey:e.date+String(t2mins(e.startTime)).padStart(4,"0")}))
             ].sort((a,b)=>a._sortKey.localeCompare(b._sortKey));
             // Group by date
             const byDate={};
