@@ -12,18 +12,29 @@ function getAuth() {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-  const { summary, description, date, startTime, endTime, studentEmail, studentName, location } = req.body;
+  const { summary, description, date, startTime, endTime, studentEmail, studentName, location, additionalEmails } = req.body;
   try {
     const calendar = google.calendar({ version: 'v3', auth: getAuth() });
+
+    // Build attendees list: primary student + any additional (partner/group members)
+    const allAttendeeEmails = [
+      studentEmail,
+      ...(Array.isArray(additionalEmails) ? additionalEmails : [])
+    ].filter((e, i, arr) => e && arr.indexOf(e) === i); // dedupe
+    const attendees = allAttendeeEmails.map(email => ({ email }));
+
     const event = await calendar.events.insert({
       calendarId: process.env.GOOGLE_CALENDAR_ID,
+      sendUpdates: attendees.length > 0 ? 'all' : 'none',
       requestBody: {
         summary: summary || `Pickleball Lesson — ${studentName}`,
         description: description || '',
         location: location || '',
         start: { dateTime: `${date}T${startTime}:00`, timeZone: 'America/Los_Angeles' },
         end: { dateTime: `${date}T${endTime}:00`, timeZone: 'America/Los_Angeles' },
-        
+        attendees: attendees.length > 0 ? attendees : undefined,
+        guestsCanModifyEvent: false,
+        guestsCanInviteOthers: false,
       },
     });
     res.status(200).json({ success: true, eventId: event.data.id });

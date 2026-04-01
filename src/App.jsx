@@ -1509,9 +1509,10 @@ function BookingPage({user,setPage,onAddLesson,stanfordEnabled=true}){
     const location=!isMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City, CA 94063, USA":"Stanford Redwood City";
     const ticketId=generateTicket();
     const description="Ticket: "+ticketId+"\nStudent: "+user.name+"\nEmail: "+user.email+"\nType: "+lessonLabel+" "+duration+"min\nFocus: "+(focus||"Not specified")+"\nNotes: "+(notes||"None")+partnerInfo+groupInfo+"\nLocation: "+location+"\nManage: https://dmpickleball.com";
+    const additionalEmails=lessonType==="semi"&&partnerEmail?[partnerEmail]:lessonType==="group"?groupMembers.slice(0,groupSize-1).map(m=>m.email).filter(Boolean):[];
     let eventId="";
     try{
-      const r=await fetch("/api/create-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({summary,description,date,startTime,endTime,location,studentEmail:user.email,studentName:user.name})});
+      const r=await fetch("/api/create-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({summary,description,date,startTime,endTime,location,studentEmail:user.email,studentName:user.name,additionalEmails})});
       const d=await r.json();
       if(d.eventId)eventId=d.eventId;
     }catch(e){console.error("GCal:",e);}
@@ -2819,9 +2820,10 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
     const location=customLocation&&schedLocation?schedLocation:(!schedIsMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City, CA 94063, USA":"Menlo Circus Club, 190 Park Ln, Atherton, CA 94027");
     const ticketId2=generateTicket();
     const description="Ticket: "+ticketId2+"\nStudent: "+student.name+"\nEmail: "+selectedStudent+"\nType: "+lessonLabel+" "+schedDuration+"min\nFocus: "+(schedFocus||"Not specified")+"\nNotes: "+(schedNotes||"None")+"\nLocation: "+location+"\nManage: https://dmpickleball.com";
+    const additionalEmails2=schedLessonType==="semi"&&schedPartner.email?[schedPartner.email]:schedLessonType==="group"?schedGroupMembers.slice(0,schedGroupSize-1).map(m=>m.email).filter(Boolean):[];
     let eventId="";
     try{
-      const r=await fetch("/api/create-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({summary,description,date:schedDate,startTime,endTime,location,studentEmail:selectedStudent,studentName:student.name})});
+      const r=await fetch("/api/create-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({summary,description,date:schedDate,startTime,endTime,location,studentEmail:selectedStudent,studentName:student.name,additionalEmails:additionalEmails2})});
       const d=await r.json();
       if(d.eventId)eventId=d.eventId;
     }catch(e){console.error("GCal:",e);}
@@ -3610,6 +3612,21 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
       {tab==="lessons"&&(()=>{
         const todayStr=toDS(new Date());
 
+        // ── RSVP helpers ─────────────────────────────────────────────────────
+        // Build a lookup map: gcalEventId → attendees[] from ALL calendarItems
+        const calAttendeesByGcalId={};
+        calendarItems.forEach(c=>{if(c.gcalEventId&&c.attendees&&c.attendees.length>0)calAttendeesByGcalId[c.gcalEventId]=c.attendees;});
+        const RsvpDot=({status,email})=>{
+          const dotColor=status==="accepted"?"#16a34a":status==="declined"?"#dc2626":"#d1d5db";
+          const dotBorder=status==="needsAction"?"1.5px solid #9ca3af":"none";
+          const label=status==="accepted"?"✓ Confirmed":status==="declined"?"✗ Declined":"No response";
+          return(<span title={(email?email+": ":"")+label} style={{display:"inline-block",width:10,height:10,borderRadius:"50%",background:dotColor,border:dotBorder,flexShrink:0,cursor:"default"}}/>);
+        };
+        const RsvpBadge=({attendees})=>{
+          if(!attendees||attendees.length===0)return null;
+          return(<span style={{display:"inline-flex",alignItems:"center",gap:4,background:"#f9f9f9",border:"1px solid #e5e7eb",borderRadius:50,padding:"2px 8px",fontSize:"0.7rem",color:"#6b7280",flexShrink:0}} title="Calendar RSVP status">{attendees.map((a,i)=><RsvpDot key={i} status={a.status} email={a.email}/>)}</span>);
+        };
+
         // ── helper: render a portal lesson row ──────────────────────────────
         const menuKey=(l)=>l.id+"_"+l.studentEmail;
         const LessonRow=(l)=>{
@@ -3636,6 +3653,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
               <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
                 {missingCal&&!isCancelled&&<span title="This lesson has no linked Google Calendar event" style={{background:"#fff7ed",color:"#c2410c",border:"1px solid #fed7aa",padding:"2px 8px",borderRadius:50,fontSize:"0.68rem",fontWeight:700}}>⚠️ No Cal</span>}
                 {l.ticketId&&<span title={"Ticket: "+l.ticketId} style={{background:"#e8f0ee",color:G,padding:"2px 8px",borderRadius:50,fontSize:"0.68rem",fontWeight:700}}>🏷 Portal</span>}
+                {l.gcalEventId&&calAttendeesByGcalId[l.gcalEventId]&&<RsvpBadge attendees={calAttendeesByGcalId[l.gcalEventId]}/>}
                 {l.isMenlo&&<span style={{background:G,color:"white",padding:"2px 7px",borderRadius:50,fontSize:"0.68rem",fontWeight:700}}>MCC</span>}
                 <span style={{background:l.status==="confirmed"?"#e8f0ee":l.status==="late_cancel"?"#fff7ed":l.status==="cancelled_forgiven"?"#f3f4f6":l.status==="cancelled"?"#fef2f2":"#fffbea",color:l.status==="confirmed"?G:l.status==="late_cancel"?"#c2410c":l.status==="cancelled_forgiven"?"#6b7280":l.status==="cancelled"?"#dc2626":"#92400e",padding:"3px 9px",borderRadius:50,fontSize:"0.72rem",fontWeight:700}}>
                   {l.status==="confirmed"?"✓ Confirmed":l.status==="cancelled"?l.cancelledByGcal?"📅 Removed from Calendar":"✕ Cancelled":l.status==="late_cancel"?"⚠️ Late Cancel":l.status==="cancelled_forgiven"?"✓ Forgiven":"⏳ Pending"}
@@ -3739,6 +3757,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:6}}>
                   <span style={{background:badgeBg,color:badgeColor,padding:"3px 10px",borderRadius:50,fontSize:"0.75rem",fontWeight:700}}>{badgeLabel}</span>
+                  {e.attendees&&e.attendees.length>0&&<RsvpBadge attendees={e.attendees}/>}
                   {e.gcalEventId&&!isStanford&&!isMenlo&&(
                     <DelBtn onClick={()=>setConfirmCalDelete(isConfirmingCalDel?null:e.gcalEventId)} style={{padding:"4px 8px",fontSize:"0.75rem"}}></DelBtn>
                   )}

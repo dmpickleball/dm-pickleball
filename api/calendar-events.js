@@ -71,6 +71,15 @@ export default async function handler(req, res) {
       const startDT = event.start.dateTime || event.start.date;
       const endDT = event.end.dateTime || event.end.date;
 
+      // Build attendee list with RSVP status (filter out the organizer/service account)
+      const attendees = (event.attendees || [])
+        .filter(a => !a.organizer && !a.self)
+        .map(a => ({
+          email: a.email || '',
+          status: a.responseStatus || 'needsAction', // accepted | declined | needsAction | tentative
+          displayName: a.displayName || '',
+        }));
+
       events.push({
         date: startDT.substring(0, 10),
         dateLabel: fmtDate(startDT),
@@ -82,6 +91,8 @@ export default async function handler(req, res) {
         endTime: fmtTime(endDT),
         startDT,
         endDT,
+        attendees,
+        attendeeEmails: attendees.map(a => a.email),
       });
     }
 
