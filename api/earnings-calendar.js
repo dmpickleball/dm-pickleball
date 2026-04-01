@@ -82,6 +82,9 @@ export default async function handler(req, res) {
       if (!includeFuture && new Date(endDT) > new Date()) continue;
       // Pickup/buffer events — show on calendar, no earnings
       if (category.type === 'pickup') {
+        const pickupAttendees = (event.attendees || [])
+          .filter(a => { const em=(a.email||'').toLowerCase(); return em&&!em.includes('resource.calendar.google')&&!em.includes('serviceaccount')&&!a.organizer; })
+          .map(a => ({ email:(a.email||'').toLowerCase(), status:a.responseStatus||'needsAction', displayName:a.displayName||'' }));
         events.push({
           date: startDT.substring(0, 10),
           summary: event.summary,
@@ -94,15 +97,24 @@ export default async function handler(req, res) {
           gcalEventId: event.id,
           startTime: fmtTime(startDT),
           endTime: fmtTime(endDT),
-          attendeeEmails: (event.attendees || []).map(a => (a.email || '').toLowerCase()).filter(e => e && !e.includes('resource.calendar.google') && !e.includes('serviceaccount')),
+          attendees: pickupAttendees,
+          attendeeEmails: pickupAttendees.map(a => a.email),
         });
         continue;
       }
 
-      // Extract attendee emails (for linking to student profiles on frontend)
-      const attendeeEmails = (event.attendees || [])
-        .map(a => (a.email || '').toLowerCase())
-        .filter(e => e && !e.includes('resource.calendar.google') && !e.includes('serviceaccount'));
+      // Extract attendees with RSVP status (filter out calendar resources and service accounts)
+      const attendees = (event.attendees || [])
+        .filter(a => {
+          const em = (a.email || '').toLowerCase();
+          return em && !em.includes('resource.calendar.google') && !em.includes('serviceaccount') && !a.organizer;
+        })
+        .map(a => ({
+          email: (a.email || '').toLowerCase(),
+          status: a.responseStatus || 'needsAction', // accepted | declined | needsAction | tentative
+          displayName: a.displayName || '',
+        }));
+      const attendeeEmails = attendees.map(a => a.email);
 
       const isStanford = category.type === 'stanford_rec' || category.type === 'stanford_open';
 
@@ -122,6 +134,7 @@ export default async function handler(req, res) {
           location: event.location || '',
           startTime: fmtTime(startDT),
           endTime: fmtTime(endDT),
+          attendees,
           attendeeEmails,
         });
         continue;
@@ -147,6 +160,7 @@ export default async function handler(req, res) {
           gcalEventId: event.id,
           startTime: fmtTime(startDT),
           endTime: fmtTime(endDT),
+          attendees,
           attendeeEmails,
         });
       } else {
@@ -171,6 +185,7 @@ export default async function handler(req, res) {
           location: event.location || '',
           startTime: fmtTime(startDT),
           endTime: fmtTime(endDT),
+          attendees,
           attendeeEmails,
         });
       }
