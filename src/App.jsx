@@ -881,7 +881,7 @@ function ContactPage(){
       const res=await fetch("/api/send-email",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({...form,to:"info@dmpickleball.com",subject:"Website contact from "+form.name,fromAlias:"info@dmpickleball.com"}),
+        body:JSON.stringify({name:form.name,email:form.email,message:form.message}),
       });
       if(res.ok){setStatus("success");}
       else{setStatus("error");}
