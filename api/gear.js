@@ -1,4 +1,4 @@
-import { supabase } from './supabase.js';
+import { supabase } from './_supabase.js';
 
 const ROW_ID = 'main';
 
