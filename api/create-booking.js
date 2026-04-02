@@ -20,8 +20,10 @@ export default async function handler(req, res) {
     const allAttendeeEmails = [
       studentEmail,
       ...(Array.isArray(additionalEmails) ? additionalEmails : [])
-    ].filter((e, i, arr) => e && arr.indexOf(e) === i); // dedupe
+    ].filter((e, i, arr) => e && arr.indexOf(e) === i); // dedupe + remove empty
     const attendees = allAttendeeEmails.map(email => ({ email }));
+
+    console.log('create-booking: studentEmail=', studentEmail, 'attendees=', JSON.stringify(attendees));
 
     const baseBody = {
       summary: summary || `Pickleball Lesson — ${studentName}`,
@@ -32,13 +34,15 @@ export default async function handler(req, res) {
     };
 
     // Try creating WITH attendees first (enables RSVP dot tracking).
-    // Service accounts can add attendees but cannot use sendUpdates:'all' without
-    // domain-wide delegation — so we omit sendUpdates entirely (uses calendar default).
-    // If that still fails for any reason, fall back to creating without attendees.
+    // sendUpdates:'none' tells Google not to send email invites via its own servers —
+    // this prevents a 403 that service accounts get when trying to email external users.
     let event;
+    let attendeesAdded = false;
+    let attendeeError = null;
     try {
       event = await calendar.events.insert({
         calendarId: process.env.GOOGLE_CALENDAR_ID,
+        sendUpdates: 'none',
         requestBody: {
           ...baseBody,
           attendees,
@@ -46,15 +50,26 @@ export default async function handler(req, res) {
           guestsCanInviteOthers: false,
         },
       });
+      attendeesAdded = true;
+      console.log('create-booking: event created WITH attendees, id=', event.data.id);
     } catch (attendeeErr) {
-      console.warn('create-booking: attendees failed, retrying without. Reason:', attendeeErr.message);
+      attendeeError = attendeeErr.message;
+      console.warn('create-booking: attendees failed (', attendeeErr.code, attendeeErr.message, '), retrying without attendees');
       event = await calendar.events.insert({
         calendarId: process.env.GOOGLE_CALENDAR_ID,
+        sendUpdates: 'none',
         requestBody: baseBody,
       });
+      console.log('create-booking: event created WITHOUT attendees (fallback), id=', event.data.id);
     }
 
-    res.status(200).json({ success: true, eventId: event.data.id });
+    res.status(200).json({
+      success: true,
+      eventId: event.data.id,
+      attendeesAdded,
+      attendeeCount: attendees.length,
+      ...(attendeeError ? { attendeeError } : {}),
+    });
   } catch (err) {
     console.error('create-booking error:', err.message, 'code:', err.code);
     res.status(500).json({ error: err.message });

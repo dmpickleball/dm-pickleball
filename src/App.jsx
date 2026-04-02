@@ -1515,6 +1515,8 @@ function BookingPage({user,setPage,onAddLesson,stanfordEnabled=true}){
       const r=await fetch("/api/create-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({summary,description,date,startTime,endTime,location,studentEmail:user.email,studentName:user.name,additionalEmails})});
       const d=await r.json();
       if(d.eventId)eventId=d.eventId;
+      if(!d.attendeesAdded)console.warn("GCal attendees NOT added:",d.attendeeError||"unknown reason","emails attempted:",user.email,...(additionalEmails||[]));
+      else console.log("GCal attendees added OK, count:",d.attendeeCount);
     }catch(e){console.error("GCal:",e);}
     const startISO=date+"T"+startTime+":00";
     const endISO=date+"T"+endTime+":00";
@@ -2830,6 +2832,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
       const r=await fetch("/api/create-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({summary,description,date:schedDate,startTime,endTime,location,studentEmail:selectedStudent,studentName:student.name,additionalEmails:additionalEmails2})});
       const d=await r.json();
       if(d.eventId)eventId=d.eventId;
+      if(!d.attendeesAdded)console.warn("GCal attendees NOT added:",d.attendeeError||"unknown reason","emails attempted:",selectedStudent,...(additionalEmails2||[]));
+      else console.log("GCal attendees added OK, count:",d.attendeeCount);
     }catch(e){console.error("GCal:",e);}
     const startISO=schedDate+"T"+startTime+":00";
     const endISO=schedDate+"T"+endTime+":00";
