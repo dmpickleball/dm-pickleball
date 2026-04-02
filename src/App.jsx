@@ -1549,7 +1549,7 @@ function BookingPage({user,setPage,onAddLesson,stanfordEnabled=true}){
             <div>{bookedSummary?.lessonLabel} · {bookedSummary?.duration} min</div>
             {bookedSummary?.focus&&<div style={{color:G,fontWeight:600}}>{bookedSummary.focus}</div>}
             <div><strong>${bookedSummary?.price} total</strong>{lessonType==="semi"&&<span style={{color:"#9ca3af"}}> · ${bookedSummary.price/2}/person</span>}{lessonType==="group"&&<span style={{color:"#9ca3af"}}> · split equally</span>}</div>
-            <div><a href={!isMenlo?"https://maps.google.com/?q=Andrew+Spinas+Park,+3003+Bay+Rd,+Redwood+City,+CA+94063":"https://maps.google.com/?q=Stanford+Redwood+City+Recreation+and+Wellness+Center"} target="_blank" rel="noreferrer" style={{color:G,fontWeight:600}}>{!isMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City":"Stanford Redwood City"}</a></div>
+            <div style={{display:"flex",alignItems:"flex-start",gap:6}}><span style={{color:"#9ca3af",fontSize:"0.8rem",fontWeight:700,paddingTop:2,whiteSpace:"nowrap"}}>📍 Location:</span><a href={!isMenlo?"https://maps.google.com/?q=Andrew+Spinas+Park,+3003+Bay+Rd,+Redwood+City,+CA+94063":"https://maps.google.com/?q=Stanford+Redwood+City+Recreation+and+Wellness+Center"} target="_blank" rel="noreferrer" style={{color:G,fontWeight:600}}>{!isMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City":"Stanford Redwood City"}</a></div>
           </div>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -1730,7 +1730,7 @@ function BookingPage({user,setPage,onAddLesson,stanfordEnabled=true}){
               <div><strong>{lessonType==="private"?"Private":lessonType==="semi"?"Semi-Private":"Group"} · {duration} min</strong></div>
               {focus&&<div style={{color:G,fontWeight:600}}>Focus: {focus}</div>}
               <div><strong>${price} total</strong>{lessonType==="semi"&&<span style={{color:"#9ca3af",fontWeight:400,fontSize:"0.85rem"}}> · ${price/2}/person</span>}{lessonType==="group"&&<span style={{color:"#9ca3af",fontWeight:400,fontSize:"0.85rem"}}> · split equally</span>}</div>
-              <div><a href={!isMenlo?"https://maps.google.com/?q=Andrew+Spinas+Park,+3003+Bay+Rd,+Redwood+City,+CA+94063":"https://maps.google.com/?q=Stanford+Redwood+City+Recreation+and+Wellness+Center"} target="_blank" rel="noreferrer" style={{color:G,fontWeight:600}}>{!isMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City":"Stanford Redwood City"}</a></div>
+              <div style={{display:"flex",alignItems:"flex-start",gap:6}}><span style={{color:"#9ca3af",fontSize:"0.8rem",fontWeight:700,paddingTop:2,whiteSpace:"nowrap"}}>📍 Location:</span><a href={!isMenlo?"https://maps.google.com/?q=Andrew+Spinas+Park,+3003+Bay+Rd,+Redwood+City,+CA+94063":"https://maps.google.com/?q=Stanford+Redwood+City+Recreation+and+Wellness+Center"} target="_blank" rel="noreferrer" style={{color:G,fontWeight:600}}>{!isMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City":"Stanford Redwood City"}</a></div>
               {lessonType==="semi"&&<div>Partner: {(partner.firstName+" "+partner.lastName).trim()}</div>}
               {lessonType==="group"&&<div>Group: {[user.name,...groupMembers.slice(0,groupSize-1).map(m=>(m.firstName+" "+m.lastName).trim())].join(", ")}</div>}
             </div>
@@ -1919,7 +1919,7 @@ function LocationsTab({locations,setLocations}){
 function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeStanford,showNetStanford,setShowNetStanford,financeData,setFinanceData,financeLoading,setFinanceLoading,allLessons,mockUsers,onUpdateLesson,onExportNial,showNialExport,setShowNialExport,nialStart,setNialStart,nialEnd,setNialEnd}){
   const now=new Date();
   const[editRow,setEditRow]=useState(null);
-  const[editPriceVal,setEditPriceVal]=useState("");
+  const[editPriceVal,setEditPriceVal]=useState("");const[editOriginalVal,setEditOriginalVal]=useState("");
   const fmtD=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
   const[financeView,setFinanceView]=useState("month");
   const[selectedDay,setSelectedDay]=useState(fmtD(now));
@@ -2289,7 +2289,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                         <td style={{padding:"12px 16px"}}>{r.name}{r.isMenlo&&<span style={{background:"#1a3c34",color:"white",fontSize:"0.65rem",fontWeight:700,padding:"1px 6px",borderRadius:50,marginLeft:6}}>MCC</span>}</td>
                         <td style={{padding:"12px 16px"}}>{r.type}</td>
                         <td style={{padding:"12px 16px"}}>{r.duration}</td>
-                        <td onClick={()=>{editRowRef.current=r;setEditPriceVal(String(r.gross));dialogRef.current?.showModal();}} style={{padding:"12px 16px",fontWeight:700,color:isCustom?"#0ea5e9":"#1a3c34",cursor:"pointer",userSelect:"none"}} title="Click to edit">${typeof r.net==="number"?r.net.toFixed(2):r.net}<span style={{fontSize:"0.7rem",color:isCustom?"#0ea5e9":"#9ca3af",marginLeft:5,opacity:0.7}}>✎</span></td>
+                        <td onClick={()=>{editRowRef.current=r;setEditPriceVal(String(r.gross));setEditOriginalVal(String(r.gross));dialogRef.current?.showModal();}} onMouseEnter={e=>e.currentTarget.style.background="rgba(26,60,52,0.06)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(0,0,0,0.015)"} style={{padding:"12px 16px",fontWeight:700,color:isCustom?"#0ea5e9":"#1a3c34",cursor:"pointer",userSelect:"none",background:"rgba(0,0,0,0.015)",transition:"background 0.15s"}} title="Click to edit income"><span style={{borderBottom:"2px dashed "+(isCustom?"#0ea5e9":"#9ca3af"),paddingBottom:1}}>${typeof r.net==="number"?r.net.toFixed(2):r.net}</span><span style={{fontSize:"0.75rem",color:isCustom?"#0ea5e9":"#6b7280",marginLeft:6}}>✎</span></td>
                         <td style={{padding:"12px 16px"}}><button onClick={()=>setExpandedFinRow(isExpanded?null:rowKey)} style={{background:"none",border:"none",color:G,fontSize:"0.75rem",fontWeight:600,cursor:"pointer",padding:0,whiteSpace:"nowrap"}}>{isExpanded?"▲ Hide":"▼ Details"}</button></td>
                       </tr>
                       {isExpanded&&(
@@ -2331,7 +2331,10 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
               <span style={{fontSize:"1.1rem",color:"#6b7280",fontWeight:600}}>$</span>
               <input type="number" value={editPriceVal} onChange={e=>setEditPriceVal(e.target.value)} style={{...inp,marginBottom:0,fontSize:"1.1rem",fontWeight:700}} placeholder="0.00"/>
             </div>
-            {editRowRef.current&&!editRowRef.current.isCalendar&&<div style={{fontSize:"0.8rem",color:"#9ca3af",marginBottom:20}}>Default: ${getRate(editRowRef.current.type,parseInt(editRowRef.current.duration),editRowRef.current.isMenlo?"menlo":"public").toFixed(2)}</div>}
+            <div style={{display:"flex",gap:16,flexWrap:"wrap",marginBottom:20}}>
+              {editOriginalVal&&<div style={{fontSize:"0.8rem",color:"#6b7280"}}>Current value: <strong style={{color:"#374151"}}>${parseFloat(editOriginalVal).toFixed(2)}</strong></div>}
+              {editRowRef.current&&!editRowRef.current.isCalendar&&<div style={{fontSize:"0.8rem",color:"#9ca3af"}}>Default rate: ${getRate(editRowRef.current.type,parseInt(editRowRef.current.duration),editRowRef.current.isMenlo?"menlo":"public").toFixed(2)}</div>}
+            </div>
             <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
               <button onClick={()=>dialogRef.current?.close()} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.88rem"}}>Cancel</button>
               <button onClick={async()=>{
@@ -2625,6 +2628,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
   const[editNotes,setEditNotes]=useState("");
   const[confirmCancel,setConfirmCancel]=useState(null);const[confirmDelete,setConfirmDelete]=useState(null);const[confirmDeleteStudent,setConfirmDeleteStudent]=useState(false);const[confirmCalDelete,setConfirmCalDelete]=useState(null);const[calDeleteLoading,setCalDeleteLoading]=useState(false);
   const[deleteLoading,setDeleteLoading]=useState(false);const[deletedToast,setDeletedToast]=useState(false);
+  const[permDeleteTarget,setPermDeleteTarget]=useState(null);const[permDeletePw,setPermDeletePw]=useState("");const[permDeleteError,setPermDeleteError]=useState("");const[showArchivedLessons,setShowArchivedLessons]=useState(false);
   const[cancelLoading,setCancelLoading]=useState(false);
   const[coachRatingInput,setCoachRatingInput]=useState("");
   const[ratingNoteInput,setRatingNoteInput]=useState("");
@@ -2698,7 +2702,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
   });
 
   const allLessonsList=Object.entries(allLessons).flatMap(([email,lessons])=>
-    lessons.map(l=>({...l,studentEmail:email,studentName:mockUsers[email]?.name||email,isMenlo:mockUsers[email]?.memberType==="menlo"}))
+    lessons.filter(l=>l.status!=="archived").map(l=>({...l,studentEmail:email,studentName:mockUsers[email]?.name||email,isMenlo:mockUsers[email]?.memberType==="menlo"}))
   ).sort((a,b)=>new Date(b.date)-new Date(a.date));
 
   // GCal event IDs that belong to portal lessons — used to deduplicate calendar views
@@ -3264,8 +3268,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
           {/* ─────────────────────────────────────────────────────────── */}
 
           <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Lesson History</div>
-          {(allLessons[selectedStudent]||[]).length===0&&<div style={{color:"#9ca3af",fontSize:"0.9rem",textAlign:"center",padding:"32px"}}>No lessons yet.</div>}
-          {(allLessons[selectedStudent]||[]).sort((a,b)=>new Date(b.date)-new Date(a.date)).map(l=>{
+          {(allLessons[selectedStudent]||[]).filter(l=>l.status!=="archived").length===0&&<div style={{color:"#9ca3af",fontSize:"0.9rem",textAlign:"center",padding:"32px"}}>No lessons yet.</div>}
+          {(allLessons[selectedStudent]||[]).filter(l=>l.status!=="archived").sort((a,b)=>new Date(b.date)-new Date(a.date)).map(l=>{
             const smk="s_"+l.id;const isMenuOpen=activeMenu===smk;
             const isCancelled=cancelledStatuses2.includes(l.status);
             const missingCal=!l.gcalEventId;
@@ -3296,7 +3300,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                   {!isCancelled&&<button onClick={()=>{setConfirmCancel(l.id);setActiveMenu(null);}} style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>✕ Cancel</button>}
                   {!isCancelled&&<button onClick={async()=>{await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id,updates:{status:"no_show"}})});onUpdateLesson(selectedStudent,l.id,{status:"no_show"});setActiveMenu(null);}} style={{background:"white",color:"#7f1d1d",border:"1.5px solid #fca5a5",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>✕ No-Show</button>}
                   {!isCancelled&&<button onClick={async()=>{await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id,updates:{status:"weather_cancel"}})});onUpdateLesson(selectedStudent,l.id,{status:"weather_cancel"});setActiveMenu(null);}} style={{background:"white",color:"#1d4ed8",border:"1.5px solid #93c5fd",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>🌧 Weather</button>}
-                  <DelBtn onClick={()=>{setConfirmDelete(l.id);setActiveMenu(null);}}>Delete</DelBtn>
+                  <DelBtn onClick={()=>{setConfirmDelete(l.id);setActiveMenu(null);}} style={{color:"#6b7280",borderColor:"#d1d5db"}}>📦 Archive</DelBtn>
                   <span style={{flex:1}}/>
                   <button onClick={()=>setActiveMenu(null)} style={{background:"none",border:"none",color:"#9ca3af",cursor:"pointer",fontSize:"0.8rem"}}>Close</button>
                 </div>
@@ -3314,23 +3318,19 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                   </div>
                 </div>
               )}
-              {/* Delete confirm */}
+              {/* Archive confirm */}
               {confirmDelete===l.id&&(
-                <div style={{background:"#fef2f2",borderTop:"2px solid #dc2626",padding:"16px 18px"}}>
-                  <div style={{fontWeight:800,color:"#991b1b",fontSize:"0.95rem",marginBottom:4}}>Delete this lesson?</div>
-                  <div style={{fontSize:"0.82rem",color:"#b91c1c",marginBottom:12,fontWeight:600}}>⚠️ This is permanent and cannot be undone. The calendar event will also be removed.</div>
+                <div style={{background:"#f9fafb",borderTop:"2px solid #d1d5db",padding:"16px 18px"}}>
+                  <div style={{fontWeight:800,color:"#374151",fontSize:"0.95rem",marginBottom:4}}>Archive this lesson?</div>
+                  <div style={{fontSize:"0.82rem",color:"#6b7280",marginBottom:12}}>It will be moved to the Archived section. You can permanently delete it from there with your admin password.</div>
                   <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
                     <button onClick={()=>setConfirmDelete(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Keep it</button>
-                    <button onClick={()=>{
-                      // Remove from UI immediately — API calls fire in background
-                      onDeleteLesson(selectedStudent,l.id);
+                    <button onClick={async()=>{
+                      await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id,updates:{status:"archived"}})}).catch(e=>console.error("Archive failed:",e));
+                      onUpdateLesson(selectedStudent,l.id,{status:"archived"});
                       setConfirmDelete(null);setDeletedToast(true);setTimeout(()=>setDeletedToast(false),3000);
-                      if(l.gcalEventId){fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:l.gcalEventId,mode:"delete"})}).catch(e=>console.error("GCal delete failed:",e));}
-                      fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})}).catch(e=>console.error("DB delete failed:",e));
-                      // Admin-only notification — no email to student on delete
-                      fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:"david@dmpickleball.com",subject:"Deleted: "+(mockUsers[selectedStudent]?.name||selectedStudent)+" - "+fmtDateShort(l.date),text:"You permanently deleted a lesson.\n\nStudent: "+(mockUsers[selectedStudent]?.name||selectedStudent)+"\nDate: "+fmtDate(l.date)+"\nTime: "+(l.time||"")+"\nType: "+(l.type||""),fromAlias:"noreply@dmpickleball.com"})}).catch(()=>{});
-                    }} style={{background:"#dc2626",color:"white",border:"none",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>
-                      Yes, Delete Permanently
+                    }} style={{background:"#4b5563",color:"white",border:"none",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>
+                      Yes, Archive
                     </button>
                   </div>
                 </div>
@@ -3364,6 +3364,42 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
             </div>
             );
           })}
+          {/* ── Archived Lessons ─────────────────────────────────────── */}
+          {(()=>{
+            const archivedLessons=(allLessons[selectedStudent]||[]).filter(l=>l.status==="archived").sort((a,b)=>new Date(b.date)-new Date(a.date));
+            if(archivedLessons.length===0)return null;
+            return(
+              <div style={{marginTop:24}}>
+                <button onClick={()=>setShowArchivedLessons(v=>!v)} style={{background:"none",border:"none",padding:0,cursor:"pointer",display:"flex",alignItems:"center",gap:6,marginBottom:showArchivedLessons?12:0}}>
+                  <span style={{fontSize:"0.75rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:2}}>📦 Archived Lessons ({archivedLessons.length})</span>
+                  <span style={{fontSize:"0.7rem",color:"#9ca3af"}}>{showArchivedLessons?"▲":"▼"}</span>
+                </button>
+                {showArchivedLessons&&archivedLessons.map(l=>(
+                  <div key={l.id} style={{background:"#f9fafb",borderRadius:10,border:"1.5px solid #e5e7eb",marginBottom:8,overflow:"hidden",opacity:0.85}}>
+                    <div style={{padding:"12px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                      <div>
+                        <div style={{fontWeight:600,fontSize:"0.88rem",color:"#6b7280"}}>{fmtDateShort(l.date)} · {l.time}</div>
+                        <div style={{fontSize:"0.78rem",color:"#9ca3af",marginTop:2}}>{l.type} · {l.duration}{l.focus?" · "+l.focus:""}</div>
+                      </div>
+                      <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                        <span style={{background:"#f3f4f6",color:"#6b7280",padding:"2px 8px",borderRadius:50,fontSize:"0.7rem",fontWeight:700}}>📦 Archived</span>
+                        {permDeleteTarget?.id===l.id?(
+                          <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+                            <input type="password" placeholder="Admin password" value={permDeletePw} onChange={e=>{setPermDeletePw(e.target.value);setPermDeleteError("");}} style={{fontSize:"0.78rem",padding:"4px 10px",borderRadius:6,border:"1.5px solid "+(permDeleteError?"#fca5a5":"#d1d5db"),outline:"none",width:150}} onKeyDown={e=>{if(e.key==="Enter"){if(permDeletePw===ADMIN_USER.password){onDeleteLesson(selectedStudent,l.id);if(l.gcalEventId){fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:l.gcalEventId,mode:"delete"})}).catch(()=>{});}fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})}).catch(()=>{});setPermDeleteTarget(null);setPermDeletePw("");}else{setPermDeleteError("Wrong password");}}}}/>
+                            {permDeleteError&&<span style={{fontSize:"0.72rem",color:"#dc2626",fontWeight:600}}>{permDeleteError}</span>}
+                            <button onClick={()=>{if(permDeletePw===ADMIN_USER.password){onDeleteLesson(selectedStudent,l.id);if(l.gcalEventId){fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:l.gcalEventId,mode:"delete"})}).catch(()=>{});}fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})}).catch(()=>{});setPermDeleteTarget(null);setPermDeletePw("");}else{setPermDeleteError("Wrong password");}}} style={{background:"#dc2626",color:"white",border:"none",padding:"4px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.75rem",fontWeight:700}}>Delete</button>
+                            <button onClick={()=>{setPermDeleteTarget(null);setPermDeletePw("");setPermDeleteError("");}} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"4px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.75rem",fontWeight:600}}>Cancel</button>
+                          </div>
+                        ):(
+                          <button onClick={()=>{setPermDeleteTarget({id:l.id,email:selectedStudent});setPermDeletePw("");setPermDeleteError("");}} style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"4px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:700}}>🗑 Permanently Delete</button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -3591,7 +3627,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                   <div>{schedLessonType==="private"?"Private":schedLessonType==="semi"?"Semi-Private":"Group"} · {schedDuration} min</div>
                   {schedFocus&&<div style={{color:G,fontWeight:600}}>Focus: {schedFocus}</div>}
                   <div>{schedCustomPrice?"$"+schedCustomPrice+" (custom)":"$"+SCHED_PRICES[schedLessonType][schedDuration]+" total"}{!schedCustomPrice&&schedLessonType==="semi"?" ($"+(SCHED_PRICES[schedLessonType][schedDuration]/2)+"/person)":!schedCustomPrice&&schedLessonType==="group"?" (split equally)":""}</div>
-                  <div>{customLocation&&schedLocation?schedLocation:(!schedIsMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City":"Menlo Circus Club, Atherton")}</div>
+                  <div style={{display:"flex",alignItems:"flex-start",gap:6}}><span style={{color:"#9ca3af",fontSize:"0.8rem",fontWeight:700,paddingTop:2,whiteSpace:"nowrap"}}>📍 Location:</span><a href={customLocation&&schedLocation?"https://maps.google.com/?q="+encodeURIComponent(schedLocation):(!schedIsMenlo?"https://maps.google.com/?q=Andrew+Spinas+Park,+3003+Bay+Rd,+Redwood+City,+CA+94063":"https://maps.google.com/?q=Menlo+Circus+Club,+190+Park+Ln,+Atherton,+CA+94027")} target="_blank" rel="noreferrer" style={{color:G,fontWeight:600}}>{customLocation&&schedLocation?schedLocation:(!schedIsMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City":"Menlo Circus Club, Atherton")}</a></div>
                 </div>
               </div>
               <div style={{display:"flex",gap:10}}>
@@ -3666,7 +3702,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
             {isMenuOpen&&(
               <div style={{borderTop:"1px solid #f3f4f6",background:"#fafafa",padding:"10px 18px",display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
                 {!isCancelled&&!isPast(l.date,l.time)&&<button onClick={()=>{setConfirmCancel(mk);setActiveMenu(null);}} style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>✕ Cancel Lesson</button>}
-                <DelBtn onClick={()=>{setConfirmDelete(mk);setActiveMenu(null);}}>Delete Lesson</DelBtn>
+                <DelBtn onClick={()=>{setConfirmDelete(mk);setActiveMenu(null);}} style={{color:"#6b7280",borderColor:"#d1d5db"}}>📦 Archive</DelBtn>
                 <span style={{flex:1}}/>
                 <button onClick={()=>setActiveMenu(null)} style={{background:"none",border:"none",color:"#9ca3af",cursor:"pointer",fontSize:"0.8rem"}}>Close</button>
               </div>
@@ -3684,23 +3720,19 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                 </div>
               </div>
             )}
-            {/* Delete confirm */}
+            {/* Archive confirm */}
             {confirmDelete===mk&&(
-              <div style={{background:"#fef2f2",borderTop:"2px solid #dc2626",padding:"16px 18px"}}>
-                <div style={{fontWeight:800,color:"#991b1b",fontSize:"0.95rem",marginBottom:4}}>Delete this lesson?</div>
-                <div style={{fontSize:"0.82rem",color:"#b91c1c",marginBottom:12,fontWeight:600}}>⚠️ This is permanent and cannot be undone. The calendar event will also be removed.</div>
+              <div style={{background:"#f9fafb",borderTop:"2px solid #d1d5db",padding:"16px 18px"}}>
+                <div style={{fontWeight:800,color:"#374151",fontSize:"0.95rem",marginBottom:4}}>Archive this lesson?</div>
+                <div style={{fontSize:"0.82rem",color:"#6b7280",marginBottom:12}}>It will be moved to the student's Archived section. You can permanently delete it there with your admin password.</div>
                 <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
                   <button onClick={()=>setConfirmDelete(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Keep it</button>
-                  <button onClick={()=>{
-                    // Remove from UI immediately — API calls fire in background
-                    onDeleteLesson(l.studentEmail,l.id);
+                  <button onClick={async()=>{
+                    await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id,updates:{status:"archived"}})}).catch(e=>console.error("Archive failed:",e));
+                    onUpdateLesson(l.studentEmail,l.id,{status:"archived"});
                     setConfirmDelete(null);setDeletedToast(true);setTimeout(()=>setDeletedToast(false),3000);
-                    if(l.gcalEventId){fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:l.gcalEventId,mode:"delete"})}).catch(e=>console.error("GCal delete failed:",e));}
-                    fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})}).catch(e=>console.error("DB delete failed:",e));
-                    // Admin-only notification — no email to student on delete
-                    fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:"david@dmpickleball.com",subject:"Deleted: "+(mockUsers[l.studentEmail]?.name||l.studentEmail)+" - "+fmtDateShort(l.date),text:"You permanently deleted a lesson.\n\nStudent: "+(mockUsers[l.studentEmail]?.name||l.studentEmail)+"\nDate: "+fmtDate(l.date)+"\nTime: "+(l.time||"")+"\nType: "+(l.type||""),fromAlias:"noreply@dmpickleball.com"})}).catch(()=>{});
-                  }} style={{background:"#dc2626",color:"white",border:"none",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>
-                    Yes, Delete Permanently
+                  }} style={{background:"#4b5563",color:"white",border:"none",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:700}}>
+                    Yes, Archive
                   </button>
                 </div>
               </div>
@@ -4678,7 +4710,7 @@ export default function App(){
   };
   const logout=()=>{setUser(null);setIsAdmin(false);setPage("home");};
   if(isAdmin)return(
-    <div style={{fontFamily:"'DM Sans',sans-serif",background:"#f4f9f6",minHeight:"100vh"}}>
+    <div style={{fontFamily:"'Inter',sans-serif",background:"#f4f9f6",minHeight:"100vh"}}>
       <nav style={{background:G,padding:"14px 32px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <img src="/DMPBlogo-white.png" alt="DMPB" style={{height:34,width:"auto",display:"block"}}/>
