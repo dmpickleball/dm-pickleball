@@ -640,18 +640,11 @@ function LessonCard({lesson,isMenlo,isHistory,onCancel}){
 function Homepage({setPage}){
   const [mob,setMob]=useState(window.innerWidth<=768);
   useEffect(()=>{const h=()=>setMob(window.innerWidth<=768);window.addEventListener("resize",h);return()=>window.removeEventListener("resize",h);},[]);
-  const videoRef=useRef(null);
-  useEffect(()=>{
-    // defaultMuted writes the HTML attribute; this useEffect is a belt-and-suspenders call to play()
-    const v=videoRef.current;
-    if(!v)return;
-    v.play().catch(()=>{});
-  },[]);
   return(
     <div>
       {/* ── Video Hero ── */}
       <div style={{position:"relative",color:"white",textAlign:"center",padding:mob?"72px 20px 56px":"110px 24px 90px",overflow:"hidden",minHeight:mob?420:520,display:"flex",alignItems:"center",justifyContent:"center",background:"#0a1f18"}}>
-        <video ref={videoRef} autoPlay muted defaultMuted loop playsInline preload="auto"
+        <video autoPlay muted loop playsInline
           style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",objectFit:"cover",zIndex:0}}>
           <source src="/hero.m4v" type="video/mp4"/>
         </video>
