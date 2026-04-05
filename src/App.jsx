@@ -601,18 +601,20 @@ function Homepage({setPage}){
   return(
     <div>
       {/* ── Video Hero ── */}
-      <div style={{position:"relative",color:"white",textAlign:"center",padding:"110px 24px 90px",overflow:"hidden",minHeight:520,display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div style={{position:"relative",color:"white",textAlign:"center",padding:"110px 24px 90px",overflow:"hidden",minHeight:520,display:"flex",alignItems:"center",justifyContent:"center",background:"#0a1f18"}}>
         {/* Background video */}
         <video autoPlay muted loop playsInline
+          onLoadedData={e=>{e.target.play().catch(()=>{});}}
           style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",objectFit:"cover",zIndex:0}}>
           <source src="/hero.m4v" type="video/mp4"/>
+          <source src="/hero.m4v" type="video/x-m4v"/>
         </video>
         {/* Dark overlay so text stays readable */}
         <div style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",background:"linear-gradient(to bottom, rgba(0,20,14,0.70) 0%, rgba(0,20,14,0.55) 60%, rgba(0,20,14,0.75) 100%)",zIndex:1}}/>
         {/* Content */}
         <div style={{position:"relative",zIndex:2,maxWidth:660,margin:"0 auto"}}>
           <div style={{fontSize:"0.8rem",letterSpacing:3,opacity:0.8,marginBottom:14,textTransform:"uppercase"}}>Pickleball Coaching · San Francisco Peninsula, Bay Area</div>
-          <h1 style={{fontSize:"3rem",fontWeight:900,lineHeight:1.15,marginBottom:16}}>Coach David —<br/><span style={{color:Y}}>SF Peninsula Pickleball</span></h1>
+          <h1 style={{fontSize:"3rem",fontWeight:900,lineHeight:1.15,marginBottom:16}}>Coach David<br/><span style={{color:Y}}>SF Peninsula Pickleball</span></h1>
           <p style={{fontSize:"1.1rem",opacity:0.9,maxWidth:500,margin:"0 auto 32px",lineHeight:1.7}}>Private, semi-private and group lessons on the SF Peninsula. Personalized coaching from a tournament competitor who knows what it takes to win.</p>
           <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
             <button onClick={()=>setPage("pricing")} style={{background:Y,color:G,border:"none",padding:"13px 30px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem"}}>View Rates</button>
