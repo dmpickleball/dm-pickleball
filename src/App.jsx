@@ -358,34 +358,74 @@ function LocationInput({value, onChange, placeholder, style}){
 }
 function Nav({user,onLogin,onLogout,setPage,currentPage}){
   const onAdminRoute=window.location.pathname==="/admin";
-  const goHome=()=>{if(onAdminRoute){window.location.href="/";}else{setPage("home");}};
-  const [mob,setMob]=useState(window.innerWidth<=640);
-  useEffect(()=>{const h=()=>setMob(window.innerWidth<=640);window.addEventListener("resize",h);return()=>window.removeEventListener("resize",h);},[]);
-  const fs=mob?"0.82rem":"0.92rem";
-  const gap=mob?12:20;
-  const pad=mob?"10px 16px":"14px 32px";
-  // Logo handles home on all screen sizes — "Home" removed from nav links
-  const links=mob
-    ?[["pricing","Rates"],["gear","Paddle/Gear"],["contact","Contact"]]
-    :[["pricing","Rates"],["gear","Paddle/Gear"],["contact","Contact"]];
+  const goHome=()=>{if(onAdminRoute){window.location.href="/";}else{setPage("home");setMenuOpen(false);}};
+  const [mob,setMob]=useState(window.innerWidth<=768);
+  const [menuOpen,setMenuOpen]=useState(false);
+  useEffect(()=>{
+    const h=()=>{setMob(window.innerWidth<=768);setMenuOpen(false);};
+    window.addEventListener("resize",h);
+    return()=>window.removeEventListener("resize",h);
+  },[]);
+  const links=[["pricing","Rates"],["gear","Paddle/Gear"],["contact","Contact"]];
+  const navTo=(p)=>{setPage(p);setMenuOpen(false);};
+  if(mob){
+    return(
+      <>
+        <nav style={{background:G,padding:"12px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:200}}>
+          <div onClick={goHome} style={{cursor:"pointer"}}>
+            <img src="/DMPBlogo-white.png" alt="DMPB" style={{height:28,width:"auto",display:"block"}}/>
+          </div>
+          <button onClick={()=>setMenuOpen(o=>!o)} style={{background:"none",border:"none",cursor:"pointer",padding:"4px",lineHeight:0}}>
+            {menuOpen
+              ?<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              :<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            }
+          </button>
+        </nav>
+        {menuOpen&&(
+          <div style={{position:"fixed",top:52,left:0,right:0,bottom:0,zIndex:199,display:"flex",flexDirection:"column"}}>
+            <div style={{background:G,boxShadow:"0 8px 32px rgba(0,0,0,0.35)"}}>
+              {links.map(([p,label])=>(
+                <div key={p} onClick={()=>navTo(p)} style={{color:"white",padding:"16px 24px",fontSize:"1.05rem",cursor:"pointer",fontWeight:currentPage===p?700:400,opacity:currentPage===p?1:0.85,borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
+                  {label}
+                </div>
+              ))}
+              {user?(
+                <>
+                  <div onClick={()=>navTo("dashboard")} style={{color:Y,padding:"16px 24px",fontSize:"1.05rem",cursor:"pointer",fontWeight:700,borderBottom:"1px solid rgba(255,255,255,0.08)"}}>My Lessons</div>
+                  <div onClick={()=>navTo("booking")} style={{color:"white",padding:"16px 24px",fontSize:"1.05rem",cursor:"pointer",fontWeight:600,borderBottom:"1px solid rgba(255,255,255,0.08)"}}>Book a Lesson</div>
+                  <div onClick={()=>{onLogout();setMenuOpen(false);}} style={{color:"rgba(255,255,255,0.5)",padding:"16px 24px",fontSize:"0.95rem",cursor:"pointer"}}>Log out</div>
+                </>
+              ):(
+                <div style={{padding:"16px 20px"}}>
+                  <button onClick={()=>{onLogin();setMenuOpen(false);}} style={{background:Y,color:G,border:"none",padding:"12px 24px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem",width:"100%"}}>Student Login</button>
+                </div>
+              )}
+            </div>
+            <div onClick={()=>setMenuOpen(false)} style={{flex:1,background:"rgba(0,0,0,0.4)"}}/>
+          </div>
+        )}
+      </>
+    );
+  }
   return(
-    <nav style={{background:G,padding:pad,display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100}}>
+    <nav style={{background:G,padding:"14px 32px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:200}}>
       <div onClick={goHome} style={{cursor:"pointer",display:"flex",alignItems:"center"}}>
-        <img src="/DMPBlogo-white.png" alt="DMPB" style={{height:mob?28:34,width:"auto",display:"block"}}/>
+        <img src="/DMPBlogo-white.png" alt="DMPB" style={{height:34,width:"auto",display:"block"}}/>
       </div>
-      <div style={{display:"flex",gap,alignItems:"center",flexWrap:"nowrap"}}>
+      <div style={{display:"flex",gap:20,alignItems:"center"}}>
         {links.map(([p,label])=>(
-          <span key={p} onClick={()=>p==="home"?goHome():setPage(p)} style={{color:"white",cursor:"pointer",opacity:currentPage===p?1:0.7,fontWeight:currentPage===p?700:400,fontSize:fs,whiteSpace:"nowrap"}}>{label}</span>
+          <span key={p} onClick={()=>setPage(p)} style={{color:"white",cursor:"pointer",opacity:currentPage===p?1:0.7,fontWeight:currentPage===p?700:400,fontSize:"0.92rem",whiteSpace:"nowrap"}}>{label}</span>
         ))}
         {user?(
           <>
-            <span onClick={()=>setPage("dashboard")} style={{color:Y,cursor:"pointer",fontWeight:700,fontSize:fs,whiteSpace:"nowrap"}}>{mob?"Lessons":"My Lessons"}</span>
-            {!mob&&<span onClick={()=>setPage("account")} title="Account Settings" style={{color:"white",cursor:"pointer",opacity:currentPage==="account"?1:0.7,lineHeight:1,display:"inline-flex",alignItems:"center"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>}
-            <span onClick={()=>setPage("booking")} style={{background:"rgba(255,255,255,0.15)",color:"white",padding:mob?"5px 10px":"7px 16px",borderRadius:50,cursor:"pointer",fontSize:fs,whiteSpace:"nowrap"}}>Book</span>
-            {!mob&&<button onClick={onLogout} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.4)",color:"white",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem"}}>Log out</button>}
+            <span onClick={()=>setPage("dashboard")} style={{color:Y,cursor:"pointer",fontWeight:700,fontSize:"0.92rem",whiteSpace:"nowrap"}}>My Lessons</span>
+            <span onClick={()=>setPage("account")} title="Account Settings" style={{color:"white",cursor:"pointer",opacity:currentPage==="account"?1:0.7,lineHeight:1,display:"inline-flex",alignItems:"center"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
+            <span onClick={()=>setPage("booking")} style={{background:"rgba(255,255,255,0.15)",color:"white",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.92rem",whiteSpace:"nowrap"}}>Book</span>
+            <button onClick={onLogout} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.4)",color:"white",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem"}}>Log out</button>
           </>
         ):(
-          <button onClick={onLogin} style={{background:Y,color:G,border:"none",padding:mob?"6px 12px":"8px 20px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:fs,whiteSpace:"nowrap"}}>{mob?"Login":"Student Login"}</button>
+          <button onClick={onLogin} style={{background:Y,color:G,border:"none",padding:"8px 20px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"0.92rem",whiteSpace:"nowrap"}}>Student Login</button>
         )}
       </div>
     </nav>
@@ -598,45 +638,49 @@ function LessonCard({lesson,isMenlo,isHistory,onCancel}){
 }
 
 function Homepage({setPage}){
+  const [mob,setMob]=useState(window.innerWidth<=768);
+  useEffect(()=>{const h=()=>setMob(window.innerWidth<=768);window.addEventListener("resize",h);return()=>window.removeEventListener("resize",h);},[]);
   return(
     <div>
       {/* ── Video Hero ── */}
-      <div style={{position:"relative",color:"white",textAlign:"center",padding:"110px 24px 90px",overflow:"hidden",minHeight:520,display:"flex",alignItems:"center",justifyContent:"center",background:"#0a1f18"}}>
-        {/* Background video */}
+      <div style={{position:"relative",color:"white",textAlign:"center",padding:mob?"72px 20px 56px":"110px 24px 90px",overflow:"hidden",minHeight:mob?420:520,display:"flex",alignItems:"center",justifyContent:"center",background:"#0a1f18"}}>
         <video autoPlay muted loop playsInline
           onLoadedData={e=>{e.target.play().catch(()=>{});}}
           style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",objectFit:"cover",zIndex:0}}>
           <source src="/hero.m4v" type="video/mp4"/>
           <source src="/hero.m4v" type="video/x-m4v"/>
         </video>
-        {/* Dark overlay so text stays readable */}
         <div style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",background:"linear-gradient(to bottom, rgba(0,20,14,0.70) 0%, rgba(0,20,14,0.55) 60%, rgba(0,20,14,0.75) 100%)",zIndex:1}}/>
-        {/* Content */}
         <div style={{position:"relative",zIndex:2,maxWidth:660,margin:"0 auto"}}>
-          <div style={{fontSize:"0.8rem",letterSpacing:3,opacity:0.8,marginBottom:14,textTransform:"uppercase"}}>Pickleball Coaching · San Francisco Peninsula, Bay Area</div>
-          <h1 style={{fontSize:"3rem",fontWeight:900,lineHeight:1.15,marginBottom:16}}>Coach David<br/><span style={{color:Y}}>SF Peninsula Pickleball</span></h1>
-          <p style={{fontSize:"1.1rem",opacity:0.9,maxWidth:500,margin:"0 auto 32px",lineHeight:1.7}}>Private, semi-private and group lessons on the SF Peninsula. Personalized coaching from a tournament competitor who knows what it takes to win.</p>
-          <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
-            <button onClick={()=>setPage("pricing")} style={{background:Y,color:G,border:"none",padding:"13px 30px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem"}}>View Rates</button>
-            <button onClick={()=>setPage("contact")} style={{background:"transparent",color:"white",border:"2px solid rgba(255,255,255,0.5)",padding:"13px 30px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem"}}>Get in Touch</button>
+          {!mob&&<div style={{fontSize:"0.8rem",letterSpacing:3,opacity:0.8,marginBottom:14,textTransform:"uppercase"}}>Pickleball Coaching · San Francisco Peninsula, Bay Area</div>}
+          <h1 style={{fontSize:mob?"2rem":"3rem",fontWeight:900,lineHeight:1.15,marginBottom:mob?12:16}}>Coach David<br/><span style={{color:Y}}>SF Peninsula Pickleball</span></h1>
+          <p style={{fontSize:mob?"0.97rem":"1.1rem",opacity:0.9,maxWidth:500,margin:mob?"0 auto 24px":"0 auto 32px",lineHeight:1.7}}>Private, semi-private and group lessons on the SF Peninsula. Personalized coaching from a tournament competitor who knows what it takes to win.</p>
+          <div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>
+            <button onClick={()=>setPage("pricing")} style={{background:Y,color:G,border:"none",padding:mob?"11px 24px":"13px 30px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:mob?"0.95rem":"1rem"}}>View Rates</button>
+            <button onClick={()=>setPage("contact")} style={{background:"transparent",color:"white",border:"2px solid rgba(255,255,255,0.5)",padding:mob?"11px 24px":"13px 30px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:mob?"0.95rem":"1rem"}}>Get in Touch</button>
           </div>
         </div>
       </div>
-      <div style={{background:"white",padding:"40px 24px"}}>
-        <div style={{maxWidth:700,margin:"0 auto",display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:24,textAlign:"center"}}>
+      {/* ── Stats Bar ── */}
+      <div style={{background:"white",padding:mob?"28px 20px":"40px 24px"}}>
+        <div style={{maxWidth:700,margin:"0 auto",display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:mob?8:24,textAlign:"center"}}>
           {[["2018","Playing Since"],["2020","Coaching Since"],["5.0+","Tournament Rating"]].map(([num,label])=>(
-            <div key={label}><div style={{fontSize:"2.4rem",fontWeight:900,color:G}}>{num}</div><div style={{fontSize:"0.88rem",color:"#6b7280",marginTop:4}}>{label}</div></div>
+            <div key={label}>
+              <div style={{fontSize:mob?"1.7rem":"2.4rem",fontWeight:900,color:G}}>{num}</div>
+              <div style={{fontSize:mob?"0.72rem":"0.88rem",color:"#6b7280",marginTop:4,lineHeight:1.3}}>{label}</div>
+            </div>
           ))}
         </div>
       </div>
-      <div style={{background:"#f4f9f6",padding:"60px 24px"}}>
-        <div style={{maxWidth:760,margin:"0 auto",display:"grid",gridTemplateColumns:"1fr 2fr",gap:40,alignItems:"center"}}>
-          <div style={{borderRadius:16,overflow:"hidden",aspectRatio:"3/4",boxShadow:"0 8px 32px rgba(0,96,57,0.2)"}}>
+      {/* ── About ── */}
+      <div style={{background:"#f4f9f6",padding:mob?"40px 20px":"60px 24px"}}>
+        <div style={{maxWidth:760,margin:"0 auto",display:"grid",gridTemplateColumns:mob?"1fr":"1fr 2fr",gap:mob?28:40,alignItems:"center"}}>
+          <div style={{borderRadius:16,overflow:"hidden",aspectRatio:"3/4",boxShadow:"0 8px 32px rgba(0,96,57,0.2)",maxHeight:mob?280:undefined}}>
             <img src={DAVID_PHOTO} alt="David Mok — Honolulu Open Gold Medal" style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top"}}/>
           </div>
           <div>
             <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:10}}>About Coach David</div>
-            <h2 style={{fontSize:"1.8rem",fontWeight:900,marginBottom:16,lineHeight:1.3}}>About Coach David</h2>
+            <h2 style={{fontSize:mob?"1.5rem":"1.8rem",fontWeight:900,marginBottom:16,lineHeight:1.3}}>About Coach David</h2>
             <p style={{color:"#4b5563",lineHeight:1.8,marginBottom:14,fontSize:"0.97rem"}}>Coach David discovered pickleball in 2018, before the pandemic boom, before the packed courts, before everyone else caught on. That head start matters.</p>
             <p style={{color:"#4b5563",lineHeight:1.8,marginBottom:14,fontSize:"0.97rem"}}>With years of experience competing at the highest levels of the game, he has spent years mastering what makes pickleball unique, from the mechanics of the kitchen game to the strategy that separates good players from great ones. The result is a coaching approach built on genuine mastery and real competitive experience.</p>
             <p style={{color:"#4b5563",lineHeight:1.8,fontSize:"0.97rem"}}>As an IPTPA Level III certified coach and active tournament player, Coach David works with everyone from players who have never held a paddle to seasoned 5.0+ competitors, in both singles and doubles, across the SF Peninsula. Whether you need to build your game from the ground up, overhaul your mechanics, or sharpen your competitive strategy, he has the knowledge and experience to get you there.</p>
@@ -654,11 +698,12 @@ function Homepage({setPage}){
           </div>
         </div>
       </div>
-      <div style={{background:"white",padding:"60px 24px"}}>
+      {/* ── Lesson Types ── */}
+      <div style={{background:"white",padding:mob?"40px 20px":"60px 24px"}}>
         <div style={{maxWidth:700,margin:"0 auto"}}>
-          <div style={{textAlign:"center",marginBottom:36}}>
+          <div style={{textAlign:"center",marginBottom:28}}>
             <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>What's Available</div>
-            <h2 style={{fontSize:"1.8rem",fontWeight:900}}>Lesson Types</h2>
+            <h2 style={{fontSize:mob?"1.5rem":"1.8rem",fontWeight:900}}>Lesson Types</h2>
           </div>
           <div style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:12,overflow:"hidden"}}>
             {[
@@ -666,30 +711,32 @@ function Homepage({setPage}){
               {title:"Semi-Private",desc:"Train alongside a partner. Same focused coaching, shared investment.",price:"$140/hr",sub:"$70 per person"},
               {title:"Group Lesson",desc:"Small-group training for 3–4 players. Drill-focused sessions with live play and individual feedback.",price:"$140/hr",sub:"split equally"},
             ].map(({title,desc,price,sub},i,arr)=>(
-              <div key={title} style={{display:"grid",gridTemplateColumns:"1fr auto",gap:16,padding:"20px 24px",borderBottom:i<arr.length-1?"1px solid #f3f4f6":"none",alignItems:"center"}}>
-                <div>
-                  <div style={{fontWeight:700,fontSize:"0.95rem",marginBottom:3}}>{title}</div>
-                  <div style={{fontSize:"0.82rem",color:"#6b7280",lineHeight:1.6}}>{desc}</div>
+              <div key={title} style={{padding:mob?"16px 20px":"20px 24px",borderBottom:i<arr.length-1?"1px solid #f3f4f6":"none"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4,gap:12}}>
+                  <div style={{fontWeight:700,fontSize:"0.95rem"}}>{title}</div>
+                  <div style={{textAlign:"right",flexShrink:0}}>
+                    <div style={{fontWeight:700,color:G,fontSize:"1rem"}}>{price}</div>
+                    {sub&&<div style={{fontSize:"0.72rem",color:"#9ca3af",marginTop:1}}>{sub}</div>}
+                  </div>
                 </div>
-                <div style={{textAlign:"right",flexShrink:0}}>
-                  <div style={{fontWeight:700,color:G,fontSize:"1rem"}}>{price}</div>
-                  {sub&&<div style={{fontSize:"0.72rem",color:"#9ca3af",marginTop:1}}>{sub}</div>}
-                </div>
+                <div style={{fontSize:"0.82rem",color:"#6b7280",lineHeight:1.6}}>{desc}</div>
               </div>
             ))}
           </div>
         </div>
       </div>
-      <div style={{background:"#111111",padding:"48px 24px"}}>
+      {/* ── Gear Banner ── */}
+      <div style={{background:"#111111",padding:mob?"40px 20px":"48px 24px"}}>
         <div style={{maxWidth:700,margin:"0 auto",textAlign:"center"}}>
           <div style={{fontSize:"0.78rem",fontWeight:700,color:"#f97316",textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>Gear I Trust</div>
-          <h2 style={{fontSize:"1.8rem",fontWeight:900,color:"white",marginBottom:12}}>Paddle & Gear Discounts</h2>
+          <h2 style={{fontSize:mob?"1.5rem":"1.8rem",fontWeight:900,color:"white",marginBottom:12}}>Paddle & Gear Discounts</h2>
           <p style={{color:"rgba(255,255,255,0.55)",marginBottom:28,lineHeight:1.7,maxWidth:480,margin:"0 auto 28px"}}>Get discounts on the paddles and gear Coach David uses and recommends.</p>
           <button onClick={()=>setPage("gear")} style={{background:"#f97316",color:"white",border:"none",padding:"12px 28px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"0.95rem"}}>View All Codes →</button>
         </div>
       </div>
-      <div style={{background:`linear-gradient(135deg,${G},#0d2620)`,color:"white",textAlign:"center",padding:"60px 24px"}}>
-        <h2 style={{fontSize:"1.8rem",fontWeight:900,marginBottom:12}}>Ready to Improve Your Game?</h2>
+      {/* ── CTA ── */}
+      <div style={{background:`linear-gradient(135deg,${G},#0d2620)`,color:"white",textAlign:"center",padding:mob?"48px 20px":"60px 24px"}}>
+        <h2 style={{fontSize:mob?"1.5rem":"1.8rem",fontWeight:900,marginBottom:12}}>Ready to Improve Your Game?</h2>
         <p style={{opacity:0.9,marginBottom:24}}>Reach out via text or call to get started.</p>
         <button onClick={()=>setPage("contact")} style={{background:Y,color:G,border:"none",padding:"13px 32px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem"}}>Contact Coach David</button>
       </div>
