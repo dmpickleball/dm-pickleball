@@ -640,15 +640,20 @@ function LessonCard({lesson,isMenlo,isHistory,onCancel}){
 function Homepage({setPage}){
   const [mob,setMob]=useState(window.innerWidth<=768);
   useEffect(()=>{const h=()=>setMob(window.innerWidth<=768);window.addEventListener("resize",h);return()=>window.removeEventListener("resize",h);},[]);
+  const videoRef=useRef(null);
+  useEffect(()=>{
+    const v=videoRef.current;
+    if(!v)return;
+    v.muted=true; // set imperatively — React's muted prop doesn't write the DOM attribute in all browsers
+    v.play().catch(()=>{});
+  },[]);
   return(
     <div>
       {/* ── Video Hero ── */}
       <div style={{position:"relative",color:"white",textAlign:"center",padding:mob?"72px 20px 56px":"110px 24px 90px",overflow:"hidden",minHeight:mob?420:520,display:"flex",alignItems:"center",justifyContent:"center",background:"#0a1f18"}}>
-        <video autoPlay muted loop playsInline
-          onLoadedData={e=>{e.target.play().catch(()=>{});}}
+        <video ref={videoRef} loop playsInline
           style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",objectFit:"cover",zIndex:0}}>
           <source src="/hero.m4v" type="video/mp4"/>
-          <source src="/hero.m4v" type="video/x-m4v"/>
         </video>
         <div style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",background:"linear-gradient(to bottom, rgba(0,20,14,0.70) 0%, rgba(0,20,14,0.55) 60%, rgba(0,20,14,0.75) 100%)",zIndex:1}}/>
         <div style={{position:"relative",zIndex:2,maxWidth:660,margin:"0 auto"}}>
