@@ -398,7 +398,7 @@ function Nav({user,onLogin,onLogout,setPage,currentPage}){
                 </>
               ):(
                 <div style={{padding:"16px 20px"}}>
-                  <button onClick={()=>{onLogin();setMenuOpen(false);}} style={{background:Y,color:G,border:"none",padding:"12px 24px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem",width:"100%"}}>Student Login</button>
+                  <button onClick={()=>{onLogin();setMenuOpen(false);}} style={{background:Y,color:G,border:"none",padding:"12px 24px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem",width:"100%"}}>Login</button>
                 </div>
               )}
             </div>
@@ -425,7 +425,7 @@ function Nav({user,onLogin,onLogout,setPage,currentPage}){
             <button onClick={onLogout} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.4)",color:"white",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem"}}>Log out</button>
           </>
         ):(
-          <button onClick={onLogin} style={{background:Y,color:G,border:"none",padding:"8px 20px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"0.92rem",whiteSpace:"nowrap"}}>Student Login</button>
+          <button onClick={onLogin} style={{background:Y,color:G,border:"none",padding:"8px 20px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"0.92rem",whiteSpace:"nowrap"}}>Login</button>
         )}
       </div>
     </nav>
