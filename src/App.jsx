@@ -612,8 +612,8 @@ function Homepage({setPage}){
         {/* Content */}
         <div style={{position:"relative",zIndex:2,maxWidth:660,margin:"0 auto"}}>
           <div style={{fontSize:"0.8rem",letterSpacing:3,opacity:0.8,marginBottom:14,textTransform:"uppercase"}}>Pickleball Coaching · San Francisco Peninsula, Bay Area</div>
-          <h1 style={{fontSize:"3rem",fontWeight:900,lineHeight:1.15,marginBottom:16}}>Level Up With One of the<br/><span style={{color:Y}}>Bay Area's Top Competitive Pickleball Coaches</span></h1>
-          <p style={{fontSize:"1.1rem",opacity:0.9,maxWidth:500,margin:"0 auto 32px",lineHeight:1.7}}>Private, semi-private & group lessons on the SF Peninsula. Personalized coaching from a tournament competitor who knows what it takes to win.</p>
+          <h1 style={{fontSize:"3rem",fontWeight:900,lineHeight:1.15,marginBottom:16}}>Coach David —<br/><span style={{color:Y}}>SF Peninsula Pickleball</span></h1>
+          <p style={{fontSize:"1.1rem",opacity:0.9,maxWidth:500,margin:"0 auto 32px",lineHeight:1.7}}>Private, semi-private and group lessons on the SF Peninsula. Personalized coaching from a tournament competitor who knows what it takes to win.</p>
           <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
             <button onClick={()=>setPage("pricing")} style={{background:Y,color:G,border:"none",padding:"13px 30px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem"}}>View Rates</button>
             <button onClick={()=>setPage("contact")} style={{background:"transparent",color:"white",border:"2px solid rgba(255,255,255,0.5)",padding:"13px 30px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem"}}>Get in Touch</button>
@@ -622,7 +622,7 @@ function Homepage({setPage}){
       </div>
       <div style={{background:"white",padding:"40px 24px"}}>
         <div style={{maxWidth:700,margin:"0 auto",display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:24,textAlign:"center"}}>
-          {[["15+","Years Tennis Experience"],["6","Years Pickleball Coaching"],["5.0+","Tournament Rating"]].map(([num,label])=>(
+          {[["2018","Playing Since"],["2020","Coaching Since"],["5.0+","Tournament Rating"]].map(([num,label])=>(
             <div key={label}><div style={{fontSize:"2.4rem",fontWeight:900,color:G}}>{num}</div><div style={{fontSize:"0.88rem",color:"#6b7280",marginTop:4}}>{label}</div></div>
           ))}
         </div>
@@ -634,9 +634,10 @@ function Homepage({setPage}){
           </div>
           <div>
             <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:10}}>About Coach David</div>
-            <h2 style={{fontSize:"1.8rem",fontWeight:900,marginBottom:16,lineHeight:1.3}}>From Tennis Courts to Pickleball Pro</h2>
-            <p style={{color:"#4b5563",lineHeight:1.8,marginBottom:14,fontSize:"0.97rem"}}>With 15+ years of competitive tennis experience, Coach David brings a unique edge to pickleball coaching. As a 5.0+ rated tournament player and CRBN Ambassador, Coach David has an insider's understanding of what it takes to elevate your game.</p>
-            <p style={{color:"#4b5563",lineHeight:1.8,fontSize:"0.97rem"}}>Coach David specializes in coaching tennis players making the transition to pickleball — he knows exactly the habits that help and the ones that hurt. Whether you're a complete beginner or a seasoned competitor, Coach David coaches all skill levels in both doubles and singles across the SF Peninsula.</p>
+            <h2 style={{fontSize:"1.8rem",fontWeight:900,marginBottom:16,lineHeight:1.3}}>About Coach David</h2>
+            <p style={{color:"#4b5563",lineHeight:1.8,marginBottom:14,fontSize:"0.97rem"}}>Coach David discovered pickleball in 2018, before the pandemic boom, before the packed courts, before everyone else caught on. That head start matters.</p>
+            <p style={{color:"#4b5563",lineHeight:1.8,marginBottom:14,fontSize:"0.97rem"}}>With years of experience competing at the highest levels of the game, he has spent years mastering what makes pickleball unique, from the mechanics of the kitchen game to the strategy that separates good players from great ones. The result is a coaching approach built on genuine mastery and real competitive experience.</p>
+            <p style={{color:"#4b5563",lineHeight:1.8,fontSize:"0.97rem"}}>As an IPTPA Level III certified coach and active tournament player, Coach David works with everyone from players who have never held a paddle to seasoned 5.0+ competitors, in both singles and doubles, across the SF Peninsula. Whether you need to build your game from the ground up, overhaul your mechanics, or sharpen your competitive strategy, he has the knowledge and experience to get you there.</p>
             <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:14}}>
               <div style={{background:"#1a3c34",color:"white",borderRadius:10,padding:"10px 16px",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
                 <div>
@@ -644,7 +645,7 @@ function Homepage({setPage}){
                   <div style={{fontSize:"0.88rem",fontWeight:800,letterSpacing:0.5}}>Level 3 Teaching Pro</div>
                 </div>
               </div>
-              {["Multiple Gold Medalist","Tournament Competitor","CRBN Ambassador","Tennis Convert Specialist","All Skill Levels","SF Peninsula"].map(tag=>(
+              {["Multiple Gold Medalist","Tournament Competitor","All Skill Levels","SF Peninsula"].map(tag=>(
                 <span key={tag} style={{background:"#e8f0ee",color:G,padding:"6px 14px",borderRadius:50,fontSize:"0.8rem",fontWeight:600,display:"inline-flex",alignItems:"center"}}>{tag}</span>
               ))}
             </div>
