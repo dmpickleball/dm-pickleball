@@ -386,19 +386,19 @@ function Nav({user,onLogin,onLogout,setPage,currentPage}){
           <div style={{position:"fixed",top:52,left:0,right:0,bottom:0,zIndex:199,display:"flex",flexDirection:"column"}}>
             <div style={{background:G,boxShadow:"0 8px 32px rgba(0,0,0,0.35)"}}>
               {links.map(([p,label])=>(
-                <div key={p} onClick={()=>navTo(p)} style={{color:"white",padding:"16px 24px",fontSize:"1.05rem",cursor:"pointer",fontWeight:currentPage===p?700:400,opacity:currentPage===p?1:0.85,borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
+                <div key={p} onClick={()=>navTo(p)} style={{color:"white",padding:"16px 24px",fontSize:"1.05rem",cursor:"pointer",fontWeight:currentPage===p?700:400,opacity:currentPage===p?1:0.85,borderBottom:"1px solid rgba(255,255,255,0.08)",textAlign:"right"}}>
                   {label}
                 </div>
               ))}
               {user?(
                 <>
-                  <div onClick={()=>navTo("dashboard")} style={{color:Y,padding:"16px 24px",fontSize:"1.05rem",cursor:"pointer",fontWeight:700,borderBottom:"1px solid rgba(255,255,255,0.08)"}}>My Lessons</div>
-                  <div onClick={()=>navTo("booking")} style={{color:"white",padding:"16px 24px",fontSize:"1.05rem",cursor:"pointer",fontWeight:600,borderBottom:"1px solid rgba(255,255,255,0.08)"}}>Book a Lesson</div>
-                  <div onClick={()=>{onLogout();setMenuOpen(false);}} style={{color:"rgba(255,255,255,0.5)",padding:"16px 24px",fontSize:"0.95rem",cursor:"pointer"}}>Log out</div>
+                  <div onClick={()=>navTo("dashboard")} style={{color:Y,padding:"16px 24px",fontSize:"1.05rem",cursor:"pointer",fontWeight:700,borderBottom:"1px solid rgba(255,255,255,0.08)",textAlign:"right"}}>My Lessons</div>
+                  <div onClick={()=>navTo("booking")} style={{color:"white",padding:"16px 24px",fontSize:"1.05rem",cursor:"pointer",fontWeight:600,borderBottom:"1px solid rgba(255,255,255,0.08)",textAlign:"right"}}>Book a Lesson</div>
+                  <div onClick={()=>{onLogout();setMenuOpen(false);}} style={{color:"rgba(255,255,255,0.5)",padding:"16px 24px",fontSize:"0.95rem",cursor:"pointer",textAlign:"right"}}>Log out</div>
                 </>
               ):(
-                <div style={{padding:"16px 20px"}}>
-                  <button onClick={()=>{onLogin();setMenuOpen(false);}} style={{background:Y,color:G,border:"none",padding:"12px 24px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem",width:"100%"}}>Login</button>
+                <div style={{padding:"16px 20px",textAlign:"right"}}>
+                  <button onClick={()=>{onLogin();setMenuOpen(false);}} style={{background:Y,color:G,border:"none",padding:"12px 28px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem"}}>Login</button>
                 </div>
               )}
             </div>
