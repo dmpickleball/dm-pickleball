@@ -1429,7 +1429,7 @@ function Dashboard({user,setPage,lessons,onCancel,onUpdateLesson,dbLoaded}){
     if(pendingWithCal.length===0)return;
     pendingWithCal.forEach(async l=>{
       try{
-        const r=await fetch("/api/check-rsvp",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({gcalEventId:l.gcalEventId})});
+        const r=await fetch("/api/lessons?action=check-rsvp",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({gcalEventId:l.gcalEventId})});
         const d=await r.json();
         if(d.anyAccepted)onUpdateLesson(l.id,{status:"confirmed"});
       }catch(e){}
