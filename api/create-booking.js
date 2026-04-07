@@ -33,14 +33,15 @@ export default async function handler(req, res) {
       end: { dateTime: `${date}T${endTime}:00`, timeZone: 'America/Los_Angeles' },
     };
 
-    // Try creating WITH attendees + sendUpdates:'all' so Google emails guests a calendar invite.
+    // Try creating WITH attendees. sendUpdates:'none' prevents 403s from service accounts
+    // trying to email external users — guests are still added to the event for RSVP tracking.
     let event;
     let attendeesAdded = false;
     let attendeeError = null;
     try {
       event = await calendar.events.insert({
         calendarId: process.env.GOOGLE_CALENDAR_ID,
-        sendUpdates: 'all',
+        sendUpdates: 'none',
         requestBody: {
           ...baseBody,
           attendees,
@@ -49,10 +50,10 @@ export default async function handler(req, res) {
         },
       });
       attendeesAdded = true;
-      console.log('create-booking: event created WITH attendees + sendUpdates:all, id=', event.data.id);
+      console.log('create-booking: event created WITH attendees, id=', event.data.id);
     } catch (attendeeErr) {
       attendeeError = attendeeErr.message;
-      console.warn('create-booking: attendees+sendUpdates:all failed (', attendeeErr.code, attendeeErr.message, '), retrying without attendees');
+      console.warn('create-booking: attendees failed (', attendeeErr.code, attendeeErr.message, '), retrying without attendees');
       event = await calendar.events.insert({
         calendarId: process.env.GOOGLE_CALENDAR_ID,
         sendUpdates: 'none',

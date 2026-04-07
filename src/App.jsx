@@ -591,11 +591,6 @@ function LessonCard({lesson,isMenlo,isHistory,onCancel}){
         style={{background:"white",borderRadius:12,border:`1.5px solid ${isCancelled?"#fca5a5":"#e5e7eb"}`,marginBottom:12,cursor:"pointer",transition:"border-color 0.15s,box-shadow 0.15s",opacity:isCancelled?0.85:1,overflow:"hidden"}}
         onMouseEnter={e=>{e.currentTarget.style.borderColor=isCancelled?"#fca5a5":G;e.currentTarget.style.boxShadow="0 2px 12px rgba(26,60,52,0.10)";}}
         onMouseLeave={e=>{e.currentTarget.style.borderColor=isCancelled?"#fca5a5":"#e5e7eb";e.currentTarget.style.boxShadow="none";}}>
-        {!isHistory&&!isCancelled&&(
-          <div style={{background:"#fffbea",borderBottom:"1px solid #f4c430",padding:"7px 16px",fontSize:"0.76rem",color:"#92400e",fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
-            📅 Accept your Google Calendar invite to confirm this lesson
-          </div>
-        )}
         <div style={{padding:"16px 20px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <div style={{display:"flex",alignItems:"center",gap:16}}>
             <div style={{background:isCancelled?"#fef2f2":"#e8f0ee",border:`1.5px solid ${isCancelled?"#fca5a5":G}`,borderRadius:10,padding:"10px 14px",textAlign:"center",minWidth:56,flexShrink:0}}>
@@ -1589,13 +1584,13 @@ function BookingPage({user,setPage,onAddLesson,stanfordEnabled=true}){
     const link="https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(summary)+"&dates="+startISO.replace(/[-:]/g,"").slice(0,15)+"/"+endISO.replace(/[-:]/g,"").slice(0,15)+"&details="+encodeURIComponent(description)+"&location="+encodeURIComponent(location);
     const priceNote=lessonType==="semi"?" ($"+(price/2)+"/person)":lessonType==="group"?" (split equally)":"";
     const sendEmail=(to,subject,text,replyTo,calLink,fromAlias)=>{const html=makeEmailHtml(text,calLink);return fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to,subject,text,html,...(replyTo?{replyTo}:{}),...(fromAlias?{fromAlias}:{})})}).catch(()=>{});};
-    const studentText="Hi "+user.name+",\n\nYour pickleball lesson is confirmed!\n\nRef: "+ticketId+"\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+duration+" min\nPrice: $"+price+" total"+priceNote+"\nFocus: "+(focus||"Not specified")+"\nLocation: "+location+"\n\n📅 You should receive a Google Calendar invite — please accept it to confirm your spot.\n\nManage your booking: https://dmpickleball.com\n\nSee you on the court!\nCoach David";
+    const studentText="Hi "+user.name+",\n\nYour pickleball lesson is confirmed!\n\nRef: "+ticketId+"\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+duration+" min\nPrice: $"+price+" total"+priceNote+"\nFocus: "+(focus||"Not specified")+"\nLocation: "+location+"\n\nManage your booking: https://dmpickleball.com\n\nSee you on the court!\nCoach David";
     await sendEmail(user.email,"Your lesson is booked - "+fmtDateShort(date),studentText,user.email,link,"book@dmpickleball.com");
     const adminText="New lesson booked!\n\nRef: "+ticketId+"\nStudent: "+user.name+"\nEmail: "+user.email+"\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+duration+" min\nFocus: "+(focus||"Not specified")+"\nNotes: "+(notes||"None")+partnerInfo+groupInfo+"\nPrice: $"+price+" total"+priceNote+"\nLocation: "+location;
     await sendEmail("david@dmpickleball.com","New booking: "+summary+" - "+fmtDateShort(date),adminText,user.email,null,"noreply@dmpickleball.com");
-    if(lessonType==="semi"&&partnerEmail){const partnerText="Hi "+partnerFull+",\n\n"+user.name+" has added you to a pickleball lesson!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: Semi-Private · "+duration+" min\nFocus: "+(focus||"Not specified")+"\nLocation: "+location+"\n\n📅 You should receive a Google Calendar invite — please accept it to confirm your spot.\n\nSee you on the court!\nCoach David";await sendEmail(partnerEmail,"You have been added to a pickleball lesson - "+fmtDateShort(date),partnerText,"book@dmpickleball.com",link,"book@dmpickleball.com");}
+    if(lessonType==="semi"&&partnerEmail){const partnerText="Hi "+partnerFull+",\n\n"+user.name+" has added you to a pickleball lesson!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: Semi-Private · "+duration+" min\nFocus: "+(focus||"Not specified")+"\nLocation: "+location+"\n\nSee you on the court!\nCoach David";await sendEmail(partnerEmail,"You have been added to a pickleball lesson - "+fmtDateShort(date),partnerText,"book@dmpickleball.com",link,"book@dmpickleball.com");}
     if(lessonType==="group"){for(const m of groupMembers.slice(0,groupSize-1)){if(m.email){const mFull=(m.firstName+" "+m.lastName).trim();const groupMemberText="Hi "+mFull+",\n\n"+user.name+" has added you to a group pickleball lesson!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nLocation: "+location+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398";await sendEmail(m.email,"You have been added to a group pickleball lesson - "+fmtDateShort(date),groupMemberText,"book@dmpickleball.com",link,"book@dmpickleball.com");}}}
-    const newLesson={id:Date.now(),date,time:timeStr,type:lessonLabel,duration:duration+" min",status:"pending",focus,notes:"",photos:[],videos:[],gcalEventId:eventId,ticketId,partnerEmail:lessonType==="semi"?partnerEmail:"",groupEmails:lessonType==="group"?groupMembers.slice(0,groupSize-1).map(m=>m.email).filter(Boolean):[],members:memberNames.slice(1),createdAt:new Date().toISOString()};
+    const newLesson={id:Date.now(),date,time:timeStr,type:lessonLabel,duration:duration+" min",status:"confirmed",focus,notes:"",photos:[],videos:[],gcalEventId:eventId,ticketId,partnerEmail:lessonType==="semi"?partnerEmail:"",groupEmails:lessonType==="group"?groupMembers.slice(0,groupSize-1).map(m=>m.email).filter(Boolean):[],members:memberNames.slice(1),createdAt:new Date().toISOString()};
     onAddLesson(newLesson);
     setGcalLink(link);
     setBookedSummary({date,timeStr,lessonLabel,duration,focus,price,summary});
@@ -1608,10 +1603,7 @@ function BookingPage({user,setPage,onAddLesson,stanfordEnabled=true}){
       <div style={{background:"white",borderRadius:16,padding:"40px 32px",boxShadow:"0 4px 24px rgba(0,0,0,0.08)"}}>
         <div style={{width:64,height:64,borderRadius:"50%",background:G,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 20px",fontSize:"1.8rem",color:"white",fontWeight:900}}>✓</div>
         <h2 style={{fontWeight:900,color:G,marginBottom:8}}>You are booked!</h2>
-        <p style={{color:"#6b7280",marginBottom:12,lineHeight:1.7}}>Confirmation sent to <strong>{user.email}</strong>.</p>
-        <div style={{background:"#fffbea",border:"1.5px solid #f4c430",borderRadius:10,padding:"12px 16px",marginBottom:20,textAlign:"left",fontSize:"0.88rem",color:"#92400e",lineHeight:1.6}}>
-          <strong>📅 Action required:</strong> Check your email for a Google Calendar invite and accept it to confirm your lesson spot.
-        </div>
+        <p style={{color:"#6b7280",marginBottom:24,lineHeight:1.7}}>Confirmation sent to <strong>{user.email}</strong>.</p>
         <div style={{background:"#f9f9f6",borderRadius:12,padding:"20px",marginBottom:24,textAlign:"left"}}>
           <div style={{fontWeight:700,marginBottom:12,color:G}}>Booking Summary</div>
           <div style={{fontSize:"0.9rem",color:"#4b5563",lineHeight:2}}>
