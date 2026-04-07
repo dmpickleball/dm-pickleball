@@ -4318,65 +4318,74 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
 
       {tab==="gear"&&<GearAdminTab/>}
 
-      {tab==="database"&&(()=>{
-        const [dbSearch,setDbSearch]=useState("");
-        const [dbStatus,setDbStatus]=useState("all");
-        const [dbPw,setDbPw]=useState("");const [dbPwError,setDbPwError]=useState("");const [dbDeleteTarget,setDbDeleteTarget]=useState(null);
-        const statusOptions=[["all","All"],["confirmed","Confirmed"],["pending","Pending"],["cancelled","Cancelled"],["archived","Archived"],["late_cancel","Late Cancel"],["no_show","No-Show"],["completed","Completed"]];
-        const allRows=Object.entries(allLessons).flatMap(([email,lessons])=>lessons.map(l=>({...l,studentEmail:email,studentName:mockUsers[email]?.name||email})));
-        const q=dbSearch.toLowerCase().trim();
-        const filtered=allRows.filter(l=>{
-          if(dbStatus!=="all"&&l.status!==dbStatus)return false;
-          if(!q)return true;
-          return (l.studentName||"").toLowerCase().includes(q)||(l.studentEmail||"").toLowerCase().includes(q)||(l.date||"").includes(q)||(l.type||"").toLowerCase().includes(q)||(l.focus||"").toLowerCase().includes(q)||(l.ticketId||"").toLowerCase().includes(q)||(l.time||"").toLowerCase().includes(q);
-        }).sort((a,b)=>new Date(b.date)-new Date(a.date));
-        const statusBadge=(s)=>{const map={confirmed:{bg:"#e8f0ee",color:G,label:"✓ Confirmed"},pending:{bg:"#fffbea",color:"#92400e",label:"⏳ Pending"},cancelled:{bg:"#fef2f2",color:"#dc2626",label:"✕ Cancelled"},archived:{bg:"#f3f4f6",color:"#6b7280",label:"📦 Archived"},late_cancel:{bg:"#fff7ed",color:"#c2410c",label:"⚠️ Late Cancel"},no_show:{bg:"#fef2f2",color:"#7f1d1d",label:"✕ No-Show"},completed:{bg:"#e8f0ee",color:G,label:"✓ Completed"},weather_cancel:{bg:"#eff6ff",color:"#1d4ed8",label:"🌧 Weather"},cancelled_forgiven:{bg:"#f3f4f6",color:"#6b7280",label:"✓ Forgiven"}};const st=map[s]||{bg:"#f3f4f6",color:"#6b7280",label:s};return<span style={{background:st.bg,color:st.color,padding:"2px 8px",borderRadius:50,fontSize:"0.7rem",fontWeight:700,whiteSpace:"nowrap"}}>{st.label}</span>;};
-        return(
-          <div>
-            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,flexWrap:"wrap"}}>
-              <input value={dbSearch} onChange={e=>setDbSearch(e.target.value)} placeholder="Search by name, email, date, type, focus, ticket…" style={{flex:1,minWidth:220,padding:"9px 14px",border:"1.5px solid #e5e7eb",borderRadius:8,fontSize:"0.88rem",outline:"none"}}/>
-              <select value={dbStatus} onChange={e=>setDbStatus(e.target.value)} style={{padding:"9px 12px",border:"1.5px solid #e5e7eb",borderRadius:8,fontSize:"0.85rem",outline:"none",background:"white"}}>
-                {statusOptions.map(([v,l])=><option key={v} value={v}>{l}</option>)}
-              </select>
-              <span style={{fontSize:"0.8rem",color:"#9ca3af",whiteSpace:"nowrap"}}>{filtered.length} lesson{filtered.length!==1?"s":""}</span>
-            </div>
-            <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
-              {filtered.length===0?(<div style={{padding:"40px",textAlign:"center",color:"#9ca3af"}}>No lessons match your search.</div>):(
-                filtered.map((l,i)=>(
-                  <div key={l.id} style={{borderBottom:i<filtered.length-1?"1px solid #f3f4f6":"none",padding:"12px 18px"}}>
-                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
-                      <div style={{flex:1,minWidth:0}}>
-                        <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:3}}>
-                          <span style={{fontWeight:700,fontSize:"0.88rem",color:"#1a1a1a"}}>{l.studentName}</span>
-                          <span style={{fontSize:"0.75rem",color:"#9ca3af"}}>{l.studentEmail}</span>
-                          {statusBadge(l.status)}
-                        </div>
-                        <div style={{fontSize:"0.82rem",color:"#4b5563"}}>{fmtDate(l.date)} · {l.time} · {l.type} · {l.duration}{l.focus?" · "+l.focus:""}</div>
-                        {l.ticketId&&<div style={{fontSize:"0.72rem",color:"#9ca3af",marginTop:2,fontFamily:"monospace"}}>{l.ticketId}</div>}
-                      </div>
-                      <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
-                        <button onClick={()=>{setSelectedStudent(l.studentEmail);setTab("students");}} style={{background:"#e8f0ee",color:G,border:"none",padding:"4px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:600}}>View Student</button>
-                        {dbDeleteTarget===l.id?(
-                          <div style={{display:"flex",gap:5,alignItems:"center",flexWrap:"wrap"}}>
-                            <input type="password" placeholder="Admin password" value={dbPw} onChange={e=>{setDbPw(e.target.value);setDbPwError("");}} style={{fontSize:"0.75rem",padding:"3px 8px",borderRadius:6,border:"1.5px solid "+(dbPwError?"#fca5a5":"#d1d5db"),outline:"none",width:130}}/>
-                            {dbPwError&&<span style={{fontSize:"0.7rem",color:"#dc2626",fontWeight:600}}>{dbPwError}</span>}
-                            <button onClick={async()=>{if(dbPw===ADMIN_USER.password){try{await fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})});onDeleteLesson(l.studentEmail,l.id);setDbDeleteTarget(null);setDbPw("");}catch{setDbPwError("Delete failed");}}else{setDbPwError("Wrong password");}}} style={{background:"#dc2626",color:"white",border:"none",padding:"3px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:700}}>Delete</button>
-                            <button onClick={()=>{setDbDeleteTarget(null);setDbPw("");setDbPwError("");}} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"3px 8px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:600}}>Cancel</button>
-                          </div>
-                        ):(
-                          <button onClick={()=>{setDbDeleteTarget(l.id);setDbPw("");setDbPwError("");}} style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"4px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:700}}>🗑 Delete</button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        );
-      })()}
+      {tab==="database"&&<LessonsDbTab allLessons={allLessons} mockUsers={mockUsers} onDeleteLesson={onDeleteLesson} setSelectedStudent={setSelectedStudent} setTab={setTab}/>}
 
       {tab==="gear"&&<GearAdminTab/>}
+    </div>
+  );
+}
+
+// ─── ALL LESSONS DATABASE TAB ────────────────────────────────────────────────
+function LessonsDbTab({allLessons,mockUsers,onDeleteLesson,setSelectedStudent,setTab}){
+  const [dbSearch,setDbSearch]=useState("");
+  const [dbStatus,setDbStatus]=useState("all");
+  const [dbPw,setDbPw]=useState("");
+  const [dbPwError,setDbPwError]=useState("");
+  const [dbDeleteTarget,setDbDeleteTarget]=useState(null);
+  const statusOptions=[["all","All"],["confirmed","Confirmed"],["pending","Pending"],["cancelled","Cancelled"],["archived","Archived"],["late_cancel","Late Cancel"],["no_show","No-Show"],["completed","Completed"],["weather_cancel","Weather Cancel"]];
+  const allRows=Object.entries(allLessons).flatMap(([email,lessons])=>lessons.map(l=>({...l,studentEmail:email,studentName:mockUsers[email]?.name||email})));
+  const q=dbSearch.toLowerCase().trim();
+  const filtered=allRows.filter(l=>{
+    if(dbStatus!=="all"&&l.status!==dbStatus)return false;
+    if(!q)return true;
+    return (l.studentName||"").toLowerCase().includes(q)||(l.studentEmail||"").toLowerCase().includes(q)||(l.date||"").includes(q)||(l.type||"").toLowerCase().includes(q)||(l.focus||"").toLowerCase().includes(q)||(l.ticketId||"").toLowerCase().includes(q)||(l.time||"").toLowerCase().includes(q);
+  }).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const statusBadge=(s)=>{
+    const map={confirmed:{bg:"#e8f0ee",color:G,label:"✓ Confirmed"},pending:{bg:"#fffbea",color:"#92400e",label:"⏳ Pending"},cancelled:{bg:"#fef2f2",color:"#dc2626",label:"✕ Cancelled"},archived:{bg:"#f3f4f6",color:"#6b7280",label:"📦 Archived"},late_cancel:{bg:"#fff7ed",color:"#c2410c",label:"⚠️ Late Cancel"},no_show:{bg:"#fef2f2",color:"#7f1d1d",label:"✕ No-Show"},completed:{bg:"#e8f0ee",color:G,label:"✓ Completed"},weather_cancel:{bg:"#eff6ff",color:"#1d4ed8",label:"🌧 Weather"},cancelled_forgiven:{bg:"#f3f4f6",color:"#6b7280",label:"✓ Forgiven"}};
+    const st=map[s]||{bg:"#f3f4f6",color:"#6b7280",label:s};
+    return<span style={{background:st.bg,color:st.color,padding:"2px 8px",borderRadius:50,fontSize:"0.7rem",fontWeight:700,whiteSpace:"nowrap"}}>{st.label}</span>;
+  };
+  return(
+    <div>
+      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,flexWrap:"wrap"}}>
+        <input value={dbSearch} onChange={e=>setDbSearch(e.target.value)} placeholder="Search by name, email, date, type, focus, ticket…" style={{flex:1,minWidth:220,padding:"9px 14px",border:"1.5px solid #e5e7eb",borderRadius:8,fontSize:"0.88rem",outline:"none"}}/>
+        <select value={dbStatus} onChange={e=>setDbStatus(e.target.value)} style={{padding:"9px 12px",border:"1.5px solid #e5e7eb",borderRadius:8,fontSize:"0.85rem",outline:"none",background:"white"}}>
+          {statusOptions.map(([v,l])=><option key={v} value={v}>{l}</option>)}
+        </select>
+        <span style={{fontSize:"0.8rem",color:"#9ca3af",whiteSpace:"nowrap"}}>{filtered.length} lesson{filtered.length!==1?"s":""}</span>
+      </div>
+      <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
+        {filtered.length===0?(<div style={{padding:"40px",textAlign:"center",color:"#9ca3af"}}>No lessons match your search.</div>):(
+          filtered.map((l,i)=>(
+            <div key={l.id} style={{borderBottom:i<filtered.length-1?"1px solid #f3f4f6":"none",padding:"12px 18px"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:3}}>
+                    <span style={{fontWeight:700,fontSize:"0.88rem",color:"#1a1a1a"}}>{l.studentName}</span>
+                    <span style={{fontSize:"0.75rem",color:"#9ca3af"}}>{l.studentEmail}</span>
+                    {statusBadge(l.status)}
+                  </div>
+                  <div style={{fontSize:"0.82rem",color:"#4b5563"}}>{fmtDate(l.date)} · {l.time} · {l.type} · {l.duration}{l.focus?" · "+l.focus:""}</div>
+                  {l.ticketId&&<div style={{fontSize:"0.72rem",color:"#9ca3af",marginTop:2,fontFamily:"monospace"}}>{l.ticketId}</div>}
+                </div>
+                <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
+                  <button onClick={()=>{setSelectedStudent(l.studentEmail);setTab("students");}} style={{background:"#e8f0ee",color:G,border:"none",padding:"4px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:600}}>View Student</button>
+                  {dbDeleteTarget===l.id?(
+                    <div style={{display:"flex",gap:5,alignItems:"center",flexWrap:"wrap"}}>
+                      <input type="password" placeholder="Admin password" value={dbPw} onChange={e=>{setDbPw(e.target.value);setDbPwError("");}} style={{fontSize:"0.75rem",padding:"3px 8px",borderRadius:6,border:"1.5px solid "+(dbPwError?"#fca5a5":"#d1d5db"),outline:"none",width:130}}/>
+                      {dbPwError&&<span style={{fontSize:"0.7rem",color:"#dc2626",fontWeight:600}}>{dbPwError}</span>}
+                      <button onClick={async()=>{if(dbPw===ADMIN_USER.password){try{await fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})});onDeleteLesson(l.studentEmail,l.id);setDbDeleteTarget(null);setDbPw("");}catch{setDbPwError("Delete failed");}}else{setDbPwError("Wrong password");}}} style={{background:"#dc2626",color:"white",border:"none",padding:"3px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:700}}>Delete</button>
+                      <button onClick={()=>{setDbDeleteTarget(null);setDbPw("");setDbPwError("");}} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"3px 8px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:600}}>Cancel</button>
+                    </div>
+                  ):(
+                    <button onClick={()=>{setDbDeleteTarget(l.id);setDbPw("");setDbPwError("");}} style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"4px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:700}}>🗑 Delete</button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }
