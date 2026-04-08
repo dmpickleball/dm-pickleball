@@ -57,8 +57,11 @@ export default async function handler(req, res) {
   // POST delete lesson
   if (req.method === 'POST' && action === 'delete') {
     const { lessonId } = req.body;
-    const { error } = await supabase.from('lessons').delete().eq('id', lessonId);
+    console.log('delete lesson: lessonId=', lessonId, 'type=', typeof lessonId);
+    const { error, data } = await supabase.from('lessons').delete().eq('id', lessonId).select();
+    console.log('delete result: error=', error?.message, 'data=', JSON.stringify(data));
     if (error) return res.status(500).json({ error: error.message });
+    if (!data || data.length === 0) return res.status(404).json({ error: 'Lesson not found in database (id: ' + lessonId + ')' });
     return res.status(200).json({ success: true });
   }
 
