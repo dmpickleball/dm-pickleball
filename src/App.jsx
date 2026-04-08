@@ -706,22 +706,22 @@ function Homepage({setPage}){
             /* Mobile: photo left + heading/intro right, full text below */
             <>
               <div style={{display:"flex",gap:16,alignItems:"flex-start",marginBottom:20}}>
-                <div style={{borderRadius:14,overflow:"hidden",width:130,minWidth:130,aspectRatio:"3/4",boxShadow:"0 6px 24px rgba(0,96,57,0.18)",flexShrink:0}}>
+                <div style={{borderRadius:14,overflow:"hidden",width:120,minWidth:120,aspectRatio:"3/4",boxShadow:"0 6px 24px rgba(0,96,57,0.18)",flexShrink:0}}>
                   <img src={DAVID_PHOTO} alt="Coach David" style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top"}}/>
                 </div>
                 <div style={{paddingTop:4}}>
                   <div style={{fontSize:"0.65rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:6}}>About Coach David</div>
-                  <h2 style={{fontSize:"1.25rem",fontWeight:900,marginBottom:10,lineHeight:1.25,color:"#111"}}>About Coach David</h2>
-                  <div style={{background:"#1a3c34",color:"white",borderRadius:8,padding:"7px 12px",display:"inline-block"}}>
-                    <div style={{fontSize:"0.55rem",fontWeight:700,letterSpacing:2,textTransform:"uppercase",opacity:0.6,marginBottom:1}}>IPTPA Certified</div>
-                    <div style={{fontSize:"0.78rem",fontWeight:800}}>Level 3 Teaching Pro</div>
-                  </div>
+                  <h2 style={{fontSize:"1.25rem",fontWeight:900,lineHeight:1.25,color:"#111",margin:0}}>About Coach David</h2>
                 </div>
               </div>
               <p style={{color:"#4b5563",lineHeight:1.75,marginBottom:12,fontSize:"0.93rem"}}>Coach David discovered pickleball in 2018, before the pandemic boom, before the packed courts, before everyone else caught on. That head start matters.</p>
               <p style={{color:"#4b5563",lineHeight:1.75,marginBottom:12,fontSize:"0.93rem"}}>With years of experience competing at the highest levels of the game, he has spent years mastering what makes pickleball unique, from the mechanics of the kitchen game to the strategy that separates good players from great ones.</p>
               <p style={{color:"#4b5563",lineHeight:1.75,marginBottom:16,fontSize:"0.93rem"}}>As an IPTPA Level III certified coach and active tournament player, Coach David works with everyone from beginners to seasoned 5.0+ competitors across the SF Peninsula.</p>
               <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                <div style={{background:"#1a3c34",color:"white",borderRadius:50,padding:"6px 14px",display:"inline-flex",flexDirection:"column",justifyContent:"center"}}>
+                  <span style={{fontSize:"0.58rem",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",opacity:0.65}}>IPTPA Certified</span>
+                  <span style={{fontSize:"0.78rem",fontWeight:800,lineHeight:1.2}}>Level 3 Teaching Pro</span>
+                </div>
                 {["Multiple Gold Medalist","Tournament Competitor","All Skill Levels","SF Peninsula"].map(tag=>(
                   <span key={tag} style={{background:"#e8f0ee",color:G,padding:"5px 12px",borderRadius:50,fontSize:"0.75rem",fontWeight:600}}>{tag}</span>
                 ))}
