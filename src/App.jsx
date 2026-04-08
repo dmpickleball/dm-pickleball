@@ -371,38 +371,67 @@ function Nav({user,onLogin,onLogout,setPage,currentPage}){
   if(mob){
     return(
       <>
-        <nav style={{background:G,padding:"12px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:200}}>
+        <style>{`
+          @keyframes slideInRight{from{transform:translateX(100%)}to{transform:translateX(0)}}
+          @keyframes fadeInBg{from{opacity:0}to{opacity:1}}
+          .mob-nav-item{transition:opacity 0.15s,background 0.15s;}
+          .mob-nav-item:active{opacity:0.6;}
+        `}</style>
+        <nav style={{background:G,padding:"12px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:300}}>
           <div onClick={goHome} style={{cursor:"pointer"}}>
             <img src="/DMPBlogo-white.png" alt="DMPB" style={{height:28,width:"auto",display:"block"}}/>
           </div>
-          <button onClick={()=>setMenuOpen(o=>!o)} style={{background:"none",border:"none",cursor:"pointer",padding:"4px",lineHeight:0}}>
+          <button onClick={()=>setMenuOpen(o=>!o)} style={{background:"none",border:"none",cursor:"pointer",padding:"6px",lineHeight:0,borderRadius:8}}>
             {menuOpen
-              ?<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              :<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+              ?<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              :<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             }
           </button>
         </nav>
         {menuOpen&&(
-          <div style={{position:"fixed",top:52,left:0,right:0,bottom:0,zIndex:199,display:"flex",flexDirection:"column"}}>
-            <div style={{background:G,boxShadow:"0 8px 32px rgba(0,0,0,0.35)"}}>
-              {links.map(([p,label])=>(
-                <div key={p} onClick={()=>navTo(p)} style={{color:"white",padding:"16px 24px",fontSize:"1.05rem",cursor:"pointer",fontWeight:currentPage===p?700:400,opacity:currentPage===p?1:0.85,borderBottom:"1px solid rgba(255,255,255,0.08)",textAlign:"right"}}>
-                  {label}
-                </div>
-              ))}
-              {user?(
-                <>
-                  <div onClick={()=>navTo("dashboard")} style={{color:Y,padding:"16px 24px",fontSize:"1.05rem",cursor:"pointer",fontWeight:700,borderBottom:"1px solid rgba(255,255,255,0.08)",textAlign:"right"}}>My Lessons</div>
-                  <div onClick={()=>navTo("booking")} style={{color:"white",padding:"16px 24px",fontSize:"1.05rem",cursor:"pointer",fontWeight:600,borderBottom:"1px solid rgba(255,255,255,0.08)",textAlign:"right"}}>Book a Lesson</div>
-                  <div onClick={()=>{onLogout();setMenuOpen(false);}} style={{color:"rgba(255,255,255,0.5)",padding:"16px 24px",fontSize:"0.95rem",cursor:"pointer",textAlign:"right"}}>Log out</div>
-                </>
-              ):(
-                <div style={{padding:"16px 20px",textAlign:"right"}}>
-                  <button onClick={()=>{onLogin();setMenuOpen(false);}} style={{background:Y,color:G,border:"none",padding:"12px 28px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem"}}>Login</button>
-                </div>
-              )}
+          <div style={{position:"fixed",inset:0,zIndex:299,animation:"fadeInBg 0.2s ease"}}>
+            {/* Backdrop */}
+            <div onClick={()=>setMenuOpen(false)} style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.45)",backdropFilter:"blur(2px)"}}/>
+            {/* Slide-in panel */}
+            <div style={{position:"absolute",top:0,right:0,bottom:0,width:"72%",maxWidth:300,background:G,boxShadow:"-8px 0 40px rgba(0,0,0,0.3)",animation:"slideInRight 0.25s cubic-bezier(0.32,0.72,0,1)",display:"flex",flexDirection:"column"}}>
+              {/* Panel header */}
+              <div style={{padding:"14px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:"1px solid rgba(255,255,255,0.1)"}}>
+                <img src="/DMPBlogo-white.png" alt="DMPB" style={{height:24,width:"auto",opacity:0.7}}/>
+                <button onClick={()=>setMenuOpen(false)} style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:50,width:32,height:32,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+              {/* Nav links */}
+              <div style={{flex:1,padding:"8px 0",overflowY:"auto"}}>
+                {links.map(([p,label])=>(
+                  <div key={p} className="mob-nav-item" onClick={()=>navTo(p)}
+                    style={{padding:"15px 24px",fontSize:"1rem",cursor:"pointer",color:"white",fontWeight:currentPage===p?700:400,background:currentPage===p?"rgba(255,255,255,0.08)":"transparent",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                    {label}
+                    {currentPage===p&&<span style={{width:6,height:6,borderRadius:"50%",background:"#c0c0c0",display:"inline-block"}}/>}
+                  </div>
+                ))}
+                {user&&(
+                  <>
+                    <div style={{height:1,background:"rgba(255,255,255,0.1)",margin:"8px 24px"}}/>
+                    <div className="mob-nav-item" onClick={()=>navTo("dashboard")} style={{padding:"15px 24px",fontSize:"1rem",cursor:"pointer",color:"#c0c0c0",fontWeight:700,background:currentPage==="dashboard"?"rgba(255,255,255,0.08)":"transparent",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                      My Lessons
+                      {currentPage==="dashboard"&&<span style={{width:6,height:6,borderRadius:"50%",background:"#c0c0c0",display:"inline-block"}}/>}
+                    </div>
+                    <div className="mob-nav-item" onClick={()=>navTo("booking")} style={{padding:"15px 24px",fontSize:"1rem",cursor:"pointer",color:"white",fontWeight:500,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                      Book a Lesson
+                    </div>
+                  </>
+                )}
+              </div>
+              {/* Bottom CTA */}
+              <div style={{padding:"20px 24px",borderTop:"1px solid rgba(255,255,255,0.1)"}}>
+                {user?(
+                  <button onClick={()=>{onLogout();setMenuOpen(false);}} style={{width:"100%",background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.7)",border:"1px solid rgba(255,255,255,0.15)",padding:"12px",borderRadius:10,fontWeight:600,cursor:"pointer",fontSize:"0.9rem"}}>Log out</button>
+                ):(
+                  <button onClick={()=>{onLogin();setMenuOpen(false);}} style={{width:"100%",background:"#c0c0c0",color:G,border:"none",padding:"13px",borderRadius:10,fontWeight:700,cursor:"pointer",fontSize:"0.95rem",letterSpacing:"0.2px"}}>Login</button>
+                )}
+              </div>
             </div>
-            <div onClick={()=>setMenuOpen(false)} style={{flex:1,background:"rgba(0,0,0,0.4)"}}/>
           </div>
         )}
       </>
