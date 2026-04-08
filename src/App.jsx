@@ -383,7 +383,7 @@ function Nav({user,onLogin,onLogout,setPage,currentPage}){
           </div>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             {!user&&(
-              <button onClick={onLogin} style={{background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.25)",color:"white",padding:"7px 18px",borderRadius:50,fontWeight:600,cursor:"pointer",fontSize:"0.85rem",letterSpacing:"0.2px"}}>Login</button>
+              <button onClick={()=>{setMenuOpen(false);onLogin();}} style={{background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.25)",color:"white",padding:"7px 18px",borderRadius:50,fontWeight:600,cursor:"pointer",fontSize:"0.85rem",letterSpacing:"0.2px"}}>Login</button>
             )}
             <button onClick={()=>setMenuOpen(o=>!o)} style={{background:"none",border:"none",cursor:"pointer",padding:"6px",lineHeight:0,borderRadius:8}}>
               {menuOpen
