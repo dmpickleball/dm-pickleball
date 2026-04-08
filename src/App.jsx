@@ -717,13 +717,12 @@ function Homepage({setPage}){
               <p style={{color:"#4b5563",lineHeight:1.75,marginBottom:12,fontSize:"0.93rem"}}>Coach David discovered pickleball in 2018, before the pandemic boom, before the packed courts, before everyone else caught on. That head start matters.</p>
               <p style={{color:"#4b5563",lineHeight:1.75,marginBottom:12,fontSize:"0.93rem"}}>With years of experience competing at the highest levels of the game, he has spent years mastering what makes pickleball unique, from the mechanics of the kitchen game to the strategy that separates good players from great ones.</p>
               <p style={{color:"#4b5563",lineHeight:1.75,marginBottom:16,fontSize:"0.93rem"}}>As an IPTPA Level III certified coach and active tournament player, Coach David works with everyone from beginners to seasoned 5.0+ competitors across the SF Peninsula.</p>
-              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                <div style={{background:"#1a3c34",color:"white",borderRadius:50,padding:"6px 14px",display:"inline-flex",flexDirection:"column",justifyContent:"center"}}>
-                  <span style={{fontSize:"0.58rem",fontWeight:700,letterSpacing:1.5,textTransform:"uppercase",opacity:0.65}}>IPTPA Certified</span>
-                  <span style={{fontSize:"0.78rem",fontWeight:800,lineHeight:1.2}}>Level 3 Teaching Pro</span>
-                </div>
-                {["Multiple Gold Medalist","Tournament Competitor","All Skill Levels","SF Peninsula"].map(tag=>(
-                  <span key={tag} style={{background:"#e8f0ee",color:G,padding:"5px 12px",borderRadius:50,fontSize:"0.75rem",fontWeight:600}}>{tag}</span>
+              <div style={{display:"flex",flexWrap:"wrap",gap:7,alignItems:"center"}}>
+                <span style={{background:"#1a3c34",color:"white",borderRadius:8,padding:"6px 13px",fontSize:"0.75rem",fontWeight:700,letterSpacing:0.3,display:"inline-flex",alignItems:"center",gap:5}}>
+                  <span style={{opacity:0.7,fontSize:"0.65rem",fontWeight:600,letterSpacing:1,textTransform:"uppercase"}}>✓</span> IPTPA Level 3 Pro
+                </span>
+                {[["🥇","Gold Medalist"],["🏓","Tournament Player"],["📍","SF Peninsula"],["⭐","All Skill Levels"]].map(([icon,tag])=>(
+                  <span key={tag} style={{background:"white",color:"#374151",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"6px 12px",fontSize:"0.75rem",fontWeight:600,display:"inline-flex",alignItems:"center",gap:5}}>{icon} {tag}</span>
                 ))}
               </div>
             </>
@@ -739,15 +738,12 @@ function Homepage({setPage}){
                 <p style={{color:"#4b5563",lineHeight:1.8,marginBottom:14,fontSize:"0.97rem"}}>Coach David discovered pickleball in 2018, before the pandemic boom, before the packed courts, before everyone else caught on. That head start matters.</p>
                 <p style={{color:"#4b5563",lineHeight:1.8,marginBottom:14,fontSize:"0.97rem"}}>With years of experience competing at the highest levels of the game, he has spent years mastering what makes pickleball unique, from the mechanics of the kitchen game to the strategy that separates good players from great ones. The result is a coaching approach built on genuine mastery and real competitive experience.</p>
                 <p style={{color:"#4b5563",lineHeight:1.8,fontSize:"0.97rem"}}>As an IPTPA Level III certified coach and active tournament player, Coach David works with everyone from players who have never held a paddle to seasoned 5.0+ competitors, in both singles and doubles, across the SF Peninsula.</p>
-                <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:14}}>
-                  <div style={{background:"#1a3c34",color:"white",borderRadius:10,padding:"10px 16px",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
-                    <div>
-                      <div style={{fontSize:"0.6rem",fontWeight:700,letterSpacing:2,textTransform:"uppercase",opacity:0.6,marginBottom:2}}>IPTPA Certified</div>
-                      <div style={{fontSize:"0.88rem",fontWeight:800,letterSpacing:0.5}}>Level 3 Teaching Pro</div>
-                    </div>
-                  </div>
-                  {["Multiple Gold Medalist","Tournament Competitor","All Skill Levels","SF Peninsula"].map(tag=>(
-                    <span key={tag} style={{background:"#e8f0ee",color:G,padding:"6px 14px",borderRadius:50,fontSize:"0.8rem",fontWeight:600,display:"inline-flex",alignItems:"center"}}>{tag}</span>
+                <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:18,alignItems:"center"}}>
+                  <span style={{background:"#1a3c34",color:"white",borderRadius:8,padding:"8px 16px",fontSize:"0.82rem",fontWeight:700,letterSpacing:0.3,display:"inline-flex",alignItems:"center",gap:6}}>
+                    <span style={{opacity:0.7,fontSize:"0.7rem",fontWeight:600,letterSpacing:1,textTransform:"uppercase"}}>✓</span> IPTPA Level 3 Pro
+                  </span>
+                  {[["🥇","Gold Medalist"],["🏓","Tournament Player"],["📍","SF Peninsula"],["⭐","All Skill Levels"]].map(([icon,tag])=>(
+                    <span key={tag} style={{background:"white",color:"#374151",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"8px 14px",fontSize:"0.82rem",fontWeight:600,display:"inline-flex",alignItems:"center",gap:6}}>{icon} {tag}</span>
                   ))}
                 </div>
               </div>
