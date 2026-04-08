@@ -718,11 +718,17 @@ function Homepage({setPage}){
               <p style={{color:"#4b5563",lineHeight:1.75,marginBottom:12,fontSize:"0.93rem"}}>With years of experience competing at the highest levels of the game, he has spent years mastering what makes pickleball unique, from the mechanics of the kitchen game to the strategy that separates good players from great ones.</p>
               <p style={{color:"#4b5563",lineHeight:1.75,marginBottom:16,fontSize:"0.93rem"}}>As an IPTPA Level III certified coach and active tournament player, Coach David works with everyone from beginners to seasoned 5.0+ competitors across the SF Peninsula.</p>
               <div style={{display:"flex",flexWrap:"wrap",gap:7,alignItems:"center"}}>
-                <span style={{background:"#1a3c34",color:"white",borderRadius:8,padding:"6px 13px",fontSize:"0.75rem",fontWeight:700,letterSpacing:0.3,display:"inline-flex",alignItems:"center",gap:5}}>
-                  <span style={{opacity:0.7,fontSize:"0.65rem",fontWeight:600,letterSpacing:1,textTransform:"uppercase"}}>✓</span> IPTPA Level 3 Pro
+                <span style={{background:"#1a3c34",color:"white",borderRadius:8,padding:"6px 13px",fontSize:"0.75rem",fontWeight:700,letterSpacing:0.3,display:"inline-flex",alignItems:"center",gap:6}}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  IPTPA Level 3 Pro
                 </span>
-                {[["🥇","Gold Medalist"],["🏓","Tournament Player"],["📍","SF Peninsula"],["⭐","All Skill Levels"]].map(([icon,tag])=>(
-                  <span key={tag} style={{background:"white",color:"#374151",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"6px 12px",fontSize:"0.75rem",fontWeight:600,display:"inline-flex",alignItems:"center",gap:5}}>{icon} {tag}</span>
+                {[
+                  ["Gold Medalist",<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="14" r="7"/><path d="M8.5 3.5 6 7h12l-2.5-3.5z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>],
+                  ["Tournament Player",<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="13" rx="3"/><circle cx="9" cy="6.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="6.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="9" cy="11" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="11" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="8.5" r="1.2" fill="currentColor" stroke="none"/><path d="M10 15v6M14 15v6M10 21h4"/></svg>],
+                  ["SF Peninsula",<svg width="12" height="13" viewBox="0 0 24 26" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>],
+                  ["All Skill Levels",<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>],
+                ].map(([tag,icon])=>(
+                  <span key={tag} style={{background:"white",color:"#374151",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"6px 12px",fontSize:"0.75rem",fontWeight:600,display:"inline-flex",alignItems:"center",gap:6}}>{icon}{tag}</span>
                 ))}
               </div>
             </>
