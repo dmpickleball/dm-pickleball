@@ -700,29 +700,59 @@ function Homepage({setPage}){
         </div>
       </div>
       {/* ── About ── */}
-      <div style={{background:"#f4f9f6",padding:mob?"40px 20px":"60px 24px"}}>
-        <div style={{maxWidth:760,margin:"0 auto",display:"grid",gridTemplateColumns:mob?"1fr":"1fr 2fr",gap:mob?28:40,alignItems:"center"}}>
-          <div style={{borderRadius:16,overflow:"hidden",aspectRatio:"3/4",boxShadow:"0 8px 32px rgba(0,96,57,0.2)",maxHeight:mob?280:undefined}}>
-            <img src={DAVID_PHOTO} alt="David Mok — Honolulu Open Gold Medal" style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top"}}/>
-          </div>
-          <div>
-            <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:10}}>About Coach David</div>
-            <h2 style={{fontSize:mob?"1.5rem":"1.8rem",fontWeight:900,marginBottom:16,lineHeight:1.3}}>About Coach David</h2>
-            <p style={{color:"#4b5563",lineHeight:1.8,marginBottom:14,fontSize:"0.97rem"}}>Coach David discovered pickleball in 2018, before the pandemic boom, before the packed courts, before everyone else caught on. That head start matters.</p>
-            <p style={{color:"#4b5563",lineHeight:1.8,marginBottom:14,fontSize:"0.97rem"}}>With years of experience competing at the highest levels of the game, he has spent years mastering what makes pickleball unique, from the mechanics of the kitchen game to the strategy that separates good players from great ones. The result is a coaching approach built on genuine mastery and real competitive experience.</p>
-            <p style={{color:"#4b5563",lineHeight:1.8,fontSize:"0.97rem"}}>As an IPTPA Level III certified coach and active tournament player, Coach David works with everyone from players who have never held a paddle to seasoned 5.0+ competitors, in both singles and doubles, across the SF Peninsula. Whether you need to build your game from the ground up, overhaul your mechanics, or sharpen your competitive strategy, he has the knowledge and experience to get you there.</p>
-            <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:14}}>
-              <div style={{background:"#1a3c34",color:"white",borderRadius:10,padding:"10px 16px",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
-                <div>
-                  <div style={{fontSize:"0.6rem",fontWeight:700,letterSpacing:2,textTransform:"uppercase",opacity:0.6,marginBottom:2}}>IPTPA Certified</div>
-                  <div style={{fontSize:"0.88rem",fontWeight:800,letterSpacing:0.5}}>Level 3 Teaching Pro</div>
+      <div style={{background:"#f4f9f6",padding:mob?"36px 20px":"60px 24px"}}>
+        <div style={{maxWidth:760,margin:"0 auto"}}>
+          {mob?(
+            /* Mobile: photo left + heading/intro right, full text below */
+            <>
+              <div style={{display:"flex",gap:16,alignItems:"flex-start",marginBottom:20}}>
+                <div style={{borderRadius:14,overflow:"hidden",width:130,minWidth:130,aspectRatio:"3/4",boxShadow:"0 6px 24px rgba(0,96,57,0.18)",flexShrink:0}}>
+                  <img src={DAVID_PHOTO} alt="Coach David" style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top"}}/>
+                </div>
+                <div style={{paddingTop:4}}>
+                  <div style={{fontSize:"0.65rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:6}}>About Coach David</div>
+                  <h2 style={{fontSize:"1.25rem",fontWeight:900,marginBottom:10,lineHeight:1.25,color:"#111"}}>About Coach David</h2>
+                  <div style={{background:"#1a3c34",color:"white",borderRadius:8,padding:"7px 12px",display:"inline-block"}}>
+                    <div style={{fontSize:"0.55rem",fontWeight:700,letterSpacing:2,textTransform:"uppercase",opacity:0.6,marginBottom:1}}>IPTPA Certified</div>
+                    <div style={{fontSize:"0.78rem",fontWeight:800}}>Level 3 Teaching Pro</div>
+                  </div>
                 </div>
               </div>
-              {["Multiple Gold Medalist","Tournament Competitor","All Skill Levels","SF Peninsula"].map(tag=>(
-                <span key={tag} style={{background:"#e8f0ee",color:G,padding:"6px 14px",borderRadius:50,fontSize:"0.8rem",fontWeight:600,display:"inline-flex",alignItems:"center"}}>{tag}</span>
-              ))}
+              <p style={{color:"#4b5563",lineHeight:1.75,marginBottom:12,fontSize:"0.93rem"}}>Coach David discovered pickleball in 2018, before the pandemic boom, before the packed courts, before everyone else caught on. That head start matters.</p>
+              <p style={{color:"#4b5563",lineHeight:1.75,marginBottom:12,fontSize:"0.93rem"}}>With years of experience competing at the highest levels of the game, he has spent years mastering what makes pickleball unique, from the mechanics of the kitchen game to the strategy that separates good players from great ones.</p>
+              <p style={{color:"#4b5563",lineHeight:1.75,marginBottom:16,fontSize:"0.93rem"}}>As an IPTPA Level III certified coach and active tournament player, Coach David works with everyone from beginners to seasoned 5.0+ competitors across the SF Peninsula.</p>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                {["Multiple Gold Medalist","Tournament Competitor","All Skill Levels","SF Peninsula"].map(tag=>(
+                  <span key={tag} style={{background:"#e8f0ee",color:G,padding:"5px 12px",borderRadius:50,fontSize:"0.75rem",fontWeight:600}}>{tag}</span>
+                ))}
+              </div>
+            </>
+          ):(
+            /* Desktop: side-by-side grid */
+            <div style={{display:"grid",gridTemplateColumns:"1fr 2fr",gap:40,alignItems:"center"}}>
+              <div style={{borderRadius:16,overflow:"hidden",aspectRatio:"3/4",boxShadow:"0 8px 32px rgba(0,96,57,0.2)"}}>
+                <img src={DAVID_PHOTO} alt="David Mok — Honolulu Open Gold Medal" style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top"}}/>
+              </div>
+              <div>
+                <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:10}}>About Coach David</div>
+                <h2 style={{fontSize:"1.8rem",fontWeight:900,marginBottom:16,lineHeight:1.3}}>About Coach David</h2>
+                <p style={{color:"#4b5563",lineHeight:1.8,marginBottom:14,fontSize:"0.97rem"}}>Coach David discovered pickleball in 2018, before the pandemic boom, before the packed courts, before everyone else caught on. That head start matters.</p>
+                <p style={{color:"#4b5563",lineHeight:1.8,marginBottom:14,fontSize:"0.97rem"}}>With years of experience competing at the highest levels of the game, he has spent years mastering what makes pickleball unique, from the mechanics of the kitchen game to the strategy that separates good players from great ones. The result is a coaching approach built on genuine mastery and real competitive experience.</p>
+                <p style={{color:"#4b5563",lineHeight:1.8,fontSize:"0.97rem"}}>As an IPTPA Level III certified coach and active tournament player, Coach David works with everyone from players who have never held a paddle to seasoned 5.0+ competitors, in both singles and doubles, across the SF Peninsula.</p>
+                <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:14}}>
+                  <div style={{background:"#1a3c34",color:"white",borderRadius:10,padding:"10px 16px",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+                    <div>
+                      <div style={{fontSize:"0.6rem",fontWeight:700,letterSpacing:2,textTransform:"uppercase",opacity:0.6,marginBottom:2}}>IPTPA Certified</div>
+                      <div style={{fontSize:"0.88rem",fontWeight:800,letterSpacing:0.5}}>Level 3 Teaching Pro</div>
+                    </div>
+                  </div>
+                  {["Multiple Gold Medalist","Tournament Competitor","All Skill Levels","SF Peninsula"].map(tag=>(
+                    <span key={tag} style={{background:"#e8f0ee",color:G,padding:"6px 14px",borderRadius:50,fontSize:"0.8rem",fontWeight:600,display:"inline-flex",alignItems:"center"}}>{tag}</span>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
       {/* ── Lesson Types ── */}
