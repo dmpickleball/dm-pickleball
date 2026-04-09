@@ -909,6 +909,7 @@ function GearPage(){
   };
   const paddleHistory = gearData?.paddle_history || PADDLE_HISTORY;
   const updatedAt = gearData?.updated_at || "March 2026";
+  const AC = gearData?.accent_color || "#f97316"; // accent color, editable from admin
 
   return(
     <div style={{background:"#f5f5f3",minHeight:"100vh"}}>
@@ -963,7 +964,7 @@ function GearPage(){
       <div id="whats-in-my-bag" style={{background:"#111111",padding:"64px 24px"}}>
         <div style={{maxWidth:960,margin:"0 auto"}}>
           <div style={{textAlign:"center",marginBottom:40}}>
-            <div style={{fontSize:"0.72rem",fontWeight:700,color:"#f97316",textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>Updated {updatedAt}</div>
+            <div style={{fontSize:"0.72rem",fontWeight:700,color:AC,textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>Updated {updatedAt}</div>
             <h2 style={{fontSize:"2rem",fontWeight:900,color:"white",marginBottom:10}}>What's In My Bag</h2>
             <p style={{color:"rgba(255,255,255,0.45)",fontSize:"0.92rem",maxWidth:420,margin:"0 auto"}}>The exact gear Coach David plays and competes with right now.</p>
           </div>
@@ -973,7 +974,7 @@ function GearPage(){
               {id:"bag",   label:"Current Bag",   icon:<BagIcon/>,   item:bag},
             ].map(({id,label,icon,item})=>(
               <div key={id} style={{background:"rgba(255,255,255,0.04)",border:"1.5px solid rgba(255,255,255,0.09)",borderRadius:16,padding:"20px 24px",display:"flex",alignItems:"center",gap:18}}>
-                <div style={{width:50,height:50,background:"#f97316",borderRadius:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{icon}</div>
+                <div style={{width:50,height:50,background:AC,borderRadius:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{icon}</div>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontSize:"0.67rem",fontWeight:700,color:"rgba(255,255,255,0.35)",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>{label}</div>
                   <div style={{color:"white",fontWeight:800,fontSize:"1rem",marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{gearLoading?"…":item.name}</div>
@@ -996,15 +997,15 @@ function GearPage(){
               {[...paddleHistory].sort((a,b)=>{if(a.current)return -1;if(b.current)return 1;const pd=s=>{const[m,y]=s.split(" ");return new Date(y,["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].indexOf(m));};return pd(b.from)-pd(a.from);}).map((p,i)=>(
                 <div key={i} style={{display:"flex",alignItems:"center",gap:20,marginBottom:i<paddleHistory.length-1?16:0,position:"relative"}}>
                   <div style={{width:50,flexShrink:0,display:"flex",justifyContent:"center"}}>
-                    <div style={{width:14,height:14,borderRadius:"50%",background:p.current?"#f97316":"rgba(255,255,255,0.15)",border:`2px solid ${p.current?"#f97316":"rgba(255,255,255,0.1)"}`,boxShadow:p.current?"0 0 14px rgba(249,115,22,0.6)":"none"}}/>
+                    <div style={{width:14,height:14,borderRadius:"50%",background:p.current?AC:"rgba(255,255,255,0.15)",border:`2px solid ${p.current?AC:"rgba(255,255,255,0.1)"}`,boxShadow:p.current?`0 0 14px ${AC}99`:"none"}}/>
                   </div>
-                  <div style={{flex:1,background:p.current?"rgba(249,115,22,0.07)":"rgba(255,255,255,0.03)",border:`1.5px solid ${p.current?"rgba(249,115,22,0.25)":"rgba(255,255,255,0.06)"}`,borderRadius:12,padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+                  <div style={{flex:1,background:p.current?"rgba(255,255,255,0.05)":"rgba(255,255,255,0.03)",border:`1.5px solid ${p.current?AC+"55":"rgba(255,255,255,0.06)"}`,borderRadius:12,padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
                     <div>
                       <div style={{color:"white",fontWeight:700,fontSize:"0.97rem"}}>{p.name}</div>
                       <div style={{color:"rgba(255,255,255,0.35)",fontSize:"0.8rem",marginTop:3}}>{p.from} — {p.to}</div>
                     </div>
                     {p.current
-                      ?<span style={{background:"#f97316",color:"white",padding:"3px 12px",borderRadius:50,fontSize:"0.68rem",fontWeight:800,textTransform:"uppercase"}}>Current</span>
+                      ?<span style={{background:AC,color:"white",padding:"3px 12px",borderRadius:50,fontSize:"0.68rem",fontWeight:800,textTransform:"uppercase"}}>Current</span>
                       :<span style={{color:"rgba(255,255,255,0.2)",fontSize:"0.78rem",fontWeight:600}}>Retired</span>
                     }
                   </div>
@@ -4455,7 +4456,7 @@ function LessonsDbTab({allLessons,mockUsers,onDeleteLesson,setSelectedStudent,se
 }
 
 // ─── GEAR ADMIN TAB ───────────────────────────────────────────────────────────
-function PaddleHistoryEditor({history,setHistory,paddleName,paddleLink,paddleStart,bagName,bagDetail,bagLink}){
+function PaddleHistoryEditor({history,setHistory,paddleName,paddleLink,paddleStart,bagName,bagDetail,bagLink,accentColor}){
   const[editIdx,setEditIdx]=useState(null);
   const[editName,setEditName]=useState("");
   const[editFrom,setEditFrom]=useState("");
@@ -4467,7 +4468,7 @@ function PaddleHistoryEditor({history,setHistory,paddleName,paddleLink,paddleSta
   const persist=async(updated)=>{
     await fetch("/api/gear",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
       paddle_name:paddleName,paddle_link:paddleLink,paddle_start:paddleStart,
-      bag_name:bagName,bag_detail:bagDetail,bag_link:bagLink,paddle_history:updated,
+      bag_name:bagName,bag_detail:bagDetail,bag_link:bagLink,paddle_history:updated,accent_color:accentColor,
     })});
   };
 
@@ -4547,6 +4548,7 @@ function GearAdminTab(){
 
   // History (local copy for preview/editing)
   const[history,setHistory]=useState(PADDLE_HISTORY);
+  const[accentColor,setAccentColor]=useState("#f97316");
 
   useEffect(()=>{
     fetch("/api/gear").then(r=>r.json()).then(d=>{
@@ -4559,6 +4561,7 @@ function GearAdminTab(){
         setBagDetail(g.bag_detail||BAG_ITEMS[1].detail);
         setBagLink(g.bag_link||BAG_ITEMS[1].link);
         setHistory(g.paddle_history||PADDLE_HISTORY);
+        setAccentColor(g.accent_color||"#f97316");
       }else{
         // No DB data yet — prefill from hardcoded defaults
         setPaddleName(BAG_ITEMS[0].name);
@@ -4608,6 +4611,7 @@ function GearAdminTab(){
           bag_detail:bagDetail,
           bag_link:bagLink,
           paddle_history:newHistory,
+          accent_color:accentColor,
         }),
       });
       const data=await res.json();
@@ -4677,6 +4681,23 @@ function GearAdminTab(){
         </div>
       </div>
 
+      {/* Accent Color */}
+      <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"22px 24px",marginBottom:24}}>
+        <div style={{fontWeight:800,fontSize:"1rem",color:"#1a1a1a",marginBottom:4}}>Highlight Color</div>
+        <p style={{fontSize:"0.8rem",color:"#6b7280",marginBottom:16}}>Used for the Current badge, icons, and glow on the gear page.</p>
+        <div style={{display:"flex",flexWrap:"wrap",gap:10,alignItems:"center",marginBottom:14}}>
+          {["#f97316","#10b981","#3b82f6","#8b5cf6","#ec4899","#ef4444","#eab308","#1a3c34"].map(c=>(
+            <button key={c} onClick={()=>setAccentColor(c)} style={{width:32,height:32,borderRadius:"50%",background:c,border:accentColor===c?"3px solid #1a1a1a":"3px solid transparent",outline:accentColor===c?"2px solid "+c:"none",outlineOffset:2,cursor:"pointer",padding:0,transition:"transform 0.1s",transform:accentColor===c?"scale(1.15)":"scale(1)"}}/>
+          ))}
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <label style={{fontSize:"0.72rem",fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:0.8}}>Custom</label>
+          <input type="color" value={accentColor} onChange={e=>setAccentColor(e.target.value)} style={{width:40,height:32,border:"1.5px solid #e5e7eb",borderRadius:6,cursor:"pointer",padding:2,background:"white"}}/>
+          <input type="text" value={accentColor} onChange={e=>{if(/^#[0-9a-fA-F]{0,6}$/.test(e.target.value))setAccentColor(e.target.value);}} style={{width:100,border:"1.5px solid #e5e7eb",borderRadius:6,padding:"6px 10px",fontSize:"0.85rem",fontFamily:"monospace",outline:"none"}}/>
+          <div style={{width:36,height:36,borderRadius:8,background:accentColor,flexShrink:0}}/>
+        </div>
+      </div>
+
       <button onClick={handleSave} disabled={saving} style={{width:"100%",background:saving?"#9ca3af":G,color:"white",border:"none",padding:"13px",borderRadius:50,fontWeight:700,cursor:saving?"not-allowed":"pointer",fontSize:"0.95rem",marginBottom:32}}>
         {saving?"Saving…":"Save Gear Settings"}
       </button>
@@ -4691,6 +4712,7 @@ function GearAdminTab(){
         bagName={bagName}
         bagDetail={bagDetail}
         bagLink={bagLink}
+        accentColor={accentColor}
       />
     </div>
   );

@@ -18,7 +18,7 @@ export default async function handler(req, res) {
 
   // POST — update gear settings
   if (req.method === 'POST') {
-    const { paddle_name, paddle_link, paddle_start, bag_name, bag_detail, bag_link, paddle_history } = req.body;
+    const { paddle_name, paddle_link, paddle_start, bag_name, bag_detail, bag_link, paddle_history, accent_color } = req.body;
 
     const updated_at = new Date().toLocaleString('en-US', { month: 'short', year: 'numeric' });
 
@@ -33,6 +33,7 @@ export default async function handler(req, res) {
         bag_detail,
         bag_link,
         paddle_history,
+        accent_color: accent_color || '#f97316',
         updated_at,
       }, { onConflict: 'id' });
 
