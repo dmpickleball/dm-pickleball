@@ -993,7 +993,7 @@ function GearPage(){
             </div>
             <div style={{maxWidth:600,margin:"0 auto",position:"relative"}}>
               <div style={{position:"absolute",left:24,top:8,bottom:8,width:2,background:"rgba(255,255,255,0.07)",borderRadius:2}}/>
-              {[...paddleHistory].sort((a,b)=>(a.current?-1:b.current?1:0)).map((p,i)=>(
+              {[...paddleHistory].sort((a,b)=>{if(a.current)return -1;if(b.current)return 1;const pd=s=>{const[m,y]=s.split(" ");return new Date(y,["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].indexOf(m));};return pd(b.from)-pd(a.from);}).map((p,i)=>(
                 <div key={i} style={{display:"flex",alignItems:"center",gap:20,marginBottom:i<paddleHistory.length-1?16:0,position:"relative"}}>
                   <div style={{width:50,flexShrink:0,display:"flex",justifyContent:"center"}}>
                     <div style={{width:14,height:14,borderRadius:"50%",background:p.current?"#f97316":"rgba(255,255,255,0.15)",border:`2px solid ${p.current?"#f97316":"rgba(255,255,255,0.1)"}`,boxShadow:p.current?"0 0 14px rgba(249,115,22,0.6)":"none"}}/>
@@ -4461,7 +4461,8 @@ function PaddleHistoryEditor({history,setHistory,paddleName,paddleLink,paddleSta
   const[editFrom,setEditFrom]=useState("");
   const[editTo,setEditTo]=useState("");
 
-  const sorted=[...history].sort((a,b)=>(a.current?-1:b.current?1:0));
+  const parseMonth=s=>{try{const[m,y]=(s||"").split(" ");return new Date(y,["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].indexOf(m));}catch{return new Date(0);}};
+  const sorted=[...history].sort((a,b)=>{if(a.current)return -1;if(b.current)return 1;return parseMonth(b.from)-parseMonth(a.from);});
 
   const persist=async(updated)=>{
     await fetch("/api/gear",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
