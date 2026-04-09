@@ -993,7 +993,7 @@ function GearPage(){
             </div>
             <div style={{maxWidth:600,margin:"0 auto",position:"relative"}}>
               <div style={{position:"absolute",left:24,top:8,bottom:8,width:2,background:"rgba(255,255,255,0.07)",borderRadius:2}}/>
-              {paddleHistory.map((p,i)=>(
+              {[...paddleHistory].sort((a,b)=>(a.current?-1:b.current?1:0)).map((p,i)=>(
                 <div key={i} style={{display:"flex",alignItems:"center",gap:20,marginBottom:i<paddleHistory.length-1?16:0,position:"relative"}}>
                   <div style={{width:50,flexShrink:0,display:"flex",justifyContent:"center"}}>
                     <div style={{width:14,height:14,borderRadius:"50%",background:p.current?"#f97316":"rgba(255,255,255,0.15)",border:`2px solid ${p.current?"#f97316":"rgba(255,255,255,0.1)"}`,boxShadow:p.current?"0 0 14px rgba(249,115,22,0.6)":"none"}}/>
@@ -4380,8 +4380,6 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
       {tab==="gear"&&<GearAdminTab/>}
 
       {tab==="database"&&<LessonsDbTab allLessons={allLessons} mockUsers={mockUsers} onDeleteLesson={onDeleteLesson} setSelectedStudent={setSelectedStudent} setTab={setTab}/>}
-
-      {tab==="gear"&&<GearAdminTab/>}
     </div>
   );
 }
@@ -4457,6 +4455,75 @@ function LessonsDbTab({allLessons,mockUsers,onDeleteLesson,setSelectedStudent,se
 }
 
 // ─── GEAR ADMIN TAB ───────────────────────────────────────────────────────────
+function PaddleHistoryEditor({history,setHistory,paddleName,paddleLink,paddleStart,bagName,bagDetail,bagLink}){
+  const[editIdx,setEditIdx]=useState(null);
+  const[editName,setEditName]=useState("");
+  const[editFrom,setEditFrom]=useState("");
+  const[editTo,setEditTo]=useState("");
+
+  const sorted=[...history].sort((a,b)=>(a.current?-1:b.current?1:0));
+
+  const persist=async(updated)=>{
+    await fetch("/api/gear",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+      paddle_name:paddleName,paddle_link:paddleLink,paddle_start:paddleStart,
+      bag_name:bagName,bag_detail:bagDetail,bag_link:bagLink,paddle_history:updated,
+    })});
+  };
+
+  const saveEdit=async()=>{
+    const target=sorted[editIdx];
+    const updated=history.map(p=>p===target?{...p,name:editName,from:editFrom,to:editTo}:p);
+    setHistory(updated);
+    await persist(updated);
+    setEditIdx(null);
+  };
+
+  const deleteEntry=async(target)=>{
+    if(!window.confirm("Delete this paddle from history?"))return;
+    const updated=history.filter(p=>p!==target);
+    setHistory(updated);
+    await persist(updated);
+  };
+
+  return(
+    <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"22px 24px"}}>
+      <div style={{fontWeight:700,fontSize:"0.92rem",color:"#374151",marginBottom:4}}>Paddle History</div>
+      <p style={{fontSize:"0.78rem",color:"#9ca3af",marginBottom:16}}>Current paddle shown first. Click Edit to update any entry.</p>
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        {sorted.map((p,i)=>(
+          <div key={i} style={{background:p.current?"#f0faf5":"#f9f9f6",borderRadius:8,border:"1.5px solid "+(p.current?G:"#e5e7eb"),padding:"10px 14px"}}>
+            {editIdx===i?(
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                <input value={editName} onChange={e=>setEditName(e.target.value)} placeholder="Paddle name" style={{border:"1.5px solid #d1d5db",borderRadius:6,padding:"6px 10px",fontSize:"0.85rem",fontFamily:"inherit",outline:"none"}}/>
+                <div style={{display:"flex",gap:8}}>
+                  <input value={editFrom} onChange={e=>setEditFrom(e.target.value)} placeholder="From (e.g. Jan 2024)" style={{flex:1,border:"1.5px solid #d1d5db",borderRadius:6,padding:"6px 10px",fontSize:"0.85rem",fontFamily:"inherit",outline:"none"}}/>
+                  <input value={editTo} onChange={e=>setEditTo(e.target.value)} placeholder="To (e.g. Mar 2026 or Present)" style={{flex:1,border:"1.5px solid #d1d5db",borderRadius:6,padding:"6px 10px",fontSize:"0.85rem",fontFamily:"inherit",outline:"none"}}/>
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={saveEdit} style={{background:G,color:"white",border:"none",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:700}}>Save</button>
+                  <button onClick={()=>setEditIdx(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>Cancel</button>
+                </div>
+              </div>
+            ):(
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div>
+                  <div style={{fontWeight:700,fontSize:"0.9rem",color:p.current?G:"#374151"}}>{p.name}</div>
+                  <div style={{fontSize:"0.78rem",color:"#9ca3af",marginTop:2}}>{p.from}{p.to?" — "+p.to:p.current?" — Present":""}</div>
+                </div>
+                <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                  {p.current&&<span style={{background:G,color:"white",fontSize:"0.65rem",fontWeight:800,padding:"3px 9px",borderRadius:50,textTransform:"uppercase"}}>Current</span>}
+                  <button onClick={()=>{setEditIdx(i);setEditName(p.name);setEditFrom(p.from);setEditTo(p.to||"");}} style={{background:"white",border:"1.5px solid #e5e7eb",color:"#374151",padding:"3px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.72rem",fontWeight:600}}>Edit</button>
+                  {!p.current&&<button onClick={()=>deleteEntry(p)} style={{background:"white",border:"1.5px solid #fca5a5",color:"#dc2626",padding:"3px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.72rem",fontWeight:600}}>Delete</button>}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function GearAdminTab(){
   const now=new Date();
   const fmtMonth=d=>d.toLocaleString("en-US",{month:"short",year:"numeric"});
@@ -4613,22 +4680,17 @@ function GearAdminTab(){
         {saving?"Saving…":"Save Gear Settings"}
       </button>
 
-      {/* Paddle History Preview */}
-      <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"22px 24px"}}>
-        <div style={{fontWeight:700,fontSize:"0.92rem",color:"#374151",marginBottom:16}}>Paddle History Preview</div>
-        <div style={{display:"flex",flexDirection:"column",gap:10}}>
-          {[...history].reverse().map((p,i)=>(
-            <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",background:p.current?"#f0faf5":"#f9f9f6",borderRadius:8,border:"1.5px solid "+(p.current?G:"#e5e7eb")}}>
-              <div>
-                <div style={{fontWeight:700,fontSize:"0.9rem",color:p.current?G:"#374151"}}>{p.name}</div>
-                <div style={{fontSize:"0.78rem",color:"#9ca3af",marginTop:2}}>{p.from} — {p.to}</div>
-              </div>
-              {p.current&&<span style={{background:G,color:"white",fontSize:"0.68rem",fontWeight:800,padding:"3px 10px",borderRadius:50,textTransform:"uppercase"}}>Current</span>}
-            </div>
-          ))}
-        </div>
-        <p style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:12,marginBottom:0}}>When you save a new paddle name, the old one is automatically retired with today's date.</p>
-      </div>
+      {/* Paddle History — editable */}
+      <PaddleHistoryEditor
+        history={history}
+        setHistory={setHistory}
+        paddleName={paddleName}
+        paddleLink={paddleLink}
+        paddleStart={paddleStart}
+        bagName={bagName}
+        bagDetail={bagDetail}
+        bagLink={bagLink}
+      />
     </div>
   );
 }
