@@ -197,21 +197,40 @@ export default async function handler(req, res) {
     const DUPR_PASSWORD = process.env.DUPR_PASSWORD;
 
     if (!DUPR_EMAIL || !DUPR_PASSWORD) {
-      return res.status(200).json({ error: 'DUPR credentials not configured', rating: null });
+      return res.status(200).json({ error: 'DUPR credentials not configured — set DUPR_EMAIL and DUPR_PASSWORD in Vercel environment variables', rating: null });
     }
 
     try {
-      // Step 1: Authenticate with DUPR public API — correct host is api.dupr.gg
-      const loginRes = await fetch('https://api.dupr.gg/auth/v1.0/login-read-only-token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ email: DUPR_EMAIL, password: DUPR_PASSWORD }),
-      });
-      if (!loginRes.ok) {
-        const errText = await loginRes.text().catch(() => '');
-        throw new Error(`DUPR login failed (${loginRes.status})${errText ? ': ' + errText.slice(0, 120) : ''}`);
+      // Step 1: Authenticate — try read-only token endpoint first, fall back to regular login
+      let loginData = null;
+      let authOk = false;
+
+      const tryLogin = async (url, body) => {
+        const r = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const text = await r.text().catch(() => '');
+        let json = null;
+        try { json = JSON.parse(text); } catch {}
+        return { ok: r.ok, status: r.status, text, json };
+      };
+
+      // First attempt: read-only token (preferred)
+      const r1 = await tryLogin('https://api.dupr.gg/auth/v1.0/login-read-only-token', { email: DUPR_EMAIL, password: DUPR_PASSWORD });
+      if (r1.ok && r1.json) { loginData = r1.json; authOk = true; }
+
+      // Second attempt: regular login (fallback)
+      if (!authOk) {
+        const r2 = await tryLogin('https://api.dupr.gg/auth/v1.0/user/login', { email: DUPR_EMAIL, password: DUPR_PASSWORD });
+        if (r2.ok && r2.json) { loginData = r2.json; authOk = true; }
+        else {
+          // Both failed — surface the most useful error
+          const hint = DUPR_EMAIL ? `(using ${DUPR_EMAIL.slice(0,3)}***@${DUPR_EMAIL.split('@')[1]||'?'})` : '(email blank)';
+          throw new Error(`DUPR login failed ${hint}. Check DUPR_EMAIL/DUPR_PASSWORD in Vercel. Last error (${r2.status}): ${(r2.text||'').slice(0,120)}`);
+        }
       }
-      const loginData = await loginRes.json();
 
       // ReadOnlyAuthResponse — try direct token first
       let token = loginData?.result?.accessToken || loginData?.result?.token
