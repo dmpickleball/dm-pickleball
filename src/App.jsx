@@ -1,4 +1,23 @@
-import { useState, useEffect, useRef, Fragment } from "react";
+import { useState, useEffect, useRef, Fragment, Component } from "react";
+
+// ─── ERROR BOUNDARY ──────────────────────────────────────────────────────────
+class ErrorBoundary extends Component {
+  constructor(props){super(props);this.state={hasError:false,error:null};}
+  static getDerivedStateFromError(error){return{hasError:true,error};}
+  componentDidCatch(error,info){console.error("ErrorBoundary caught:",error,info);}
+  render(){
+    if(this.state.hasError){
+      return(
+        <div style={{background:"#fff8f8",border:"1.5px solid #fca5a5",borderRadius:12,padding:"32px",textAlign:"center",color:"#7f1d1d"}}>
+          <div style={{fontWeight:800,fontSize:"1rem",marginBottom:8}}>Something went wrong loading this section.</div>
+          <div style={{fontSize:"0.82rem",color:"#9ca3af",marginBottom:16}}>{this.state.error?.message||"Unknown error"}</div>
+          <button onClick={()=>this.setState({hasError:false,error:null})} style={{background:"#1a3c34",color:"white",border:"none",padding:"8px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>Retry</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // ─── IMAGE PATHS ────────────────────────────────────────────────────────────
 const VENMO = "dmpickleball"; // Venmo username (no @)
@@ -2076,10 +2095,18 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
     if(view==="month"){const last=new Date(yr,mo,0).getDate();return{start:yr+"-"+String(mo).padStart(2,"0")+"-01",end:yr+"-"+String(mo).padStart(2,"0")+"-"+String(last).padStart(2,"0")};}
     return{start:yrOnly+"-01-01",end:yrOnly+"-12-31"};
   };
+  const[financeError,setFinanceError]=useState("");
   const loadData=async(start,end,withStanford)=>{
-    setFinanceLoading(true);
-    try{const r=await fetch("/api/earnings-calendar?start="+start+"&end="+end+"&includeStanford="+(withStanford?"true":"false"));const data=await r.json();setFinanceData(data);}
-    catch(e){console.error("Finance load error:",e);}
+    setFinanceLoading(true);setFinanceError("");
+    try{
+      const r=await fetch("/api/earnings-calendar?start="+start+"&end="+end+"&includeStanford="+(withStanford?"true":"false"));
+      const data=await r.json();
+      if(data.error){setFinanceError(data.error);}
+      setFinanceData(data);
+    }catch(e){
+      console.error("Finance load error:",e);
+      setFinanceError("Network error — could not load earnings data.");
+    }
     setFinanceLoading(false);
   };
   const viewRange=computeRange(financeView,selectedDay,weekOffset,viewMonth,viewYear,viewYearOnly);
@@ -2121,7 +2148,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
     projectedMonthKeys.forEach(mk=>{map[mk]={total:0,count:0,rows:[]};});
     const add=(mk,row)=>{if(!map[mk])return;map[mk].total+=row.earnings;map[mk].count++;map[mk].rows.push(row);};
     // Future calendar events (non-Stanford, non-pickup, not already covered by a portal lesson)
-    const projPortalIds=new Set(Object.values(allLessons).flat().filter(l=>l.gcalEventId).map(l=>l.gcalEventId));
+    const projPortalIds=new Set(Object.values(allLessons).flat().filter(l=>l&&l.gcalEventId).map(l=>l.gcalEventId));
     (projectedCalData?.events||[]).filter(e=>!e.isStanford&&!e.isPickup&&!projPortalIds.has(e.gcalEventId)).forEach(e=>{
       const mk=e.date.substring(0,7);
       const k=e.date+"|"+e.summary;
@@ -2145,6 +2172,10 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
   const projectedTotalCount=projectedByMonth.reduce((s,[,v])=>s+v.count,0);
   return(
     <div>
+      {/* Calendar API error banner */}
+      {financeError&&<div style={{background:"#fff8f8",border:"1.5px solid #fca5a5",borderRadius:10,padding:"12px 18px",marginBottom:16,fontSize:"0.83rem",color:"#7f1d1d",display:"flex",alignItems:"center",gap:10}}>
+        <span style={{fontWeight:700}}>⚠ Calendar API:</span> {financeError}
+      </div>}
       {/* Actual / Projected toggle */}
       <div style={{display:"flex",gap:0,marginBottom:24,background:"#f3f4f6",borderRadius:50,padding:4,width:"fit-content"}}>
         <button onClick={()=>setProjectedMode(false)} style={{padding:"7px 22px",borderRadius:50,border:"none",cursor:"pointer",fontWeight:700,fontSize:"0.85rem",background:!projectedMode?"white":"transparent",color:!projectedMode?"#1a3c34":"#9ca3af",boxShadow:!projectedMode?"0 1px 4px rgba(0,0,0,0.10)":"none",transition:"all 0.15s"}}>Actual</button>
@@ -4449,28 +4480,30 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
       })()}
 
       {tab==="finances"&&(
-        <FinancesTab
-          financeRange={financeRange}
-          setFinanceRange={setFinanceRange}
-          includeStanford={includeStanford}
-          setIncludeStanford={setIncludeStanford}
-          showNetStanford={showNetStanford}
-          setShowNetStanford={setShowNetStanford}
-          financeData={financeData}
-          setFinanceData={setFinanceData}
-          financeLoading={financeLoading}
-          setFinanceLoading={setFinanceLoading}
-          allLessons={allLessons}
-          mockUsers={mockUsers}
-          onUpdateLesson={onUpdateLesson}
-          onExportNial={exportNial}
-          showNialExport={showNialExport}
-          setShowNialExport={setShowNialExport}
-          nialStart={nialStart}
-          setNialStart={setNialStart}
-          nialEnd={nialEnd}
-          setNialEnd={setNialEnd}
-        />
+        <ErrorBoundary>
+          <FinancesTab
+            financeRange={financeRange}
+            setFinanceRange={setFinanceRange}
+            includeStanford={includeStanford}
+            setIncludeStanford={setIncludeStanford}
+            showNetStanford={showNetStanford}
+            setShowNetStanford={setShowNetStanford}
+            financeData={financeData}
+            setFinanceData={setFinanceData}
+            financeLoading={financeLoading}
+            setFinanceLoading={setFinanceLoading}
+            allLessons={allLessons}
+            mockUsers={mockUsers}
+            onUpdateLesson={onUpdateLesson}
+            onExportNial={exportNial}
+            showNialExport={showNialExport}
+            setShowNialExport={setShowNialExport}
+            nialStart={nialStart}
+            setNialStart={setNialStart}
+            nialEnd={nialEnd}
+            setNialEnd={setNialEnd}
+          />
+        </ErrorBoundary>
       )}
 
       {tab==="gear"&&<GearAdminTab/>}
