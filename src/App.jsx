@@ -3404,73 +3404,59 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                     ))}
                   </div>
                 )}
-                {/* DUPR live sync */}
+                {/* DUPR section */}
                 {(()=>{
                   const storedId=mockUsers[selectedStudent]?.duprId||"";
                   const storedRating=mockUsers[selectedStudent]?.duprRating||"";
                   const storedDoubles=mockUsers[selectedStudent]?.duprDoublesRating||"";
-                  const noCredsMsg="DUPR credentials not configured";
-                  const syncRating=async()=>{
-                    const useId=(duprIdInput.trim()||storedId).trim();
-                    if(!useId){setDuprSyncError("Enter a DUPR Player ID first");return;}
-                    setDuprSyncStatus("syncing");setDuprSyncError("");
-                    try{
-                      const r=await fetch("/api/students?action=dupr-lookup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({duprId:useId,email:selectedStudent})});
-                      const d=await r.json();
-                      // Always save the DUPR ID even if rating sync fails
-                      if(useId!==storedId){
-                        onAddStudent({...mockUsers[selectedStudent],email:selectedStudent,duprId:useId});
-                        fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:selectedStudent,updates:{dupr_id:useId}})}).catch(()=>{});
-                      }
-                      if(d.error&&!d.rating){
-                        const isNoCreds=d.error===noCredsMsg;
-                        setDuprSyncError(isNoCreds?"ID saved. Add DUPR_EMAIL + DUPR_PASSWORD in Vercel env vars to enable live sync.":d.error);
-                        setDuprSyncStatus(isNoCreds?"idle":"error");
-                        setDuprIdInput("");
-                        return;
-                      }
-                      const newSingles=d.rating!=null?parseFloat(d.rating).toFixed(2):storedRating;
-                      const newDoubles=d.doublesRating!=null?parseFloat(d.doublesRating).toFixed(2):storedDoubles;
-                      onAddStudent({...mockUsers[selectedStudent],email:selectedStudent,duprId:useId,duprRating:newSingles,duprDoublesRating:newDoubles});
-                      fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:selectedStudent,updates:{dupr_id:useId,dupr_rating:newSingles,dupr_doubles_rating:newDoubles}})}).catch(()=>{});
-                      setDuprIdInput("");setDuprSyncStatus("success");
-                      setTimeout(()=>setDuprSyncStatus("idle"),3000);
-                    }catch{setDuprSyncError("Network error — try again");setDuprSyncStatus("error");}
+                  const saveDupr=async(updates)=>{
+                    onAddStudent({...mockUsers[selectedStudent],email:selectedStudent,...updates});
+                    fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:selectedStudent,updates:Object.fromEntries(Object.entries({dupr_id:updates.duprId,dupr_rating:updates.duprRating,dupr_doubles_rating:updates.duprDoublesRating}).filter(([,v])=>v!=null))})}).catch(()=>{});
                   };
                   return(
                     <div style={{marginTop:12,background:"#f0f4ff",borderRadius:8,padding:"12px 14px"}}>
-                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:storedRating||storedDoubles?8:10}}>
+                      {/* Header + rating badges */}
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
                         <div style={{display:"flex",alignItems:"center",gap:8}}>
                           <span style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"0.65rem",letterSpacing:1.5,padding:"2px 7px",borderRadius:4}}>DUPR</span>
                           <span style={{fontSize:"0.78rem",fontWeight:700,color:"#0a1551"}}>Rating</span>
                         </div>
                         {(storedRating||storedDoubles)&&(
-                          <div style={{display:"flex",gap:6}}>
-                            {storedRating&&<div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
-                              <div style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"0.95rem",padding:"3px 11px",borderRadius:50}}>{parseFloat(storedRating).toFixed(2)}</div>
+                          <div style={{display:"flex",gap:8}}>
+                            {storedRating&&<div style={{textAlign:"center"}}>
+                              <div style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"0.95rem",padding:"3px 12px",borderRadius:50}}>{parseFloat(storedRating).toFixed(2)}</div>
                               <div style={{fontSize:"0.6rem",color:"#6b7280",marginTop:2,textTransform:"uppercase",letterSpacing:0.5}}>Singles</div>
                             </div>}
-                            {storedDoubles&&<div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
-                              <div style={{background:"#1e3a5f",color:"white",fontWeight:900,fontSize:"0.95rem",padding:"3px 11px",borderRadius:50}}>{parseFloat(storedDoubles).toFixed(2)}</div>
+                            {storedDoubles&&<div style={{textAlign:"center"}}>
+                              <div style={{background:"#1e3a5f",color:"white",fontWeight:900,fontSize:"0.95rem",padding:"3px 12px",borderRadius:50}}>{parseFloat(storedDoubles).toFixed(2)}</div>
                               <div style={{fontSize:"0.6rem",color:"#6b7280",marginTop:2,textTransform:"uppercase",letterSpacing:0.5}}>Doubles</div>
                             </div>}
                           </div>
                         )}
                       </div>
-                      {storedId&&(
-                        <div style={{fontSize:"0.72rem",color:"#6b7280",marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
-                          ID: <strong>{storedId}</strong>
-                          <a href={`https://dashboard.dupr.com/dashboard/player/${storedId}/profile`} target="_blank" rel="noopener noreferrer" style={{color:"#0a1551",fontWeight:700}}>View profile →</a>
-                        </div>
-                      )}
-                      <div style={{display:"flex",gap:6}}>
-                        <input type="text" placeholder={storedId?"New DUPR Player ID":"DUPR Player ID"} value={duprIdInput} onChange={e=>setDuprIdInput(e.target.value.replace(/\s/g,"").slice(0,20))} onKeyDown={e=>e.key==="Enter"&&syncRating()} style={{...inp,marginBottom:0,flex:1,fontSize:"0.82rem",background:"white"}}/>
-                        <button onClick={syncRating} disabled={duprSyncStatus==="syncing"} style={{background:duprSyncStatus==="syncing"?"#9ca3af":duprSyncStatus==="success"?"#16a34a":"#0a1551",color:"white",border:"none",padding:"0 14px",borderRadius:50,cursor:duprSyncStatus==="syncing"?"not-allowed":"pointer",fontWeight:700,fontSize:"0.78rem",flexShrink:0,whiteSpace:"nowrap"}}>
-                          {duprSyncStatus==="syncing"?"Syncing…":duprSyncStatus==="success"?"✓ Synced":"Sync Rating"}
-                        </button>
+                      {/* DUPR ID row */}
+                      <div style={{display:"flex",gap:6,marginBottom:8,alignItems:"center"}}>
+                        <input type="text" placeholder="DUPR Player ID" value={duprIdInput||storedId} onChange={e=>setDuprIdInput(e.target.value.replace(/\s/g,"").slice(0,20))} style={{...inp,marginBottom:0,flex:1,fontSize:"0.82rem",background:"white"}}/>
+                        <button onClick={async()=>{const id=(duprIdInput.trim()||storedId);if(!id)return;await saveDupr({duprId:id});setDuprIdInput("");setDuprSyncStatus("idle");setDuprSyncError("ID saved ✓");setTimeout(()=>setDuprSyncError(""),2500);}} style={{background:"#0a1551",color:"white",border:"none",padding:"0 14px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.78rem",flexShrink:0,whiteSpace:"nowrap",height:38}}>Save ID</button>
+                        {storedId&&<a href={`https://dashboard.dupr.com/dashboard/player/${storedId}/profile`} target="_blank" rel="noopener noreferrer" style={{color:"#0a1551",fontSize:"0.75rem",fontWeight:700,whiteSpace:"nowrap"}}>Profile →</a>}
                       </div>
-                      {duprSyncError&&<div style={{fontSize:"0.72rem",color:duprSyncStatus==="error"?"#dc2626":"#6b7280",marginTop:6}}>{duprSyncError}</div>}
-                      {!storedId&&!storedRating&&!storedDoubles&&!duprSyncError&&<div style={{fontSize:"0.72rem",color:"#6b7280",marginTop:6}}>Enter the student's DUPR Player ID to link their profile and sync singles + doubles ratings.</div>}
+                      {/* Manual rating entry */}
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:6}}>
+                        <div>
+                          <div style={{fontSize:"0.65rem",color:"#6b7280",fontWeight:700,textTransform:"uppercase",letterSpacing:0.5,marginBottom:3}}>Singles Rating</div>
+                          <div style={{display:"flex",gap:4}}>
+                            <input type="number" step="0.01" min="2" max="8" placeholder={storedRating||"e.g. 3.50"} defaultValue={storedRating} key={"s_"+selectedStudent} onChange={e=>setDuprIdInput(prev=>({...((typeof prev==="object"?prev:{})),singles:e.target.value}))} onBlur={async e=>{const v=e.target.value.trim();if(!v)return;const r=parseFloat(v);if(isNaN(r)||r<2||r>8)return;await saveDupr({duprRating:r.toFixed(2)});setDuprSyncError("Singles saved ✓");setTimeout(()=>setDuprSyncError(""),2500);}} style={{...inp,marginBottom:0,fontSize:"0.82rem",background:"white",flex:1}}/>
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{fontSize:"0.65rem",color:"#6b7280",fontWeight:700,textTransform:"uppercase",letterSpacing:0.5,marginBottom:3}}>Doubles Rating</div>
+                          <div style={{display:"flex",gap:4}}>
+                            <input type="number" step="0.01" min="2" max="8" placeholder={storedDoubles||"e.g. 3.75"} defaultValue={storedDoubles} key={"d_"+selectedStudent} onBlur={async e=>{const v=e.target.value.trim();if(!v)return;const r=parseFloat(v);if(isNaN(r)||r<2||r>8)return;await saveDupr({duprDoublesRating:r.toFixed(2)});setDuprSyncError("Doubles saved ✓");setTimeout(()=>setDuprSyncError(""),2500);}} style={{...inp,marginBottom:0,fontSize:"0.82rem",background:"white",flex:1}}/>
+                          </div>
+                        </div>
+                      </div>
+                      {duprSyncError&&<div style={{fontSize:"0.72rem",color:duprSyncError.includes("✓")?"#16a34a":"#dc2626",marginTop:4}}>{duprSyncError}</div>}
+                      {!storedId&&<div style={{fontSize:"0.72rem",color:"#6b7280",marginTop:4}}>Enter the student's DUPR Player ID (in their DUPR app or profile URL) to link their profile.</div>}
                     </div>
                   );
                 })()}
