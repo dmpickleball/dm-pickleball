@@ -2925,7 +2925,12 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
     fetch("/api/students?action=dupr-lookup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({duprId:student.duprId,email:selectedStudent})})
       .then(r=>r.json())
       .then(data=>{
-        if(data.error){setDuprSyncStatus("idle");return;}
+        if(data.error){
+          setDuprSyncStatus("idle");
+          setDuprSyncError("⚠ "+data.error.slice(0,120));
+          setTimeout(()=>setDuprSyncError(""),8000);
+          return;
+        }
         const updates={};
         if(data.rating!=null)updates.duprRating=parseFloat(data.rating).toFixed(2);
         if(data.doublesRating!=null)updates.duprDoublesRating=parseFloat(data.doublesRating).toFixed(2);
@@ -2933,8 +2938,12 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
           onAddStudent({...mockUsers[selectedStudent],email:selectedStudent,...updates});
           setDuprSyncStatus("success");
           setTimeout(()=>setDuprSyncStatus("idle"),3000);
-        }else{setDuprSyncStatus("idle");}
-      }).catch(()=>setDuprSyncStatus("idle"));
+        }else{
+          setDuprSyncStatus("idle");
+          setDuprSyncError("⚠ No ratings found for ID: "+mockUsers[selectedStudent]?.duprId);
+          setTimeout(()=>setDuprSyncError(""),6000);
+        }
+      }).catch(e=>{setDuprSyncStatus("idle");setDuprSyncError("⚠ Network error");setTimeout(()=>setDuprSyncError(""),5000);});
   },[selectedStudent]);
   useEffect(()=>{if(tab==="lessons"&&eventsData.length===0&&!eventsLoading){const s=toDS(new Date());const e=toDS(addDays(new Date(),90));setEventsLoading(true);fetch("/api/calendar-events?start="+s+"&end="+e+"&keywords=rental,tournament").then(r=>r.json()).then(d=>{setEventsData(d.events||[]);setEventsLoading(false);}).catch(()=>setEventsLoading(false));}},[tab]);
   useEffect(()=>{
@@ -3499,13 +3508,13 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                         <div>
                           <div style={{fontSize:"0.65rem",color:"#6b7280",fontWeight:700,textTransform:"uppercase",letterSpacing:0.5,marginBottom:3}}>Singles Rating</div>
                           <div style={{display:"flex",gap:4}}>
-                            <input type="number" step="0.01" min="2" max="8" placeholder={storedRating||"e.g. 3.50"} defaultValue={storedRating} key={"s_"+selectedStudent} onChange={e=>setDuprIdInput(prev=>({...((typeof prev==="object"?prev:{})),singles:e.target.value}))} onBlur={async e=>{const v=e.target.value.trim();if(!v)return;const r=parseFloat(v);if(isNaN(r)||r<2||r>8)return;await saveDupr({duprRating:r.toFixed(2)});setDuprSyncError("Singles saved ✓");setTimeout(()=>setDuprSyncError(""),2500);}} style={{...inp,marginBottom:0,fontSize:"0.82rem",background:"white",flex:1}}/>
+                            <input type="number" step="0.01" min="2" max="8" placeholder="e.g. 3.50" defaultValue={storedRating} key={"s_"+selectedStudent+"_"+(storedRating||"")} onBlur={async e=>{const v=e.target.value.trim();if(!v)return;const r=parseFloat(v);if(isNaN(r)||r<2||r>8)return;await saveDupr({duprRating:r.toFixed(2)});setDuprSyncError("Singles saved ✓");setTimeout(()=>setDuprSyncError(""),2500);}} style={{...inp,marginBottom:0,fontSize:"0.82rem",background:"white",flex:1}}/>
                           </div>
                         </div>
                         <div>
                           <div style={{fontSize:"0.65rem",color:"#6b7280",fontWeight:700,textTransform:"uppercase",letterSpacing:0.5,marginBottom:3}}>Doubles Rating</div>
                           <div style={{display:"flex",gap:4}}>
-                            <input type="number" step="0.01" min="2" max="8" placeholder={storedDoubles||"e.g. 3.75"} defaultValue={storedDoubles} key={"d_"+selectedStudent} onBlur={async e=>{const v=e.target.value.trim();if(!v)return;const r=parseFloat(v);if(isNaN(r)||r<2||r>8)return;await saveDupr({duprDoublesRating:r.toFixed(2)});setDuprSyncError("Doubles saved ✓");setTimeout(()=>setDuprSyncError(""),2500);}} style={{...inp,marginBottom:0,fontSize:"0.82rem",background:"white",flex:1}}/>
+                            <input type="number" step="0.01" min="2" max="8" placeholder="e.g. 3.75" defaultValue={storedDoubles} key={"d_"+selectedStudent+"_"+(storedDoubles||"")} onBlur={async e=>{const v=e.target.value.trim();if(!v)return;const r=parseFloat(v);if(isNaN(r)||r<2||r>8)return;await saveDupr({duprDoublesRating:r.toFixed(2)});setDuprSyncError("Doubles saved ✓");setTimeout(()=>setDuprSyncError(""),2500);}} style={{...inp,marginBottom:0,fontSize:"0.82rem",background:"white",flex:1}}/>
                           </div>
                         </div>
                       </div>

@@ -212,10 +212,29 @@ export default async function handler(req, res) {
         throw new Error(`DUPR login failed (${loginRes.status})${errText ? ': ' + errText.slice(0, 120) : ''}`);
       }
       const loginData = await loginRes.json();
-      // ReadOnlyAuthResponse — token may be in various places
-      const token = loginData?.result?.accessToken || loginData?.result?.token
+
+      // ReadOnlyAuthResponse — try direct token first
+      let token = loginData?.result?.accessToken || loginData?.result?.token
         || loginData?.accessToken || loginData?.token;
-      if (!token) throw new Error('No token in DUPR response: ' + JSON.stringify(loginData).slice(0, 200));
+
+      // Handle 2-step consent flow: login returns a challenge, consent/grant returns the real token
+      if (!token) {
+        const challenge = loginData?.result?.consentChallenge || loginData?.consentChallenge;
+        const challengeToken = challenge?.token || challenge?.challengeToken || (typeof challenge === 'string' ? challenge : null);
+        if (challengeToken) {
+          const consentRes = await fetch('https://api.dupr.gg/auth/v1.0/consent/grant', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ token: challengeToken }),
+          });
+          if (consentRes.ok) {
+            const consentData = await consentRes.json();
+            token = consentData?.result?.accessToken || consentData?.result?.token
+              || consentData?.accessToken || consentData?.token;
+          }
+        }
+      }
+      if (!token) throw new Error('DUPR auth failed — no token received. Response: ' + JSON.stringify(loginData).slice(0, 300));
 
       // Step 2: Fetch player profile using api.dupr.gg
       const playerRes = await fetch(`https://api.dupr.gg/player/v1.0/player/${duprId}`, {
