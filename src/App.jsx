@@ -2885,7 +2885,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
           setTimeout(()=>setDuprSyncError(""),6000);
         }
       }).catch(e=>{setDuprSyncStatus("idle");setDuprSyncError("⚠ Network error");setTimeout(()=>setDuprSyncError(""),5000);});
-  },[selectedStudent]);
+  },[selectedStudent, mockUsers[selectedStudent]?.duprId]);
   useEffect(()=>{if(tab==="lessons"&&eventsData.length===0&&!eventsLoading){const s=toDS(new Date());const e=toDS(addDays(new Date(),90));setEventsLoading(true);fetch("/api/calendar-events?start="+s+"&end="+e+"&keywords=rental,tournament").then(r=>r.json()).then(d=>{setEventsData(d.events||[]);setEventsLoading(false);}).catch(()=>setEventsLoading(false));}},[tab]);
   useEffect(()=>{
     if(tab!=="lessons"||upcomingView!=="week")return;
@@ -4956,7 +4956,7 @@ export default function App(){
         if(data.doublesRating!=null)updates.duprDoublesRating=parseFloat(data.doublesRating).toFixed(2);
         if(Object.keys(updates).length>0)setUser(prev=>prev?{...prev,...updates}:prev);
       }).catch(()=>{});
-  },[user?.email]);
+  },[user?.email, user?.duprId]);
   const cancelLesson=async(id)=>{
     const lesson=userLessons.find(l=>l.id===id);
     // Optimistic update immediately so UI reflects change right away
