@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, Fragment, Component } from "react";
+import React, { useState, useEffect, useRef, Fragment, Component } from "react";
 
 // ─── ERROR BOUNDARY ──────────────────────────────────────────────────────────
 class ErrorBoundary extends Component {
