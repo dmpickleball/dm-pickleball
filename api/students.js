@@ -201,20 +201,20 @@ export default async function handler(req, res) {
     }
 
     try {
-      // Step 1: Authenticate with DUPR
-      const loginRes = await fetch('https://api.dupr.gg/auth/v1.0/user/login', {
+      // Step 1: Authenticate with DUPR (backend.mydupr.com is the correct API host)
+      const loginRes = await fetch('https://backend.mydupr.com/auth/v1.0/user/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({ email: DUPR_EMAIL, password: DUPR_PASSWORD, rememberMe: true }),
       });
       if (!loginRes.ok) throw new Error(`DUPR login failed (${loginRes.status})`);
       const loginData = await loginRes.json();
-      const token = loginData?.result?.accessToken;
+      const token = loginData?.result?.accessToken || loginData?.accessToken;
       if (!token) throw new Error('No access token in DUPR login response');
 
       // Step 2: Fetch player profile
-      const playerRes = await fetch(`https://api.dupr.gg/player/v1.0/player/${duprId}`, {
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      const playerRes = await fetch(`https://backend.mydupr.com/player/v1.0/player/${duprId}`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/json' },
       });
       if (!playerRes.ok) throw new Error(`Player lookup failed (${playerRes.status})`);
       const playerData = await playerRes.json();
@@ -225,12 +225,12 @@ export default async function handler(req, res) {
       const doublesRating = profile?.ratings?.doubles?.rating ?? profile?.doublesRating ?? null;
       const fullName = profile?.fullName || profile?.displayName || null;
 
-      // If email provided, auto-save to Supabase
-      if (email && singlesRating != null) {
-        await supabase.from('students').update({
-          dupr_id: String(duprId),
-          dupr_rating: String(parseFloat(singlesRating).toFixed(2)),
-        }).eq('email', email.toLowerCase());
+      // Auto-save to Supabase if email provided
+      if (email) {
+        const updates = { dupr_id: String(duprId) };
+        if (singlesRating != null) updates.dupr_rating = String(parseFloat(singlesRating).toFixed(2));
+        if (doublesRating != null) updates.dupr_doubles_rating = String(parseFloat(doublesRating).toFixed(2));
+        await supabase.from('students').update(updates).eq('email', email.toLowerCase());
       }
 
       return res.status(200).json({

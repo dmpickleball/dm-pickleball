@@ -1171,7 +1171,7 @@ function LoginPage({onLogin,onAdminLogin}){
       if(data.student.blocked&&!data.student.approved){setLoadingProv(null);setError("Your account has been removed. Please contact Coach David.");return;}
       if(data.student.blocked){setLoadingProv(null);setError("Your account has been blocked. Please contact Coach David.");return;}
       setLoadingProv(null);
-      onLogin({email,name:data.student.name||(info.firstName+" "+info.lastName).trim(),firstName:data.student.first_name||info.firstName||"",lastName:data.student.last_name||info.lastName||"",commEmail:data.student.comm_email||"",memberType:data.student.member_type,approved:true,picture:info.picture||data.student.picture||"",phone:data.student.phone||"",homeCourt:data.student.home_court||"",city:data.student.city||"",skillLevel:data.student.skill_level||"",duprRating:data.student.dupr_rating||"",grandfathered:!!(data.student.grandfathered)});
+      onLogin({email,name:data.student.name||(info.firstName+" "+info.lastName).trim(),firstName:data.student.first_name||info.firstName||"",lastName:data.student.last_name||info.lastName||"",commEmail:data.student.comm_email||"",memberType:data.student.member_type,approved:true,picture:info.picture||data.student.picture||"",phone:data.student.phone||"",homeCourt:data.student.home_court||"",city:data.student.city||"",skillLevel:data.student.skill_level||"",duprRating:data.student.dupr_rating||"",duprDoublesRating:data.student.dupr_doubles_rating||"",duprId:data.student.dupr_id||"",grandfathered:!!(data.student.grandfathered)});
       fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,updates:{picture:info.picture||"",auth_provider:provKey}})}).catch(()=>{});
     }catch(e){setLoadingProv(null);setError("Login failed. Please try again.");}
   };
@@ -1503,6 +1503,8 @@ function Dashboard({user,setPage,lessons,onCancel,onUpdateLesson,dbLoaded}){
             Welcome back, <strong>{user.name}</strong>
             {user.memberType==="menlo"&&<span style={{background:"#e8f0ee",color:G,padding:"2px 10px",borderRadius:50,fontSize:"0.78rem",fontWeight:600}}>Menlo Circus Club</span>}
             {user.grandfathered&&<span style={{background:"#fffbea",color:"#92400e",padding:"2px 10px",borderRadius:50,fontSize:"0.78rem",fontWeight:600}}>Grandfathered</span>}
+            {user.duprRating&&<span style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"0.75rem",padding:"2px 10px",borderRadius:50,display:"flex",alignItems:"center",gap:5}}><span style={{fontSize:"0.6rem",opacity:0.8,fontWeight:600,letterSpacing:0.5}}>DUPR</span>{parseFloat(user.duprRating).toFixed(2)}<span style={{fontSize:"0.6rem",opacity:0.7,fontWeight:500}}>S</span></span>}
+            {user.duprDoublesRating&&<span style={{background:"#1e3a5f",color:"white",fontWeight:900,fontSize:"0.75rem",padding:"2px 10px",borderRadius:50,display:"flex",alignItems:"center",gap:5}}><span style={{fontSize:"0.6rem",opacity:0.8,fontWeight:600,letterSpacing:0.5}}>DUPR</span>{parseFloat(user.duprDoublesRating).toFixed(2)}<span style={{fontSize:"0.6rem",opacity:0.7,fontWeight:500}}>D</span></span>}
           </p>
         </div>
         <button onClick={()=>setPage("booking")} style={{background:G,color:"white",border:"none",padding:"11px 24px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"0.92rem"}}>+ Book a Lesson</button>
@@ -1910,7 +1912,8 @@ function getEarnings(allLessons,mockUsers,range,customStart,customEnd){
   const now=new Date();
   let total=0,menloGross=0,menloNet=0;
   const rows=[];
-  Object.entries(allLessons).forEach(([email,lessons])=>{
+  Object.entries(allLessons||{}).forEach(([email,lessons])=>{
+    if(!Array.isArray(lessons))return;
     const u=mockUsers[email]||{memberType:"public"};
     lessons.filter(l=>{
       // A lesson counts toward earnings if it happened OR if a charge applies (late/no-show)
@@ -3405,6 +3408,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                 {(()=>{
                   const storedId=mockUsers[selectedStudent]?.duprId||"";
                   const storedRating=mockUsers[selectedStudent]?.duprRating||"";
+                  const storedDoubles=mockUsers[selectedStudent]?.duprDoublesRating||"";
                   const noCredsMsg="DUPR credentials not configured";
                   const syncRating=async()=>{
                     const useId=(duprIdInput.trim()||storedId).trim();
@@ -3419,28 +3423,39 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                         fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:selectedStudent,updates:{dupr_id:useId}})}).catch(()=>{});
                       }
                       if(d.error&&!d.rating){
-                        // Credentials missing — ID saved, show info not error
                         const isNoCreds=d.error===noCredsMsg;
-                        setDuprSyncError(isNoCreds?"ID saved. To auto-sync ratings, add DUPR_EMAIL + DUPR_PASSWORD in Vercel env vars.":d.error);
+                        setDuprSyncError(isNoCreds?"ID saved. Add DUPR_EMAIL + DUPR_PASSWORD in Vercel env vars to enable live sync.":d.error);
                         setDuprSyncStatus(isNoCreds?"idle":"error");
                         setDuprIdInput("");
                         return;
                       }
-                      const newRating=d.rating!=null?parseFloat(d.rating).toFixed(2):storedRating;
-                      onAddStudent({...mockUsers[selectedStudent],email:selectedStudent,duprId:useId,duprRating:newRating});
-                      fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:selectedStudent,updates:{dupr_id:useId,dupr_rating:newRating}})}).catch(()=>{});
+                      const newSingles=d.rating!=null?parseFloat(d.rating).toFixed(2):storedRating;
+                      const newDoubles=d.doublesRating!=null?parseFloat(d.doublesRating).toFixed(2):storedDoubles;
+                      onAddStudent({...mockUsers[selectedStudent],email:selectedStudent,duprId:useId,duprRating:newSingles,duprDoublesRating:newDoubles});
+                      fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:selectedStudent,updates:{dupr_id:useId,dupr_rating:newSingles,dupr_doubles_rating:newDoubles}})}).catch(()=>{});
                       setDuprIdInput("");setDuprSyncStatus("success");
                       setTimeout(()=>setDuprSyncStatus("idle"),3000);
                     }catch{setDuprSyncError("Network error — try again");setDuprSyncStatus("error");}
                   };
                   return(
                     <div style={{marginTop:12,background:"#f0f4ff",borderRadius:8,padding:"12px 14px"}}>
-                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:storedRating||storedDoubles?8:10}}>
                         <div style={{display:"flex",alignItems:"center",gap:8}}>
                           <span style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"0.65rem",letterSpacing:1.5,padding:"2px 7px",borderRadius:4}}>DUPR</span>
                           <span style={{fontSize:"0.78rem",fontWeight:700,color:"#0a1551"}}>Rating</span>
                         </div>
-                        {storedRating&&<div style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"1rem",padding:"3px 12px",borderRadius:50}}>{parseFloat(storedRating).toFixed(2)}</div>}
+                        {(storedRating||storedDoubles)&&(
+                          <div style={{display:"flex",gap:6}}>
+                            {storedRating&&<div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
+                              <div style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"0.95rem",padding:"3px 11px",borderRadius:50}}>{parseFloat(storedRating).toFixed(2)}</div>
+                              <div style={{fontSize:"0.6rem",color:"#6b7280",marginTop:2,textTransform:"uppercase",letterSpacing:0.5}}>Singles</div>
+                            </div>}
+                            {storedDoubles&&<div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
+                              <div style={{background:"#1e3a5f",color:"white",fontWeight:900,fontSize:"0.95rem",padding:"3px 11px",borderRadius:50}}>{parseFloat(storedDoubles).toFixed(2)}</div>
+                              <div style={{fontSize:"0.6rem",color:"#6b7280",marginTop:2,textTransform:"uppercase",letterSpacing:0.5}}>Doubles</div>
+                            </div>}
+                          </div>
+                        )}
                       </div>
                       {storedId&&(
                         <div style={{fontSize:"0.72rem",color:"#6b7280",marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
@@ -3455,7 +3470,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                         </button>
                       </div>
                       {duprSyncError&&<div style={{fontSize:"0.72rem",color:duprSyncStatus==="error"?"#dc2626":"#6b7280",marginTop:6}}>{duprSyncError}</div>}
-                      {!storedId&&!storedRating&&!duprSyncError&&<div style={{fontSize:"0.72rem",color:"#6b7280",marginTop:6}}>Enter the student's DUPR Player ID to link their profile and auto-sync their rating.</div>}
+                      {!storedId&&!storedRating&&!storedDoubles&&!duprSyncError&&<div style={{fontSize:"0.72rem",color:"#6b7280",marginTop:6}}>Enter the student's DUPR Player ID to link their profile and sync singles + doubles ratings.</div>}
                     </div>
                   );
                 })()}
@@ -4874,6 +4889,7 @@ export default function App(){
               commEmail:s.comm_email||"",
               skillLevel:s.skill_level||"",
               duprRating:s.dupr_rating||"",
+              duprDoublesRating:s.dupr_doubles_rating||"",
               duprId:s.dupr_id||"",
               memberType:s.member_type||"public",
               approved:s.approved,
@@ -5044,15 +5060,15 @@ export default function App(){
         body:JSON.stringify({email,block})});
     }catch(e){console.error("Block removed error:",e);}
   };
-  const addStudent=({name,email,memberType,firstName,lastName,commEmail,phone,city,homeCourt,skillLevel,duprRating,duprId})=>{
+  const addStudent=({name,email,memberType,firstName,lastName,commEmail,phone,city,homeCourt,skillLevel,duprRating,duprDoublesRating,duprId})=>{
     setMockUsersState(prev=>{
       const existing=prev[email];
       if(existing){
         // Update existing student — merge all profile fields, preserve memberType/approved/blocked/etc.
-        return{...prev,[email]:{...existing,name,firstName:firstName||"",lastName:lastName||"",commEmail:commEmail||"",phone:phone||"",city:city||"",homeCourt:homeCourt||"",skillLevel:skillLevel||"",duprRating:duprRating!=null?duprRating:existing.duprRating||"",duprId:duprId!=null?duprId:existing.duprId||"",memberType:memberType||existing.memberType}};
+        return{...prev,[email]:{...existing,name,firstName:firstName||"",lastName:lastName||"",commEmail:commEmail||"",phone:phone||"",city:city||"",homeCourt:homeCourt||"",skillLevel:skillLevel||"",duprRating:duprRating!=null?duprRating:existing.duprRating||"",duprDoublesRating:duprDoublesRating!=null?duprDoublesRating:existing.duprDoublesRating||"",duprId:duprId!=null?duprId:existing.duprId||"",memberType:memberType||existing.memberType}};
       }
       // New student
-      return{...prev,[email]:{name,memberType:memberType||"public",approved:true,password:"",firstName:firstName||"",lastName:lastName||"",commEmail:commEmail||"",phone:phone||"",city:city||"",homeCourt:homeCourt||"",skillLevel:skillLevel||"",duprRating:duprRating||"",duprId:duprId||""}};
+      return{...prev,[email]:{name,memberType:memberType||"public",approved:true,password:"",firstName:firstName||"",lastName:lastName||"",commEmail:commEmail||"",phone:phone||"",city:city||"",homeCourt:homeCourt||"",skillLevel:skillLevel||"",duprRating:duprRating||"",duprDoublesRating:duprDoublesRating||"",duprId:duprId||""}};
     });
     // Only initialize lessons array if this is a new student
     setAllLessons(prev=>({...prev,[email]:prev[email]||[]}));
