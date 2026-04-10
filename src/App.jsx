@@ -3405,6 +3405,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                 {(()=>{
                   const storedId=mockUsers[selectedStudent]?.duprId||"";
                   const storedRating=mockUsers[selectedStudent]?.duprRating||"";
+                  const noCredsMsg="DUPR credentials not configured";
                   const syncRating=async()=>{
                     const useId=(duprIdInput.trim()||storedId).trim();
                     if(!useId){setDuprSyncError("Enter a DUPR Player ID first");return;}
@@ -3412,7 +3413,19 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                     try{
                       const r=await fetch("/api/students?action=dupr-lookup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({duprId:useId,email:selectedStudent})});
                       const d=await r.json();
-                      if(d.error&&!d.rating){setDuprSyncError(d.error||"Lookup failed");setDuprSyncStatus("error");return;}
+                      // Always save the DUPR ID even if rating sync fails
+                      if(useId!==storedId){
+                        onAddStudent({...mockUsers[selectedStudent],email:selectedStudent,duprId:useId});
+                        fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:selectedStudent,updates:{dupr_id:useId}})}).catch(()=>{});
+                      }
+                      if(d.error&&!d.rating){
+                        // Credentials missing — ID saved, show info not error
+                        const isNoCreds=d.error===noCredsMsg;
+                        setDuprSyncError(isNoCreds?"ID saved. To auto-sync ratings, add DUPR_EMAIL + DUPR_PASSWORD in Vercel env vars.":d.error);
+                        setDuprSyncStatus(isNoCreds?"idle":"error");
+                        setDuprIdInput("");
+                        return;
+                      }
                       const newRating=d.rating!=null?parseFloat(d.rating).toFixed(2):storedRating;
                       onAddStudent({...mockUsers[selectedStudent],email:selectedStudent,duprId:useId,duprRating:newRating});
                       fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:selectedStudent,updates:{dupr_id:useId,dupr_rating:newRating}})}).catch(()=>{});
@@ -3436,13 +3449,13 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                         </div>
                       )}
                       <div style={{display:"flex",gap:6}}>
-                        <input type="text" placeholder={storedId?"New DUPR Player ID":"DUPR Player ID (6+ digits)"} value={duprIdInput} onChange={e=>setDuprIdInput(e.target.value.replace(/\D/g,"").slice(0,10))} onKeyDown={e=>e.key==="Enter"&&syncRating()} style={{...inp,marginBottom:0,flex:1,fontSize:"0.82rem",background:"white"}}/>
-                        <button onClick={syncRating} disabled={duprSyncStatus==="syncing"} style={{background:duprSyncStatus==="syncing"?"#9ca3af":duprSyncStatus==="success"?"#16a34a":duprSyncStatus==="error"?"#dc2626":"#0a1551",color:"white",border:"none",padding:"0 14px",borderRadius:50,cursor:duprSyncStatus==="syncing"?"not-allowed":"pointer",fontWeight:700,fontSize:"0.78rem",flexShrink:0,whiteSpace:"nowrap"}}>
-                          {duprSyncStatus==="syncing"?"Syncing…":duprSyncStatus==="success"?"✓ Synced":duprSyncStatus==="error"?"Retry":"Sync Rating"}
+                        <input type="text" placeholder={storedId?"New DUPR Player ID":"DUPR Player ID"} value={duprIdInput} onChange={e=>setDuprIdInput(e.target.value.replace(/\s/g,"").slice(0,20))} onKeyDown={e=>e.key==="Enter"&&syncRating()} style={{...inp,marginBottom:0,flex:1,fontSize:"0.82rem",background:"white"}}/>
+                        <button onClick={syncRating} disabled={duprSyncStatus==="syncing"} style={{background:duprSyncStatus==="syncing"?"#9ca3af":duprSyncStatus==="success"?"#16a34a":"#0a1551",color:"white",border:"none",padding:"0 14px",borderRadius:50,cursor:duprSyncStatus==="syncing"?"not-allowed":"pointer",fontWeight:700,fontSize:"0.78rem",flexShrink:0,whiteSpace:"nowrap"}}>
+                          {duprSyncStatus==="syncing"?"Syncing…":duprSyncStatus==="success"?"✓ Synced":"Sync Rating"}
                         </button>
                       </div>
-                      {duprSyncError&&<div style={{fontSize:"0.72rem",color:"#dc2626",marginTop:6}}>{duprSyncError}</div>}
-                      {!storedId&&!storedRating&&<div style={{fontSize:"0.72rem",color:"#6b7280",marginTop:6}}>Enter the student's DUPR Player ID (found in the DUPR app) to link and auto-sync their rating.</div>}
+                      {duprSyncError&&<div style={{fontSize:"0.72rem",color:duprSyncStatus==="error"?"#dc2626":"#6b7280",marginTop:6}}>{duprSyncError}</div>}
+                      {!storedId&&!storedRating&&!duprSyncError&&<div style={{fontSize:"0.72rem",color:"#6b7280",marginTop:6}}>Enter the student's DUPR Player ID to link their profile and auto-sync their rating.</div>}
                     </div>
                   );
                 })()}
