@@ -2124,7 +2124,6 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
   const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const MONFULL=["January","February","March","April","May","June","July","August","September","October","November","December"];
   const viewLabel=financeView==="day"?new Date(selectedDay+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):financeView==="week"?(()=>{const sd=new Date(viewRange.start+"T12:00:00");const ed=new Date(viewRange.end+"T12:00:00");return"Week of "+MON[sd.getMonth()]+" "+sd.getDate()+", "+sd.getFullYear();})():financeView==="month"?MONFULL[viewMonth-1]+" "+viewYear:String(viewYearOnly);
-  const portalEarnings=getEarnings(allLessons,mockUsers,"custom",viewRange.start,viewRange.end);
   const typeColors={private:"#1a3c34",semi:"#0ea5e9",group:"#f97316",stanford_rec:"#8b5cf6",stanford_open:"#8b5cf6"};
   const typeLabelMap={private:"Private Lesson",semi:"Semi-Private Lesson",group:"Group Lesson"};
   const calendarLessons=(financeData?.events||[]).filter(e=>!e.isStanford&&!e.isPickup);
@@ -2135,36 +2134,24 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
   const adjustedCalLessons=calendarLessons.map(e=>{const k=e.date+"|"+e.summary;const typeOv=calTypeOverrides[k];return{...e,...(calOverrides[k]!=null?{earnings:calOverrides[k]}:{}),...(typeOv?{type:typeOv,category:typeLabelMap[typeOv]||e.category}:{})};});
   const adjustedLessonEarnings=adjustedCalLessons.reduce((s,e)=>s+e.earnings,0);
   const stanfordAmt=includeStanford?(showNetStanford?(financeData?.stanfordNetEarnings||0):(financeData?.stanfordEarnings||0)):0;
-  const totalEarnings=adjustedLessonEarnings+portalEarnings.total+stanfordAmt;
+  // Calendar is the master source — portal lessons are NOT counted separately
+  const totalEarnings=adjustedLessonEarnings+stanfordAmt;
   // Build the fixed 6-month window starting from today
   const projectedMonthKeys=(()=>{
     const keys=[];
     for(let i=0;i<6;i++){const d=new Date(now.getFullYear(),now.getMonth()+i,1);keys.push(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"));}
     return keys;
   })();
-  // Projected earnings: future calendar lessons + portal lessons, grouped by month
+  // Projected earnings: calendar is the master source — calendar-only, no portal lessons
   const projectedByMonth=(()=>{
     const map={};
     projectedMonthKeys.forEach(mk=>{map[mk]={total:0,count:0,rows:[]};});
     const add=(mk,row)=>{if(!map[mk])return;map[mk].total+=row.earnings;map[mk].count++;map[mk].rows.push(row);};
-    // Future calendar events (non-Stanford, non-pickup, not already covered by a portal lesson)
-    const projPortalIds=new Set(Object.values(allLessons).flat().filter(l=>l&&l.gcalEventId).map(l=>l.gcalEventId));
-    (projectedCalData?.events||[]).filter(e=>!e.isStanford&&!e.isPickup&&!projPortalIds.has(e.gcalEventId)).forEach(e=>{
+    (projectedCalData?.events||[]).filter(e=>!e.isStanford&&!e.isPickup).forEach(e=>{
       const mk=e.date.substring(0,7);
       const k=e.date+"|"+e.summary;
       const earnings=calOverrides[k]!=null?calOverrides[k]:e.earnings;
       add(mk,{date:e.date,label:e.summary,category:e.category,earnings,hours:e.hours,source:"calendar"});
-    });
-    // Future portal lessons
-    Object.entries(allLessons).forEach(([email,lessons])=>{
-      const u=mockUsers[email]||{memberType:"public"};
-      (lessons||[]).filter(l=>l.status!=="cancelled"&&l.status!=="cancelled_forgiven"&&new Date(l.date+"T12:00:00")>=now).forEach(l=>{
-        const mk=l.date.substring(0,7);
-        const mins=getDurationMins(l.duration);
-        const gross=l.customPrice!=null?l.customPrice:getRate(l.type,mins,u.memberType);
-        const net=l.customPrice!=null?l.customPrice:(u.memberType==="menlo"?getMenloNet(gross):gross);
-        add(mk,{date:l.date,label:u.name||email,category:l.type,earnings:net,duration:l.duration,isMenlo:u.memberType==="menlo",source:"portal"});
-      });
     });
     return projectedMonthKeys.map(mk=>[mk,map[mk]]);
   })();
@@ -2324,12 +2311,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
           <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:4}}>{viewLabel}</div>
         </div>
         <div style={{background:"white",borderRadius:12,padding:"20px",border:"1.5px solid #e5e7eb"}}>
-          <div style={{fontSize:"0.7rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Portal Lessons</div>
-          <div style={{fontSize:"1.8rem",fontWeight:900,color:"#1a3c34"}}>${portalEarnings.total.toFixed(2)}</div>
-          <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:4}}>{portalEarnings.rows.length} lessons</div>
-        </div>
-        <div style={{background:"white",borderRadius:12,padding:"20px",border:"1.5px solid #e5e7eb"}}>
-          <div style={{fontSize:"0.7rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Calendar Lessons</div>
+          <div style={{fontSize:"0.7rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Lessons</div>
           <div style={{fontSize:"1.8rem",fontWeight:900,color:"#1a3c34"}}>${adjustedLessonEarnings.toFixed(2)}</div>
           <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:4}}>{calendarLessons.length} lessons</div>
         </div>
@@ -2437,47 +2419,6 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
               </div>
             </div>
           )}
-          {portalEarnings.rows.length>0&&(
-            <div>
-              <div style={{fontSize:"0.8rem",fontWeight:700,color:"#1a3c34",textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Portal Lessons</div>
-              <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
-                <table style={{width:"100%",borderCollapse:"collapse",fontSize:"0.88rem"}}>
-                  <thead><tr style={{background:"#f9f9f6",borderBottom:"1.5px solid #e5e7eb"}}>{["Date","Student","Type","Duration","Income",""].map(h=>(<th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#6b7280",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>))}</tr></thead>
-                  <tbody>
-                    {portalEarnings.rows.filter(r=>{if(!financeSearch)return true;const q=financeSearch.toLowerCase();return r.name?.toLowerCase().includes(q)||r.ticketId?.toLowerCase().includes(q)||r.type?.toLowerCase().includes(q);}).map((r,i)=>{
-                      const isCustom=r.customPrice!=null;
-                      const rowKey=r.id+"_"+r.date;
-                      const isExpanded=expandedFinRow===rowKey;
-                      return(
-                      <React.Fragment key={i}>
-                      <tr style={{borderBottom:isExpanded?"none":"1px solid #f3f4f6",background:r.isMenlo?"#f0faf5":"white"}}>
-                        <td style={{padding:"12px 16px"}}>{fmtDateShort(r.date)}</td>
-                        <td style={{padding:"12px 16px"}}>{r.name}{r.isMenlo&&<span style={{background:"#1a3c34",color:"white",fontSize:"0.65rem",fontWeight:700,padding:"1px 6px",borderRadius:50,marginLeft:6}}>MCC</span>}</td>
-                        <td style={{padding:"12px 16px"}}>{r.type}</td>
-                        <td style={{padding:"12px 16px"}}>{r.duration}</td>
-                        <td onClick={()=>{editRowRef.current=r;setEditPriceVal(String(r.gross));setEditOriginalVal(String(r.gross));dialogRef.current?.showModal();}} onMouseEnter={e=>e.currentTarget.style.background="rgba(26,60,52,0.06)"} onMouseLeave={e=>e.currentTarget.style.background="rgba(0,0,0,0.015)"} style={{padding:"12px 16px",fontWeight:700,color:isCustom?"#0ea5e9":"#1a3c34",cursor:"pointer",userSelect:"none",background:"rgba(0,0,0,0.015)",transition:"background 0.15s"}} title="Click to edit income"><span style={{borderBottom:"2px dashed "+(isCustom?"#0ea5e9":"#9ca3af"),paddingBottom:1}}>${typeof r.net==="number"?r.net.toFixed(2):r.net}</span><span style={{fontSize:"0.75rem",color:isCustom?"#0ea5e9":"#6b7280",marginLeft:6}}>✎</span></td>
-                        <td style={{padding:"12px 16px"}}><button onClick={()=>setExpandedFinRow(isExpanded?null:rowKey)} style={{background:"none",border:"none",color:G,fontSize:"0.75rem",fontWeight:600,cursor:"pointer",padding:0,whiteSpace:"nowrap"}}>{isExpanded?"▲ Hide":"▼ Details"}</button></td>
-                      </tr>
-                      {isExpanded&&(
-                        <tr style={{borderBottom:"1px solid #f3f4f6",background:"#f9f9f6"}}>
-                          <td colSpan={6} style={{padding:"12px 20px 16px"}}>
-                            <div style={{display:"flex",gap:24,flexWrap:"wrap",fontSize:"0.82rem",color:"#374151"}}>
-                              {r.ticketId&&<div><span style={{color:"#9ca3af",fontWeight:700,marginRight:6}}>Ref</span><span style={{fontFamily:"monospace",fontWeight:700,color:"#1a3c34"}}>{r.ticketId}</span></div>}
-                              {r.focus&&<div><span style={{color:"#9ca3af",fontWeight:700,marginRight:6}}>Focus</span>{r.focus}</div>}
-                              {r.notes&&<div><span style={{color:"#9ca3af",fontWeight:700,marginRight:6}}>Notes</span>{r.notes}</div>}
-                              <div><span style={{color:"#9ca3af",fontWeight:700,marginRight:6}}>Gross</span>${typeof r.gross==="number"?r.gross.toFixed(2):r.gross}</div>
-                              <div><span style={{color:"#9ca3af",fontWeight:700,marginRight:6}}>Net</span>${typeof r.net==="number"?r.net.toFixed(2):r.net}</div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                      </React.Fragment>
-                    );})}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
           <dialog ref={dialogRef} onClick={e=>{if(e.target===dialogRef.current)dialogRef.current.close();}} style={{border:"none",borderRadius:16,padding:"28px 32px",maxWidth:420,width:"90%",boxShadow:"0 8px 40px rgba(0,0,0,0.25)"}}>
             <div style={{fontWeight:800,fontSize:"1.05rem",marginBottom:4}}>Edit Lesson Income</div>
             <div style={{fontSize:"0.85rem",color:"#6b7280",marginBottom:20}}>{editRowRef.current?.isCalendar?editRowRef.current?.summary:editRowRef.current?.name} · {editRowRef.current?fmtDateShort(editRowRef.current.date):""} · {editRowRef.current?.isCalendar?(editRowRef.current?.hours+"h"):editRowRef.current?.duration}</div>
@@ -2541,7 +2482,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
               )}
             </div>
           </dialog>
-          {calendarLessons.length===0&&portalEarnings.rows.length===0&&!financeLoading&&(
+          {calendarLessons.length===0&&!financeLoading&&(
             <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"40px",textAlign:"center",color:"#9ca3af"}}>No earnings data found for this period.</div>
           )}
         </>
