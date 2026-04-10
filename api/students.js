@@ -201,19 +201,24 @@ export default async function handler(req, res) {
     }
 
     try {
-      // Step 1: Authenticate with DUPR (backend.mydupr.com is the correct API host)
-      const loginRes = await fetch('https://backend.mydupr.com/auth/v1.0/user/login', {
+      // Step 1: Authenticate with DUPR public API — correct host is api.dupr.gg
+      const loginRes = await fetch('https://api.dupr.gg/auth/v1.0/login-read-only-token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ email: DUPR_EMAIL, password: DUPR_PASSWORD, rememberMe: true }),
+        body: JSON.stringify({ email: DUPR_EMAIL, password: DUPR_PASSWORD }),
       });
-      if (!loginRes.ok) throw new Error(`DUPR login failed (${loginRes.status})`);
+      if (!loginRes.ok) {
+        const errText = await loginRes.text().catch(() => '');
+        throw new Error(`DUPR login failed (${loginRes.status})${errText ? ': ' + errText.slice(0, 120) : ''}`);
+      }
       const loginData = await loginRes.json();
-      const token = loginData?.result?.accessToken || loginData?.accessToken;
-      if (!token) throw new Error('No access token in DUPR login response');
+      // ReadOnlyAuthResponse — token may be in various places
+      const token = loginData?.result?.accessToken || loginData?.result?.token
+        || loginData?.accessToken || loginData?.token;
+      if (!token) throw new Error('No token in DUPR response: ' + JSON.stringify(loginData).slice(0, 200));
 
-      // Step 2: Fetch player profile
-      const playerRes = await fetch(`https://backend.mydupr.com/player/v1.0/player/${duprId}`, {
+      // Step 2: Fetch player profile using api.dupr.gg
+      const playerRes = await fetch(`https://api.dupr.gg/player/v1.0/player/${duprId}`, {
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/json' },
       });
       if (!playerRes.ok) throw new Error(`Player lookup failed (${playerRes.status})`);

@@ -2915,6 +2915,27 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
   // Load calendar on mount so dashboard earnings + upcoming are always populated
   useEffect(()=>{fetchCalendarItems();},[]);
   useEffect(()=>{if(tab==="lessons"&&calendarItems.length===0&&!calLoading)fetchCalendarItems();},[tab]);
+  // Auto-sync DUPR rating in background when admin opens a student profile with a DUPR ID
+  useEffect(()=>{
+    if(!selectedStudent){setDuprSyncStatus("idle");setDuprSyncError("");return;}
+    const student=mockUsers[selectedStudent];
+    setDuprIdInput("");setDuprSyncError("");
+    if(!student?.duprId){setDuprSyncStatus("idle");return;}
+    setDuprSyncStatus("syncing");
+    fetch("/api/students?action=dupr-lookup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({duprId:student.duprId,email:selectedStudent})})
+      .then(r=>r.json())
+      .then(data=>{
+        if(data.error){setDuprSyncStatus("idle");return;}
+        const updates={};
+        if(data.rating!=null)updates.duprRating=parseFloat(data.rating).toFixed(2);
+        if(data.doublesRating!=null)updates.duprDoublesRating=parseFloat(data.doublesRating).toFixed(2);
+        if(Object.keys(updates).length>0){
+          onAddStudent({...mockUsers[selectedStudent],email:selectedStudent,...updates});
+          setDuprSyncStatus("success");
+          setTimeout(()=>setDuprSyncStatus("idle"),3000);
+        }else{setDuprSyncStatus("idle");}
+      }).catch(()=>setDuprSyncStatus("idle"));
+  },[selectedStudent]);
   useEffect(()=>{if(tab==="lessons"&&eventsData.length===0&&!eventsLoading){const s=toDS(new Date());const e=toDS(addDays(new Date(),90));setEventsLoading(true);fetch("/api/calendar-events?start="+s+"&end="+e+"&keywords=rental,tournament").then(r=>r.json()).then(d=>{setEventsData(d.events||[]);setEventsLoading(false);}).catch(()=>setEventsLoading(false));}},[tab]);
   useEffect(()=>{
     if(tab!=="lessons"||upcomingView!=="week")return;
@@ -3451,6 +3472,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                         <div style={{display:"flex",alignItems:"center",gap:8}}>
                           <span style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"0.65rem",letterSpacing:1.5,padding:"2px 7px",borderRadius:4}}>DUPR</span>
                           <span style={{fontSize:"0.78rem",fontWeight:700,color:"#0a1551"}}>Rating</span>
+                          {storedId&&duprSyncStatus==="syncing"&&<span style={{fontSize:"0.65rem",color:"#6b7280",fontStyle:"italic"}}>syncing…</span>}
+                          {storedId&&duprSyncStatus==="success"&&<span style={{fontSize:"0.65rem",color:"#16a34a",fontWeight:700}}>✓ synced</span>}
                         </div>
                         {(storedRating||storedDoubles)&&(
                           <div style={{display:"flex",gap:8}}>
@@ -4971,6 +4994,19 @@ export default function App(){
     loadFromSupabase();
   },[]);
   const userLessons=user?allLessons[user.email]||[]:[]; const updateUser=(updatedUser)=>setUser(updatedUser);
+  // Auto-sync DUPR rating in background on student login (if they have a DUPR ID)
+  useEffect(()=>{
+    if(!user?.duprId||!user?.email)return;
+    fetch("/api/students?action=dupr-lookup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({duprId:user.duprId,email:user.email})})
+      .then(r=>r.json())
+      .then(data=>{
+        if(data.error||(!data.rating&&data.doublesRating==null))return;
+        const updates={};
+        if(data.rating!=null)updates.duprRating=parseFloat(data.rating).toFixed(2);
+        if(data.doublesRating!=null)updates.duprDoublesRating=parseFloat(data.doublesRating).toFixed(2);
+        if(Object.keys(updates).length>0)setUser(prev=>prev?{...prev,...updates}:prev);
+      }).catch(()=>{});
+  },[user?.email]);
   const cancelLesson=async(id)=>{
     const lesson=userLessons.find(l=>l.id===id);
     // Optimistic update immediately so UI reflects change right away
