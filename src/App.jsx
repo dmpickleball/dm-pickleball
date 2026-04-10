@@ -2764,7 +2764,10 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
   const[cancelLoading,setCancelLoading]=useState(false);
   const[coachRatingInput,setCoachRatingInput]=useState("");
   const[ratingNoteInput,setRatingNoteInput]=useState("");
-  const[ratingHistories,setRatingHistories]=useState({});// keyed by student email
+  const[ratingHistories,setRatingHistories]=useState({});
+  const[duprIdInput,setDuprIdInput]=useState("");
+  const[duprSyncStatus,setDuprSyncStatus]=useState("idle");// idle|syncing|success|error
+  const[duprSyncError,setDuprSyncError]=useState("");// keyed by student email
   const[scheduleStep,setScheduleStep]=useState(1);
   const[schedLessonType,setSchedLessonType]=useState("private");
   const[schedDuration,setSchedDuration]=useState(60);
@@ -3282,9 +3285,9 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
               const lastName=(editStudentData.lastName||"").trim();
               const fullName=(firstName+" "+lastName).trim()||editStudentData.name||"";
               try{
-                const r=await fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:selectedStudent,updates:{name:fullName,first_name:firstName,last_name:lastName,comm_email:(editStudentData.commEmail||"").toLowerCase(),phone:editStudentData.phone||"",city:editStudentData.city||"",home_court:editStudentData.homeCourt||"",skill_level:editStudentData.duprRating?"":editStudentData.skillLevel||"",dupr_rating:editStudentData.duprRating||""}})});
+                const r=await fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:selectedStudent,updates:{name:fullName,first_name:firstName,last_name:lastName,comm_email:(editStudentData.commEmail||"").toLowerCase(),phone:editStudentData.phone||"",city:editStudentData.city||"",home_court:editStudentData.homeCourt||"",skill_level:editStudentData.duprRating?"":editStudentData.skillLevel||"",dupr_rating:editStudentData.duprRating||"",dupr_id:editStudentData.duprId||""}})});
                 if(!r.ok)throw new Error("Save failed");
-                onAddStudent({name:fullName,firstName,lastName,commEmail:(editStudentData.commEmail||"").toLowerCase(),phone:editStudentData.phone||"",city:editStudentData.city||"",homeCourt:editStudentData.homeCourt||"",skillLevel:editStudentData.duprRating?"":editStudentData.skillLevel||"",duprRating:editStudentData.duprRating||"",email:selectedStudent,memberType:mockUsers[selectedStudent]?.memberType||"public"});
+                onAddStudent({name:fullName,firstName,lastName,commEmail:(editStudentData.commEmail||"").toLowerCase(),phone:editStudentData.phone||"",city:editStudentData.city||"",homeCourt:editStudentData.homeCourt||"",skillLevel:editStudentData.duprRating?"":editStudentData.skillLevel||"",duprRating:editStudentData.duprRating||"",duprId:editStudentData.duprId||"",email:selectedStudent,memberType:mockUsers[selectedStudent]?.memberType||"public"});
                 setStudentSaveStatus("idle");
                 setEditingStudent(false);
               }catch{setStudentSaveStatus("error");}
@@ -3298,7 +3301,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                     const nameParts=(u.name||"").split(" ");
                     const parsedFirst=nameParts[0]||"";
                     const parsedLast=nameParts.slice(1).join(" ")||"";
-                    setEditStudentData({name:u.name||"",firstName:u.firstName||parsedFirst,lastName:u.lastName||parsedLast,commEmail:u.commEmail||"",phone:u.phone||"",city:u.city||"",homeCourt:u.homeCourt||"",skillLevel:u.skillLevel||"",duprRating:u.duprRating||""});
+                    setEditStudentData({name:u.name||"",firstName:u.firstName||parsedFirst,lastName:u.lastName||parsedLast,commEmail:u.commEmail||"",phone:u.phone||"",city:u.city||"",homeCourt:u.homeCourt||"",skillLevel:u.skillLevel||"",duprRating:u.duprRating||"",duprId:u.duprId||""});
+                    setDuprIdInput("");setDuprSyncStatus("idle");setDuprSyncError("");
                     setStudentSaveStatus("idle");
                     setEditingStudent(true);}} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.82rem"}}>✏️ Edit</button>
                 )}
@@ -3397,11 +3401,51 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                     ))}
                   </div>
                 )}
-                {/* DUPR placeholder */}
-                <div style={{marginTop:12,padding:"8px 12px",background:"#f0f4ff",borderRadius:8,display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"0.68rem",letterSpacing:1.5,padding:"2px 7px",borderRadius:4}}>DUPR</span>
-                  <span style={{fontSize:"0.75rem",color:"#6b7280"}}>DUPR integration coming soon — link student accounts to sync ratings automatically.</span>
-                </div>
+                {/* DUPR live sync */}
+                {(()=>{
+                  const storedId=mockUsers[selectedStudent]?.duprId||"";
+                  const storedRating=mockUsers[selectedStudent]?.duprRating||"";
+                  const syncRating=async()=>{
+                    const useId=(duprIdInput.trim()||storedId).trim();
+                    if(!useId){setDuprSyncError("Enter a DUPR Player ID first");return;}
+                    setDuprSyncStatus("syncing");setDuprSyncError("");
+                    try{
+                      const r=await fetch("/api/students?action=dupr-lookup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({duprId:useId,email:selectedStudent})});
+                      const d=await r.json();
+                      if(d.error&&!d.rating){setDuprSyncError(d.error||"Lookup failed");setDuprSyncStatus("error");return;}
+                      const newRating=d.rating!=null?parseFloat(d.rating).toFixed(2):storedRating;
+                      onAddStudent({...mockUsers[selectedStudent],email:selectedStudent,duprId:useId,duprRating:newRating});
+                      fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:selectedStudent,updates:{dupr_id:useId,dupr_rating:newRating}})}).catch(()=>{});
+                      setDuprIdInput("");setDuprSyncStatus("success");
+                      setTimeout(()=>setDuprSyncStatus("idle"),3000);
+                    }catch{setDuprSyncError("Network error — try again");setDuprSyncStatus("error");}
+                  };
+                  return(
+                    <div style={{marginTop:12,background:"#f0f4ff",borderRadius:8,padding:"12px 14px"}}>
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <span style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"0.65rem",letterSpacing:1.5,padding:"2px 7px",borderRadius:4}}>DUPR</span>
+                          <span style={{fontSize:"0.78rem",fontWeight:700,color:"#0a1551"}}>Rating</span>
+                        </div>
+                        {storedRating&&<div style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"1rem",padding:"3px 12px",borderRadius:50}}>{parseFloat(storedRating).toFixed(2)}</div>}
+                      </div>
+                      {storedId&&(
+                        <div style={{fontSize:"0.72rem",color:"#6b7280",marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
+                          ID: <strong>{storedId}</strong>
+                          <a href={`https://dashboard.dupr.com/dashboard/player/${storedId}/profile`} target="_blank" rel="noopener noreferrer" style={{color:"#0a1551",fontWeight:700}}>View profile →</a>
+                        </div>
+                      )}
+                      <div style={{display:"flex",gap:6}}>
+                        <input type="text" placeholder={storedId?"New DUPR Player ID":"DUPR Player ID (6+ digits)"} value={duprIdInput} onChange={e=>setDuprIdInput(e.target.value.replace(/\D/g,"").slice(0,10))} onKeyDown={e=>e.key==="Enter"&&syncRating()} style={{...inp,marginBottom:0,flex:1,fontSize:"0.82rem",background:"white"}}/>
+                        <button onClick={syncRating} disabled={duprSyncStatus==="syncing"} style={{background:duprSyncStatus==="syncing"?"#9ca3af":duprSyncStatus==="success"?"#16a34a":duprSyncStatus==="error"?"#dc2626":"#0a1551",color:"white",border:"none",padding:"0 14px",borderRadius:50,cursor:duprSyncStatus==="syncing"?"not-allowed":"pointer",fontWeight:700,fontSize:"0.78rem",flexShrink:0,whiteSpace:"nowrap"}}>
+                          {duprSyncStatus==="syncing"?"Syncing…":duprSyncStatus==="success"?"✓ Synced":duprSyncStatus==="error"?"Retry":"Sync Rating"}
+                        </button>
+                      </div>
+                      {duprSyncError&&<div style={{fontSize:"0.72rem",color:"#dc2626",marginTop:6}}>{duprSyncError}</div>}
+                      {!storedId&&!storedRating&&<div style={{fontSize:"0.72rem",color:"#6b7280",marginTop:6}}>Enter the student's DUPR Player ID (found in the DUPR app) to link and auto-sync their rating.</div>}
+                    </div>
+                  );
+                })()}
               </div>
             );
           })()}
@@ -4817,6 +4861,7 @@ export default function App(){
               commEmail:s.comm_email||"",
               skillLevel:s.skill_level||"",
               duprRating:s.dupr_rating||"",
+              duprId:s.dupr_id||"",
               memberType:s.member_type||"public",
               approved:s.approved,
               blocked:s.blocked,
@@ -4986,15 +5031,15 @@ export default function App(){
         body:JSON.stringify({email,block})});
     }catch(e){console.error("Block removed error:",e);}
   };
-  const addStudent=({name,email,memberType,firstName,lastName,commEmail,phone,city,homeCourt,skillLevel,duprRating})=>{
+  const addStudent=({name,email,memberType,firstName,lastName,commEmail,phone,city,homeCourt,skillLevel,duprRating,duprId})=>{
     setMockUsersState(prev=>{
       const existing=prev[email];
       if(existing){
         // Update existing student — merge all profile fields, preserve memberType/approved/blocked/etc.
-        return{...prev,[email]:{...existing,name,firstName:firstName||"",lastName:lastName||"",commEmail:commEmail||"",phone:phone||"",city:city||"",homeCourt:homeCourt||"",skillLevel:skillLevel||"",duprRating:duprRating||"",memberType:memberType||existing.memberType}};
+        return{...prev,[email]:{...existing,name,firstName:firstName||"",lastName:lastName||"",commEmail:commEmail||"",phone:phone||"",city:city||"",homeCourt:homeCourt||"",skillLevel:skillLevel||"",duprRating:duprRating!=null?duprRating:existing.duprRating||"",duprId:duprId!=null?duprId:existing.duprId||"",memberType:memberType||existing.memberType}};
       }
       // New student
-      return{...prev,[email]:{name,memberType:memberType||"public",approved:true,password:"",firstName:firstName||"",lastName:lastName||"",commEmail:commEmail||"",phone:phone||"",city:city||"",homeCourt:homeCourt||"",skillLevel:skillLevel||"",duprRating:duprRating||""}};
+      return{...prev,[email]:{name,memberType:memberType||"public",approved:true,password:"",firstName:firstName||"",lastName:lastName||"",commEmail:commEmail||"",phone:phone||"",city:city||"",homeCourt:homeCourt||"",skillLevel:skillLevel||"",duprRating:duprRating||"",duprId:duprId||""}};
     });
     // Only initialize lessons array if this is a new student
     setAllLessons(prev=>({...prev,[email]:prev[email]||[]}));

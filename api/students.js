@@ -121,6 +121,7 @@ export default async function handler(req, res) {
         home_court: student.home_court || '',
         skill_level: student.skill_level || '',
         dupr_rating: student.dupr_rating || '',
+        dupr_id: student.dupr_id || '',
         member_type: student.member_type || 'public',
         picture: student.picture || '',
         deleted_at: new Date().toISOString(),
@@ -157,6 +158,7 @@ export default async function handler(req, res) {
       home_court: archived.home_court || '',
       skill_level: archived.skill_level || '',
       dupr_rating: archived.dupr_rating || '',
+      dupr_id: archived.dupr_id || '',
       member_type: archived.member_type || 'public',
       picture: archived.picture || '',
       approved: true,
@@ -184,6 +186,62 @@ export default async function handler(req, res) {
       await supabase.from('students').delete().eq('email', lowerEmail).eq('approved', false);
     }
     return res.status(200).json({ success: true });
+  }
+
+  // POST dupr-lookup — fetch live DUPR rating for a player by ID
+  if (req.method === 'POST' && action === 'dupr-lookup') {
+    const { duprId, email } = req.body;
+    if (!duprId) return res.status(400).json({ error: 'duprId required' });
+
+    const DUPR_EMAIL = process.env.DUPR_EMAIL;
+    const DUPR_PASSWORD = process.env.DUPR_PASSWORD;
+
+    if (!DUPR_EMAIL || !DUPR_PASSWORD) {
+      return res.status(200).json({ error: 'DUPR credentials not configured', rating: null });
+    }
+
+    try {
+      // Step 1: Authenticate with DUPR
+      const loginRes = await fetch('https://api.dupr.gg/auth/v1.0/user/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: DUPR_EMAIL, password: DUPR_PASSWORD, rememberMe: true }),
+      });
+      if (!loginRes.ok) throw new Error(`DUPR login failed (${loginRes.status})`);
+      const loginData = await loginRes.json();
+      const token = loginData?.result?.accessToken;
+      if (!token) throw new Error('No access token in DUPR login response');
+
+      // Step 2: Fetch player profile
+      const playerRes = await fetch(`https://api.dupr.gg/player/v1.0/player/${duprId}`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      });
+      if (!playerRes.ok) throw new Error(`Player lookup failed (${playerRes.status})`);
+      const playerData = await playerRes.json();
+
+      // Extract ratings — handle various response shapes
+      const profile = playerData?.result?.playerProfile || playerData?.result || playerData;
+      const singlesRating = profile?.ratings?.singles?.rating ?? profile?.singlesRating ?? null;
+      const doublesRating = profile?.ratings?.doubles?.rating ?? profile?.doublesRating ?? null;
+      const fullName = profile?.fullName || profile?.displayName || null;
+
+      // If email provided, auto-save to Supabase
+      if (email && singlesRating != null) {
+        await supabase.from('students').update({
+          dupr_id: String(duprId),
+          dupr_rating: String(parseFloat(singlesRating).toFixed(2)),
+        }).eq('email', email.toLowerCase());
+      }
+
+      return res.status(200).json({
+        rating: singlesRating,
+        doublesRating,
+        fullName,
+        raw: profile,
+      });
+    } catch (err) {
+      return res.status(200).json({ error: err.message, rating: null });
+    }
   }
 
   // GET pending requests
