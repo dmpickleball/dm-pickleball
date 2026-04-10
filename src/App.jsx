@@ -1912,7 +1912,14 @@ function getEarnings(allLessons,mockUsers,range,customStart,customEnd){
   const rows=[];
   Object.entries(allLessons).forEach(([email,lessons])=>{
     const u=mockUsers[email]||{memberType:"public"};
-    lessons.filter(l=>l.status!=="cancelled"&&l.status!=="cancelled_forgiven"&&(l.status==="late_cancel"||new Date(l.date+"T23:59:59")<now||l.status==="completed")).forEach(l=>{
+    lessons.filter(l=>{
+      // A lesson counts toward earnings if it happened OR if a charge applies (late/no-show)
+      const chargeReason=l.cancelReason==="late"||l.cancelReason==="no_show"||l.status==="late_cancel"||l.status==="no_show";
+      const noCharge=l.status==="cancelled"||l.status==="cancelled_forgiven"||l.status==="weather_cancel"||(l.status==="cancelled"&&(l.cancelReason==="weather"||l.cancelReason==="student"||l.cancelReason==="admin"||l.cancelReason==="forgiven"));
+      if(noCharge&&!chargeReason)return false;
+      if(chargeReason)return true;
+      return new Date(l.date+"T23:59:59")<now||l.status==="completed";
+    }).forEach(l=>{
       const d=new Date(l.date+"T12:00:00");
       const mins=getDurationMins(l.duration);
       let inRange=false;
@@ -2989,7 +2996,13 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
     Object.entries(allLessons).forEach(([email,lessons])=>{
       const u=mockUsers[email]||{};
       if(u.memberType!=="menlo")return;
-      lessons.filter(l=>l.status!=="cancelled"&&l.status!=="cancelled_forgiven"&&(l.status==="late_cancel"||isPast(l.date,l.time)||l.status==="completed")).forEach(l=>{
+      lessons.filter(l=>{
+        const chargeReason=l.cancelReason==="late"||l.cancelReason==="no_show"||l.status==="late_cancel"||l.status==="no_show";
+        const noCharge=l.status==="cancelled"||l.status==="cancelled_forgiven"||l.status==="weather_cancel"||(l.status==="cancelled"&&(l.cancelReason==="weather"||l.cancelReason==="student"||l.cancelReason==="admin"||l.cancelReason==="forgiven"));
+        if(noCharge&&!chargeReason)return false;
+        if(chargeReason)return true;
+        return isPast(l.date,l.time)||l.status==="completed";
+      }).forEach(l=>{
         const d=new Date(l.date+"T12:00:00");
         if(d<start||d>end)return;
         const mins=parseInt(l.duration)||60;
@@ -3412,10 +3425,15 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
                   {missingCal&&!isCancelled&&<span title="No linked Google Calendar event" style={{background:"#fff7ed",color:"#c2410c",border:"1px solid #fed7aa",padding:"2px 7px",borderRadius:50,fontSize:"0.65rem",fontWeight:700}}>⚠️ No Cal</span>}
-                  <span style={{background:l.status==="confirmed"?"#e8f0ee":l.status==="late_cancel"?"#fff7ed":l.status==="no_show"?"#fef2f2":l.status==="weather_cancel"?"#eff6ff":l.status==="cancelled_forgiven"?"#f3f4f6":l.status==="cancelled"?"#fef2f2":"#fffbea",color:l.status==="confirmed"?G:l.status==="late_cancel"?"#c2410c":l.status==="no_show"?"#7f1d1d":l.status==="weather_cancel"?"#1d4ed8":l.status==="cancelled_forgiven"?"#6b7280":l.status==="cancelled"?"#dc2626":"#92400e",padding:"3px 9px",borderRadius:50,fontSize:"0.72rem",fontWeight:700}}>
-                    {l.status==="confirmed"?"✓ Confirmed":l.status==="cancelled"?l.cancelledByGcal?"📅 Removed":"✕ Cancelled":l.status==="late_cancel"?"⚠️ Late Cancel":l.status==="no_show"?"✕ No-Show":l.status==="weather_cancel"?"🌧 Weather":l.status==="cancelled_forgiven"?"✓ Forgiven":"⏳ Pending"}
-                  </span>
-                  {(l.status==="late_cancel"||l.status==="no_show")&&<button onClick={()=>onUpdateLesson(selectedStudent,l.id,{status:"cancelled_forgiven"})} style={{background:"white",color:"#6b7280",border:"1.5px solid #d1d5db",padding:"4px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:700}}>✓ Forgive</button>}
+                  {(()=>{
+                    const r=l.cancelReason||(l.status==="late_cancel"?"late":l.status==="no_show"?"no_show":l.status==="weather_cancel"?"weather":l.status==="cancelled_forgiven"?"forgiven":null);
+                    const isCx=l.status==="cancelled"||l.status==="late_cancel"||l.status==="no_show"||l.status==="weather_cancel"||l.status==="cancelled_forgiven";
+                    const bg=l.status==="confirmed"?"#e8f0ee":l.status==="completed"?"#e8f0ee":!isCx?"#fffbea":r==="late"?"#fff7ed":r==="no_show"?"#fef2f2":r==="weather"?"#eff6ff":r==="forgiven"?"#f3f4f6":"#fef2f2";
+                    const col=l.status==="confirmed"?G:l.status==="completed"?G:!isCx?"#92400e":r==="late"?"#c2410c":r==="no_show"?"#7f1d1d":r==="weather"?"#1d4ed8":r==="forgiven"?"#6b7280":"#dc2626";
+                    const lbl=l.status==="confirmed"?"✓ Confirmed":l.status==="completed"?"✓ Completed":!isCx?"⏳ Pending":r==="late"?"⚠️ Late Cancel":r==="no_show"?"✕ No-Show":r==="weather"?"🌧 Weather":r==="forgiven"?"✓ Forgiven":l.cancelledByGcal?"📅 Removed":"✕ Cancelled";
+                    return<span style={{background:bg,color:col,padding:"3px 9px",borderRadius:50,fontSize:"0.72rem",fontWeight:700}}>{lbl}</span>;
+                  })()}
+                  {(()=>{const needsForgive=l.status==="late_cancel"||l.status==="no_show"||(l.status==="cancelled"&&(l.cancelReason==="late"||l.cancelReason==="no_show"));return needsForgive&&<button onClick={async()=>{onUpdateLesson(selectedStudent,l.id,{status:"cancelled",cancelReason:"forgiven"});fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id,updates:{status:"cancelled",cancel_reason:"forgiven"}})}).catch(()=>{});}} style={{background:"white",color:"#6b7280",border:"1.5px solid #d1d5db",padding:"4px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:700}}>✓ Forgive</button>;})()}
                   <button onClick={()=>setActiveMenu(isMenuOpen?null:smk)} style={{background:isMenuOpen?"#f3f4f6":"white",border:"1.5px solid #e5e7eb",borderRadius:8,padding:"5px 10px",cursor:"pointer",fontSize:"1rem",lineHeight:1,color:"#6b7280",fontWeight:700}}>⋯</button>
                 </div>
               </div>
@@ -3425,34 +3443,53 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                   <button onClick={()=>{setEditingId(editingId===l.id?null:l.id);setEditNotes(l.notes||"");setActiveMenu(null);}} style={{background:G,color:"white",border:"none",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>✏️ Notes</button>
                   <button onClick={()=>{setEditPriceId(editPriceId===l.id?null:l.id);setEditPriceVal(String(l.customPrice||getRate(l.type,parseInt(l.duration))));setActiveMenu(null);}} style={{background:G,color:"white",border:"none",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>💰 Price</button>
                   {!isCancelled&&<button onClick={()=>{setConfirmCancel(l.id);setActiveMenu(null);}} style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>✕ Cancel</button>}
-                  {!isCancelled&&<button onClick={async()=>{await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id,updates:{status:"no_show"}})});onUpdateLesson(selectedStudent,l.id,{status:"no_show"});setActiveMenu(null);}} style={{background:"white",color:"#7f1d1d",border:"1.5px solid #fca5a5",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>✕ No-Show</button>}
-                  {!isCancelled&&<button onClick={async()=>{await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id,updates:{status:"weather_cancel"}})});onUpdateLesson(selectedStudent,l.id,{status:"weather_cancel"});setActiveMenu(null);}} style={{background:"white",color:"#1d4ed8",border:"1.5px solid #93c5fd",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>🌧 Weather</button>}
                   <DelBtn onClick={()=>{setConfirmDelete(l.id);setActiveMenu(null);}} style={{color:"#6b7280",borderColor:"#d1d5db"}}>📦 Archive</DelBtn>
                   <span style={{flex:1}}/>
                   <button onClick={()=>setActiveMenu(null)} style={{background:"none",border:"none",color:"#9ca3af",cursor:"pointer",fontSize:"0.8rem"}}>Close</button>
                 </div>
               )}
-              {/* Cancel confirm */}
+              {/* Cancel — reason picker */}
               {confirmCancel===l.id&&(
-                <div style={{background:"#fef2f2",borderTop:"1px solid #fca5a5",padding:"12px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
-                  <span style={{fontWeight:700,color:"#991b1b",fontSize:"0.88rem"}}>Cancel this lesson?</span>
-                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                    <button onClick={()=>setConfirmCancel(null)} disabled={cancelLoading} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600,opacity:cancelLoading?0.5:1}}>Keep it</button>
-                    <button onClick={async()=>{
-                      setCancelLoading(true);await onCancelLesson(selectedStudent,l.id);setCancelLoading(false);setConfirmCancel(null);
+                <div style={{background:"#fef2f2",borderTop:"1px solid #fca5a5",padding:"14px 18px"}}>
+                  <div style={{fontWeight:700,color:"#991b1b",fontSize:"0.85rem",marginBottom:10}}>Why was this lesson cancelled?</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:7,marginBottom:12}}>
+                    {[
+                      {reason:"student", label:"Student cancelled",  color:"#dc2626", border:"#fca5a5", charge:false},
+                      {reason:"admin",   label:"Admin cancelled",    color:"#6b7280", border:"#d1d5db", charge:false},
+                      {reason:"late",    label:"Late cancel",        color:"#c2410c", border:"#fed7aa", charge:true},
+                      {reason:"no_show", label:"No-show",            color:"#7f1d1d", border:"#fca5a5", charge:true},
+                      {reason:"weather", label:"Weather",            color:"#1d4ed8", border:"#93c5fd", charge:false},
+                    ].map(({reason,label,color,border,charge})=>(
+                      <button key={reason} disabled={cancelLoading} onClick={async()=>{
+                        setCancelLoading(true);
+                        // Remove from calendar
+                        if(l.gcalEventId){fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:l.gcalEventId,mode:"delete"})}).catch(()=>{});}
+                        // Update state + DB
+                        onUpdateLesson(selectedStudent,l.id,{status:"cancelled",cancelReason:reason});
+                        fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id,updates:{status:"cancelled",cancel_reason:reason,cancelled_by:reason==="student"?"student":"admin",cancelled_at:new Date().toISOString()}})}).catch(()=>{});
+                        // Send email for student/admin cancel
+                        if(reason==="student"||reason==="admin"){await onCancelLesson(selectedStudent,l.id);}
+                        setCancelLoading(false);setConfirmCancel(null);
+                      }} style={{background:"white",color,border:"1.5px solid "+border,padding:"5px 13px",borderRadius:50,cursor:cancelLoading?"not-allowed":"pointer",fontSize:"0.78rem",fontWeight:700,display:"inline-flex",alignItems:"center",gap:5,opacity:cancelLoading?0.6:1}}>
+                        {label}{charge&&<span style={{fontSize:"0.65rem",opacity:0.65,fontWeight:600}}>(charge)</span>}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{display:"flex",gap:8,alignItems:"center",justifyContent:"space-between",flexWrap:"wrap"}}>
+                    <button disabled={cancelLoading} onClick={async()=>{
+                      setCancelLoading(true);
+                      if(l.gcalEventId){fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:l.gcalEventId,mode:"delete"})}).catch(()=>{});}
+                      onUpdateLesson(selectedStudent,l.id,{status:"cancelled",cancelReason:"student"});
+                      fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id,updates:{status:"cancelled",cancel_reason:"student",cancelled_by:"student",cancelled_at:new Date().toISOString()}})}).catch(()=>{});
+                      await onCancelLesson(selectedStudent,l.id);
+                      setCancelLoading(false);setConfirmCancel(null);
                       const typeMap={"Private":"private","Semi-Private":"semi","Group":"group"};
-                      setSchedLessonType(typeMap[l.type]||"private");
-                      setSchedDuration(parseInt(l.duration)||60);
-                      setSchedFocus(l.focus||"");
-                      setSchedDate("");setSchedSlot(null);setSchedSlotIdx(-1);setScheduleStep(1);
-                      setShowSchedule(true);
-                    }} disabled={cancelLoading} style={{background:cancelLoading?"#9ca3af":G,color:"white",border:"none",padding:"6px 14px",borderRadius:50,cursor:cancelLoading?"not-allowed":"pointer",fontSize:"0.82rem",fontWeight:700}}>
-                      {cancelLoading?"Cancelling...":"Cancel & Reschedule"}
+                      setSchedLessonType(typeMap[l.type]||"private");setSchedDuration(parseInt(l.duration)||60);setSchedFocus(l.focus||"");
+                      setSchedDate("");setSchedSlot(null);setSchedSlotIdx(-1);setScheduleStep(1);setShowSchedule(true);
+                    }} style={{background:G,color:"white",border:"none",padding:"5px 14px",borderRadius:50,cursor:cancelLoading?"not-allowed":"pointer",fontSize:"0.78rem",fontWeight:700}}>
+                      Cancel & Reschedule
                     </button>
-                    <button onClick={async()=>{setCancelLoading(true);await onCancelLesson(selectedStudent,l.id);setCancelLoading(false);setConfirmCancel(null);}} disabled={cancelLoading} style={{background:cancelLoading?"#9ca3af":"#dc2626",color:"white",border:"none",padding:"6px 14px",borderRadius:50,cursor:cancelLoading?"not-allowed":"pointer",fontSize:"0.82rem",fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
-                      {cancelLoading&&<span style={{display:"inline-block",width:12,height:12,border:"2px solid white",borderTop:"2px solid transparent",borderRadius:"50%",animation:"spin 0.7s linear infinite"}}/>}
-                      {cancelLoading?"Cancelling...":"Yes, Cancel"}
-                    </button>
+                    <button onClick={()=>setConfirmCancel(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"5px 13px",borderRadius:50,cursor:"pointer",fontSize:"0.78rem",fontWeight:600}}>Keep it</button>
                   </div>
                 </div>
               )}
@@ -4400,10 +4437,20 @@ function LessonsDbTab({allLessons,mockUsers,onDeleteLesson,onUpdateLesson,setSel
     if(!q)return true;
     return (l.studentName||"").toLowerCase().includes(q)||(l.studentEmail||"").toLowerCase().includes(q)||(l.date||"").includes(q)||(l.type||"").toLowerCase().includes(q)||(l.focus||"").toLowerCase().includes(q)||(l.ticketId||"").toLowerCase().includes(q)||(l.time||"").toLowerCase().includes(q);
   }).sort((a,b)=>new Date(b.date)-new Date(a.date));
-  const statusBadge=(s)=>{
-    const map={confirmed:{bg:"#e8f0ee",color:G,label:"✓ Confirmed"},pending:{bg:"#fffbea",color:"#92400e",label:"⏳ Pending"},cancelled:{bg:"#fef2f2",color:"#dc2626",label:"✕ Cancelled"},archived:{bg:"#f3f4f6",color:"#6b7280",label:"📦 Archived"},late_cancel:{bg:"#fff7ed",color:"#c2410c",label:"⚠️ Late Cancel"},no_show:{bg:"#fef2f2",color:"#7f1d1d",label:"✕ No-Show"},completed:{bg:"#e8f0ee",color:G,label:"✓ Completed"},weather_cancel:{bg:"#eff6ff",color:"#1d4ed8",label:"🌧 Weather"},cancelled_forgiven:{bg:"#f3f4f6",color:"#6b7280",label:"✓ Forgiven"}};
-    const st=map[s]||{bg:"#f3f4f6",color:"#6b7280",label:s};
-    return<span style={{background:st.bg,color:st.color,padding:"2px 8px",borderRadius:50,fontSize:"0.7rem",fontWeight:700,whiteSpace:"nowrap"}}>{st.label}</span>;
+  const statusBadge=(s,lesson={})=>{
+    const r=lesson.cancelReason||(s==="late_cancel"?"late":s==="no_show"?"no_show":s==="weather_cancel"?"weather":s==="cancelled_forgiven"?"forgiven":null);
+    const isCx=["cancelled","late_cancel","no_show","weather_cancel","cancelled_forgiven"].includes(s);
+    if(s==="confirmed")return<span style={{background:"#e8f0ee",color:G,padding:"2px 8px",borderRadius:50,fontSize:"0.7rem",fontWeight:700,whiteSpace:"nowrap"}}>✓ Confirmed</span>;
+    if(s==="completed")return<span style={{background:"#e8f0ee",color:G,padding:"2px 8px",borderRadius:50,fontSize:"0.7rem",fontWeight:700,whiteSpace:"nowrap"}}>✓ Completed</span>;
+    if(s==="pending")return<span style={{background:"#fffbea",color:"#92400e",padding:"2px 8px",borderRadius:50,fontSize:"0.7rem",fontWeight:700,whiteSpace:"nowrap"}}>⏳ Pending</span>;
+    if(s==="archived")return<span style={{background:"#f3f4f6",color:"#6b7280",padding:"2px 8px",borderRadius:50,fontSize:"0.7rem",fontWeight:700,whiteSpace:"nowrap"}}>📦 Archived</span>;
+    if(isCx){
+      const bg=r==="late"?"#fff7ed":r==="no_show"?"#fef2f2":r==="weather"?"#eff6ff":r==="forgiven"?"#f3f4f6":"#fef2f2";
+      const col=r==="late"?"#c2410c":r==="no_show"?"#7f1d1d":r==="weather"?"#1d4ed8":r==="forgiven"?"#6b7280":"#dc2626";
+      const lbl=r==="late"?"⚠️ Late Cancel":r==="no_show"?"✕ No-Show":r==="weather"?"🌧 Weather":r==="forgiven"?"✓ Forgiven":lesson.cancelledByGcal?"📅 Removed":"✕ Cancelled";
+      return<span style={{background:bg,color:col,padding:"2px 8px",borderRadius:50,fontSize:"0.7rem",fontWeight:700,whiteSpace:"nowrap"}}>{lbl}</span>;
+    }
+    return<span style={{background:"#f3f4f6",color:"#6b7280",padding:"2px 8px",borderRadius:50,fontSize:"0.7rem",fontWeight:700,whiteSpace:"nowrap"}}>{s}</span>;
   };
   return(
     <div>
@@ -4423,7 +4470,7 @@ function LessonsDbTab({allLessons,mockUsers,onDeleteLesson,onUpdateLesson,setSel
                   <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:3}}>
                     <span style={{fontWeight:700,fontSize:"0.88rem",color:"#1a1a1a"}}>{l.studentName}</span>
                     <span style={{fontSize:"0.75rem",color:"#9ca3af"}}>{l.studentEmail}</span>
-                    {statusBadge(l.status)}
+                    {statusBadge(l.status,l)}
                   </div>
                   <div style={{fontSize:"0.82rem",color:"#4b5563"}}>{fmtDate(l.date)} · {l.time} · {l.type} · {l.duration}{l.focus?" · "+l.focus:""}</div>
                   {l.ticketId&&<div style={{fontSize:"0.72rem",color:"#9ca3af",marginTop:2,fontFamily:"monospace"}}>{l.ticketId}</div>}
@@ -4795,7 +4842,8 @@ export default function App(){
                 groupEmails:l.group_emails||[],
                 members:l.members||[],
                 createdAt:l.created_at||"",
-                customPrice:l.custom_price??null
+                customPrice:l.custom_price??null,
+                cancelReason:l.cancel_reason||null
               });
             });
           }
