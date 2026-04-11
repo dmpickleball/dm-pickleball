@@ -196,79 +196,55 @@ export default async function handler(req, res) {
     const DUPR_EMAIL = process.env.DUPR_EMAIL;
     const DUPR_PASSWORD = process.env.DUPR_PASSWORD;
 
-    const DUPR_PARTNER_KEY = process.env.DUPR_PARTNER_KEY;
-
     if (!DUPR_EMAIL || !DUPR_PASSWORD) {
       return res.status(200).json({ error: 'DUPR_NOT_CONFIGURED', rating: null });
     }
-    if (!DUPR_PARTNER_KEY) {
-      return res.status(200).json({ error: 'DUPR_NO_PARTNER_KEY', rating: null });
-    }
 
     try {
-      // Step 1: Authenticate with DUPR public API
-      // Requires: x-authorization = partner/client key (obtained by registering at api.dupr.gg)
-      const tryLogin = async (url, body) => {
-        const r = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'x-authorization': DUPR_PARTNER_KEY,
-          },
-          body: JSON.stringify(body),
-        });
-        const text = await r.text().catch(() => '');
-        let json = null;
-        try { json = JSON.parse(text); } catch {}
-        return { ok: r.ok, status: r.status, text, json };
-      };
-
-      let loginData = null;
-      let authOk = false;
-
-      const r1 = await tryLogin('https://api.dupr.gg/auth/v1.0/login-read-only-token', { email: DUPR_EMAIL, password: DUPR_PASSWORD });
-      if (r1.ok && r1.json) { loginData = r1.json; authOk = true; }
-
-      if (!authOk) {
-        const hint = DUPR_EMAIL ? `(using ${DUPR_EMAIL.slice(0,3)}***@${DUPR_EMAIL.split('@')[1]||'?'})` : '(email blank)';
-        throw new Error(`DUPR login failed ${hint}. Error (${r1.status}): ${(r1.text||'').slice(0,120)}`);
+      // Step 1: Login with standard DUPR credentials (no partner key needed)
+      const loginRes = await fetch('https://api.dupr.gg/auth/v1.0/user/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ email: DUPR_EMAIL, password: DUPR_PASSWORD }),
+      });
+      if (!loginRes.ok) {
+        const errText = await loginRes.text().catch(() => '');
+        const hint = `(using ${DUPR_EMAIL.slice(0,3)}***@${DUPR_EMAIL.split('@')[1]||'?'})`;
+        throw new Error(`DUPR login failed ${hint} (${loginRes.status}): ${errText.slice(0,120)}`);
       }
+      const loginData = await loginRes.json();
+      const token = loginData?.result?.token || loginData?.result?.accessToken
+        || loginData?.token || loginData?.accessToken;
+      if (!token) throw new Error('DUPR login succeeded but no token in response: ' + JSON.stringify(loginData).slice(0,200));
 
-      // ReadOnlyAuthResponse — try direct token first
-      let token = loginData?.result?.accessToken || loginData?.result?.token
-        || loginData?.accessToken || loginData?.token;
+      // Step 2: Resolve alphanumeric DUPR ID → numeric userId
+      const byDuprIdRes = await fetch('https://api.dupr.gg/player/search/byDuprId', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ duprId: duprId.toUpperCase() }),
+      });
+      if (!byDuprIdRes.ok) throw new Error(`DUPR ID lookup failed (${byDuprIdRes.status})`);
+      const byDuprIdData = await byDuprIdRes.json();
+      const numericUserId = byDuprIdData?.results?.[0]?.userId || byDuprIdData?.result?.userId;
+      if (!numericUserId) throw new Error(`DUPR ID "${duprId}" not found. Response: ` + JSON.stringify(byDuprIdData).slice(0,200));
 
-      // Handle 2-step consent flow: login returns a challenge, consent/grant returns the real token
-      if (!token) {
-        const challenge = loginData?.result?.consentChallenge || loginData?.consentChallenge;
-        const challengeToken = challenge?.token || challenge?.challengeToken || (typeof challenge === 'string' ? challenge : null);
-        if (challengeToken) {
-          const consentRes = await fetch('https://api.dupr.gg/auth/v1.0/consent/grant', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({ token: challengeToken }),
-          });
-          if (consentRes.ok) {
-            const consentData = await consentRes.json();
-            token = consentData?.result?.accessToken || consentData?.result?.token
-              || consentData?.accessToken || consentData?.token;
-          }
-        }
-      }
-      if (!token) throw new Error('DUPR auth failed — no token received. Response: ' + JSON.stringify(loginData).slice(0, 300));
-
-      // Step 2: Fetch player profile using api.dupr.gg
-      const playerRes = await fetch(`https://api.dupr.gg/player/v1.0/player/${duprId}`, {
+      // Step 3: Fetch player profile with ratings using numeric ID
+      const playerRes = await fetch(`https://api.dupr.gg/player/v1.0/${numericUserId}`, {
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/json' },
       });
-      if (!playerRes.ok) throw new Error(`Player lookup failed (${playerRes.status})`);
+      if (!playerRes.ok) throw new Error(`Player profile fetch failed (${playerRes.status})`);
       const playerData = await playerRes.json();
 
-      // Extract ratings — handle various response shapes
-      const profile = playerData?.result?.playerProfile || playerData?.result || playerData;
-      const singlesRating = profile?.ratings?.singles?.rating ?? profile?.singlesRating ?? null;
-      const doublesRating = profile?.ratings?.doubles?.rating ?? profile?.doublesRating ?? null;
+      const profile = playerData?.result || playerData;
+      const ratings = profile?.ratings || {};
+      // Ratings come as strings like "4.380" or "NR"
+      const parseRating = (v) => {
+        if (!v || v === 'NR' || v === 'null') return null;
+        const n = parseFloat(v);
+        return isNaN(n) ? null : n;
+      };
+      const singlesRating = parseRating(ratings.singles);
+      const doublesRating = parseRating(ratings.doubles);
       const fullName = profile?.fullName || profile?.displayName || null;
 
       // Auto-save to Supabase if email provided

@@ -2868,9 +2868,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
       .then(data=>{
         if(data.error){
           setDuprSyncStatus("idle");
-          if(data.error==="DUPR_NO_PARTNER_KEY"){
-            setDuprSyncError("ℹ Auto-sync needs DUPR partner key — enter ratings manually above");
-          }else if(data.error==="DUPR_NOT_CONFIGURED"){
+          if(data.error==="DUPR_NOT_CONFIGURED"){
             setDuprSyncError("ℹ DUPR not configured — enter ratings manually above");
           }else{
             setDuprSyncError("⚠ "+data.error.slice(0,120));
