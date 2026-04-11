@@ -1401,6 +1401,11 @@ function AccountPage({user,setPage,onUpdateUser}){
   const[saving,setSaving]=useState(false);
   const[saved,setSaved]=useState(false);
   const[error,setError]=useState("");
+  const[duprIdInput,setDuprIdInput]=useState(user.duprId||"");
+  const[duprLinking,setDuprLinking]=useState(false);
+  const[duprMsg,setDuprMsg]=useState("");
+  const[localDuprRating,setLocalDuprRating]=useState(user.duprRating||"");
+  const[localDuprDoubles,setLocalDuprDoubles]=useState(user.duprDoublesRating||"");
 
   const effectiveCommEmail=diffEmail?commEmail.trim().toLowerCase():user.email.toLowerCase();
 
@@ -1491,6 +1496,59 @@ function AccountPage({user,setPage,onUpdateUser}){
         <button onClick={handleSave} disabled={saving} style={{width:"100%",background:saving?"#9ca3af":G,color:"white",border:"none",padding:"14px",borderRadius:50,fontWeight:700,cursor:saving?"not-allowed":"pointer",fontSize:"1rem"}}>
           {saving?"Saving...":"Save Changes"}
         </button>
+      </div>
+
+      {/* DUPR Linking Card */}
+      <div style={{background:"white",borderRadius:12,padding:"28px 32px",boxShadow:"0 2px 16px rgba(0,0,0,0.07)",marginTop:20}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+          <span style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"0.65rem",letterSpacing:1.5,padding:"3px 8px",borderRadius:4}}>DUPR</span>
+          <span style={{fontWeight:700,fontSize:"1rem",color:"#111"}}>Link Your DUPR Account</span>
+        </div>
+        <p style={{color:"#6b7280",fontSize:"0.85rem",marginBottom:20,marginTop:4}}>Connect your DUPR profile so your ratings appear automatically. Find your Player ID in the DUPR app or your profile URL.</p>
+        {(localDuprRating||localDuprDoubles)&&(
+          <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+            {localDuprRating&&<span style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"0.8rem",padding:"4px 14px",borderRadius:50,display:"flex",alignItems:"center",gap:5}}><span style={{fontSize:"0.65rem",opacity:0.8,fontWeight:600}}>DUPR</span>{parseFloat(localDuprRating).toFixed(2)}<span style={{fontSize:"0.65rem",opacity:0.7}}>S</span></span>}
+            {localDuprDoubles&&<span style={{background:"#1e3a5f",color:"white",fontWeight:900,fontSize:"0.8rem",padding:"4px 14px",borderRadius:50,display:"flex",alignItems:"center",gap:5}}><span style={{fontSize:"0.65rem",opacity:0.8,fontWeight:600}}>DUPR</span>{parseFloat(localDuprDoubles).toFixed(2)}<span style={{fontSize:"0.65rem",opacity:0.7}}>D</span></span>}
+          </div>
+        )}
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <input
+            type="text"
+            placeholder="DUPR Player ID (e.g. AB1234)"
+            value={duprIdInput}
+            onChange={e=>setDuprIdInput(e.target.value.replace(/\s/g,"").slice(0,20))}
+            style={{...inp,marginBottom:0,flex:1,fontSize:"0.85rem"}}
+          />
+          <button
+            disabled={duprLinking||!duprIdInput.trim()}
+            onClick={async()=>{
+              const id=duprIdInput.trim().toUpperCase();
+              if(!id)return;
+              setDuprLinking(true);setDuprMsg("");
+              try{
+                const r=await fetch("/api/students?action=dupr-lookup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({duprId:id,email:user.email})});
+                const data=await r.json();
+                if(data.error==="DUPR_NOT_CONFIGURED"){setDuprMsg("ℹ DUPR sync unavailable — contact David to update your ratings.");}
+                else if(data.error){setDuprMsg("⚠ "+data.error);}
+                else{
+                  const updates={duprId:id,duprRating:data.rating!=null?parseFloat(data.rating).toFixed(2):localDuprRating,duprDoublesRating:data.doublesRating!=null?parseFloat(data.doublesRating).toFixed(2):localDuprDoubles};
+                  if(data.rating!=null)setLocalDuprRating(parseFloat(data.rating).toFixed(2));
+                  if(data.doublesRating!=null)setLocalDuprDoubles(parseFloat(data.doublesRating).toFixed(2));
+                  onUpdateUser({...user,...updates});
+                  setDuprMsg("✓ DUPR profile linked"+(data.rating!=null?" — ratings updated":"")+"!");
+                  setTimeout(()=>setDuprMsg(""),4000);
+                }
+              }catch(e){setDuprMsg("⚠ Could not connect. Try again.");}
+              setDuprLinking(false);
+            }}
+            style={{background:"#0a1551",color:"white",border:"none",padding:"0 18px",borderRadius:50,cursor:duprLinking||!duprIdInput.trim()?"not-allowed":"pointer",fontWeight:700,fontSize:"0.82rem",flexShrink:0,whiteSpace:"nowrap",height:44,opacity:duprLinking||!duprIdInput.trim()?0.6:1}}
+          >
+            {duprLinking?"Linking…":"Link DUPR"}
+          </button>
+        </div>
+        {duprMsg&&<div style={{fontSize:"0.78rem",marginTop:8,color:duprMsg.startsWith("✓")?"#16a34a":duprMsg.startsWith("ℹ")?"#6b7280":"#dc2626",fontWeight:600}}>{duprMsg}</div>}
+        {(user.duprId||duprIdInput)&&!duprMsg&&<div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:8}}>Player ID: {user.duprId||duprIdInput} · <a href={`https://dashboard.dupr.com/dashboard/player/${user.duprId||duprIdInput}/profile`} target="_blank" rel="noopener noreferrer" style={{color:"#0a1551",fontWeight:600}}>View Profile →</a></div>}
+        {!user.duprId&&!duprIdInput&&<div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:8}}>Find your Player ID in the DUPR app under your profile, or in the URL on dashboard.dupr.com.</div>}
       </div>
     </div>
   );
