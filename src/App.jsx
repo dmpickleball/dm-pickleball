@@ -2868,8 +2868,14 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
       .then(data=>{
         if(data.error){
           setDuprSyncStatus("idle");
-          setDuprSyncError("⚠ "+data.error.slice(0,120));
-          setTimeout(()=>setDuprSyncError(""),8000);
+          if(data.error==="DUPR_NO_PARTNER_KEY"){
+            setDuprSyncError("ℹ Auto-sync needs DUPR partner key — enter ratings manually above");
+          }else if(data.error==="DUPR_NOT_CONFIGURED"){
+            setDuprSyncError("ℹ DUPR not configured — enter ratings manually above");
+          }else{
+            setDuprSyncError("⚠ "+data.error.slice(0,120));
+            setTimeout(()=>setDuprSyncError(""),8000);
+          }
           return;
         }
         const updates={};
@@ -3459,7 +3465,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                           </div>
                         </div>
                       </div>
-                      {duprSyncError&&<div style={{fontSize:"0.72rem",color:duprSyncError.includes("✓")?"#16a34a":"#dc2626",marginTop:4}}>{duprSyncError}</div>}
+                      {duprSyncError&&<div style={{fontSize:"0.72rem",color:duprSyncError.startsWith("ℹ")?"#6b7280":duprSyncError.includes("✓")?"#16a34a":"#dc2626",marginTop:4}}>{duprSyncError}</div>}
                       {!storedId&&<div style={{fontSize:"0.72rem",color:"#6b7280",marginTop:4}}>Enter the student's DUPR Player ID (in their DUPR app or profile URL) to link their profile.</div>}
                     </div>
                   );
