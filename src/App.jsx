@@ -2914,40 +2914,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
   // Load calendar on mount so dashboard earnings + upcoming are always populated
   useEffect(()=>{fetchCalendarItems();},[]);
   useEffect(()=>{if(tab==="lessons"&&calendarItems.length===0&&!calLoading)fetchCalendarItems();},[tab]);
-  // Auto-sync DUPR rating in background when admin opens a student profile with a DUPR ID
-  useEffect(()=>{
-    if(!selectedStudent){setDuprSyncStatus("idle");setDuprSyncError("");return;}
-    const student=mockUsers[selectedStudent];
-    setDuprIdInput("");setDuprSyncError("");
-    if(!student?.duprId){setDuprSyncStatus("idle");return;}
-    setDuprSyncStatus("syncing");
-    fetch("/api/students?action=dupr-lookup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({duprId:student.duprId,email:selectedStudent})})
-      .then(r=>r.json())
-      .then(data=>{
-        if(data.error){
-          setDuprSyncStatus("idle");
-          if(data.error==="DUPR_NOT_CONFIGURED"){
-            setDuprSyncError("ℹ DUPR not configured — enter ratings manually above");
-          }else{
-            setDuprSyncError("⚠ "+data.error.slice(0,120));
-            setTimeout(()=>setDuprSyncError(""),8000);
-          }
-          return;
-        }
-        const updates={};
-        if(data.rating!=null)updates.duprRating=parseFloat(data.rating).toFixed(2);
-        if(data.doublesRating!=null)updates.duprDoublesRating=parseFloat(data.doublesRating).toFixed(2);
-        if(Object.keys(updates).length>0){
-          onAddStudent({...mockUsers[selectedStudent],email:selectedStudent,...updates});
-          setDuprSyncStatus("success");
-          setTimeout(()=>setDuprSyncStatus("idle"),3000);
-        }else{
-          setDuprSyncStatus("idle");
-          setDuprSyncError("⚠ No ratings found for ID: "+mockUsers[selectedStudent]?.duprId);
-          setTimeout(()=>setDuprSyncError(""),6000);
-        }
-      }).catch(e=>{setDuprSyncStatus("idle");setDuprSyncError("⚠ Network error");setTimeout(()=>setDuprSyncError(""),5000);});
-  },[selectedStudent, mockUsers[selectedStudent]?.duprId]);
+  // Reset DUPR input when switching students
+  useEffect(()=>{setDuprIdInput("");setDuprSyncStatus("idle");setDuprSyncError("");},[selectedStudent]);
   useEffect(()=>{if(tab==="lessons"&&eventsData.length===0&&!eventsLoading){const s=toDS(new Date());const e=toDS(addDays(new Date(),90));setEventsLoading(true);fetch("/api/calendar-events?start="+s+"&end="+e+"&keywords=rental,tournament").then(r=>r.json()).then(d=>{setEventsData(d.events||[]);setEventsLoading(false);}).catch(()=>setEventsLoading(false));}},[tab]);
   useEffect(()=>{
     if(tab!=="lessons"||upcomingView!=="week")return;
@@ -3235,10 +3203,12 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                         {u.phone&&<div style={{fontSize:"0.78rem",color:"#9ca3af",marginTop:1}}>📱 {formatPhone(u.phone)}</div>}
                       </div>
                     </div>
-                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",justifyContent:"flex-end"}}>
                       {u.memberType==="menlo"&&<span style={{background:G,color:"white",padding:"2px 10px",borderRadius:50,fontSize:"0.7rem",fontWeight:700}}>MCC</span>}
                       {u.grandfathered&&<span style={{background:"#fef3c7",color:"#92400e",padding:"2px 10px",borderRadius:50,fontSize:"0.7rem",fontWeight:700}}>GF</span>}
                       {u.blocked&&<span style={{background:"#dc2626",color:"white",padding:"2px 10px",borderRadius:50,fontSize:"0.7rem",fontWeight:700}}>Blocked</span>}
+                      {u.duprRating&&<span style={{background:"#0a1551",color:"white",fontWeight:800,fontSize:"0.7rem",padding:"2px 9px",borderRadius:50,display:"flex",alignItems:"center",gap:3}}><span style={{fontSize:"0.58rem",opacity:0.8,letterSpacing:0.5}}>DUPR</span>{parseFloat(u.duprRating).toFixed(2)}<span style={{fontSize:"0.58rem",opacity:0.7}}>S</span></span>}
+                      {u.duprDoublesRating&&<span style={{background:"#1e3a5f",color:"white",fontWeight:800,fontSize:"0.7rem",padding:"2px 9px",borderRadius:50,display:"flex",alignItems:"center",gap:3}}><span style={{fontSize:"0.58rem",opacity:0.8,letterSpacing:0.5}}>DUPR</span>{parseFloat(u.duprDoublesRating).toFixed(2)}<span style={{fontSize:"0.58rem",opacity:0.7}}>D</span></span>}
                       <span style={{fontSize:"0.8rem",color:"#6b7280"}}>{upcoming.length} upcoming · {completed.length} completed</span>
                       <span style={{color:G,fontSize:"1.1rem"}}>›</span>
                     </div>
@@ -3477,52 +3447,64 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                     onAddStudent({...mockUsers[selectedStudent],email:selectedStudent,...updates});
                     fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:selectedStudent,updates:Object.fromEntries(Object.entries({dupr_id:updates.duprId,dupr_rating:updates.duprRating,dupr_doubles_rating:updates.duprDoublesRating}).filter(([,v])=>v!=null))})}).catch(()=>{});
                   };
+                  const syncDupr=async(id)=>{
+                    if(!id)return;
+                    setDuprSyncStatus("syncing");setDuprSyncError("");
+                    try{
+                      const r=await fetch("/api/students?action=dupr-lookup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({duprId:id,email:selectedStudent})});
+                      const data=await r.json();
+                      if(data.error==="DUPR_NOT_CONFIGURED"){
+                        setDuprSyncStatus("idle");
+                        setDuprSyncError("⚠ DUPR sync not configured — add DUPR_EMAIL + DUPR_PASSWORD to Vercel env vars, or enter ratings manually below.");
+                        return;
+                      }
+                      if(data.error){setDuprSyncStatus("error");setDuprSyncError("⚠ "+data.error);return;}
+                      const updates={};
+                      if(data.rating!=null)updates.duprRating=parseFloat(data.rating).toFixed(2);
+                      if(data.doublesRating!=null)updates.duprDoublesRating=parseFloat(data.doublesRating).toFixed(2);
+                      if(Object.keys(updates).length>0){await saveDupr(updates);setDuprSyncStatus("success");setDuprSyncError("✓ Synced! S:"+( updates.duprRating||storedRating||"NR")+" D:"+(updates.duprDoublesRating||storedDoubles||"NR"));}
+                      else{setDuprSyncStatus("idle");setDuprSyncError("⚠ No ratings found for this DUPR ID.");}
+                    }catch(e){setDuprSyncStatus("error");setDuprSyncError("⚠ Network error — try again.");}
+                    setTimeout(()=>{setDuprSyncStatus("idle");setDuprSyncError("");},5000);
+                  };
                   return(
-                    <div style={{marginTop:12,background:"#f0f4ff",borderRadius:8,padding:"12px 14px"}}>
-                      {/* Header + rating badges */}
-                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+                    <div style={{marginTop:12,background:"#f0f4ff",borderRadius:8,padding:"14px 16px",border:"1px solid #c7d2fe"}}>
+                      {/* Header row */}
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,flexWrap:"wrap",gap:8}}>
                         <div style={{display:"flex",alignItems:"center",gap:8}}>
                           <span style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"0.65rem",letterSpacing:1.5,padding:"2px 7px",borderRadius:4}}>DUPR</span>
-                          <span style={{fontSize:"0.78rem",fontWeight:700,color:"#0a1551"}}>Rating</span>
-                          {storedId&&duprSyncStatus==="syncing"&&<span style={{fontSize:"0.65rem",color:"#6b7280",fontStyle:"italic"}}>syncing…</span>}
-                          {storedId&&duprSyncStatus==="success"&&<span style={{fontSize:"0.65rem",color:"#16a34a",fontWeight:700}}>✓ synced</span>}
+                          <span style={{fontSize:"0.82rem",fontWeight:700,color:"#0a1551"}}>Rating</span>
                         </div>
-                        {(storedRating||storedDoubles)&&(
-                          <div style={{display:"flex",gap:8}}>
-                            {storedRating&&<div style={{textAlign:"center"}}>
-                              <div style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"0.95rem",padding:"3px 12px",borderRadius:50}}>{parseFloat(storedRating).toFixed(2)}</div>
-                              <div style={{fontSize:"0.6rem",color:"#6b7280",marginTop:2,textTransform:"uppercase",letterSpacing:0.5}}>Singles</div>
-                            </div>}
-                            {storedDoubles&&<div style={{textAlign:"center"}}>
-                              <div style={{background:"#1e3a5f",color:"white",fontWeight:900,fontSize:"0.95rem",padding:"3px 12px",borderRadius:50}}>{parseFloat(storedDoubles).toFixed(2)}</div>
-                              <div style={{fontSize:"0.6rem",color:"#6b7280",marginTop:2,textTransform:"uppercase",letterSpacing:0.5}}>Doubles</div>
-                            </div>}
-                          </div>
-                        )}
+                        {/* Current ratings display */}
+                        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                          {storedRating?<span style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"0.82rem",padding:"3px 12px",borderRadius:50,display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:"0.6rem",opacity:0.8}}>S</span>{parseFloat(storedRating).toFixed(2)}</span>:<span style={{fontSize:"0.75rem",color:"#9ca3af"}}>No singles</span>}
+                          {storedDoubles?<span style={{background:"#1e3a5f",color:"white",fontWeight:900,fontSize:"0.82rem",padding:"3px 12px",borderRadius:50,display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:"0.6rem",opacity:0.8}}>D</span>{parseFloat(storedDoubles).toFixed(2)}</span>:<span style={{fontSize:"0.75rem",color:"#9ca3af"}}>No doubles</span>}
+                        </div>
                       </div>
                       {/* DUPR ID row */}
-                      <div style={{display:"flex",gap:6,marginBottom:8,alignItems:"center"}}>
-                        <input type="text" placeholder="DUPR Player ID" value={duprIdInput||storedId} onChange={e=>setDuprIdInput(e.target.value.replace(/\s/g,"").slice(0,20))} style={{...inp,marginBottom:0,flex:1,fontSize:"0.82rem",background:"white"}}/>
-                        <button onClick={async()=>{const id=(duprIdInput.trim()||storedId);if(!id)return;await saveDupr({duprId:id});setDuprIdInput("");setDuprSyncStatus("idle");setDuprSyncError("ID saved ✓");setTimeout(()=>setDuprSyncError(""),2500);}} style={{background:"#0a1551",color:"white",border:"none",padding:"0 14px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.78rem",flexShrink:0,whiteSpace:"nowrap",height:38}}>Save ID</button>
-                        {storedId&&<a href={`https://dashboard.dupr.com/dashboard/player/${storedId}/profile`} target="_blank" rel="noopener noreferrer" style={{color:"#0a1551",fontSize:"0.75rem",fontWeight:700,whiteSpace:"nowrap"}}>Profile →</a>}
+                      <div style={{fontSize:"0.7rem",fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>DUPR Player ID</div>
+                      <div style={{display:"flex",gap:6,marginBottom:10,alignItems:"center"}}>
+                        <input type="text" placeholder="e.g. ABC123" value={duprIdInput||storedId} onChange={e=>setDuprIdInput(e.target.value.replace(/\s/g,"").slice(0,20).toUpperCase())} style={{...inp,marginBottom:0,flex:1,fontSize:"0.85rem",background:"white"}}/>
+                        <button onClick={async()=>{const id=(duprIdInput.trim()||storedId);if(!id)return;await saveDupr({duprId:id});setDuprIdInput("");setDuprSyncError("ID saved ✓");setTimeout(()=>setDuprSyncError(""),2000);}} style={{background:"#374151",color:"white",border:"none",padding:"0 12px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.75rem",flexShrink:0,whiteSpace:"nowrap",height:38}}>Save</button>
+                        <button disabled={duprSyncStatus==="syncing"||!((duprIdInput.trim()||storedId))} onClick={()=>syncDupr(duprIdInput.trim()||storedId)} style={{background:"#0a1551",color:"white",border:"none",padding:"0 12px",borderRadius:50,cursor:duprSyncStatus==="syncing"||!((duprIdInput.trim()||storedId))?"not-allowed":"pointer",fontWeight:700,fontSize:"0.75rem",flexShrink:0,whiteSpace:"nowrap",height:38,opacity:duprSyncStatus==="syncing"||!((duprIdInput.trim()||storedId))?0.6:1}}>
+                          {duprSyncStatus==="syncing"?"Syncing…":"↻ Sync Rating"}
+                        </button>
+                        {storedId&&<a href={`https://dashboard.dupr.com/dashboard/player/${storedId}/profile`} target="_blank" rel="noopener noreferrer" style={{color:"#0a1551",fontSize:"0.75rem",fontWeight:700,whiteSpace:"nowrap",flexShrink:0}}>Profile →</a>}
                       </div>
-                      {/* Manual rating entry */}
+                      {/* Manual entry fallback */}
+                      <div style={{fontSize:"0.7rem",fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>Manual Entry</div>
                       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:6}}>
                         <div>
-                          <div style={{fontSize:"0.65rem",color:"#6b7280",fontWeight:700,textTransform:"uppercase",letterSpacing:0.5,marginBottom:3}}>Singles Rating</div>
-                          <div style={{display:"flex",gap:4}}>
-                            <input type="number" step="0.01" min="2" max="8" placeholder="e.g. 3.50" defaultValue={storedRating} key={"s_"+selectedStudent+"_"+(storedRating||"")} onBlur={async e=>{const v=e.target.value.trim();if(!v)return;const r=parseFloat(v);if(isNaN(r)||r<2||r>8)return;await saveDupr({duprRating:r.toFixed(2)});setDuprSyncError("Singles saved ✓");setTimeout(()=>setDuprSyncError(""),2500);}} style={{...inp,marginBottom:0,fontSize:"0.82rem",background:"white",flex:1}}/>
-                          </div>
+                          <div style={{fontSize:"0.65rem",color:"#9ca3af",marginBottom:3}}>Singles Rating</div>
+                          <input type="number" step="0.01" min="2" max="8" placeholder="e.g. 3.50" defaultValue={storedRating} key={"s_"+selectedStudent+"_"+(storedRating||"")} onBlur={async e=>{const v=e.target.value.trim();if(!v)return;const r=parseFloat(v);if(isNaN(r)||r<2||r>8)return;await saveDupr({duprRating:r.toFixed(2)});setDuprSyncError("✓ Singles saved");setTimeout(()=>setDuprSyncError(""),2000);}} style={{...inp,marginBottom:0,fontSize:"0.82rem",background:"white",width:"100%"}}/>
                         </div>
                         <div>
-                          <div style={{fontSize:"0.65rem",color:"#6b7280",fontWeight:700,textTransform:"uppercase",letterSpacing:0.5,marginBottom:3}}>Doubles Rating</div>
-                          <div style={{display:"flex",gap:4}}>
-                            <input type="number" step="0.01" min="2" max="8" placeholder="e.g. 3.75" defaultValue={storedDoubles} key={"d_"+selectedStudent+"_"+(storedDoubles||"")} onBlur={async e=>{const v=e.target.value.trim();if(!v)return;const r=parseFloat(v);if(isNaN(r)||r<2||r>8)return;await saveDupr({duprDoublesRating:r.toFixed(2)});setDuprSyncError("Doubles saved ✓");setTimeout(()=>setDuprSyncError(""),2500);}} style={{...inp,marginBottom:0,fontSize:"0.82rem",background:"white",flex:1}}/>
-                          </div>
+                          <div style={{fontSize:"0.65rem",color:"#9ca3af",marginBottom:3}}>Doubles Rating</div>
+                          <input type="number" step="0.01" min="2" max="8" placeholder="e.g. 3.75" defaultValue={storedDoubles} key={"d_"+selectedStudent+"_"+(storedDoubles||"")} onBlur={async e=>{const v=e.target.value.trim();if(!v)return;const r=parseFloat(v);if(isNaN(r)||r<2||r>8)return;await saveDupr({duprDoublesRating:r.toFixed(2)});setDuprSyncError("✓ Doubles saved");setTimeout(()=>setDuprSyncError(""),2000);}} style={{...inp,marginBottom:0,fontSize:"0.82rem",background:"white",width:"100%"}}/>
                         </div>
                       </div>
-                      {duprSyncError&&<div style={{fontSize:"0.72rem",color:duprSyncError.startsWith("ℹ")?"#6b7280":duprSyncError.includes("✓")?"#16a34a":"#dc2626",marginTop:4}}>{duprSyncError}</div>}
-                      {!storedId&&<div style={{fontSize:"0.72rem",color:"#6b7280",marginTop:4}}>Enter the student's DUPR Player ID (in their DUPR app or profile URL) to link their profile.</div>}
+                      {duprSyncError&&<div style={{fontSize:"0.75rem",marginTop:6,padding:"6px 10px",borderRadius:6,background:duprSyncError.startsWith("✓")?"#dcfce7":duprSyncError.startsWith("⚠")?"#fef2f2":"#f3f4f6",color:duprSyncError.startsWith("✓")?"#16a34a":duprSyncError.startsWith("⚠")?"#dc2626":"#6b7280",fontWeight:600}}>{duprSyncError}</div>}
+                      {!storedId&&!duprSyncError&&<div style={{fontSize:"0.72rem",color:"#6b7280",marginTop:4}}>Find the Player ID in the DUPR app → Profile → share icon, or from the URL on dashboard.dupr.com.</div>}
                     </div>
                   );
                 })()}
@@ -5095,7 +5077,7 @@ export default function App(){
     try{
       await fetch("/api/students?action=approve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({requestId:student.id,email:student.email,name:student.name,firstName:student.firstName||"",lastName:student.lastName||"",commEmail:student.commEmail||"",phone:student.phone||"",homeCourt:student.homeCourt||"",skillLevel:student.skillLevel||"",duprRating:student.duprRating||"",memberType,grandfathered,action:"approve"})});
       setAllLessons(prev=>({...prev,[student.email]:[]}));
-      setMockUsersState(prev=>({...prev,[student.email]:{name:student.name,firstName:student.firstName||"",lastName:student.lastName||"",commEmail:student.commEmail||"",skillLevel:student.skillLevel||"",duprRating:student.duprRating||"",memberType,approved:true,grandfathered:!!grandfathered}}));
+      setMockUsersState(prev=>({...prev,[student.email]:{name:student.name,firstName:student.firstName||"",lastName:student.lastName||"",commEmail:student.commEmail||"",skillLevel:student.skillLevel||"",duprRating:student.duprRating||"",duprDoublesRating:student.duprDoublesRating||"",duprId:student.duprId||"",memberType,approved:true,grandfathered:!!grandfathered}}));
       setPendingStudents(prev=>prev.filter(s=>s.id!==student.id));
       // Send approval email to comm email if available, else Google email
       const notifyEmail=student.commEmail||student.email;
@@ -5191,7 +5173,7 @@ export default function App(){
     if(s){
       setMockUsersState(prev=>({...prev,[email]:{
         name:s.name,firstName:s.firstName||s.first_name||"",lastName:s.lastName||s.last_name||"",
-        commEmail:s.commEmail||s.comm_email||"",skillLevel:s.skillLevel||"",duprRating:"",
+        commEmail:s.commEmail||s.comm_email||"",skillLevel:s.skillLevel||"",duprRating:s.duprRating||s.dupr_rating||"",duprDoublesRating:s.duprDoublesRating||s.dupr_doubles_rating||"",duprId:s.duprId||s.dupr_id||"",
         memberType:s.memberType||"public",approved:true,blocked:false,
         phone:s.phone||"",city:s.city||"",homeCourt:s.homeCourt||"",picture:s.picture||""
       }}));
