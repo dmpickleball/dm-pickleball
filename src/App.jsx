@@ -823,12 +823,13 @@ function Homepage({setPage}){
 }
 
 function PricingPage({setPage}){
+  const[mob,setMob]=useState(()=>typeof window!=="undefined"&&window.innerWidth<640);
+  useEffect(()=>{const h=()=>setMob(window.innerWidth<640);window.addEventListener("resize",h);return()=>window.removeEventListener("resize",h);},[]);
   return(
-    <div style={{maxWidth:700,margin:"0 auto",padding:"60px 24px"}}>
-      <div style={{textAlign:"center",marginBottom:40}}>
+    <div style={{maxWidth:700,margin:"0 auto",padding:mob?"36px 16px":"60px 24px"}}>
+      <div style={{textAlign:"center",marginBottom:36}}>
         <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>SF Peninsula · Bay Area</div>
-        <h2 style={{fontSize:"2rem",fontWeight:900}}>Lesson Rates</h2>
-        <p style={{color:"#6b7280",marginTop:8}}>SF Peninsula, Bay Area</p>
+        <h2 style={{fontSize:mob?"1.7rem":"2rem",fontWeight:900}}>Lesson Rates</h2>
       </div>
       <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
         {[
@@ -836,30 +837,30 @@ function PricingPage({setPage}){
           {title:"Semi-Private",desc:"Train alongside a partner. Same focused coaching, shared investment.",price:"$140/hr",sub:"$70 per person"},
           {title:"Group Lesson",desc:"Small-group training for 3–4 players. Drill-focused sessions with live play and individual feedback.",price:"$140/hr",sub:"split equally"},
         ].map(({title,desc,price,sub},i,arr)=>(
-          <div key={title} style={{display:"grid",gridTemplateColumns:"1fr auto",gap:20,padding:"24px 28px",borderBottom:i<arr.length-1?"1px solid #f3f4f6":"none",alignItems:"center"}}>
-            <div>
-              <div style={{fontWeight:700,fontSize:"1rem",marginBottom:4}}>{title}</div>
-              <div style={{fontSize:"0.85rem",color:"#6b7280",lineHeight:1.65,marginBottom:6}}>{desc}</div>
-              <div style={{fontSize:"0.75rem",color:"#9ca3af"}}>60 & 90 min sessions available</div>
+          <div key={title} style={{padding:"22px 24px",borderBottom:i<arr.length-1?"1px solid #f3f4f6":"none"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:16,marginBottom:6}}>
+              <div style={{fontWeight:700,fontSize:"1rem"}}>{title}</div>
+              <div style={{textAlign:"right",flexShrink:0}}>
+                <div style={{fontWeight:700,color:G,fontSize:"1.1rem"}}>{price}</div>
+                {sub&&<div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:1}}>{sub}</div>}
+              </div>
             </div>
-            <div style={{textAlign:"right",flexShrink:0}}>
-              <div style={{fontWeight:700,color:G,fontSize:"1.1rem"}}>{price}</div>
-              {sub&&<div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:2}}>{sub}</div>}
-            </div>
+            <div style={{fontSize:"0.85rem",color:"#6b7280",lineHeight:1.65,marginBottom:4}}>{desc}</div>
+            <div style={{fontSize:"0.75rem",color:"#9ca3af"}}>60 &amp; 90 min sessions available</div>
           </div>
         ))}
-        <div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:20,padding:"24px 28px",borderTop:"1px solid #f3f4f6",alignItems:"center",background:"#fafaf9"}}>
-          <div>
+        <div style={{padding:"22px 24px",borderTop:"1px solid #f3f4f6",background:"#fafaf9",display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:16,flexWrap:"wrap"}}>
+          <div style={{flex:1,minWidth:0}}>
             <div style={{fontWeight:700,fontSize:"1rem",marginBottom:4}}>Corporate &amp; Events</div>
             <div style={{fontSize:"0.85rem",color:"#6b7280",lineHeight:1.65}}>Custom pickleball programming for companies and private events. Clinics, mini-tournaments, and team-building on the court.</div>
           </div>
-          <button onClick={()=>setPage("contact")} style={{background:"none",border:"none",color:G,fontWeight:600,fontSize:"0.82rem",cursor:"pointer",flexShrink:0,padding:0,letterSpacing:"0.5px",textTransform:"uppercase",whiteSpace:"nowrap"}}>Contact →</button>
+          <button onClick={()=>setPage("contact")} style={{background:"none",border:"none",color:G,fontWeight:600,fontSize:"0.82rem",cursor:"pointer",flexShrink:0,padding:0,letterSpacing:"0.5px",textTransform:"uppercase",whiteSpace:"nowrap",alignSelf:"center"}}>Contact →</button>
         </div>
       </div>
       <div style={{marginTop:48}}>
         <div style={{textAlign:"center",marginBottom:28}}>
           <div style={{fontSize:"0.75rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>Policies</div>
-          <h2 style={{fontSize:"1.6rem",fontWeight:900}}>What to Know</h2>
+          <h2 style={{fontSize:mob?"1.4rem":"1.6rem",fontWeight:900}}>What to Know</h2>
         </div>
         <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
           {[
@@ -874,8 +875,8 @@ function PricingPage({setPage}){
             {title:"Payment",body:(<span>Payment is expected after the lesson is completed. Accepted methods: <strong>Cash</strong> or <strong>Venmo</strong> (<a href={"https://venmo.com/"+VENMO} target="_blank" rel="noreferrer" style={{color:G,fontWeight:700,textDecoration:"none"}}>@{VENMO}</a>).</span>)},
             {title:"Equipment",body:"Students are encouraged to bring the paddle they are most comfortable with. Loaner paddles are available upon request — just add a note when booking. Balls are provided by Coach David for all sessions."},
           ].map(({title,body},i,arr)=>(
-            <div key={title} style={{display:"grid",gridTemplateColumns:"200px 1fr",gap:24,padding:"20px 28px",borderBottom:i<arr.length-1?"1px solid #f3f4f6":"none",alignItems:"baseline"}}>
-              <div style={{fontSize:"0.78rem",fontWeight:700,color:"#374151",textTransform:"uppercase",letterSpacing:"0.8px",paddingTop:2}}>{title}</div>
+            <div key={title} style={{padding:mob?"16px 20px":"18px 28px",borderBottom:i<arr.length-1?"1px solid #f3f4f6":"none"}}>
+              <div style={{fontSize:"0.75rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:"0.8px",marginBottom:6}}>{title}</div>
               <div style={{fontSize:"0.88rem",color:"#4b5563",lineHeight:1.75}}>{body}</div>
             </div>
           ))}
@@ -1507,8 +1508,8 @@ function AccountPage({user,setPage,onUpdateUser}){
         <p style={{color:"#6b7280",fontSize:"0.85rem",marginBottom:20,marginTop:4}}>Connect your DUPR profile so your ratings appear automatically. Find your Player ID in the DUPR app or your profile URL.</p>
         {(localDuprRating||localDuprDoubles)&&(
           <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
-            {localDuprRating&&<span style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"0.8rem",padding:"4px 14px",borderRadius:50,display:"flex",alignItems:"center",gap:5}}><span style={{fontSize:"0.65rem",opacity:0.8,fontWeight:600}}>DUPR</span>{parseFloat(localDuprRating).toFixed(2)}<span style={{fontSize:"0.65rem",opacity:0.7}}>S</span></span>}
-            {localDuprDoubles&&<span style={{background:"#1e3a5f",color:"white",fontWeight:900,fontSize:"0.8rem",padding:"4px 14px",borderRadius:50,display:"flex",alignItems:"center",gap:5}}><span style={{fontSize:"0.65rem",opacity:0.8,fontWeight:600}}>DUPR</span>{parseFloat(localDuprDoubles).toFixed(2)}<span style={{fontSize:"0.65rem",opacity:0.7}}>D</span></span>}
+            {localDuprDoubles&&<span style={{background:"#1e3a5f",color:"white",fontWeight:900,fontSize:"1rem",padding:"5px 16px",borderRadius:50,display:"flex",alignItems:"center",gap:6}}>{parseFloat(localDuprDoubles).toFixed(2)}<span style={{fontSize:"0.65rem",opacity:0.75,fontWeight:600,letterSpacing:0.5}}>DBL</span></span>}
+            {localDuprRating&&<span style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"1rem",padding:"5px 16px",borderRadius:50,display:"flex",alignItems:"center",gap:6}}>{parseFloat(localDuprRating).toFixed(2)}<span style={{fontSize:"0.65rem",opacity:0.75,fontWeight:600,letterSpacing:0.5}}>SGL</span></span>}
           </div>
         )}
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
@@ -1576,13 +1577,18 @@ function Dashboard({user,setPage,lessons,onCancel,onUpdateLesson,dbLoaded}){
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:32,flexWrap:"wrap",gap:12}}>
         <div>
           <h2 style={{fontWeight:900,color:G,fontSize:"1.6rem",marginBottom:4}}>My Lessons</h2>
-          <p style={{color:"#6b7280",fontSize:"0.92rem",display:"flex",alignItems:"center",flexWrap:"wrap",gap:6}}>
+          <p style={{color:"#6b7280",fontSize:"0.92rem",display:"flex",alignItems:"center",flexWrap:"wrap",gap:6,marginBottom:(user.duprRating||user.duprDoublesRating)?4:0}}>
             Welcome back, <strong>{user.name}</strong>
             {user.memberType==="menlo"&&<span style={{background:"#e8f0ee",color:G,padding:"2px 10px",borderRadius:50,fontSize:"0.78rem",fontWeight:600}}>Menlo Circus Club</span>}
             {user.grandfathered&&<span style={{background:"#fffbea",color:"#92400e",padding:"2px 10px",borderRadius:50,fontSize:"0.78rem",fontWeight:600}}>Grandfathered</span>}
-            {user.duprRating&&<span style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"0.75rem",padding:"2px 10px",borderRadius:50,display:"flex",alignItems:"center",gap:5}}><span style={{fontSize:"0.6rem",opacity:0.8,fontWeight:600,letterSpacing:0.5}}>DUPR</span>{parseFloat(user.duprRating).toFixed(2)}<span style={{fontSize:"0.6rem",opacity:0.7,fontWeight:500}}>S</span></span>}
-            {user.duprDoublesRating&&<span style={{background:"#1e3a5f",color:"white",fontWeight:900,fontSize:"0.75rem",padding:"2px 10px",borderRadius:50,display:"flex",alignItems:"center",gap:5}}><span style={{fontSize:"0.6rem",opacity:0.8,fontWeight:600,letterSpacing:0.5}}>DUPR</span>{parseFloat(user.duprDoublesRating).toFixed(2)}<span style={{fontSize:"0.6rem",opacity:0.7,fontWeight:500}}>D</span></span>}
           </p>
+          {(user.duprRating||user.duprDoublesRating)&&(
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:2}}>
+              <span style={{fontSize:"0.72rem",fontWeight:700,color:"#9ca3af",letterSpacing:0.5,textTransform:"uppercase"}}>DUPR</span>
+              {user.duprDoublesRating&&<span style={{background:"#1e3a5f",color:"white",fontWeight:900,fontSize:"1rem",padding:"5px 16px",borderRadius:50,display:"flex",alignItems:"center",gap:6}}>{parseFloat(user.duprDoublesRating).toFixed(2)}<span style={{fontSize:"0.65rem",opacity:0.75,fontWeight:600,letterSpacing:0.5}}>DBL</span></span>}
+              {user.duprRating&&<span style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"1rem",padding:"5px 16px",borderRadius:50,display:"flex",alignItems:"center",gap:6}}>{parseFloat(user.duprRating).toFixed(2)}<span style={{fontSize:"0.65rem",opacity:0.75,fontWeight:600,letterSpacing:0.5}}>SGL</span></span>}
+            </div>
+          )}
         </div>
         <button onClick={()=>setPage("booking")} style={{background:G,color:"white",border:"none",padding:"11px 24px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"0.92rem"}}>+ Book a Lesson</button>
       </div>
@@ -3084,11 +3090,11 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
         </div>
       </div>
 
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:"2px solid #e5e7eb",marginBottom:28,flexWrap:"wrap",gap:8}}>
-        <div style={{display:"flex",gap:0}}>
+      <div style={{borderBottom:"2px solid #e5e7eb",marginBottom:28,overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+        <div style={{display:"flex",gap:0,minWidth:"max-content"}}>
           {[["students","Students"],["lessons","Lessons"],["finances","Finances"],["database","All Lessons"],["gear","Gear"]].map(([t,label])=>(
             <button key={t} onClick={()=>{setTab(t);setSelectedStudent(null);setShowSchedule(false);}}
-              style={{background:"none",border:"none",borderBottom:"2px solid "+(tab===t?G:"transparent"),marginBottom:-2,padding:"10px 20px",fontSize:"0.88rem",fontWeight:tab===t?700:500,color:tab===t?G:"#6b7280",cursor:"pointer"}}>
+              style={{background:"none",border:"none",borderBottom:"2px solid "+(tab===t?G:"transparent"),marginBottom:-2,padding:"10px 18px",fontSize:"0.88rem",fontWeight:tab===t?700:500,color:tab===t?G:"#6b7280",cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
               {label}
               {t==="students"&&pendingStudents.length>0&&<span style={{background:"#dc2626",color:"white",borderRadius:50,padding:"1px 7px",fontSize:"0.7rem",fontWeight:800,marginLeft:6}}>{pendingStudents.length}</span>}
             </button>
@@ -3207,8 +3213,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                       {u.memberType==="menlo"&&<span style={{background:G,color:"white",padding:"2px 10px",borderRadius:50,fontSize:"0.7rem",fontWeight:700}}>MCC</span>}
                       {u.grandfathered&&<span style={{background:"#fef3c7",color:"#92400e",padding:"2px 10px",borderRadius:50,fontSize:"0.7rem",fontWeight:700}}>GF</span>}
                       {u.blocked&&<span style={{background:"#dc2626",color:"white",padding:"2px 10px",borderRadius:50,fontSize:"0.7rem",fontWeight:700}}>Blocked</span>}
-                      {u.duprRating&&<span style={{background:"#0a1551",color:"white",fontWeight:800,fontSize:"0.7rem",padding:"2px 9px",borderRadius:50,display:"flex",alignItems:"center",gap:3}}><span style={{fontSize:"0.58rem",opacity:0.8,letterSpacing:0.5}}>DUPR</span>{parseFloat(u.duprRating).toFixed(2)}<span style={{fontSize:"0.58rem",opacity:0.7}}>S</span></span>}
-                      {u.duprDoublesRating&&<span style={{background:"#1e3a5f",color:"white",fontWeight:800,fontSize:"0.7rem",padding:"2px 9px",borderRadius:50,display:"flex",alignItems:"center",gap:3}}><span style={{fontSize:"0.58rem",opacity:0.8,letterSpacing:0.5}}>DUPR</span>{parseFloat(u.duprDoublesRating).toFixed(2)}<span style={{fontSize:"0.58rem",opacity:0.7}}>D</span></span>}
+                      {u.duprDoublesRating&&<span style={{background:"#1e3a5f",color:"white",fontWeight:800,fontSize:"0.78rem",padding:"3px 10px",borderRadius:50,display:"flex",alignItems:"center",gap:3}}><span style={{fontSize:"0.6rem",opacity:0.75,letterSpacing:0.3}}>D</span>{parseFloat(u.duprDoublesRating).toFixed(2)}</span>}
+                      {u.duprRating&&<span style={{background:"#0a1551",color:"white",fontWeight:800,fontSize:"0.78rem",padding:"3px 10px",borderRadius:50,display:"flex",alignItems:"center",gap:3}}><span style={{fontSize:"0.6rem",opacity:0.75,letterSpacing:0.3}}>S</span>{parseFloat(u.duprRating).toFixed(2)}</span>}
                       <span style={{fontSize:"0.8rem",color:"#6b7280"}}>{upcoming.length} upcoming · {completed.length} completed</span>
                       <span style={{color:G,fontSize:"1.1rem"}}>›</span>
                     </div>
@@ -3477,8 +3483,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                         </div>
                         {/* Current ratings display */}
                         <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                          {storedRating?<span style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"0.82rem",padding:"3px 12px",borderRadius:50,display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:"0.6rem",opacity:0.8}}>S</span>{parseFloat(storedRating).toFixed(2)}</span>:<span style={{fontSize:"0.75rem",color:"#9ca3af"}}>No singles</span>}
-                          {storedDoubles?<span style={{background:"#1e3a5f",color:"white",fontWeight:900,fontSize:"0.82rem",padding:"3px 12px",borderRadius:50,display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:"0.6rem",opacity:0.8}}>D</span>{parseFloat(storedDoubles).toFixed(2)}</span>:<span style={{fontSize:"0.75rem",color:"#9ca3af"}}>No doubles</span>}
+                          {storedDoubles?<span style={{background:"#1e3a5f",color:"white",fontWeight:900,fontSize:"0.9rem",padding:"4px 13px",borderRadius:50,display:"flex",alignItems:"center",gap:4}}>{parseFloat(storedDoubles).toFixed(2)}<span style={{fontSize:"0.6rem",opacity:0.75,letterSpacing:0.3}}>DBL</span></span>:<span style={{fontSize:"0.75rem",color:"#9ca3af"}}>No doubles</span>}
+                          {storedRating?<span style={{background:"#0a1551",color:"white",fontWeight:900,fontSize:"0.9rem",padding:"4px 13px",borderRadius:50,display:"flex",alignItems:"center",gap:4}}>{parseFloat(storedRating).toFixed(2)}<span style={{fontSize:"0.6rem",opacity:0.75,letterSpacing:0.3}}>SGL</span></span>:<span style={{fontSize:"0.75rem",color:"#9ca3af"}}>No singles</span>}
                         </div>
                       </div>
                       {/* DUPR ID row */}
