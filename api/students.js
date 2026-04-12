@@ -201,8 +201,8 @@ export default async function handler(req, res) {
     }
 
     try {
-      // Step 1: Login with standard DUPR credentials (no partner key needed)
-      const loginRes = await fetch('https://api.dupr.gg/auth/v1.0/user/login', {
+      // Step 1: Login — endpoint changed from /user/login to /login (confirmed Apr 2026)
+      const loginRes = await fetch('https://api.dupr.gg/auth/v1.0/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({ email: DUPR_EMAIL, password: DUPR_PASSWORD }),
@@ -213,9 +213,10 @@ export default async function handler(req, res) {
         throw new Error(`DUPR login failed ${hint} (${loginRes.status}): ${errText.slice(0,120)}`);
       }
       const loginData = await loginRes.json();
+      // Token may be at result.token, result.accessToken, or top-level accessToken
       const token = loginData?.result?.token || loginData?.result?.accessToken
         || loginData?.token || loginData?.accessToken;
-      if (!token) throw new Error('DUPR login succeeded but no token in response: ' + JSON.stringify(loginData).slice(0,200));
+      if (!token) throw new Error('DUPR login ok but no token found. Response keys: ' + Object.keys(loginData?.result || loginData).join(', '));
 
       // Step 2: Resolve alphanumeric DUPR ID → numeric userId
       const byDuprIdRes = await fetch('https://api.dupr.gg/player/search/byDuprId', {
