@@ -2887,7 +2887,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
   const[editNotes,setEditNotes]=useState("");
   const[confirmCancel,setConfirmCancel]=useState(null);const[confirmDelete,setConfirmDelete]=useState(null);const[confirmDeleteStudent,setConfirmDeleteStudent]=useState(false);const[confirmCalDelete,setConfirmCalDelete]=useState(null);const[calDeleteLoading,setCalDeleteLoading]=useState(false);
   const[deleteLoading,setDeleteLoading]=useState(false);const[deletedToast,setDeletedToast]=useState(false);
-  const[permDeleteTarget,setPermDeleteTarget]=useState(null);const[permDeletePw,setPermDeletePw]=useState("");const[permDeleteError,setPermDeleteError]=useState("");const[showArchivedLessons,setShowArchivedLessons]=useState(false);
+  const[permDeleteTarget,setPermDeleteTarget]=useState(null);const[showArchivedLessons,setShowArchivedLessons]=useState(false);
   const[cancelLoading,setCancelLoading]=useState(false);
   const[coachRatingInput,setCoachRatingInput]=useState("");
   const[ratingNoteInput,setRatingNoteInput]=useState("");
@@ -3792,10 +3792,9 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                         <span style={{background:"#f3f4f6",color:"#6b7280",padding:"2px 8px",borderRadius:50,fontSize:"0.7rem",fontWeight:700}}>📦 Archived</span>
                         {permDeleteTarget?.id===l.id?(
                           <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-                            <input type="password" placeholder="Admin password" value={permDeletePw} onChange={e=>{setPermDeletePw(e.target.value);setPermDeleteError("");}} style={{fontSize:"0.78rem",padding:"4px 10px",borderRadius:6,border:"1.5px solid "+(permDeleteError?"#fca5a5":"#d1d5db"),outline:"none",width:150}} onKeyDown={e=>{if(e.key==="Enter"&&permDeletePw===ADMIN_USER.password){onDeleteLesson(selectedStudent,l.id);setPermDeleteTarget(null);setPermDeletePw("");if(l.id)fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})}).catch(()=>{});}else if(e.key==="Enter"){setPermDeleteError("Wrong password");}}}/>
-                            {permDeleteError&&<span style={{fontSize:"0.72rem",color:"#dc2626",fontWeight:600}}>{permDeleteError}</span>}
-                            <button onClick={()=>{if(permDeletePw===ADMIN_USER.password){onDeleteLesson(selectedStudent,l.id);setPermDeleteTarget(null);setPermDeletePw("");if(l.id)fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})}).catch(()=>{});}else{setPermDeleteError("Wrong password");}}} style={{background:"#dc2626",color:"white",border:"none",padding:"4px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.75rem",fontWeight:700}}>Delete</button>
-                            <button onClick={()=>{setPermDeleteTarget(null);setPermDeletePw("");setPermDeleteError("");}} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"4px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.75rem",fontWeight:600}}>Cancel</button>
+                            <span style={{fontSize:"0.75rem",color:"#dc2626",fontWeight:600}}>Permanently delete?</span>
+                            <button onClick={()=>{onDeleteLesson(selectedStudent,l.id);setPermDeleteTarget(null);if(l.id)fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})}).catch(()=>{});}} style={{background:"#dc2626",color:"white",border:"none",padding:"4px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.75rem",fontWeight:700}}>Yes, Delete</button>
+                            <button onClick={()=>{setPermDeleteTarget(null);}} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"4px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.75rem",fontWeight:600}}>Cancel</button>
                           </div>
                         ):(
                           <button onClick={()=>{setPermDeleteTarget({id:l.id,email:selectedStudent});setPermDeletePw("");setPermDeleteError("");}} style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"4px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:700}}>🗑 Permanently Delete</button>
@@ -4658,8 +4657,6 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
 function LessonsDbTab({allLessons,mockUsers,onDeleteLesson,onUpdateLesson,setSelectedStudent,setTab}){
   const [dbSearch,setDbSearch]=useState("");
   const [dbStatus,setDbStatus]=useState("all");
-  const [dbPw,setDbPw]=useState("");
-  const [dbPwError,setDbPwError]=useState("");
   const [dbDeleteTarget,setDbDeleteTarget]=useState(null);
   const statusOptions=[["all","All"],["confirmed","Confirmed"],["pending","Pending"],["cancelled","Cancelled"],["archived","Archived"],["late_cancel","Late Cancel"],["no_show","No-Show"],["completed","Completed"],["weather_cancel","Weather Cancel"]];
   const allRows=Object.entries(allLessons).flatMap(([email,lessons])=>lessons.map(l=>({...l,studentEmail:email,studentName:mockUsers[email]?.name||email})));
@@ -4716,13 +4713,12 @@ function LessonsDbTab({allLessons,mockUsers,onDeleteLesson,onUpdateLesson,setSel
                   }} style={{background:"white",color:"#6b7280",border:"1.5px solid #d1d5db",padding:"4px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:600}}>Archive</button>}
                   {dbDeleteTarget===(l.id||l.studentEmail+'|'+l.date+'|'+l.time)?(
                     <div style={{display:"flex",gap:5,alignItems:"center",flexWrap:"wrap"}}>
-                      <input type="password" placeholder="Admin password" value={dbPw} onChange={e=>{setDbPw(e.target.value);setDbPwError("");}} style={{fontSize:"0.75rem",padding:"3px 8px",borderRadius:6,border:"1.5px solid "+(dbPwError?"#fca5a5":"#d1d5db"),outline:"none",width:130}}/>
-                      {dbPwError&&<span style={{fontSize:"0.7rem",color:"#dc2626",fontWeight:600}}>{dbPwError}</span>}
-                      <button onClick={async()=>{if(dbPw===ADMIN_USER.password){
-                        onDeleteLesson(l.studentEmail,l.id);setDbDeleteTarget(null);setDbPw("");
+                      <span style={{fontSize:"0.73rem",color:"#dc2626",fontWeight:600}}>Permanently delete?</span>
+                      <button onClick={async()=>{
+                        onDeleteLesson(l.studentEmail,l.id);setDbDeleteTarget(null);
                         if(l.id){fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})}).then(r=>{if(!r.ok&&r.status!==404)r.json().then(d=>console.warn("Delete API error:",d.error)).catch(()=>{});}).catch(()=>{});}
-                      }else{setDbPwError("Wrong password");}}} style={{background:"#dc2626",color:"white",border:"none",padding:"3px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:700}}>Delete</button>
-                      <button onClick={()=>{setDbDeleteTarget(null);setDbPw("");setDbPwError("");}} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"3px 8px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:600}}>Cancel</button>
+                      }} style={{background:"#dc2626",color:"white",border:"none",padding:"3px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:700}}>Yes, Delete</button>
+                      <button onClick={()=>{setDbDeleteTarget(null);}} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"3px 8px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:600}}>Cancel</button>
                     </div>
                   ):(
                     <button onClick={()=>{setDbDeleteTarget(l.id||l.studentEmail+'|'+l.date+'|'+l.time);setDbPw("");setDbPwError("");}} style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"4px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:700}}>🗑 Delete</button>
