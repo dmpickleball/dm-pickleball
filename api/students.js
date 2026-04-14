@@ -253,6 +253,7 @@ export default async function handler(req, res) {
         const updates = { dupr_id: String(duprId) };
         if (singlesRating != null) updates.dupr_rating = String(parseFloat(singlesRating).toFixed(2));
         if (doublesRating != null) updates.dupr_doubles_rating = String(parseFloat(doublesRating).toFixed(2));
+        if (fullName) updates.dupr_player_name = fullName;
         await supabase.from('students').update(updates).eq('email', email.toLowerCase());
       }
 

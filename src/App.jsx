@@ -2453,7 +2453,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
           {financeView!=="year"&&calendarLessons.length>0&&(
             <div style={{marginBottom:24}}>
               <div style={{fontSize:"0.8rem",fontWeight:700,color:"#1a3c34",textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Calendar Lessons</div>
-              <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
+              <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden",overflowX:"auto"}}>
                 {mob?(
                   /* ── Mobile card layout ── */
                   <div>
@@ -3519,17 +3519,21 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                   const storedId=mockUsers[selectedStudent]?.duprId||"";
                   const storedRating=mockUsers[selectedStudent]?.duprRating||"";
                   const storedDoubles=mockUsers[selectedStudent]?.duprDoublesRating||"";
+                  const storedPlayerName=mockUsers[selectedStudent]?.duprPlayerName||"";
                   const saveDupr=async(updates)=>{
                     onAddStudent({...mockUsers[selectedStudent],email:selectedStudent,...updates});
-                    fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:selectedStudent,updates:Object.fromEntries(Object.entries({dupr_id:updates.duprId,dupr_rating:updates.duprRating,dupr_doubles_rating:updates.duprDoublesRating}).filter(([,v])=>v!=null))})}).catch(()=>{});
+                    fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:selectedStudent,updates:Object.fromEntries(Object.entries({dupr_id:updates.duprId,dupr_rating:updates.duprRating,dupr_doubles_rating:updates.duprDoublesRating,dupr_player_name:updates.duprPlayerName}).filter(([,v])=>v!=null))})}).catch(()=>{});
                   };
                   const clearDupr=async()=>{
-                    onAddStudent({...mockUsers[selectedStudent],email:selectedStudent,duprId:"",duprRating:"",duprDoublesRating:""});
-                    fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:selectedStudent,updates:{dupr_id:"",dupr_rating:"",dupr_doubles_rating:""}})}).catch(()=>{});
+                    onAddStudent({...mockUsers[selectedStudent],email:selectedStudent,duprId:"",duprRating:"",duprDoublesRating:"",duprPlayerName:""});
+                    fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:selectedStudent,updates:{dupr_id:"",dupr_rating:"",dupr_doubles_rating:"",dupr_player_name:""}})}).catch(()=>{});
                     setDuprIdInput("");setDuprSyncStatus("idle");setDuprSyncError("✓ DUPR data cleared");setTimeout(()=>setDuprSyncError(""),3000);
                   };
                   const syncDupr=async(id)=>{
                     if(!id)return;
+                    // Auto-save the ID first, then sync
+                    await saveDupr({duprId:id});
+                    setDuprIdInput("");
                     setDuprSyncStatus("syncing");setDuprSyncError("");
                     try{
                       const r=await fetch("/api/students?action=dupr-lookup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({duprId:id,email:selectedStudent})});
@@ -3543,17 +3547,22 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                       const updates={};
                       if(data.rating!=null)updates.duprRating=parseFloat(data.rating).toFixed(2);
                       if(data.doublesRating!=null)updates.duprDoublesRating=parseFloat(data.doublesRating).toFixed(2);
-                      if(Object.keys(updates).length>0){await saveDupr(updates);setDuprSyncStatus("success");setDuprSyncError("✓ Synced! S:"+( updates.duprRating||storedRating||"NR")+" D:"+(updates.duprDoublesRating||storedDoubles||"NR"));}
-                      else{setDuprSyncStatus("idle");setDuprSyncError("⚠ No ratings found for this DUPR ID.");}
+                      if(data.fullName)updates.duprPlayerName=data.fullName;
+                      if(Object.keys(updates).length>0){
+                        await saveDupr(updates);
+                        const nameStr=data.fullName?" · "+data.fullName:"";
+                        setDuprSyncStatus("success");
+                        setDuprSyncError("✓ Synced"+nameStr+"  D:"+(updates.duprDoublesRating||storedDoubles||"NR")+" S:"+(updates.duprRating||storedRating||"NR"));
+                      }else{setDuprSyncStatus("idle");setDuprSyncError("⚠ No ratings found for this DUPR ID.");}
                     }catch(e){setDuprSyncStatus("error");setDuprSyncError("⚠ Network error — try again.");}
-                    setTimeout(()=>{setDuprSyncStatus("idle");setDuprSyncError("");},5000);
+                    setTimeout(()=>{setDuprSyncStatus("idle");setDuprSyncError("");},6000);
                   };
                   return(
                     <div style={{marginTop:12,background:"#f0f4ff",borderRadius:10,padding:"16px",border:"1px solid #c7d2fe"}}>
                       {/* Section label */}
                       <div style={{fontSize:"0.68rem",fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:1.5,marginBottom:12}}>DUPR Rating</div>
                       {/* Current ratings — large numbers, no bubbles */}
-                      <div style={{display:"flex",gap:28,alignItems:"flex-end",marginBottom:16}}>
+                      <div style={{display:"flex",gap:28,alignItems:"flex-end",marginBottom:storedPlayerName?8:16}}>
                         {storedDoubles
                           ?<div><div style={{fontSize:"2rem",fontWeight:900,color:"#0a1551",lineHeight:1}}>{parseFloat(storedDoubles).toFixed(2)}</div><div style={{fontSize:"0.65rem",fontWeight:700,color:"#6b7280",letterSpacing:0.8,marginTop:3,textTransform:"uppercase"}}>Doubles</div></div>
                           :<div><div style={{fontSize:"1rem",fontWeight:700,color:"#9ca3af"}}>—</div><div style={{fontSize:"0.65rem",fontWeight:700,color:"#9ca3af",letterSpacing:0.8,marginTop:3,textTransform:"uppercase"}}>Doubles</div></div>
@@ -3563,15 +3572,16 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                           :<div><div style={{fontSize:"1rem",fontWeight:700,color:"#9ca3af"}}>—</div><div style={{fontSize:"0.65rem",fontWeight:700,color:"#9ca3af",letterSpacing:0.8,marginTop:3,textTransform:"uppercase"}}>Singles</div></div>
                         }
                       </div>
-                      {/* DUPR Player ID */}
+                      {/* DUPR player name cross-check */}
+                      {storedPlayerName&&<div style={{fontSize:"0.78rem",color:"#374151",fontWeight:600,marginBottom:14,background:"#e0e7ff",borderRadius:6,padding:"5px 10px",display:"inline-block"}}>👤 {storedPlayerName}</div>}
+                      {/* DUPR Player ID + Sync */}
                       <div style={{fontSize:"0.7rem",fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:0.5,marginBottom:6}}>DUPR Player ID</div>
-                      <div style={{display:"flex",gap:8,marginBottom:8,alignItems:"center"}}>
-                        <input type="text" placeholder="e.g. ABC123" value={duprIdInput||storedId} onChange={e=>setDuprIdInput(e.target.value.replace(/\s/g,"").slice(0,20).toUpperCase())} style={{...inp,marginBottom:0,flex:1,fontSize:"0.88rem",background:"white"}}/>
-                        <button onClick={async()=>{const id=(duprIdInput.trim()||storedId);if(!id)return;await saveDupr({duprId:id});setDuprIdInput("");setDuprSyncError("ID saved ✓");setTimeout(()=>setDuprSyncError(""),2000);}} style={{background:"#374151",color:"white",border:"none",padding:"0 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:"0.8rem",flexShrink:0,height:40}}>Save</button>
+                      <div style={{display:"flex",gap:8,marginBottom:10,alignItems:"center"}}>
+                        <input type="text" placeholder="e.g. ABC123" value={duprIdInput||storedId} onChange={e=>setDuprIdInput(e.target.value.replace(/\s/g,"").slice(0,20).toUpperCase())} style={{...inp,marginBottom:0,flex:1,fontSize:"1rem",background:"white"}}/>
                       </div>
                       <div style={{display:"flex",gap:8,marginBottom:12,alignItems:"center",flexWrap:"wrap"}}>
                         <button disabled={duprSyncStatus==="syncing"||!((duprIdInput.trim()||storedId))} onClick={()=>syncDupr(duprIdInput.trim()||storedId)} style={{background:"#0a1551",color:"white",border:"none",padding:"0 18px",borderRadius:8,cursor:duprSyncStatus==="syncing"||!((duprIdInput.trim()||storedId))?"not-allowed":"pointer",fontWeight:700,fontSize:"0.85rem",height:40,opacity:duprSyncStatus==="syncing"||!((duprIdInput.trim()||storedId))?0.6:1,flex:1,minWidth:120}}>
-                          {duprSyncStatus==="syncing"?"Syncing…":"↻ Sync Rating"}
+                          {duprSyncStatus==="syncing"?"Syncing…":"↻ Save ID & Sync Rating"}
                         </button>
                         {storedId&&<a href={`https://dashboard.dupr.com/dashboard/player/${storedId}/profile`} target="_blank" rel="noopener noreferrer" style={{color:"#0a1551",fontSize:"0.82rem",fontWeight:700,whiteSpace:"nowrap",padding:"0 4px",lineHeight:"40px"}}>View Profile →</a>}
                       </div>
@@ -5016,6 +5026,7 @@ export default function App(){
               duprRating:s.dupr_rating||"",
               duprDoublesRating:s.dupr_doubles_rating||"",
               duprId:s.dupr_id||"",
+              duprPlayerName:s.dupr_player_name||"",
               memberType:s.member_type||"public",
               approved:s.approved,
               blocked:s.blocked,
@@ -5198,15 +5209,15 @@ export default function App(){
         body:JSON.stringify({email,block})});
     }catch(e){console.error("Block removed error:",e);}
   };
-  const addStudent=({name,email,memberType,firstName,lastName,commEmail,phone,city,homeCourt,skillLevel,duprRating,duprDoublesRating,duprId})=>{
+  const addStudent=({name,email,memberType,firstName,lastName,commEmail,phone,city,homeCourt,skillLevel,duprRating,duprDoublesRating,duprId,duprPlayerName})=>{
     setMockUsersState(prev=>{
       const existing=prev[email];
       if(existing){
         // Update existing student — merge all profile fields, preserve memberType/approved/blocked/etc.
-        return{...prev,[email]:{...existing,name,firstName:firstName||"",lastName:lastName||"",commEmail:commEmail||"",phone:phone||"",city:city||"",homeCourt:homeCourt||"",skillLevel:skillLevel||"",duprRating:duprRating!=null?duprRating:existing.duprRating||"",duprDoublesRating:duprDoublesRating!=null?duprDoublesRating:existing.duprDoublesRating||"",duprId:duprId!=null?duprId:existing.duprId||"",memberType:memberType||existing.memberType}};
+        return{...prev,[email]:{...existing,name,firstName:firstName||"",lastName:lastName||"",commEmail:commEmail||"",phone:phone||"",city:city||"",homeCourt:homeCourt||"",skillLevel:skillLevel||"",duprRating:duprRating!=null?duprRating:existing.duprRating||"",duprDoublesRating:duprDoublesRating!=null?duprDoublesRating:existing.duprDoublesRating||"",duprId:duprId!=null?duprId:existing.duprId||"",duprPlayerName:duprPlayerName!=null?duprPlayerName:existing.duprPlayerName||"",memberType:memberType||existing.memberType}};
       }
       // New student
-      return{...prev,[email]:{name,memberType:memberType||"public",approved:true,password:"",firstName:firstName||"",lastName:lastName||"",commEmail:commEmail||"",phone:phone||"",city:city||"",homeCourt:homeCourt||"",skillLevel:skillLevel||"",duprRating:duprRating||"",duprDoublesRating:duprDoublesRating||"",duprId:duprId||""}};
+      return{...prev,[email]:{name,memberType:memberType||"public",approved:true,password:"",firstName:firstName||"",lastName:lastName||"",commEmail:commEmail||"",phone:phone||"",city:city||"",homeCourt:homeCourt||"",skillLevel:skillLevel||"",duprRating:duprRating||"",duprDoublesRating:duprDoublesRating||"",duprId:duprId||"",duprPlayerName:duprPlayerName||""}};
     });
     // Only initialize lessons array if this is a new student
     setAllLessons(prev=>({...prev,[email]:prev[email]||[]}));
@@ -5262,7 +5273,7 @@ export default function App(){
     if(s){
       setMockUsersState(prev=>({...prev,[email]:{
         name:s.name,firstName:s.firstName||s.first_name||"",lastName:s.lastName||s.last_name||"",
-        commEmail:s.commEmail||s.comm_email||"",skillLevel:s.skillLevel||"",duprRating:s.duprRating||s.dupr_rating||"",duprDoublesRating:s.duprDoublesRating||s.dupr_doubles_rating||"",duprId:s.duprId||s.dupr_id||"",
+        commEmail:s.commEmail||s.comm_email||"",skillLevel:s.skillLevel||"",duprRating:s.duprRating||s.dupr_rating||"",duprDoublesRating:s.duprDoublesRating||s.dupr_doubles_rating||"",duprId:s.duprId||s.dupr_id||"",duprPlayerName:s.duprPlayerName||s.dupr_player_name||"",
         memberType:s.memberType||"public",approved:true,blocked:false,
         phone:s.phone||"",city:s.city||"",homeCourt:s.homeCourt||"",picture:s.picture||""
       }}));
