@@ -491,7 +491,7 @@ function LessonModal({lesson,isMenlo,onClose,onCancel}){
   const deadline=!isCancelled?getCancelDeadline(lesson.date,lesson.time):null;
   const[confirmCancel,setConfirmCancel]=useState(false);
   const[cancelling,setCancelling]=useState(false);
-  const location=isMenlo?"Stanford Redwood City":"Andrew Spinas Park, Redwood City";
+  const location=isMenlo?"Menlo Circus Club, 190 Park Ln, Atherton":"Andrew Spinas Park, Redwood City";
   const dateObj=new Date(lesson.date+"T12:00:00");
   const statusMap={
     confirmed:{bg:"#e8f0ee",color:G,label:"✓ Confirmed"},
@@ -1709,25 +1709,27 @@ function BookingPage({user,setPage,onAddLesson,stanfordEnabled=true}){
       .catch(()=>setLoadingAvail(false));
   },[duration,isMenlo]);
 
+  const MCC_CLINIC_RATE=35; // per person
   const PRICES={
-    private:{60:isGrandfathered?120:isMenlo?115:120, 90:isGrandfathered?180:isMenlo?172.50:180},
+    private:{60:isGrandfathered?120:isMenlo?115:120, 90:isGrandfathered?180:isMenlo?170:180},
     semi:   {60:isMenlo?120:140, 90:isMenlo?180:210},
+    clinic: {60:MCC_CLINIC_RATE, 90:MCC_CLINIC_RATE},
     group:  {60:140, 90:210},
   };
-  const LESSONS=[{id:"private",icon:"🎯",label:"Private",desc:"1-on-1 coaching"},{id:"semi",icon:"👥",label:"Semi-Private",desc:"2 students"},{id:"group",icon:"🏆",label:"Group",desc:"3-4 students"}];
-  const price=lessonType&&duration?PRICES[lessonType][duration]:null;
+  const LESSONS=[{id:"private",icon:"🎯",label:"Private",desc:"1-on-1 coaching"},{id:"semi",icon:"👥",label:"Semi-Private",desc:"2 students"},{id:"group",icon:"🏆",label:"Group",desc:"3-4 students"},...(isMenlo?[{id:"clinic",icon:"🎾",label:"Clinic",desc:"5-8 MCC members"}]:[{id:"clinic-contact",icon:"🎾",label:"Clinic",desc:"5-8 players"}])];
+  const price=lessonType==="clinic"?(duration&&groupSize>=5?MCC_CLINIC_RATE*groupSize:null):lessonType&&duration&&PRICES[lessonType]?PRICES[lessonType][duration]:null;
   const slots=date?getSlots(date,isMenlo?"menlo":"public",duration||60).filter(s=>!busyTimes.some(b=>{const bufA=b.bufferAfter??30;const bufB=b.bufferBefore??30;return s.s<(b.endMins+bufA)&&s.e>(b.startMins-bufB);})):[];
   const toTime24=(mins)=>{const h=Math.floor(mins/60),m=mins%60;return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0");};
   const toTimeStr=(s,e)=>fmt(s)+" - "+fmt(e);
 
-  // Private = 3 steps (skip participants); Semi/Group = 4 steps
+  // Private = 3 steps (skip participants); Semi/Group/Clinic = 4 steps
   const isPrivate=lessonType==="private";
   const displaySteps=isPrivate?["Type","Date & Time","Confirm"]:["Type","Date & Time","Participants","Confirm"];
   const displayStep=isPrivate&&step===4?3:step;
 
-  const step1Done=lessonType&&duration&&(lessonType!=="group"||groupSize);
+  const step1Done=lessonType&&lessonType!=="clinic-contact"&&duration&&(lessonType!=="group"||groupSize)&&(lessonType!=="clinic"||(groupSize>=5&&groupSize<=8));
   const step2Done=date&&slot;
-  const step3Done=isPrivate?true:lessonType==="semi"?(partner.firstName.trim()!==""&&partner.lastName.trim()!==""):groupMembers.slice(0,groupSize-1).every(m=>m.firstName.trim()!==""&&m.lastName.trim()!=="");
+  const step3Done=isPrivate?true:lessonType==="semi"?(partner.firstName.trim()!==""&&partner.lastName.trim()!==""):(lessonType==="group"||lessonType==="clinic")?groupMembers.slice(0,groupSize-1).every(m=>m.firstName.trim()!==""&&m.lastName.trim()!==""):true;
   const canConfirm=step1Done&&step2Done&&step3Done;
 
   const handleBook=async()=>{
@@ -1735,21 +1737,21 @@ function BookingPage({user,setPage,onAddLesson,stanfordEnabled=true}){
     const startTime=toTime24(slot.s);
     const endTime=toTime24(slot.e);
     const timeStr=toTimeStr(slot.s,slot.e);
-    const lessonLabel=lessonType==="private"?"Private":lessonType==="semi"?"Semi-Private":"Group";
+    const lessonLabel=lessonType==="private"?"Private":lessonType==="semi"?"Semi-Private":lessonType==="clinic"?"Clinic":"Group";
     const nameInitial=(first,last)=>{const f=(first||"").trim(),l=(last||"").trim();return l?f+" "+l[0].toUpperCase():f;};
     const bookerParts=user.name.trim().split(/\s+/);
     const bookerInitial=nameInitial(bookerParts[0],bookerParts.slice(1).join(" "));
     const partnerFull=(partner.firstName+" "+partner.lastName).trim();
-    const memberNames=lessonType==="semi"?[user.name,partnerFull]:lessonType==="group"?[user.name,...groupMembers.slice(0,groupSize-1).map(m=>(m.firstName+" "+m.lastName).trim())]:[user.name];
-    const participantInitials=lessonType==="semi"?[bookerInitial,nameInitial(partner.firstName,partner.lastName)]:lessonType==="group"?[bookerInitial,...groupMembers.slice(0,groupSize-1).map(m=>nameInitial(m.firstName,m.lastName))]:[bookerInitial];
-    const summary=participantInitials.join("/")+` pb lesson`;
+    const memberNames=lessonType==="semi"?[user.name,partnerFull]:(lessonType==="group"||lessonType==="clinic")?[user.name,...groupMembers.slice(0,groupSize-1).map(m=>(m.firstName+" "+m.lastName).trim())]:[user.name];
+    const participantInitials=lessonType==="semi"?[bookerInitial,nameInitial(partner.firstName,partner.lastName)]:(lessonType==="group"||lessonType==="clinic")?[bookerInitial,...groupMembers.slice(0,groupSize-1).map(m=>nameInitial(m.firstName,m.lastName))]:[bookerInitial];
+    const summary=participantInitials.join("/")+(lessonType==="clinic"?" pb clinic":" pb lesson");
     const partnerInfo=lessonType==="semi"?"\nPartner: "+partnerFull+(partner.email?" ("+partner.email+")":""):"";
-    const groupInfo=lessonType==="group"?"\nGroup: "+groupMembers.slice(0,groupSize-1).map(m=>(m.firstName+" "+m.lastName).trim()+(m.email?" ("+m.email+")":"")).join(", "):"";
+    const groupInfo=(lessonType==="group"||lessonType==="clinic")?"\n"+(lessonType==="clinic"?"Participants":"Group")+": "+memberNames.join(", "):"";
     const partnerEmail=partner.email;
-    const location=!isMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City, CA 94063, USA":"Stanford Redwood City";
+    const location=!isMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City, CA 94063, USA":"Menlo Circus Club, 190 Park Ln, Atherton, CA 94027";
     const ticketId=generateTicket();
     const description="Ticket: "+ticketId+"\nStudent: "+user.name+"\nEmail: "+user.email+"\nType: "+lessonLabel+" "+duration+"min\nFocus: "+(focus||"Not specified")+"\nNotes: "+(notes||"None")+partnerInfo+groupInfo+"\nLocation: "+location+"\nManage: https://dmpickleball.com";
-    const additionalEmails=lessonType==="semi"&&partnerEmail?[partnerEmail]:lessonType==="group"?groupMembers.slice(0,groupSize-1).map(m=>m.email).filter(Boolean):[];
+    const additionalEmails=lessonType==="semi"&&partnerEmail?[partnerEmail]:(lessonType==="group"||lessonType==="clinic")?groupMembers.slice(0,groupSize-1).map(m=>m.email).filter(Boolean):[];
     let eventId="";
     try{
       const r=await fetch("/api/create-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({summary,description,date,startTime,endTime,location,studentEmail:user.email,studentName:user.name,additionalEmails})});
@@ -1768,8 +1770,8 @@ function BookingPage({user,setPage,onAddLesson,stanfordEnabled=true}){
     const adminText="New lesson booked!\n\nRef: "+ticketId+"\nStudent: "+user.name+"\nEmail: "+user.email+"\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+duration+" min\nFocus: "+(focus||"Not specified")+"\nNotes: "+(notes||"None")+partnerInfo+groupInfo+"\nPrice: $"+price+" total"+priceNote+"\nLocation: "+location;
     await sendEmail("david@dmpickleball.com","New booking: "+summary+" - "+fmtDateShort(date),adminText,user.email,null,"noreply@dmpickleball.com");
     if(lessonType==="semi"&&partnerEmail){const partnerText="Hi "+partnerFull+",\n\n"+user.name+" has added you to a pickleball lesson!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nType: Semi-Private · "+duration+" min\nFocus: "+(focus||"Not specified")+"\nLocation: "+location+"\n\nSee you on the court!\nCoach David";await sendEmail(partnerEmail,"You have been added to a pickleball lesson - "+fmtDateShort(date),partnerText,"book@dmpickleball.com",link,"book@dmpickleball.com");}
-    if(lessonType==="group"){for(const m of groupMembers.slice(0,groupSize-1)){if(m.email){const mFull=(m.firstName+" "+m.lastName).trim();const groupMemberText="Hi "+mFull+",\n\n"+user.name+" has added you to a group pickleball lesson!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nLocation: "+location+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398";await sendEmail(m.email,"You have been added to a group pickleball lesson - "+fmtDateShort(date),groupMemberText,"book@dmpickleball.com",link,"book@dmpickleball.com");}}}
-    const newLesson={id:Date.now(),date,time:timeStr,type:lessonLabel,duration:duration+" min",status:"confirmed",focus,notes:"",photos:[],videos:[],gcalEventId:eventId,ticketId,partnerEmail:lessonType==="semi"?partnerEmail:"",groupEmails:lessonType==="group"?groupMembers.slice(0,groupSize-1).map(m=>m.email).filter(Boolean):[],members:memberNames.slice(1),createdAt:new Date().toISOString()};
+    if(lessonType==="group"||lessonType==="clinic"){for(const m of groupMembers.slice(0,groupSize-1)){if(m.email){const mFull=(m.firstName+" "+m.lastName).trim();const typeWord=lessonType==="clinic"?"clinic":"group pickleball lesson";const groupMemberText="Hi "+mFull+",\n\n"+user.name+" has added you to a pickleball "+typeWord+"!\n\nDate: "+fmtDate(date)+"\nTime: "+timeStr+"\nLocation: "+location+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398";await sendEmail(m.email,"You have been added to a pickleball "+typeWord+" - "+fmtDateShort(date),groupMemberText,"book@dmpickleball.com",link,"book@dmpickleball.com");}}}
+    const newLesson={id:Date.now(),date,time:timeStr,type:lessonLabel,duration:duration+" min",status:"confirmed",focus,notes:"",photos:[],videos:[],gcalEventId:eventId,ticketId,partnerEmail:lessonType==="semi"?partnerEmail:"",groupEmails:(lessonType==="group"||lessonType==="clinic")?groupMembers.slice(0,groupSize-1).map(m=>m.email).filter(Boolean):[],members:memberNames.slice(1),createdAt:new Date().toISOString()};
     onAddLesson(newLesson);
     setGcalLink(link);
     setBookedSummary({date,timeStr,lessonLabel,duration,focus,price,summary});
@@ -1791,7 +1793,7 @@ function BookingPage({user,setPage,onAddLesson,stanfordEnabled=true}){
             <div>{bookedSummary?.lessonLabel} · {bookedSummary?.duration} min</div>
             {bookedSummary?.focus&&<div style={{color:G,fontWeight:600}}>{bookedSummary.focus}</div>}
             <div><strong>${bookedSummary?.price} total</strong>{lessonType==="semi"&&<span style={{color:"#9ca3af"}}> · ${bookedSummary.price/2}/person</span>}{lessonType==="group"&&<span style={{color:"#9ca3af"}}> · split equally</span>}</div>
-            <div style={{display:"flex",alignItems:"flex-start",gap:6}}><span style={{color:"#9ca3af",fontSize:"0.8rem",fontWeight:700,paddingTop:2,whiteSpace:"nowrap"}}>📍 Location:</span><a href={!isMenlo?"https://maps.google.com/?q=Andrew+Spinas+Park,+3003+Bay+Rd,+Redwood+City,+CA+94063":"https://maps.google.com/?q=Stanford+Redwood+City+Recreation+and+Wellness+Center"} target="_blank" rel="noreferrer" style={{color:G,fontWeight:600}}>{!isMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City":"Stanford Redwood City"}</a></div>
+            <div style={{display:"flex",alignItems:"flex-start",gap:6}}><span style={{color:"#9ca3af",fontSize:"0.8rem",fontWeight:700,paddingTop:2,whiteSpace:"nowrap"}}>📍 Location:</span><a href={!isMenlo?"https://maps.google.com/?q=Andrew+Spinas+Park,+3003+Bay+Rd,+Redwood+City,+CA+94063":"https://maps.google.com/?q=Menlo+Circus+Club,+190+Park+Ln,+Atherton,+CA+94027"} target="_blank" rel="noreferrer" style={{color:G,fontWeight:600}}>{!isMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City":"Menlo Circus Club, 190 Park Ln, Atherton"}</a></div>
           </div>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -1807,7 +1809,7 @@ function BookingPage({user,setPage,onAddLesson,stanfordEnabled=true}){
       <div style={{maxWidth:620,margin:"0 auto",padding:"32px 24px"}}>
         <div style={{background:"#fffbea",border:"1.5px solid #f4c430",borderRadius:12,padding:"28px 32px",textAlign:"center"}}>
           <div style={{fontWeight:800,fontSize:"1.05rem",color:"#92400e",marginBottom:8}}>Stanford Lessons Temporarily Unavailable</div>
-          <p style={{color:"#7a5800",fontSize:"0.9rem",lineHeight:1.7,marginBottom:16}}>Coach David has temporarily paused Stanford Redwood City bookings. Please check back soon or get in touch directly.</p>
+          <p style={{color:"#7a5800",fontSize:"0.9rem",lineHeight:1.7,marginBottom:16}}>Coach David has temporarily paused Menlo Circus Club bookings. Please check back soon or get in touch directly.</p>
           <button onClick={()=>setPage("contact")} style={{background:G,color:"white",border:"none",padding:"10px 24px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"0.9rem"}}>Contact Coach David</button>
         </div>
       </div>
@@ -1850,9 +1852,14 @@ function BookingPage({user,setPage,onAddLesson,stanfordEnabled=true}){
       {step===1&&(
         <div>
           <div style={{...lbl,marginBottom:12}}>Select Lesson Type</div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:24}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,marginBottom:24}}>
             {LESSONS.map(l=>{
-              const p=duration?PRICES[l.id][duration]:null;
+              // Non-MCC Clinic card — contact only, not bookable
+              if(l.id==="clinic-contact"){return(<div key={l.id} style={{background:"#f9fafb",border:"2px solid #e5e7eb",borderRadius:12,padding:"16px",textAlign:"center",opacity:0.85}}><div style={{fontSize:28,marginBottom:6}}>{l.icon}</div><div style={{fontWeight:700,fontSize:"0.95rem",color:"#1a1a1a"}}>{l.label}</div><div style={{fontSize:"0.75rem",color:"#6b7280",marginTop:2,marginBottom:8}}>{l.desc}</div><button onClick={()=>setPage("contact")} style={{background:G,color:"white",border:"none",padding:"6px 14px",borderRadius:50,fontSize:"0.78rem",fontWeight:700,cursor:"pointer"}}>Contact me</button></div>);}
+              // Clinic (MCC only): per-person rate
+              if(l.id==="clinic"){const priceLabel=duration?"$"+MCC_CLINIC_RATE+"/person":"Select duration";return(<div key={l.id} onClick={()=>{setLessonType(l.id);}} style={{background:lessonType===l.id?"#e8f0ee":"white",border:"2px solid "+(lessonType===l.id?G:"#e5e7eb"),borderRadius:12,padding:"16px",cursor:"pointer",textAlign:"center"}}><div style={{fontSize:28,marginBottom:6}}>{l.icon}</div><div style={{fontWeight:700,fontSize:"0.95rem",color:lessonType===l.id?G:"#1a1a1a"}}>{l.label}</div><div style={{fontSize:"0.75rem",color:"#6b7280",marginTop:2,marginBottom:8}}>{l.desc}</div><div style={{fontWeight:800,color:G,fontSize:"0.95rem"}}>{priceLabel}</div><div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:2}}>5–8 participants</div></div>);}
+              // Standard lesson types
+              const p=duration&&PRICES[l.id]?PRICES[l.id][duration]:null;
               const totalLabel=!p?"Select duration":"$"+p+" total";
               const subLabel=!p?null:l.id==="semi"?"$"+(p/2)+"/person":l.id==="group"?"split equally":null;
               return(<div key={l.id} onClick={()=>{setLessonType(l.id);}} style={{background:lessonType===l.id?"#e8f0ee":"white",border:"2px solid "+(lessonType===l.id?G:"#e5e7eb"),borderRadius:12,padding:"16px",cursor:"pointer",textAlign:"center"}}><div style={{fontSize:28,marginBottom:6}}>{l.icon}</div><div style={{fontWeight:700,fontSize:"0.95rem",color:lessonType===l.id?G:"#1a1a1a"}}>{l.label}</div><div style={{fontSize:"0.75rem",color:"#6b7280",marginTop:2,marginBottom:8}}>{l.desc}</div><div style={{fontWeight:800,color:G,fontSize:"0.95rem"}}>{totalLabel}</div>{subLabel&&<div style={{fontSize:"0.75rem",color:"#9ca3af",marginTop:2}}>{subLabel}</div>}</div>);
@@ -1864,6 +1871,15 @@ function BookingPage({user,setPage,onAddLesson,stanfordEnabled=true}){
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                 {[3,4].map(n=>(<div key={n} onClick={()=>setGroupSize(n)} style={{background:groupSize===n?"#e8f0ee":"white",border:"2px solid "+(groupSize===n?G:"#e5e7eb"),borderRadius:12,padding:"14px",cursor:"pointer",textAlign:"center"}}><div style={{fontWeight:700,fontSize:"1rem",color:groupSize===n?G:"#1a1a1a"}}>{n} students</div><div style={{fontSize:"0.75rem",color:"#6b7280",marginTop:3}}>{n-1} additional name{n-1>1?"s":""} required</div></div>))}
               </div>
+            </div>
+          )}
+          {lessonType==="clinic"&&(
+            <div style={{marginBottom:24}}>
+              <div style={{...lbl,marginBottom:12}}>Clinic Size</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10}}>
+                {[5,6,7,8].map(n=>(<div key={n} onClick={()=>setGroupSize(n)} style={{background:groupSize===n?"#e8f0ee":"white",border:"2px solid "+(groupSize===n?G:"#e5e7eb"),borderRadius:12,padding:"12px 6px",cursor:"pointer",textAlign:"center"}}><div style={{fontWeight:700,fontSize:"1rem",color:groupSize===n?G:"#1a1a1a"}}>{n}</div><div style={{fontSize:"0.68rem",color:"#6b7280",marginTop:2}}>players</div></div>))}
+              </div>
+              {duration&&groupSize>=5&&<div style={{marginTop:10,fontSize:"0.82rem",color:G,fontWeight:700}}>Total: ${MCC_CLINIC_RATE*groupSize} ({groupSize} × ${MCC_CLINIC_RATE}/person)</div>}
             </div>
           )}
           <div style={{...lbl,marginBottom:12}}>Select Duration</div>
@@ -1926,9 +1942,9 @@ function BookingPage({user,setPage,onAddLesson,stanfordEnabled=true}){
               </div>
             </div>
           )}
-          {lessonType==="group"&&(
+          {(lessonType==="group"||lessonType==="clinic")&&(
             <div style={{marginBottom:20}}>
-              <div style={{...lbl,marginBottom:8}}>Additional Participants <span style={{color:"#dc2626",fontWeight:700}}>*</span></div>
+              <div style={{...lbl,marginBottom:8}}>{lessonType==="clinic"?"Clinic Participants":"Additional Participants"} <span style={{color:"#dc2626",fontWeight:700}}>*</span></div>
               <div style={{fontSize:"0.82rem",color:"#6b7280",marginBottom:12}}>You are Person 1. Enter the remaining {groupSize-1} participant{groupSize-1>1?"s":""} below.</div>
               {Array(groupSize-1).fill(null).map((_,i)=>(
                 <div key={i} style={{background:"#f9f9f6",borderRadius:10,padding:"14px 16px",marginBottom:10}}>
@@ -1969,12 +1985,13 @@ function BookingPage({user,setPage,onAddLesson,stanfordEnabled=true}){
             <div style={{fontSize:"0.92rem",color:"#374151",lineHeight:2.2}}>
               <div><strong style={{fontSize:"1rem"}}>{fmtDate(date)}</strong></div>
               <div><strong style={{fontSize:"1rem"}}>{slot&&toTimeStr(slot.s,slot.e)}</strong></div>
-              <div><strong>{lessonType==="private"?"Private":lessonType==="semi"?"Semi-Private":"Group"} · {duration} min</strong></div>
+              <div><strong>{lessonType==="private"?"Private":lessonType==="semi"?"Semi-Private":lessonType==="clinic"?"Clinic":"Group"} · {duration} min</strong></div>
               {focus&&<div style={{color:G,fontWeight:600}}>Focus: {focus}</div>}
-              <div><strong>${price} total</strong>{lessonType==="semi"&&<span style={{color:"#9ca3af",fontWeight:400,fontSize:"0.85rem"}}> · ${price/2}/person</span>}{lessonType==="group"&&<span style={{color:"#9ca3af",fontWeight:400,fontSize:"0.85rem"}}> · split equally</span>}</div>
-              <div style={{display:"flex",alignItems:"flex-start",gap:6}}><span style={{color:"#9ca3af",fontSize:"0.8rem",fontWeight:700,paddingTop:2,whiteSpace:"nowrap"}}>📍 Location:</span><a href={!isMenlo?"https://maps.google.com/?q=Andrew+Spinas+Park,+3003+Bay+Rd,+Redwood+City,+CA+94063":"https://maps.google.com/?q=Stanford+Redwood+City+Recreation+and+Wellness+Center"} target="_blank" rel="noreferrer" style={{color:G,fontWeight:600}}>{!isMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City":"Stanford Redwood City"}</a></div>
+              <div><strong>${price} total</strong>{lessonType==="semi"&&<span style={{color:"#9ca3af",fontWeight:400,fontSize:"0.85rem"}}> · ${price/2}/person</span>}{lessonType==="group"&&<span style={{color:"#9ca3af",fontWeight:400,fontSize:"0.85rem"}}> · split equally</span>}{lessonType==="clinic"&&<span style={{color:"#9ca3af",fontWeight:400,fontSize:"0.85rem"}}> · ${MCC_CLINIC_RATE}/person × {groupSize}</span>}</div>
+              <div style={{display:"flex",alignItems:"flex-start",gap:6}}><span style={{color:"#9ca3af",fontSize:"0.8rem",fontWeight:700,paddingTop:2,whiteSpace:"nowrap"}}>📍 Location:</span><a href={!isMenlo?"https://maps.google.com/?q=Andrew+Spinas+Park,+3003+Bay+Rd,+Redwood+City,+CA+94063":"https://maps.google.com/?q=Menlo+Circus+Club,+190+Park+Ln,+Atherton,+CA+94027"} target="_blank" rel="noreferrer" style={{color:G,fontWeight:600}}>{!isMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City":"Menlo Circus Club, 190 Park Ln, Atherton"}</a></div>
               {lessonType==="semi"&&<div>Partner: {(partner.firstName+" "+partner.lastName).trim()}</div>}
-              {lessonType==="group"&&<div>Group: {[user.name,...groupMembers.slice(0,groupSize-1).map(m=>(m.firstName+" "+m.lastName).trim())].join(", ")}</div>}
+              {lessonType==="group"&&<div>Group: {memberNames.join(", ")}</div>}
+              {lessonType==="clinic"&&<div>Participants: {memberNames.join(", ")}</div>}
             </div>
           </div>
           {(()=>{
@@ -2013,8 +2030,9 @@ function BookingPage({user,setPage,onAddLesson,stanfordEnabled=true}){
 
 function getRate(type,duration,memberType){
   if(memberType==="menlo"){
-    if(type==="Private")return duration===90?172.50:115;
+    if(type==="Private")return duration===90?170:115;
     if(type==="Semi-Private")return duration===90?180:120;
+    if(type==="Clinic")return 35; // per-person rate; actual total = 35 × personCount
     return duration===90?210:140;
   }
   if(type==="Private")return duration===90?180:120;
@@ -2166,7 +2184,7 @@ function LocationsTab({locations,setLocations}){
     </div>
   );
 }
-function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeStanford,showNetStanford,setShowNetStanford,financeData,setFinanceData,financeLoading,setFinanceLoading,allLessons,mockUsers,onUpdateLesson,onExportNial,showNialExport,setShowNialExport,nialStart,setNialStart,nialEnd,setNialEnd}){
+function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeStanford,showNetStanford,setShowNetStanford,financeData,setFinanceData,financeLoading,setFinanceLoading,allLessons,mockUsers,onUpdateLesson}){
   const now=new Date();
   const[mob,setMob]=useState(()=>window.innerWidth<640);
   useEffect(()=>{const h=()=>setMob(window.innerWidth<640);window.addEventListener("resize",h);return()=>window.removeEventListener("resize",h);},[]);
@@ -2194,6 +2212,55 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
     return{start:yrOnly+"-01-01",end:yrOnly+"-12-31"};
   };
   const[financeError,setFinanceError]=useState("");
+  const[showAllisonReport,setShowAllisonReport]=useState(false);
+  const[allisonStart,setAllisonStart]=useState("");
+  const[allisonEnd,setAllisonEnd]=useState("");
+  const[allisonSending,setAllisonSending]=useState(false);
+  const[allisonSent,setAllisonSent]=useState(false);
+  const ALLISON_EMAIL="allisons@menlocircusclub.com";
+  // Parse participant full names from a calendar event.
+  // Priority: pre-parsed names from API → structured labels → unstructured lines → slash fallback in title
+  const parseMenloNames=(summary,description,parsedNames)=>{
+    if(parsedNames&&parsedNames.length>0)return parsedNames;
+    if(description){
+      // Structured: "Participants: Name1, Name2" or "Group: Name1, Name2"
+      const pgm=description.match(/^(?:Participants|Group):\s*(.+)$/im);
+      if(pgm)return pgm[1].split(',').map(n=>n.split('(')[0].trim()).filter(Boolean);
+      // Structured: "Student:" and/or "Partner:" (portal format)
+      const stm=description.match(/^Student:\s*(.+)$/im);
+      const ptm=description.match(/^Partner:\s*(.+)$/im);
+      if(stm||ptm){const names=[];if(stm)names.push(stm[1].split('(')[0].trim());if(ptm)names.push(ptm[1].split('(')[0].trim());return names.filter(Boolean);}
+      // Unstructured: lines without colons (manually written names)
+      const lines=description.split('\n').map(l=>l.trim()).filter(l=>l&&!l.includes(':')&&l.length<60);
+      if(lines.length>0){
+        if(lines[0].includes(',')){const parts=lines[0].split(',').map(n=>n.trim()).filter(Boolean);if(parts.length>1)return parts;}
+        return lines;
+      }
+    }
+    // Fall back to slashes in title ("First/Second pb lesson")
+    if(summary){
+      const clean=summary.replace(/ pb (lesson|clinic|group lesson)$/i,'');
+      const parts=clean.split('/').map(p=>p.trim()).filter(Boolean);
+      if(parts.length>1)return parts;
+    }
+    return [];
+  };
+  const buildAllisonReport=(start,end)=>{
+    const s=new Date(start+"T00:00:00");const e=new Date(end+"T23:59:59");
+    const items=(financeData?.events||[]).filter(ev=>ev.isMenlo&&!ev.isPickup).filter(ev=>{const d=new Date(ev.date+"T12:00:00");return d>=s&&d<=e;}).sort((a,b)=>a.date.localeCompare(b.date));
+    if(!items.length)return null;
+    const fmt=(ds)=>{const d=new Date(ds+"T12:00:00");return d.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"});};
+    const typeLabel=(ev)=>{const is90=ev.hours>=1.4;const dur=(is90?"90":"60")+" Min";if(ev.type==="private")return dur+" Private Pickleball Lesson";if(ev.type==="semi")return dur+" Semi-Private Pickleball Lesson";if(ev.type==="clinic")return "Pickleball Clinic";return dur+" Group Pickleball Lesson";};
+    const lines=["Hi Allison,","","Please process the following lesson charges for the period "+fmt(start)+" – "+fmt(end)+":",""];
+    items.forEach(ev=>{
+      const names=parseMenloNames(ev.summary,ev.description,ev.parsedNames);
+      const type=typeLabel(ev);
+      if(names.length<=1){lines.push(names[0]||ev.summary);lines.push("Date: "+fmt(ev.date));lines.push("Lesson: "+type);lines.push("");}
+      else{names.forEach(n=>{lines.push(n);lines.push("Date: "+fmt(ev.date));lines.push("Lesson: "+type+(names.length>1?" ("+names.length+" participants)":""));lines.push("");});}
+    });
+    lines.push("Total lessons: "+items.length);lines.push("");lines.push("Thank you,");lines.push("David Mok");
+    return lines.join("\n");
+  };
   const loadData=async(start,end,withStanford)=>{
     setFinanceLoading(true);setFinanceError("");
     try{
@@ -2346,24 +2413,45 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
       )}
       {/* Actual View */}
       {!projectedMode&&<>
-      {/* Nial Export */}
+      {/* Allison Report */}
       <div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}>
-        <button onClick={()=>setShowNialExport(!showNialExport)} style={{background:"#1a1a1a",color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>⬇ Export Nial Report</button>
+        <button onClick={()=>{setShowAllisonReport(!showAllisonReport);setAllisonSent(false);}} style={{background:G,color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>📋 Allison Report (MCC)</button>
       </div>
-      {showNialExport&&(
-        <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"20px 24px",marginBottom:24}}>
-          <div style={{fontWeight:700,fontSize:"0.95rem",marginBottom:4}}>Export Menlo Report for Nial</div>
-          <div style={{fontSize:"0.83rem",color:"#6b7280",marginBottom:16}}>Select date range — shows Date, Member Name, Lesson Type, Duration.</div>
-          <div style={{display:"flex",gap:12,flexWrap:"wrap",alignItems:"flex-end"}}>
-            <div><div style={{...lbl,marginBottom:4}}>Start Date</div><input type="date" value={nialStart} onChange={e=>setNialStart(e.target.value)} style={{...inp,marginBottom:0,width:"auto"}}/></div>
-            <div><div style={{...lbl,marginBottom:4}}>End Date</div><input type="date" value={nialEnd} onChange={e=>setNialEnd(e.target.value)} style={{...inp,marginBottom:0,width:"auto"}}/></div>
-            <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>setShowNialExport(false)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}>Cancel</button>
-              <button onClick={onExportNial} style={{background:G,color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>⬇ Download CSV</button>
+      {showAllisonReport&&(()=>{
+        const report=allisonStart&&allisonEnd?buildAllisonReport(allisonStart,allisonEnd):null;
+        const sendToAllison=async()=>{
+          if(!report)return;
+          setAllisonSending(true);setAllisonSent(false);
+          try{
+            const subject="Pickleball Lessons — "+allisonStart+" to "+allisonEnd;
+            await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:ALLISON_EMAIL,subject,text:report,fromAlias:"david@dmpickleball.com"})});
+            setAllisonSent(true);
+          }catch(e){console.error("Allison email error:",e);}
+          setAllisonSending(false);
+        };
+        return(
+          <div style={{background:"white",borderRadius:12,border:"1.5px solid #c7d2fe",padding:"20px 24px",marginBottom:24}}>
+            <div style={{fontWeight:700,fontSize:"0.97rem",color:G,marginBottom:4}}>Allison Report — Menlo Circus Club</div>
+            <div style={{fontSize:"0.82rem",color:"#6b7280",marginBottom:16}}>Select a date range to generate the billing report. Each member is listed individually with their lesson type. Send directly to Allison at MCC or copy and paste.</div>
+            <div style={{display:"flex",gap:12,flexWrap:"wrap",alignItems:"flex-end",marginBottom:16}}>
+              <div><div style={{...lbl,marginBottom:4}}>From</div><input type="date" value={allisonStart} onChange={e=>{setAllisonStart(e.target.value);setAllisonSent(false);}} style={{...inp,marginBottom:0,width:"auto",fontSize:"1rem"}}/></div>
+              <div><div style={{...lbl,marginBottom:4}}>To</div><input type="date" value={allisonEnd} onChange={e=>{setAllisonEnd(e.target.value);setAllisonSent(false);}} style={{...inp,marginBottom:0,width:"auto",fontSize:"1rem"}}/></div>
             </div>
+            {report?(
+              <>
+                <textarea readOnly value={report} style={{width:"100%",height:260,borderRadius:8,border:"1.5px solid #e5e7eb",padding:"12px",fontSize:"0.82rem",fontFamily:"monospace",color:"#374151",background:"#f9fafb",boxSizing:"border-box",resize:"vertical",marginBottom:12}}/>
+                <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+                  <button onClick={()=>{try{navigator.clipboard.writeText(report);}catch(e){}}} style={{background:"#f0f4ff",color:"#3730a3",border:"1.5px solid #c7d2fe",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>📋 Copy</button>
+                  <button onClick={sendToAllison} disabled={allisonSending||allisonSent} style={{background:allisonSent?"#16a34a":G,color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:allisonSending||allisonSent?"default":"pointer",fontWeight:700,fontSize:"0.85rem",opacity:allisonSending?0.7:1}}>{allisonSent?"✓ Sent to Allison":allisonSending?"Sending…":"✉ Email to Allison"}</button>
+                  <button onClick={()=>setShowAllisonReport(false)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}>Done</button>
+                </div>
+              </>
+            ):(
+              <div style={{fontSize:"0.84rem",color:"#9ca3af",padding:"12px 0"}}>Select a date range to preview the report.</div>
+            )}
           </div>
-        </div>
-      )}
+        );
+      })()}
       {/* Range + Stanford controls */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20,flexWrap:"wrap",gap:12}}>
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -2878,9 +2966,6 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
   const[includeStanford,setIncludeStanford]=useState(true);
   const[financeData,setFinanceData]=useState(null);
   const[financeLoading,setFinanceLoading]=useState(false);
-  const[showNialExport,setShowNialExport]=useState(false);
-  const[nialStart,setNialStart]=useState("");
-  const[nialEnd,setNialEnd]=useState("");
   const[filterCancelled,setFilterCancelled]=useState(false);
   const[showStanford,setShowStanford]=useState(true);
   const[editingId,setEditingId]=useState(null);const[editPriceId,setEditPriceId]=useState(null);const[editPriceVal,setEditPriceVal]=useState("");
@@ -3039,7 +3124,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
   const getItemStartEnd=(item)=>{if(item.studentEmail){if(!item.time)return{s:null,e:null};const sep=item.time.includes(' \u2013 ')?' \u2013 ':' - ';const parts=item.time.split(sep);return{s:timeStrToMins(parts[0]),e:parts[1]?timeStrToMins(parts[1]):null};}return{s:timeStrToMins(item.startTime),e:timeStrToMins(item.endTime)};};
 
   const schedIsMenlo=selectedStudent&&mockUsers[selectedStudent]?.memberType==="menlo";
-  const SCHED_PRICES={private:{60:schedIsMenlo?115:120,90:schedIsMenlo?172.50:180},semi:{60:schedIsMenlo?120:140,90:schedIsMenlo?180:210},group:{60:140,90:210}};
+  const SCHED_PRICES={private:{60:schedIsMenlo?115:120,90:schedIsMenlo?170:180},semi:{60:schedIsMenlo?120:140,90:schedIsMenlo?180:210},group:{60:140,90:210},clinic:{60:35,90:35}};
 
   // Pre-load 30-day availability for admin calendar (mirrors student booking behaviour)
   useEffect(()=>{
@@ -3082,15 +3167,17 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
     const endTime=toTime24(schedSlot.e);
     const timeStr=toTimeStr(schedSlot.s,schedSlot.e);
     const student=mockUsers[selectedStudent]||{};
-    const lessonLabel=schedLessonType==="private"?"Private":schedLessonType==="semi"?"Semi-Private":"Group";
+    const lessonLabel=schedLessonType==="private"?"Private":schedLessonType==="semi"?"Semi-Private":schedLessonType==="clinic"?"Clinic":"Group";
     const schedPartnerFull=(schedPartner.firstName+" "+schedPartner.lastName).trim();
-    const memberNames=schedLessonType==="semi"?[student.name,schedPartnerFull]:schedLessonType==="group"?[student.name,...schedGroupMembers.slice(0,schedGroupSize-1).map(m=>(m.firstName+" "+m.lastName).trim())]:[student.name];
-    const titleSuffix=schedLessonType==="group"?" pb group lesson":" pb lesson";
+    const memberNames=schedLessonType==="semi"?[student.name,schedPartnerFull]:(schedLessonType==="group"||schedLessonType==="clinic")?[student.name,...schedGroupMembers.slice(0,schedGroupSize-1).map(m=>(m.firstName+" "+m.lastName).trim())]:[student.name];
+    const titleSuffix=schedLessonType==="clinic"?" pb clinic":schedLessonType==="group"?" pb group lesson":" pb lesson";
     const summary=memberNames.join("/")+titleSuffix;
     const location=customLocation&&schedLocation?schedLocation:(!schedIsMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City, CA 94063, USA":"Menlo Circus Club, 190 Park Ln, Atherton, CA 94027");
     const ticketId2=generateTicket();
-    const description="Ticket: "+ticketId2+"\nStudent: "+student.name+"\nEmail: "+selectedStudent+"\nType: "+lessonLabel+" "+schedDuration+"min\nFocus: "+(schedFocus||"Not specified")+"\nNotes: "+(schedNotes||"None")+"\nLocation: "+location+"\nManage: https://dmpickleball.com";
-    const additionalEmails2=schedLessonType==="semi"&&schedPartner.email?[schedPartner.email]:schedLessonType==="group"?schedGroupMembers.slice(0,schedGroupSize-1).map(m=>m.email).filter(Boolean):[];
+    const _schedPartnerInfo=schedLessonType==="semi"&&schedPartnerFull?"\nPartner: "+schedPartnerFull+(schedPartner.email?" ("+schedPartner.email+")":""):"";
+    const _schedGroupInfo=(schedLessonType==="group"||schedLessonType==="clinic")&&memberNames.length>1?"\n"+(schedLessonType==="clinic"?"Participants":"Group")+": "+memberNames.join(", "):"";
+    const description="Ticket: "+ticketId2+"\nStudent: "+student.name+"\nEmail: "+selectedStudent+"\nType: "+lessonLabel+" "+schedDuration+"min\nFocus: "+(schedFocus||"Not specified")+"\nNotes: "+(schedNotes||"None")+_schedPartnerInfo+_schedGroupInfo+"\nLocation: "+location+"\nManage: https://dmpickleball.com";
+    const additionalEmails2=schedLessonType==="semi"&&schedPartner.email?[schedPartner.email]:(schedLessonType==="group"||schedLessonType==="clinic")?schedGroupMembers.slice(0,schedGroupSize-1).map(m=>m.email).filter(Boolean):[];
     let eventId="";
     try{
       const r=await fetch("/api/create-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({summary,description,date:schedDate,startTime,endTime,location,studentEmail:selectedStudent,studentName:student.name,additionalEmails:additionalEmails2})});
@@ -3105,14 +3192,14 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
     const sendEmail2=(to,subject,text,replyTo,calLink,fromAlias)=>{const html=makeEmailHtml(text,calLink);return fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to,subject,text,html,...(replyTo?{replyTo}:{}),...(fromAlias?{fromAlias}:{})})}).catch(()=>{});};
     const partnerInfo2=schedLessonType==="semi"&&schedPartnerFull?"\nPartner: "+schedPartnerFull+(schedPartner.email?" ("+schedPartner.email+")":""):"";
     const groupInfo2=schedLessonType==="group"&&schedGroupMembers.slice(0,schedGroupSize-1).some(m=>m.firstName)?"\nGroup: "+schedGroupMembers.slice(0,schedGroupSize-1).filter(m=>m.firstName).map(m=>(m.firstName+" "+m.lastName).trim()+(m.email?" ("+m.email+")":"")).join(", "):"";
-    const schedPriceTotal=schedCustomPrice?parseFloat(schedCustomPrice):SCHED_PRICES[schedLessonType][schedDuration];
+    const schedPriceTotal=schedCustomPrice?parseFloat(schedCustomPrice):schedLessonType==="clinic"?(35*schedGroupSize):(SCHED_PRICES[schedLessonType]?.[schedDuration]||0);
     const schedPriceNote=!schedCustomPrice&&schedLessonType==="semi"?" ($"+(schedPriceTotal/2)+"/person)":!schedCustomPrice&&schedLessonType==="group"?" (split equally)":"";
     const schedStudentText="Hi "+student.name+",\n\nCoach David has scheduled a lesson for you!\n\nRef: "+ticketId2+"\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+schedDuration+" min\nPrice: $"+schedPriceTotal+" total"+schedPriceNote+"\nFocus: "+(schedFocus||"Not specified")+"\nLocation: "+location+"\n\nSee you on the court!\nCoach David";
     await sendEmail2(selectedStudent,"Your lesson is booked - "+fmtDateShort(schedDate),schedStudentText,"book@dmpickleball.com",link,"book@dmpickleball.com");
     const schedAdminText="You scheduled a lesson!\n\nRef: "+ticketId2+"\nStudent: "+student.name+"\nEmail: "+selectedStudent+"\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nType: "+lessonLabel+" - "+schedDuration+" min\nPrice: $"+schedPriceTotal+" total"+schedPriceNote+"\nFocus: "+(schedFocus||"Not specified")+partnerInfo2+groupInfo2+"\nLocation: "+location;
     await sendEmail2("david@dmpickleball.com","Scheduled: "+summary+" - "+fmtDateShort(schedDate),schedAdminText,selectedStudent,null,"noreply@dmpickleball.com");
     if(schedLessonType==="semi"&&schedPartner.email){const schedPartnerText="Hi "+schedPartnerFull+",\n\n"+student.name+" has added you to a pickleball lesson with Coach David!\n\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nType: Semi-Private · "+schedDuration+" min\nFocus: "+(schedFocus||"Not specified")+"\nLocation: "+location+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398";await sendEmail2(schedPartner.email,"You've been added to a pickleball lesson - "+fmtDateShort(schedDate),schedPartnerText,"book@dmpickleball.com",link,"book@dmpickleball.com");}
-    if(schedLessonType==="group"){for(const m of schedGroupMembers.slice(0,schedGroupSize-1)){if(m.email){const mFull=(m.firstName+" "+m.lastName).trim();const schedGroupText="Hi "+mFull+",\n\n"+student.name+" has added you to a group pickleball lesson with Coach David!\n\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nLocation: "+location+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398";await sendEmail2(m.email,"You've been added to a group pickleball lesson - "+fmtDateShort(schedDate),schedGroupText,"book@dmpickleball.com",link,"book@dmpickleball.com");}}}
+    if(schedLessonType==="group"||schedLessonType==="clinic"){for(const m of schedGroupMembers.slice(0,schedGroupSize-1)){if(m.email){const mFull=(m.firstName+" "+m.lastName).trim();const typeWord=schedLessonType==="clinic"?"clinic":"group pickleball lesson";const schedGroupText="Hi "+mFull+",\n\n"+student.name+" has added you to a pickleball "+typeWord+" with Coach David!\n\nDate: "+fmtDate(schedDate)+"\nTime: "+timeStr+"\nLocation: "+location+"\n\nSee you on the court!\nDavid Mok\n(650) 839-3398";await sendEmail2(m.email,"You've been added to a pickleball "+typeWord+" - "+fmtDateShort(schedDate),schedGroupText,"book@dmpickleball.com",link,"book@dmpickleball.com");}}}
     const finalPrice=schedCustomPrice?parseFloat(schedCustomPrice):null;
     const newLesson={id:Date.now(),date:schedDate,time:timeStr,type:lessonLabel,duration:schedDuration+" min",status:"confirmed",focus:schedFocus,notes:"",photos:[],videos:[],gcalEventId:eventId,ticketId:ticketId2,customPrice:finalPrice,partnerEmail:schedLessonType==="semi"?schedPartner.email:"",members:memberNames.slice(1)};
     onAddLesson(selectedStudent,newLesson);
@@ -3122,34 +3209,6 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
     alert("Lesson scheduled for "+student.name+"!");
   };
 
-  const exportNial=()=>{
-    if(!nialStart||!nialEnd){alert("Please select a date range.");return;}
-    const start=new Date(nialStart+"T00:00:00");
-    const end=new Date(nialEnd+"T23:59:59");
-    const rows=[];
-    Object.entries(allLessons).forEach(([email,lessons])=>{
-      const u=mockUsers[email]||{};
-      if(u.memberType!=="menlo")return;
-      lessons.filter(l=>{
-        const chargeReason=l.cancelReason==="late"||l.cancelReason==="no_show"||l.status==="late_cancel"||l.status==="no_show";
-        const noCharge=l.status==="cancelled"||l.status==="cancelled_forgiven"||l.status==="weather_cancel"||(l.status==="cancelled"&&(l.cancelReason==="weather"||l.cancelReason==="student"||l.cancelReason==="admin"||l.cancelReason==="forgiven"));
-        if(noCharge&&!chargeReason)return false;
-        if(chargeReason)return true;
-        return isPast(l.date,l.time)||l.status==="completed";
-      }).forEach(l=>{
-        const d=new Date(l.date+"T12:00:00");
-        if(d<start||d>end)return;
-        const mins=parseInt(l.duration)||60;
-        const gross=getRate(l.type,mins,"menlo");
-        const net=getMenloNet(gross);
-        rows.push({name:u.name||email,date:l.date,type:l.type,duration:l.duration,gross,net});
-      });
-    });
-    if(!rows.length){alert("No Menlo lessons in that range.");return;}
-    const lines=["Date,Student,Type,Duration,Gross,David 70%",...rows.map(r=>r.date+","+r.name+","+r.type+","+r.duration+",$"+r.gross+",$"+r.net)];
-    const blob=new Blob([lines.join("\n")],{type:"text/csv"});
-    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="menlo_"+nialStart+"_to_"+nialEnd+".csv";a.click();
-  };
 
   return(
     <div style={{maxWidth:1100,margin:"0 auto",padding:mob?"16px 12px":"40px 24px"}}>
@@ -3847,16 +3906,17 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                 {[60,90].map(d=>(<div key={d} onClick={()=>setSchedDuration(d)} style={{background:schedDuration===d?"#e8f0ee":"white",border:"2px solid "+(schedDuration===d?G:"#e5e7eb"),borderRadius:12,padding:"14px",cursor:"pointer",textAlign:"center",fontWeight:700,color:schedDuration===d?G:"#1a1a1a"}}>{d} min</div>))}
               </div>
               <div style={{...lbl,marginBottom:12}}>Lesson Type</div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:20}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginBottom:20}}>
                 {[
                   {id:"private",icon:"🎯",label:"Private",total:SCHED_PRICES["private"][schedDuration],note:""},
                   {id:"semi",icon:"👥",label:"Semi-Private",total:SCHED_PRICES["semi"][schedDuration],note:"$"+(SCHED_PRICES["semi"][schedDuration]/2)+"/person"},
-                  {id:"group",icon:"🏆",label:"Group",total:SCHED_PRICES["group"][schedDuration],note:"split equally"}
+                  {id:"group",icon:"🏆",label:"Group",total:SCHED_PRICES["group"][schedDuration],note:"split equally"},
+                  {id:"clinic",icon:"🎾",label:"Clinic",total:null,note:"$35/person × size"}
                 ].map(l=>(
                   <div key={l.id} onClick={()=>setSchedLessonType(l.id)} style={{background:schedLessonType===l.id?"#e8f0ee":"white",border:"2px solid "+(schedLessonType===l.id?G:"#e5e7eb"),borderRadius:12,padding:"14px",cursor:"pointer",textAlign:"center"}}>
                     <div style={{fontSize:24,marginBottom:4}}>{l.icon}</div>
                     <div style={{fontWeight:700,fontSize:"0.9rem",color:schedLessonType===l.id?G:"#1a1a1a"}}>{l.label}</div>
-                    <div style={{fontWeight:800,color:G,fontSize:"0.95rem",marginTop:4}}>${l.total} total</div>
+                    <div style={{fontWeight:800,color:G,fontSize:"0.95rem",marginTop:4}}>{l.total!=null?"$"+l.total+" total":"$35/person"}</div>
                     {l.note&&<div style={{fontSize:"0.72rem",color:"#9ca3af",marginTop:2}}>{l.note}</div>}
                   </div>
                 ))}
@@ -3967,13 +4027,13 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                   <input type="email" value={schedPartner.email} onChange={e=>setSchedPartner(p=>({...p,email:e.target.value}))} placeholder="partner@email.com" style={{...inp,marginBottom:0}}/>
                 </div>
               )}
-              {schedLessonType==="group"&&(
+              {(schedLessonType==="group"||schedLessonType==="clinic")&&(
                 <div>
-                  <div style={{...lbl,marginBottom:8}}>Group Size</div>
-                  <div style={{display:"flex",gap:8,marginBottom:16}}>
-                    {[3,4,5].map(n=>(
+                  <div style={{...lbl,marginBottom:8}}>{schedLessonType==="clinic"?"Clinic Size":"Group Size"}</div>
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
+                    {(schedLessonType==="clinic"?[5,6,7,8]:[3,4,5]).map(n=>(
                       <div key={n} onClick={()=>setSchedGroupSize(n)} style={{background:schedGroupSize===n?"#e8f0ee":"white",border:"2px solid "+(schedGroupSize===n?G:"#e5e7eb"),borderRadius:10,padding:"10px 18px",cursor:"pointer",fontWeight:700,color:schedGroupSize===n?G:"#374151",fontSize:"0.9rem"}}>
-                        {n} players
+                        {n} players{schedLessonType==="clinic"?` ($${35*n})`:""}
                       </div>
                     ))}
                   </div>
@@ -4027,12 +4087,12 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                 <div style={{fontSize:"0.9rem",color:"#374151",lineHeight:2}}>
                   <div><strong>{mockUsers[selectedStudent]?.name}</strong></div>
                   {schedLessonType==="semi"&&(schedPartner.firstName||schedPartner.lastName)&&<div>Partner: {(schedPartner.firstName+" "+schedPartner.lastName).trim()}{schedPartner.email?" · "+schedPartner.email:""}</div>}
-                  {schedLessonType==="group"&&schedGroupMembers.slice(0,schedGroupSize-1).filter(m=>m.firstName).length>0&&<div>Group: {schedGroupMembers.slice(0,schedGroupSize-1).map(m=>(m.firstName+" "+m.lastName).trim()).filter(Boolean).join(", ")}</div>}
+                  {(schedLessonType==="group"||schedLessonType==="clinic")&&memberNames.length>1&&<div>{schedLessonType==="clinic"?"Participants":"Group"}: {memberNames.join(", ")}</div>}
                   <div>{fmtDate(schedDate)}</div>
                   <div>{schedSlot&&toTimeStr(schedSlot.s,schedSlot.e)}</div>
                   <div>{schedLessonType==="private"?"Private":schedLessonType==="semi"?"Semi-Private":"Group"} · {schedDuration} min</div>
                   {schedFocus&&<div style={{color:G,fontWeight:600}}>Focus: {schedFocus}</div>}
-                  <div>{schedCustomPrice?"$"+schedCustomPrice+" (custom)":"$"+SCHED_PRICES[schedLessonType][schedDuration]+" total"}{!schedCustomPrice&&schedLessonType==="semi"?" ($"+(SCHED_PRICES[schedLessonType][schedDuration]/2)+"/person)":!schedCustomPrice&&schedLessonType==="group"?" (split equally)":""}</div>
+                  <div>{schedCustomPrice?"$"+schedCustomPrice+" (custom)":schedLessonType==="clinic"?"$"+(35*schedGroupSize)+" ($35 × "+schedGroupSize+")":"$"+(SCHED_PRICES[schedLessonType]?.[schedDuration]||0)+" total"}{!schedCustomPrice&&schedLessonType==="semi"?" ($"+(SCHED_PRICES["semi"][schedDuration]/2)+"/person)":!schedCustomPrice&&schedLessonType==="group"?" (split equally)":""}</div>
                   <div style={{display:"flex",alignItems:"flex-start",gap:6}}><span style={{color:"#9ca3af",fontSize:"0.8rem",fontWeight:700,paddingTop:2,whiteSpace:"nowrap"}}>📍 Location:</span><a href={customLocation&&schedLocation?"https://maps.google.com/?q="+encodeURIComponent(schedLocation):(!schedIsMenlo?"https://maps.google.com/?q=Andrew+Spinas+Park,+3003+Bay+Rd,+Redwood+City,+CA+94063":"https://maps.google.com/?q=Menlo+Circus+Club,+190+Park+Ln,+Atherton,+CA+94027")} target="_blank" rel="noreferrer" style={{color:G,fontWeight:600}}>{customLocation&&schedLocation?schedLocation:(!schedIsMenlo?"Andrew Spinas Park, 3003 Bay Rd, Redwood City":"Menlo Circus Club, Atherton")}</a></div>
                 </div>
               </div>
@@ -4635,13 +4695,6 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
             allLessons={allLessons}
             mockUsers={mockUsers}
             onUpdateLesson={onUpdateLesson}
-            onExportNial={exportNial}
-            showNialExport={showNialExport}
-            setShowNialExport={setShowNialExport}
-            nialStart={nialStart}
-            setNialStart={setNialStart}
-            nialEnd={nialEnd}
-            setNialEnd={setNialEnd}
           />
         </ErrorBoundary>
       )}
@@ -5134,7 +5187,7 @@ export default function App(){
     }
     // Emails and DB update fire in background — don't block the UI
     const sendEmail3=(to,subject,text,fromAlias)=>{const html=makeCancelEmailHtml(text);return fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to,subject,text,html,...(fromAlias?{fromAlias}:{})})}).catch(()=>{});};
-    const cancelLocation=user.memberType==="menlo"?"Stanford Redwood City":"Andrew Spinas Park, 3003 Bay Rd, Redwood City";
+    const cancelLocation=user.memberType==="menlo"?"Menlo Circus Club, 190 Park Ln, Atherton":"Andrew Spinas Park, 3003 Bay Rd, Redwood City";
     const cancelDetails=(lesson.ticketId?"\nRef: "+lesson.ticketId:"")+"\nDate: "+fmtDate(lesson.date)+"\nTime: "+lesson.time+"\nType: "+lesson.type+(lesson.duration?" · "+lesson.duration:"")+"\nLocation: "+cancelLocation+(lesson.focus?"\nFocus: "+lesson.focus:"")+(lesson.members&&lesson.members.length>0?"\nWith: "+lesson.members.join(", "):"");
     const cancelMsg="Your pickleball lesson has been cancelled.\n"+cancelDetails+"\n\nIf you have any questions, reply to this email.\n\nCoach David";
     const partnerMsg="A pickleball lesson you were part of has been cancelled.\n"+cancelDetails+"\n\nIf you have any questions, reply to this email.\n\nCoach David";
@@ -5166,7 +5219,7 @@ export default function App(){
     // Send cancellation emails
     const sendCancelEmail=(to,subject,text)=>{const html=makeCancelEmailHtml(text);return fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to,subject,text,html,fromAlias:"noreply@dmpickleball.com"})}).catch(()=>{});};
     const studentName=mockUsersState[email]?.name||email;
-    const adminCancelLocation=mockUsersState[email]?.memberType==="menlo"?"Stanford Redwood City":"Andrew Spinas Park, 3003 Bay Rd, Redwood City";
+    const adminCancelLocation=mockUsersState[email]?.memberType==="menlo"?"Menlo Circus Club, 190 Park Ln, Atherton":"Andrew Spinas Park, 3003 Bay Rd, Redwood City";
     const adminCancelDetails=(lesson.ticketId?"\nRef: "+lesson.ticketId:"")+"\nDate: "+fmtDate(lesson.date)+"\nTime: "+lesson.time+"\nType: "+lesson.type+(lesson.duration?" · "+lesson.duration:"")+"\nLocation: "+adminCancelLocation+(lesson.focus?"\nFocus: "+lesson.focus:"")+(lesson.members&&lesson.members.length>0?"\nWith: "+lesson.members.join(", "):"");
     const cancelMsg="Your pickleball lesson has been cancelled by Coach David.\n"+adminCancelDetails+"\n\nIf you have any questions, reply to this email.\n\nCoach David";
     const partnerMsg="A pickleball lesson you were part of has been cancelled.\n"+adminCancelDetails+"\n\nIf you have any questions, reply to this email.\n\nCoach David";
