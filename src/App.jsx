@@ -2148,6 +2148,8 @@ function LocationsTab({locations,setLocations}){
 }
 function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeStanford,showNetStanford,setShowNetStanford,financeData,setFinanceData,financeLoading,setFinanceLoading,allLessons,mockUsers,onUpdateLesson,onExportNial,showNialExport,setShowNialExport,nialStart,setNialStart,nialEnd,setNialEnd}){
   const now=new Date();
+  const[mob,setMob]=useState(()=>window.innerWidth<640);
+  useEffect(()=>{const h=()=>setMob(window.innerWidth<640);window.addEventListener("resize",h);return()=>window.removeEventListener("resize",h);},[]);
   const[editRow,setEditRow]=useState(null);
   const[editPriceVal,setEditPriceVal]=useState("");const[editOriginalVal,setEditOriginalVal]=useState("");
   const fmtD=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
@@ -2452,25 +2454,56 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
             <div style={{marginBottom:24}}>
               <div style={{fontSize:"0.8rem",fontWeight:700,color:"#1a3c34",textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Calendar Lessons</div>
               <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
-                <table style={{width:"100%",borderCollapse:"collapse",fontSize:"0.88rem"}}>
-                  <thead><tr style={{background:"#f9f9f6",borderBottom:"1.5px solid #e5e7eb"}}>{["Date","Event","Type","Hours","Earnings"].map(h=>(<th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#6b7280",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>))}</tr></thead>
-                  <tbody>
-                    {adjustedCalLessons.filter(e=>{if(!financeSearch)return true;const q=financeSearch.toLowerCase();return e.summary?.toLowerCase().includes(q)||e.date?.includes(q);}).map((e,i)=>{
+                {mob?(
+                  /* ── Mobile card layout ── */
+                  <div>
+                    {adjustedCalLessons.filter(e=>{if(!financeSearch)return true;const q=financeSearch.toLowerCase();return e.summary?.toLowerCase().includes(q)||e.date?.includes(q);}).map((e,i,arr)=>{
                       const calKey=e.date+"|"+e.summary;
                       const isOverridden=calOverrides[calKey]!=null;
                       const isTypeOverridden=calTypeOverrides[calKey]!=null;
                       const openEdit=()=>{editRowRef.current={...e,isCalendar:true,calKey};setEditPriceVal(String(e.earnings));setEditTypeVal(e.type||"");dialogRef.current?.showModal();};
                       return(
-                      <tr key={i} style={{borderBottom:"1px solid #f3f4f6"}}>
-                        <td style={{padding:"12px 16px"}}>{fmtDateShort(e.date)}</td>
-                        <td style={{padding:"12px 16px",maxWidth:180,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.summary}</td>
-                        <td onClick={openEdit} style={{padding:"12px 16px",cursor:"pointer",userSelect:"none"}} title="Click to edit type"><span style={{background:(typeColors[e.type]||"#666")+"22",color:isTypeOverridden?"#0ea5e9":(typeColors[e.type]||"#666"),padding:"2px 8px",borderRadius:50,fontSize:"0.72rem",fontWeight:700}}>{e.category}</span>{isTypeOverridden&&<span style={{fontSize:"0.7rem",color:"#0ea5e9",marginLeft:4,opacity:0.7}}>✎</span>}</td>
-                        <td style={{padding:"12px 16px"}}>{e.hours}h</td>
-                        <td onClick={openEdit} style={{padding:"12px 16px",fontWeight:700,color:isOverridden?"#0ea5e9":"#1a3c34",cursor:"pointer",userSelect:"none"}} title="Click to edit">${typeof e.earnings==="number"?e.earnings.toFixed(2):e.earnings}<span style={{fontSize:"0.7rem",color:isOverridden?"#0ea5e9":"#9ca3af",marginLeft:5,opacity:0.7}}>✎</span></td>
-                      </tr>
-                    );})}
-                  </tbody>
-                </table>
+                        <div key={i} onClick={openEdit} style={{padding:"12px 14px",borderBottom:i<arr.length-1?"1px solid #f3f4f6":"none",cursor:"pointer"}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                            <span style={{fontSize:"0.8rem",fontWeight:700,color:"#374151"}}>{fmtDateShort(e.date)}</span>
+                            <div style={{display:"flex",alignItems:"center",gap:6}}>
+                              <span style={{fontSize:"0.68rem",color:"#9ca3af"}}>{e.hours}h</span>
+                              <span style={{fontWeight:800,color:isOverridden?"#0ea5e9":"#1a3c34",fontSize:"0.95rem"}}>${typeof e.earnings==="number"?e.earnings.toFixed(2):e.earnings}</span>
+                              {isOverridden&&<span style={{fontSize:"0.65rem",color:"#0ea5e9",opacity:0.8}}>✎</span>}
+                            </div>
+                          </div>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
+                            <span style={{fontSize:"0.85rem",color:"#374151",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.summary}</span>
+                            <span style={{background:(typeColors[e.type]||"#666")+"22",color:isTypeOverridden?"#0ea5e9":(typeColors[e.type]||"#666"),padding:"2px 9px",borderRadius:50,fontSize:"0.68rem",fontWeight:700,flexShrink:0,whiteSpace:"nowrap"}}>
+                              {e.category}{isTypeOverridden&&" ✎"}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ):(
+                  /* ── Desktop table layout ── */
+                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:"0.88rem"}}>
+                    <thead><tr style={{background:"#f9f9f6",borderBottom:"1.5px solid #e5e7eb"}}>{["Date","Event","Type","Hours","Earnings"].map(h=>(<th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#6b7280",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>))}</tr></thead>
+                    <tbody>
+                      {adjustedCalLessons.filter(e=>{if(!financeSearch)return true;const q=financeSearch.toLowerCase();return e.summary?.toLowerCase().includes(q)||e.date?.includes(q);}).map((e,i)=>{
+                        const calKey=e.date+"|"+e.summary;
+                        const isOverridden=calOverrides[calKey]!=null;
+                        const isTypeOverridden=calTypeOverrides[calKey]!=null;
+                        const openEdit=()=>{editRowRef.current={...e,isCalendar:true,calKey};setEditPriceVal(String(e.earnings));setEditTypeVal(e.type||"");dialogRef.current?.showModal();};
+                        return(
+                        <tr key={i} style={{borderBottom:"1px solid #f3f4f6"}}>
+                          <td style={{padding:"12px 16px"}}>{fmtDateShort(e.date)}</td>
+                          <td style={{padding:"12px 16px",maxWidth:180,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.summary}</td>
+                          <td onClick={openEdit} style={{padding:"12px 16px",cursor:"pointer",userSelect:"none"}} title="Click to edit type"><span style={{background:(typeColors[e.type]||"#666")+"22",color:isTypeOverridden?"#0ea5e9":(typeColors[e.type]||"#666"),padding:"2px 8px",borderRadius:50,fontSize:"0.72rem",fontWeight:700}}>{e.category}</span>{isTypeOverridden&&<span style={{fontSize:"0.7rem",color:"#0ea5e9",marginLeft:4,opacity:0.7}}>✎</span>}</td>
+                          <td style={{padding:"12px 16px"}}>{e.hours}h</td>
+                          <td onClick={openEdit} style={{padding:"12px 16px",fontWeight:700,color:isOverridden?"#0ea5e9":"#1a3c34",cursor:"pointer",userSelect:"none"}} title="Click to edit">${typeof e.earnings==="number"?e.earnings.toFixed(2):e.earnings}<span style={{fontSize:"0.7rem",color:isOverridden?"#0ea5e9":"#9ca3af",marginLeft:5,opacity:0.7}}>✎</span></td>
+                        </tr>
+                      );})}
+                    </tbody>
+                  </table>
+                )}
               </div>
             </div>
           )}
@@ -2478,20 +2511,43 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
             <div style={{marginBottom:24}}>
               <div style={{fontSize:"0.8rem",fontWeight:700,color:"#8b5cf6",textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Stanford Events</div>
               <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
-                <table style={{width:"100%",borderCollapse:"collapse",fontSize:"0.88rem"}}>
-                  <thead><tr style={{background:"#faf5ff",borderBottom:"1.5px solid #e5e7eb"}}>{["Date","Event","Type","Hours",showNetStanford?"Earnings (Net)":"Earnings (Gross)"].map(h=>(<th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#8b5cf6",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>))}</tr></thead>
-                  <tbody>
-                    {stanfordEvents.map((e,i)=>(
-                      <tr key={i} style={{borderBottom:"1px solid #f3f4f6",background:"#faf5ff"}}>
-                        <td style={{padding:"12px 16px"}}>{fmtDateShort(e.date)}</td>
-                        <td style={{padding:"12px 16px",maxWidth:180,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.summary}</td>
-                        <td style={{padding:"12px 16px"}}><span style={{background:"#8b5cf622",color:"#8b5cf6",padding:"2px 8px",borderRadius:50,fontSize:"0.72rem",fontWeight:700}}>{e.category}</span></td>
-                        <td style={{padding:"12px 16px"}}>{e.hours}h</td>
-                        <td style={{padding:"12px 16px",fontWeight:700,color:"#8b5cf6"}}>${showNetStanford?(e.netEarnings??e.earnings):e.earnings}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                {mob?(
+                  <div>
+                    {stanfordEvents.map((e,i,arr)=>{
+                      const earnings=showNetStanford?(e.netEarnings??e.earnings):e.earnings;
+                      return(
+                        <div key={i} style={{padding:"12px 14px",borderBottom:i<arr.length-1?"1px solid #f3f4f6":"none",background:"#faf5ff"}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                            <span style={{fontSize:"0.8rem",fontWeight:700,color:"#374151"}}>{fmtDateShort(e.date)}</span>
+                            <div style={{display:"flex",alignItems:"center",gap:6}}>
+                              <span style={{fontSize:"0.68rem",color:"#9ca3af"}}>{e.hours}h</span>
+                              <span style={{fontWeight:800,color:"#8b5cf6",fontSize:"0.95rem"}}>${earnings}</span>
+                            </div>
+                          </div>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
+                            <span style={{fontSize:"0.85rem",color:"#374151",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.summary}</span>
+                            <span style={{background:"#8b5cf622",color:"#8b5cf6",padding:"2px 9px",borderRadius:50,fontSize:"0.68rem",fontWeight:700,flexShrink:0,whiteSpace:"nowrap"}}>{e.category}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ):(
+                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:"0.88rem"}}>
+                    <thead><tr style={{background:"#faf5ff",borderBottom:"1.5px solid #e5e7eb"}}>{["Date","Event","Type","Hours",showNetStanford?"Earnings (Net)":"Earnings (Gross)"].map(h=>(<th key={h} style={{padding:"12px 16px",textAlign:"left",fontWeight:700,color:"#8b5cf6",fontSize:"0.78rem",textTransform:"uppercase"}}>{h}</th>))}</tr></thead>
+                    <tbody>
+                      {stanfordEvents.map((e,i)=>(
+                        <tr key={i} style={{borderBottom:"1px solid #f3f4f6",background:"#faf5ff"}}>
+                          <td style={{padding:"12px 16px"}}>{fmtDateShort(e.date)}</td>
+                          <td style={{padding:"12px 16px",maxWidth:180,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.summary}</td>
+                          <td style={{padding:"12px 16px"}}><span style={{background:"#8b5cf622",color:"#8b5cf6",padding:"2px 8px",borderRadius:50,fontSize:"0.72rem",fontWeight:700}}>{e.category}</span></td>
+                          <td style={{padding:"12px 16px"}}>{e.hours}h</td>
+                          <td style={{padding:"12px 16px",fontWeight:700,color:"#8b5cf6"}}>${showNetStanford?(e.netEarnings??e.earnings):e.earnings}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
             </div>
           )}
