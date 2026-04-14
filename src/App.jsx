@@ -38,7 +38,7 @@ const YAHOO_CLIENT_ID     = "dj0yJmk9dEVscml2TzNha0JVJmQ9WVdrOU5XOWFUMG95WjBNbWN
 
 // ─── THEME ───────────────────────────────────────────────────────────────────
 const G = "#1a3c34", Y = "#c0c0c0";
-const inp = { padding:"11px 14px", border:"1.5px solid #e5e7eb", borderRadius:8, fontSize:"0.92rem", outline:"none", background:"#fafafa", width:"100%", boxSizing:"border-box", marginBottom:12 };
+const inp = { padding:"11px 14px", border:"1.5px solid #e5e7eb", borderRadius:8, fontSize:"1rem", outline:"none", background:"#fafafa", width:"100%", boxSizing:"border-box", marginBottom:12 };
 const lbl = { fontSize:"0.78rem", fontWeight:700, color:"#6b7280", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:5, display:"block" };
 
 // ─── SCHEDULING DATA ─────────────────────────────────────────────────────────
@@ -3076,7 +3076,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
   };
 
   return(
-    <div style={{maxWidth:1100,margin:"0 auto",padding:"40px 24px"}}>
+    <div style={{maxWidth:1100,margin:"0 auto",padding:mob?"16px 12px":"40px 24px"}}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}@keyframes fadeInUp{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}`}</style>
       {/* Deleted lesson success toast */}
       {deletedToast&&(
@@ -3300,7 +3300,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
       {tab==="students"&&selectedStudent&&!showSchedule&&(
         <div>
           <button onClick={()=>{setSelectedStudent(null);setEditingStudent(false);setEditStudentData({});setConfirmDeleteStudent(false);}} style={{background:"none",border:"none",color:G,fontWeight:700,cursor:"pointer",fontSize:"0.88rem",marginBottom:20,padding:0}}>← Back to Students</button>
-          <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"24px",marginBottom:20}}>
+          <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:mob?"14px":"24px",marginBottom:16}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12,marginBottom:20}}>
               <div style={{display:"flex",alignItems:"center",gap:16}}>
                 <div style={{width:56,height:56,borderRadius:"50%",background:mockUsers[selectedStudent]?.memberType==="menlo"?G:"#e8f0ee",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:"1.3rem",color:mockUsers[selectedStudent]?.memberType==="menlo"?"white":G}}>
@@ -3467,6 +3467,11 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                     onAddStudent({...mockUsers[selectedStudent],email:selectedStudent,...updates});
                     fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:selectedStudent,updates:Object.fromEntries(Object.entries({dupr_id:updates.duprId,dupr_rating:updates.duprRating,dupr_doubles_rating:updates.duprDoublesRating}).filter(([,v])=>v!=null))})}).catch(()=>{});
                   };
+                  const clearDupr=async()=>{
+                    onAddStudent({...mockUsers[selectedStudent],email:selectedStudent,duprId:"",duprRating:"",duprDoublesRating:""});
+                    fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:selectedStudent,updates:{dupr_id:"",dupr_rating:"",dupr_doubles_rating:""}})}).catch(()=>{});
+                    setDuprIdInput("");setDuprSyncStatus("idle");setDuprSyncError("✓ DUPR data cleared");setTimeout(()=>setDuprSyncError(""),3000);
+                  };
                   const syncDupr=async(id)=>{
                     if(!id)return;
                     setDuprSyncStatus("syncing");setDuprSyncError("");
@@ -3519,15 +3524,20 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                       <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:6}}>
                         <div>
                           <div style={{fontSize:"0.72rem",color:"#6b7280",marginBottom:4,fontWeight:600}}>Doubles Rating</div>
-                          <input type="number" step="0.01" min="2" max="8" placeholder="e.g. 3.75" defaultValue={storedDoubles} key={"d_"+selectedStudent+"_"+(storedDoubles||"")} onBlur={async e=>{const v=e.target.value.trim();if(!v)return;const r=parseFloat(v);if(isNaN(r)||r<2||r>8)return;await saveDupr({duprDoublesRating:r.toFixed(2)});setDuprSyncError("✓ Doubles saved");setTimeout(()=>setDuprSyncError(""),2000);}} style={{...inp,marginBottom:0,fontSize:"0.88rem",background:"white",width:"100%",boxSizing:"border-box"}}/>
+                          <input type="number" step="0.01" min="2" max="8" placeholder="e.g. 3.75" defaultValue={storedDoubles} key={"d_"+selectedStudent+"_"+(storedDoubles||"")} onBlur={async e=>{const v=e.target.value.trim();if(!v)return;const r=parseFloat(v);if(isNaN(r)||r<2||r>8)return;await saveDupr({duprDoublesRating:r.toFixed(2)});setDuprSyncError("✓ Doubles saved");setTimeout(()=>setDuprSyncError(""),2000);}} style={{...inp,marginBottom:0,fontSize:"1rem",background:"white",width:"100%",boxSizing:"border-box"}}/>
                         </div>
                         <div>
                           <div style={{fontSize:"0.72rem",color:"#6b7280",marginBottom:4,fontWeight:600}}>Singles Rating</div>
-                          <input type="number" step="0.01" min="2" max="8" placeholder="e.g. 3.50" defaultValue={storedRating} key={"s_"+selectedStudent+"_"+(storedRating||"")} onBlur={async e=>{const v=e.target.value.trim();if(!v)return;const r=parseFloat(v);if(isNaN(r)||r<2||r>8)return;await saveDupr({duprRating:r.toFixed(2)});setDuprSyncError("✓ Singles saved");setTimeout(()=>setDuprSyncError(""),2000);}} style={{...inp,marginBottom:0,fontSize:"0.88rem",background:"white",width:"100%",boxSizing:"border-box"}}/>
+                          <input type="number" step="0.01" min="2" max="8" placeholder="e.g. 3.50" defaultValue={storedRating} key={"s_"+selectedStudent+"_"+(storedRating||"")} onBlur={async e=>{const v=e.target.value.trim();if(!v)return;const r=parseFloat(v);if(isNaN(r)||r<2||r>8)return;await saveDupr({duprRating:r.toFixed(2)});setDuprSyncError("✓ Singles saved");setTimeout(()=>setDuprSyncError(""),2000);}} style={{...inp,marginBottom:0,fontSize:"1rem",background:"white",width:"100%",boxSizing:"border-box"}}/>
                         </div>
                       </div>
                       {duprSyncError&&<div style={{fontSize:"0.78rem",marginTop:8,padding:"8px 12px",borderRadius:8,background:duprSyncError.startsWith("✓")?"#dcfce7":duprSyncError.startsWith("⚠")?"#fef2f2":"#f3f4f6",color:duprSyncError.startsWith("✓")?"#16a34a":duprSyncError.startsWith("⚠")?"#dc2626":"#6b7280",fontWeight:600}}>{duprSyncError}</div>}
                       {!storedId&&!duprSyncError&&<div style={{fontSize:"0.72rem",color:"#6b7280",marginTop:4}}>Find the Player ID in the DUPR app → Profile → share icon, or from the URL on dashboard.dupr.com.</div>}
+                      {(storedId||storedRating||storedDoubles)&&(
+                        <div style={{marginTop:14,paddingTop:12,borderTop:"1px solid #c7d2fe"}}>
+                          <button onClick={clearDupr} style={{background:"none",border:"1.5px solid #fca5a5",color:"#dc2626",borderRadius:8,padding:"7px 14px",fontSize:"0.78rem",fontWeight:700,cursor:"pointer",width:"100%"}}>✕ Remove DUPR Data</button>
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
