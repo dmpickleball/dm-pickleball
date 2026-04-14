@@ -1169,6 +1169,7 @@ function LoginPage({onLogin,onAdminLogin}){
   const[referralSource,setReferralSource]=useState("");
   const[useDupr,setUseDupr]=useState(false);
   const[duprRating,setDuprRating]=useState("");
+  const[duprId,setDuprId]=useState("");
   const[error,setError]=useState("");
   const[signedUp,setSignedUp]=useState(false);
 
@@ -1297,7 +1298,7 @@ function LoginPage({onLogin,onAdminLogin}){
             <div style={{fontWeight:700,fontSize:"0.82rem",color:"#166534"}}>✓ Verified with {PROV_LABELS[providerInfo.provider]}</div>
             <div style={{fontSize:"0.78rem",color:"#15803d",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{providerInfo.email}</div>
           </div>
-          <button onClick={()=>{setProviderInfo(null);setLoadingProv(null);setError("");setFirstName("");setLastName("");setCommEmail("");setPhone("");setHomeCourt("");setSkillLevel("");setGoals("");setReferralSource("");setUseDupr(false);setDuprRating("");}} style={{background:"white",border:"1.5px solid #d1d5db",color:"#374151",cursor:"pointer",fontSize:"0.78rem",fontWeight:600,whiteSpace:"nowrap",padding:"5px 12px",borderRadius:20,flexShrink:0}}>← Change</button>
+          <button onClick={()=>{setProviderInfo(null);setLoadingProv(null);setError("");setFirstName("");setLastName("");setCommEmail("");setPhone("");setHomeCourt("");setSkillLevel("");setGoals("");setReferralSource("");setUseDupr(false);setDuprRating("");setDuprId("");}} style={{background:"white",border:"1.5px solid #d1d5db",color:"#374151",cursor:"pointer",fontSize:"0.78rem",fontWeight:600,whiteSpace:"nowrap",padding:"5px 12px",borderRadius:20,flexShrink:0}}>← Change</button>
         </div>
         {error&&<div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:8,padding:"10px 14px",color:"#991b1b",fontSize:"0.88rem",marginBottom:16}}>{error}</div>}
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
@@ -1315,8 +1316,10 @@ function LoginPage({onLogin,onAdminLogin}){
             <option value="">How would you describe your level?</option>
             {SELF_RATINGS.map(r=><option key={r.value} value={r.value}>{r.label} ({r.range}) – {r.desc}</option>)}
           </select>
-          <div style={{marginTop:8,fontSize:"0.72rem",color:"#9ca3af",paddingLeft:2}}>
-            Have a DUPR rating? You'll be able to link your account after signing in.
+          <div style={{marginTop:12,background:"#f0f4ff",border:"1px solid #c7d2fe",borderRadius:10,padding:"12px 14px"}}>
+            <div style={{fontSize:"0.75rem",fontWeight:700,color:"#0a1551",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>DUPR Player ID <span style={{fontWeight:400,color:"#6b7280",textTransform:"none",letterSpacing:0}}>(optional)</span></div>
+            <input style={{...inp,marginBottom:0,background:"white",fontSize:"1rem"}} type="text" placeholder="e.g. ABC123XY" value={duprId} onChange={e=>setDuprId(e.target.value.replace(/\s/g,"").slice(0,20).toUpperCase())}/>
+            <div style={{fontSize:"0.7rem",color:"#6b7280",marginTop:6,lineHeight:1.5}}>Find it in the DUPR app → Profile → share icon. Your ratings will be synced automatically when approved.</div>
           </div>
         </div>
         <div style={{marginBottom:16}}>
@@ -1349,12 +1352,12 @@ function LoginPage({onLogin,onAdminLogin}){
           if(!skillLevel){setError("Please select your skill level.");return;}
           const fullName=firstName.trim()+" "+lastName.trim();
           fetch("/api/students?action=request",{method:"POST",headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({email:providerInfo.email,name:fullName,firstName:firstName.trim(),lastName:lastName.trim(),commEmail:commEmail.trim().toLowerCase(),phone,homeCourt,skillLevel,goals,referralSource,duprRating:"",authProvider:providerInfo.provider})
+            body:JSON.stringify({email:providerInfo.email,name:fullName,firstName:firstName.trim(),lastName:lastName.trim(),commEmail:commEmail.trim().toLowerCase(),phone,homeCourt,skillLevel,goals,referralSource,duprRating:"",duprId:duprId.trim(),authProvider:providerInfo.provider})
           }).then(r=>r.json()).then(data=>{
             if(data.error==="already_exists"){setError("You already have an account. Please sign in.");return;}
             if(data.error==="already_requested"){setError("You already have a pending request. Coach David will be in touch soon.");return;}
             if(data.error==="blocked"||data.student?.blocked){setError("Your registration request was not accepted. Please contact Coach David directly.");return;}
-            fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:"david@dmpickleball.com",subject:"New access request: "+fullName,text:fullName+" has requested access.\nProvider: "+PROV_LABELS[providerInfo.provider]+"\nLogin Email: "+providerInfo.email+"\nComm Email: "+commEmail+"\nPhone: "+phone+"\nHome Court: "+(homeCourt||"Not specified")+"\nSkill: "+(skillLevel||"Not specified")+"\nGoal: "+(goals||"Not specified")+"\nReferral: "+(referralSource||"Not specified")+"\n\nApprove at: https://dmpickleball.com/admin",fromAlias:"noreply@dmpickleball.com"})}).catch(()=>{});
+            fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:"david@dmpickleball.com",subject:"New access request: "+fullName,text:fullName+" has requested access.\nProvider: "+PROV_LABELS[providerInfo.provider]+"\nLogin Email: "+providerInfo.email+"\nComm Email: "+commEmail+"\nPhone: "+phone+"\nHome Court: "+(homeCourt||"Not specified")+"\nSkill: "+(skillLevel||"Not specified")+"\nGoal: "+(goals||"Not specified")+"\nReferral: "+(referralSource||"Not specified")+(duprId.trim()?"\nDUPR ID: "+duprId.trim():"")+"\n\nApprove at: https://dmpickleball.com/admin",fromAlias:"noreply@dmpickleball.com"})}).catch(()=>{});
             setSignedUp(true);
           }).catch(()=>setSignedUp(true));
         }} style={{width:"100%",background:G,color:"white",border:"none",padding:14,borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem",marginTop:4}}>
@@ -3195,6 +3198,11 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                       {student.skillLevel&&<div style={{marginTop:2,fontSize:"0.75rem",color:"#9ca3af"}}>Self-rated: {(SELF_RATINGS.find(r=>r.value===student.skillLevel)||{label:student.skillLevel}).label}</div>}
                       {student.goals&&<div style={{marginTop:1,fontSize:"0.75rem",color:"#9ca3af"}}>{({fun:"Just for fun",improve:"Improve my game",compete:"Compete locally",serious:"Train seriously"})[student.goals]||student.goals}</div>}
                       {student.referralSource&&<div style={{marginTop:1,fontSize:"0.75rem",color:"#9ca3af"}}>{({word_of_mouth:"Word of mouth",club:"Club / court",instagram:"Instagram",google:"Google",other:"Other"})[student.referralSource]||student.referralSource}</div>}
+                      {student.duprId&&<div style={{marginTop:6,display:"inline-flex",alignItems:"center",gap:6,background:"#e0e7ff",borderRadius:6,padding:"3px 10px"}}>
+                        <span style={{fontSize:"0.65rem",fontWeight:800,color:"#0a1551",letterSpacing:1}}>DUPR</span>
+                        <span style={{fontSize:"0.78rem",fontWeight:700,color:"#1e3a5f"}}>{student.duprId}</span>
+                        <span style={{fontSize:"0.65rem",color:"#6b7280"}}>— will sync on approve</span>
+                      </div>}
                     </div>
                     {/* Approval controls */}
                     <div style={{display:"flex",flexDirection:"column",gap:8,alignItems:"flex-end",flexShrink:0}}>
@@ -5007,7 +5015,7 @@ export default function App(){
             firstName:r.first_name||"",lastName:r.last_name||"",
             commEmail:r.comm_email||"",
             phone:r.phone,homeCourt:r.home_court,
-            skillLevel:r.skill_level||"",duprRating:r.dupr_rating||"",
+            skillLevel:r.skill_level||"",duprRating:r.dupr_rating||"",duprId:r.dupr_id||"",
             goals:r.goals||"",referralSource:r.referral_source||"",
             requestedAt:new Date(r.requested_at).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})
           })));
@@ -5175,9 +5183,21 @@ export default function App(){
   };
   const approveStudent=async(student,memberType,grandfathered=false)=>{
     try{
-      await fetch("/api/students?action=approve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({requestId:student.id,email:student.email,name:student.name,firstName:student.firstName||"",lastName:student.lastName||"",commEmail:student.commEmail||"",phone:student.phone||"",homeCourt:student.homeCourt||"",skillLevel:student.skillLevel||"",duprRating:student.duprRating||"",memberType,grandfathered,action:"approve"})});
+      await fetch("/api/students?action=approve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({requestId:student.id,email:student.email,name:student.name,firstName:student.firstName||"",lastName:student.lastName||"",commEmail:student.commEmail||"",phone:student.phone||"",homeCourt:student.homeCourt||"",skillLevel:student.skillLevel||"",duprRating:student.duprRating||"",duprId:student.duprId||"",memberType,grandfathered,action:"approve"})});
       setAllLessons(prev=>({...prev,[student.email]:[]}));
       setMockUsersState(prev=>({...prev,[student.email]:{name:student.name,firstName:student.firstName||"",lastName:student.lastName||"",commEmail:student.commEmail||"",skillLevel:student.skillLevel||"",duprRating:student.duprRating||"",duprDoublesRating:student.duprDoublesRating||"",duprId:student.duprId||"",memberType,approved:true,grandfathered:!!grandfathered}}));
+      // Auto-sync DUPR ratings if student provided a Player ID at registration
+      if(student.duprId){
+        fetch("/api/students?action=dupr-lookup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({duprId:student.duprId,email:student.email})}).then(r=>r.json()).then(data=>{
+          if(!data.error&&(data.rating!=null||data.doublesRating!=null)){
+            const updates={};
+            if(data.rating!=null)updates.duprRating=parseFloat(data.rating).toFixed(2);
+            if(data.doublesRating!=null)updates.duprDoublesRating=parseFloat(data.doublesRating).toFixed(2);
+            if(data.fullName)updates.duprPlayerName=data.fullName;
+            if(Object.keys(updates).length>0)setMockUsersState(prev=>({...prev,[student.email]:{...prev[student.email],...updates}}));
+          }
+        }).catch(()=>{});
+      }
       setPendingStudents(prev=>prev.filter(s=>s.id!==student.id));
       // Send approval email to comm email if available, else Google email
       const notifyEmail=student.commEmail||student.email;

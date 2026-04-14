@@ -42,7 +42,7 @@ export default async function handler(req, res) {
 
   // POST request access
   if (req.method === 'POST' && action === 'request') {
-    const { email, name, firstName, lastName, commEmail, phone, homeCourt, skillLevel, goals, referralSource, duprRating, authProvider } = req.body;
+    const { email, name, firstName, lastName, commEmail, phone, homeCourt, skillLevel, goals, referralSource, duprRating, duprId, authProvider } = req.body;
     if (!email || !name || !phone) return res.status(400).json({ error: 'Missing required fields' });
     const lowerEmail = email.toLowerCase();
 
@@ -70,12 +70,19 @@ export default async function handler(req, res) {
       auth_provider: authProvider || 'google',
     });
     if (error) return res.status(500).json({ error: error.message });
+    // Save DUPR ID separately — requires dupr_id column in access_requests table
+    // Run this SQL in Supabase if not yet added:
+    //   ALTER TABLE access_requests ADD COLUMN IF NOT EXISTS dupr_id TEXT DEFAULT '';
+    if (duprId) {
+      await supabase.from('access_requests').update({ dupr_id: duprId.toUpperCase() }).eq('email', lowerEmail);
+      // Ignore error if column doesn't exist yet
+    }
     return res.status(200).json({ success: true });
   }
 
   // POST approve/deny
   if (req.method === 'POST' && action === 'approve') {
-    const { requestId, email, name, firstName, lastName, commEmail, phone, homeCourt, skillLevel, duprRating, memberType, grandfathered, action: approveAction } = req.body;
+    const { requestId, email, name, firstName, lastName, commEmail, phone, homeCourt, skillLevel, duprRating, duprId, memberType, grandfathered, action: approveAction } = req.body;
     if (approveAction === 'deny') {
       await supabase.from('access_requests').update({ status: 'denied' }).eq('id', requestId);
       return res.status(200).json({ success: true });
@@ -90,6 +97,7 @@ export default async function handler(req, res) {
       home_court: homeCourt || '',
       skill_level: skillLevel || '',
       dupr_rating: duprRating || '',
+      dupr_id: duprId || '',
       member_type: memberType || 'public',
       grandfathered: !!grandfathered,
       approved: true,
