@@ -2230,12 +2230,12 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
       const stm=description.match(/^Student:\s*(.+)$/im);
       const ptm=description.match(/^Partner:\s*(.+)$/im);
       if(stm||ptm){const names=[];if(stm)names.push(stm[1].split('(')[0].trim());if(ptm)names.push(ptm[1].split('(')[0].trim());return names.filter(Boolean);}
-      // Unstructured: lines without colons (manually written names)
-      const lines=description.split('\n').map(l=>l.trim()).filter(l=>l&&!l.includes(':')&&l.length<60);
-      if(lines.length>0){
-        if(lines[0].includes(',')){const parts=lines[0].split(',').map(n=>n.trim()).filter(Boolean);if(parts.length>1)return parts;}
-        return lines;
-      }
+      // Unstructured: scan for comma-separated name list first (no length cap — 4+ names can exceed 60 chars)
+      const allLines=description.split('\n').map(l=>l.trim()).filter(Boolean);
+      for(const line of allLines){if(!line.includes(':')&&line.includes(',')){const parts=line.split(',').map(n=>n.trim()).filter(n=>n.length>0&&n.length<50);if(parts.length>1)return parts;}}
+      // Fall back: one-name-per-line
+      const nameLines=allLines.filter(l=>!l.includes(':')&&l.length<50);
+      if(nameLines.length>0)return nameLines;
     }
     // Fall back to slashes in title ("First/Second pb lesson")
     if(summary){

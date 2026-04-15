@@ -49,21 +49,18 @@ function parseNamesFromNotes(description) {
     return names.filter(Boolean);
   }
 
-  // Unstructured: look for lines that don't look like label:value pairs
-  // (no colon, reasonable length, not blank)
-  const lines = description.split('\n')
-    .map(l => l.trim())
-    .filter(l => l && !l.includes(':') && l.length < 60);
-
-  if (lines.length > 0) {
-    // First line might be comma-separated list of names
-    if (lines[0].includes(',')) {
-      const parts = lines[0].split(',').map(n => n.trim()).filter(Boolean);
+  // Unstructured: scan all lines for a comma-separated name list first
+  // (no length cap here — 4+ full names can easily exceed 60 chars)
+  const allLines = description.split('\n').map(l => l.trim()).filter(Boolean);
+  for (const line of allLines) {
+    if (!line.includes(':') && line.includes(',')) {
+      const parts = line.split(',').map(n => n.trim()).filter(n => n.length > 0 && n.length < 50);
       if (parts.length > 1) return parts;
     }
-    // Otherwise treat each line as one name
-    return lines;
   }
+  // Fall back: one-name-per-line (lines without colons, reasonable single-name length)
+  const nameLines = allLines.filter(l => !l.includes(':') && l.length < 50);
+  if (nameLines.length > 0) return nameLines;
 
   return [];
 }
