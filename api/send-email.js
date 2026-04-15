@@ -42,7 +42,7 @@ export default async function handler(req, res) {
       </div>`;
   } else {
     // General mode
-    ({ to, subject, text, html, replyTo, fromAlias } = body);
+    ({ to, subject, text, html, replyTo, fromAlias, bcc } = body);
     if (!to || !subject || (!text && !html)) {
       return res.status(400).json({ error: 'to, subject, and text or html are required.' });
     }
@@ -58,6 +58,7 @@ export default async function handler(req, res) {
       from: `"DM Pickleball" <${fromAlias || gmailUser}>`,
       to,
       subject,
+      ...(bcc ? { bcc } : {}),
       ...(html ? { html } : { text }),
       ...(replyTo ? { replyTo } : {}),
     });

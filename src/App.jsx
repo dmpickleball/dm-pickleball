@@ -2438,7 +2438,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
           setAllisonSending(true);setAllisonSent(false);
           try{
             const subject="Pickleball Lessons — "+allisonStart+" to "+allisonEnd;
-            await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:ALLISON_EMAIL,subject,text:report,fromAlias:"david@dmpickleball.com"})});
+            await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:ALLISON_EMAIL,bcc:"dlogfx@gmail.com",subject,text:report,fromAlias:"david@dmpickleball.com"})});
             setAllisonSent(true);
           }catch(e){console.error("Allison email error:",e);}
           setAllisonSending(false);
