@@ -2606,11 +2606,12 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                       const isTypeOverridden=!e.isStanford&&calTypeOverrides[calKey]!=null;
                       const hoverNames=getHoverNames(e);
                       const dispEarnings=e.isStanford?(showNetStanford?(e.netEarnings??e.earnings):e.earnings):e.earnings;
-                      const earningsColor=e.isStanford?"#8b5cf6":isOverridden?"#0ea5e9":"#1a3c34";
-                      const badgeColor=e.isStanford?"#8b5cf6":(typeColors[e.type]||"#666");
+                      const earningsColor=e.isStanford?"#8b5cf6":e.isMenlo?"#16a34a":isOverridden?"#0ea5e9":"#1a3c34";
+                      const badgeColor=e.isStanford?"#8b5cf6":e.isMenlo?"#16a34a":(typeColors[e.type]||"#666");
+                      const rowBg=e.isStanford?"#faf5ff":e.isMenlo?"#f0fdf4":"white";
                       const openEdit=()=>{if(e.isStanford||readOnly)return;editRowRef.current={...e,isCalendar:true,calKey};setEditPriceVal(String(e.earnings));setEditTypeVal(e.type||"");dialogRef.current?.showModal();};
                       return(
-                        <div key={i} onClick={openEdit} style={{padding:"12px 14px",borderBottom:i<arr.length-1?"1px solid #f3f4f6":"none",cursor:e.isStanford?"default":"pointer",background:e.isStanford?"#faf5ff":"white"}}>
+                        <div key={i} onClick={openEdit} style={{padding:"12px 14px",borderBottom:i<arr.length-1?"1px solid #f3f4f6":"none",cursor:e.isStanford?"default":"pointer",background:rowBg}}>
                           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
                             <span style={{fontSize:"0.8rem",fontWeight:700,color:"#374151"}}>{fmtDateShort(e.date)}</span>
                             <div style={{display:"flex",alignItems:"center",gap:6}}>
@@ -2644,11 +2645,12 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                         const isTypeOverridden=!e.isStanford&&calTypeOverrides[calKey]!=null;
                         const hoverNames=getHoverNames(e);
                         const dispEarnings=e.isStanford?(showNetStanford?(e.netEarnings??e.earnings):e.earnings):e.earnings;
-                        const earningsColor=e.isStanford?"#8b5cf6":isOverridden?"#0ea5e9":"#1a3c34";
-                        const badgeColor=e.isStanford?"#8b5cf6":(typeColors[e.type]||"#666");
+                        const earningsColor=e.isStanford?"#8b5cf6":e.isMenlo?"#16a34a":isOverridden?"#0ea5e9":"#1a3c34";
+                        const badgeColor=e.isStanford?"#8b5cf6":e.isMenlo?"#16a34a":(typeColors[e.type]||"#666");
+                        const rowBg=e.isStanford?"#faf5ff":e.isMenlo?"#f0fdf4":"white";
                         const openEdit=()=>{if(e.isStanford||readOnly)return;editRowRef.current={...e,isCalendar:true,calKey};setEditPriceVal(String(e.earnings));setEditTypeVal(e.type||"");dialogRef.current?.showModal();};
                         return(
-                        <tr key={i} style={{borderBottom:"1px solid #f3f4f6",background:e.isStanford?"#faf5ff":"white"}}>
+                        <tr key={i} style={{borderBottom:"1px solid #f3f4f6",background:rowBg}}>
                           <td style={{padding:"12px 16px"}}>{fmtDateShort(e.date)}</td>
                           <td style={{padding:"12px 16px",maxWidth:200}}>
                             <div style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.summary}</div>
