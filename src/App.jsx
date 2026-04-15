@@ -3116,8 +3116,10 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
   useEffect(()=>{if(tab==="lessons"&&calendarItems.length===0&&!calLoading)fetchCalendarItems();},[tab]);
   // Auto-sync calendar attendees → provisional student accounts when Students tab opens
   // Runs silently in background; results appear on next render if new accounts are created
+  const calSyncedRef=React.useRef(false);
   useEffect(()=>{
-    if(tab!=="students"||!dbLoaded)return;
+    if(tab!=="students"||calSyncedRef.current)return;
+    calSyncedRef.current=true;
     fetch("/api/students?action=sync",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({})})
       .then(r=>r.json())
       .then(async d=>{
@@ -3133,7 +3135,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
           }
         }
       }).catch(()=>{});
-  },[tab,dbLoaded]);
+  },[tab]);
   // Reset DUPR input when switching students
   useEffect(()=>{setDuprIdInput("");setDuprSyncStatus("idle");setDuprSyncError("");},[selectedStudent]);
   useEffect(()=>{if(tab==="lessons"&&eventsData.length===0&&!eventsLoading){const s=toDS(new Date());const e=toDS(addDays(new Date(),90));setEventsLoading(true);fetch("/api/calendar-events?start="+s+"&end="+e+"&keywords=rental,tournament").then(r=>r.json()).then(d=>{setEventsData(d.events||[]);setEventsLoading(false);}).catch(()=>setEventsLoading(false));}},[tab]);
