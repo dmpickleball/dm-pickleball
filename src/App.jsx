@@ -2302,7 +2302,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
   const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const MONFULL=["January","February","March","April","May","June","July","August","September","October","November","December"];
   const viewLabel=financeView==="day"?new Date(selectedDay+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):financeView==="week"?(()=>{const sd=new Date(viewRange.start+"T12:00:00");const ed=new Date(viewRange.end+"T12:00:00");return"Week of "+MON[sd.getMonth()]+" "+sd.getDate()+", "+sd.getFullYear();})():financeView==="month"?MONFULL[viewMonth-1]+" "+viewYear:String(viewYearOnly);
-  const typeColors={private:"#1a3c34",semi:"#0ea5e9",group:"#f97316",stanford_rec:"#8b5cf6",stanford_open:"#8b5cf6"};
+  const typeColors={private:"#1a3c34",semi:"#0ea5e9",group:"#f97316",stanford_rec:"#8C1515",stanford_open:"#8C1515"};
   const typeLabelMap={private:"Private Lesson",semi:"Semi-Private Lesson",group:"Group Lesson"};
   const calendarLessons=(financeData?.events||[]).filter(e=>!e.isStanford&&!e.isPickup);
   const stanfordEvents=(financeData?.events||[]).filter(e=>e.isStanford);
@@ -2538,8 +2538,8 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
         </div>
         {includeStanford&&(
           <div style={{background:"#f5f3ff",borderRadius:12,padding:"20px",border:"1.5px solid #8b5cf6"}}>
-            <div style={{fontSize:"0.7rem",fontWeight:700,color:"#8b5cf6",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Stanford {showNetStanford?"(Net)":"(Gross)"}</div>
-            <div style={{fontSize:"1.8rem",fontWeight:900,color:"#8b5cf6"}}>${stanfordAmt.toFixed(2)}</div>
+            <div style={{fontSize:"0.7rem",fontWeight:700,color:"#8C1515",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Stanford {showNetStanford?"(Net)":"(Gross)"}</div>
+            <div style={{fontSize:"1.8rem",fontWeight:900,color:"#8C1515"}}>${stanfordAmt.toFixed(2)}</div>
             <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:4}}>{(financeData?.stanfordHours||0).toFixed(1)} hrs</div>
           </div>
         )}
@@ -2571,7 +2571,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                           <td style={{padding:"12px 16px",fontWeight:600}}>{m}</td>
                           <td style={{padding:"12px 16px"}}>{mLessons.length>0?<span>${lessonTotal.toFixed(2)}<span style={{color:"#9ca3af",fontSize:"0.78rem",marginLeft:4}}>({mLessons.length})</span></span>:<span style={{color:"#d1d5db"}}>—</span>}</td>
                           <td style={{padding:"12px 16px",color:"#6b7280"}}>{(lessonHrs+(includeStanford?stanfordHrs:0)).toFixed(1)}h</td>
-                          {includeStanford&&<td style={{padding:"12px 16px",color:"#8b5cf6"}}>{mStanford.length>0?<span>${stanfordTotal.toFixed(2)}<span style={{fontSize:"0.78rem",marginLeft:4,color:"#a78bfa"}}>({mStanford.length})</span></span>:<span style={{color:"#d1d5db"}}>—</span>}</td>}
+                          {includeStanford&&<td style={{padding:"12px 16px",color:"#8C1515"}}>{mStanford.length>0?<span>${stanfordTotal.toFixed(2)}<span style={{fontSize:"0.78rem",marginLeft:4,color:"#a78bfa"}}>({mStanford.length})</span></span>:<span style={{color:"#d1d5db"}}>—</span>}</td>}
                           <td style={{padding:"12px 16px",fontWeight:700,color:"#1a3c34"}}>${rowTotal.toFixed(2)}</td>
                         </tr>
                       );
@@ -2580,7 +2580,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                       <td style={{padding:"12px 16px",fontWeight:800}}>Total</td>
                       <td style={{padding:"12px 16px",fontWeight:700}}>${adjustedLessonEarnings.toFixed(2)}</td>
                       <td style={{padding:"12px 16px",color:"#6b7280",fontWeight:600}}>{(adjustedCalLessons.reduce((s,e)=>s+(e.hours||0),0)+(includeStanford?stanfordEvents.reduce((s,e)=>s+(e.hours||0),0):0)).toFixed(1)}h</td>
-                      {includeStanford&&<td style={{padding:"12px 16px",fontWeight:700,color:"#8b5cf6"}}>${stanfordAmt.toFixed(2)}</td>}
+                      {includeStanford&&<td style={{padding:"12px 16px",fontWeight:700,color:"#8C1515"}}>${stanfordAmt.toFixed(2)}</td>}
                       <td style={{padding:"12px 16px",fontWeight:800,color:"#1a3c34"}}>${totalEarnings.toFixed(2)}</td>
                     </tr>
                   </tbody>
@@ -2606,9 +2606,9 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                       const isTypeOverridden=!e.isStanford&&calTypeOverrides[calKey]!=null;
                       const hoverNames=getHoverNames(e);
                       const dispEarnings=e.isStanford?(showNetStanford?(e.netEarnings??e.earnings):e.earnings):e.earnings;
-                      const earningsColor=e.isStanford?"#8b5cf6":e.isMenlo?"#16a34a":isOverridden?"#0ea5e9":"#1a3c34";
-                      const badgeColor=e.isStanford?"#8b5cf6":e.isMenlo?"#16a34a":(typeColors[e.type]||"#666");
-                      const rowBg=e.isStanford?"#faf5ff":e.isMenlo?"#f0fdf4":"white";
+                      const earningsColor=e.isStanford?"#8C1515":e.isMenlo?"#16a34a":isOverridden?"#0ea5e9":"#1a3c34";
+                      const badgeColor=e.isStanford?"#8C1515":e.isMenlo?"#16a34a":(typeColors[e.type]||"#666");
+                      const rowBg=e.isStanford?"#fdf2f2":e.isMenlo?"#f0fdf4":"white";
                       const openEdit=()=>{if(e.isStanford||readOnly)return;editRowRef.current={...e,isCalendar:true,calKey};setEditPriceVal(String(e.earnings));setEditTypeVal(e.type||"");dialogRef.current?.showModal();};
                       return(
                         <div key={i} onClick={openEdit} style={{padding:"12px 14px",borderBottom:i<arr.length-1?"1px solid #f3f4f6":"none",cursor:e.isStanford?"default":"pointer",background:rowBg}}>
@@ -2645,9 +2645,9 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                         const isTypeOverridden=!e.isStanford&&calTypeOverrides[calKey]!=null;
                         const hoverNames=getHoverNames(e);
                         const dispEarnings=e.isStanford?(showNetStanford?(e.netEarnings??e.earnings):e.earnings):e.earnings;
-                        const earningsColor=e.isStanford?"#8b5cf6":e.isMenlo?"#16a34a":isOverridden?"#0ea5e9":"#1a3c34";
-                        const badgeColor=e.isStanford?"#8b5cf6":e.isMenlo?"#16a34a":(typeColors[e.type]||"#666");
-                        const rowBg=e.isStanford?"#faf5ff":e.isMenlo?"#f0fdf4":"white";
+                        const earningsColor=e.isStanford?"#8C1515":e.isMenlo?"#16a34a":isOverridden?"#0ea5e9":"#1a3c34";
+                        const badgeColor=e.isStanford?"#8C1515":e.isMenlo?"#16a34a":(typeColors[e.type]||"#666");
+                        const rowBg=e.isStanford?"#fdf2f2":e.isMenlo?"#f0fdf4":"white";
                         const openEdit=()=>{if(e.isStanford||readOnly)return;editRowRef.current={...e,isCalendar:true,calKey};setEditPriceVal(String(e.earnings));setEditTypeVal(e.type||"");dialogRef.current?.showModal();};
                         return(
                         <tr key={i} style={{borderBottom:"1px solid #f3f4f6",background:rowBg}}>
@@ -2805,7 +2805,7 @@ function AdminCalendarView(){
 
   const eventColor=(summary)=>{
     const s=(summary||"").toLowerCase();
-    if(s.includes("stanford"))return"#8b5cf6";
+    if(s.includes("stanford"))return"#8C1515";
     if(s.includes("group"))return"#f97316";
     if(s.includes("/"))return"#0ea5e9";
     if(s.includes("pb lesson"))return"#1a3c34";
@@ -2959,7 +2959,7 @@ function AdminCalendarView(){
       )}
 
       <div style={{display:"flex",gap:16,marginTop:12,flexWrap:"wrap"}}>
-        {[["#1a3c34","Private Lesson"],["#0ea5e9","Semi-Private"],["#f97316","Group"],["#8b5cf6","Stanford"],["#6b7280","Other"]].map(([color,label])=>(
+        {[["#1a3c34","Private Lesson"],["#0ea5e9","Semi-Private"],["#f97316","Group"],["#8C1515","Stanford"],["#6b7280","Other"]].map(([color,label])=>(
           <div key={label} style={{display:"flex",alignItems:"center",gap:6,fontSize:"0.78rem",color:"#6b7280"}}>
             <div style={{width:10,height:10,borderRadius:2,background:color}}/>
             {label}
@@ -5187,7 +5187,7 @@ function GearAdminTab(){
         <div style={{fontWeight:800,fontSize:"1rem",color:"#1a1a1a",marginBottom:4}}>Highlight Color</div>
         <p style={{fontSize:"0.8rem",color:"#6b7280",marginBottom:16}}>Used for the Current badge, icons, and glow on the gear page.</p>
         <div style={{display:"flex",flexWrap:"wrap",gap:10,alignItems:"center",marginBottom:14}}>
-          {["#f97316","#10b981","#3b82f6","#8b5cf6","#ec4899","#ef4444","#eab308","#1a3c34"].map(c=>(
+          {["#f97316","#10b981","#3b82f6","#8C1515","#ec4899","#ef4444","#eab308","#1a3c34"].map(c=>(
             <button key={c} onClick={()=>setAccentColor(c)} style={{width:32,height:32,borderRadius:"50%",background:c,border:accentColor===c?"3px solid #1a1a1a":"3px solid transparent",outline:accentColor===c?"2px solid "+c:"none",outlineOffset:2,cursor:"pointer",padding:0,transition:"transform 0.1s",transform:accentColor===c?"scale(1.15)":"scale(1)"}}/>
           ))}
         </div>
