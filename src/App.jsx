@@ -1133,8 +1133,8 @@ function AdminLoginPage({onAdminLogin}){
           const token=new URLSearchParams(url.split("#")[1]).get("access_token");
           const info=await(await fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+token}})).json();
           const email=(info.email||"").toLowerCase();
-          if(email===ADMIN_EMAIL){onAdminLogin();}
-          else{setLoading(false);setError("Access denied. Only the admin account may log in here.");}
+          if(email===ADMIN_EMAIL||PARTNER_EMAILS.includes(email)){onAdminLogin(email);}
+          else{setLoading(false);setError("Access denied.");}
         }
       }catch(e){}
     },500);
@@ -5266,9 +5266,9 @@ function PartnerLoginPage({onLogin}){
     </div>
   );
 }
-function PartnerPortal(){
+function PartnerPortal({preLoggedIn=false}){
   const G="#1a3c34";
-  const[loggedIn,setLoggedIn]=useState(false);
+  const[loggedIn,setLoggedIn]=useState(preLoggedIn);
   const[partnerEmail,setPartnerEmail]=useState("");
   const[financeData,setFinanceData]=useState(null);
   const[financeLoading,setFinanceLoading]=useState(false);
@@ -5303,12 +5303,11 @@ function PartnerPortal(){
 
 // ─── ROOT APP ─────────────────────────────────────────────────────────────────
 export default function App(){
-  const isAdminRoute=window.location.pathname==="/admin";
-  const isPartnerRoute=window.location.pathname==="/partner";
+  const isAdminRoute=window.location.pathname==="/admin"||window.location.pathname==="/partner";
   const[page,setPage]=useState(isAdminRoute?"adminlogin":"home");
-  if(isPartnerRoute)return<PartnerPortal/>;
   const[user,setUser]=useState(null);
   const[isAdmin,setIsAdmin]=useState(false);
+  const[isPartner,setIsPartner]=useState(false);
   const[allLessons,setAllLessons]=useState({});
   const[pendingStudents,setPendingStudents]=useState([]);
   const[mockUsersState,setMockUsersState]=useState({});
@@ -5629,7 +5628,8 @@ export default function App(){
     }
     setRemovedStudents(prev=>prev.filter(x=>x.email!==email));
   };
-  const logout=()=>{setUser(null);setIsAdmin(false);setPage("home");};
+  const logout=()=>{setUser(null);setIsAdmin(false);setIsPartner(false);setPage("home");};
+  if(isPartner)return<PartnerPortal preLoggedIn/>;
   if(isAdmin)return(
     <div style={{fontFamily:"'Inter',sans-serif",background:"#f4f9f6",minHeight:"100vh"}}>
       <nav style={{background:G,padding:"14px 32px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
@@ -5649,7 +5649,7 @@ export default function App(){
     <div style={{fontFamily:"'DM Sans',sans-serif",background:"#f4f9f6",minHeight:"100vh"}}>
       <Analytics/>
       <Nav user={user} onLogin={()=>setPage("login")} onLogout={logout} setPage={setPage} currentPage={page}/>
-      {page==="adminlogin"&&<AdminLoginPage onAdminLogin={()=>setIsAdmin(true)}/>}
+      {page==="adminlogin"&&<AdminLoginPage onAdminLogin={email=>{if(email===ADMIN_EMAIL)setIsAdmin(true);else if(PARTNER_EMAILS.includes(email))setIsPartner(true);}}/>}
       {page==="home"&&!isAdminRoute&&<Homepage setPage={setPage}/>}
       {page==="pricing"&&<PricingPage setPage={setPage}/>}
       {page==="gear"&&<GearPage/>}
