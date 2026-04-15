@@ -55,7 +55,10 @@ async function syncCalendarToStudents(calendarId, timeMin, timeMax) {
     });
     const items = response.data.items || [];
     for (const event of items) {
-      if (!isLessonEvent(event.summary)) continue;
+      // Skip cancelled events
+      if (event.status === 'cancelled') continue;
+      // Skip events with no attendees at all (no point processing)
+      if (!event.attendees || event.attendees.length === 0) continue;
       const attendees = getRealAttendees(event);
       for (const a of attendees) {
         if (!a.email) continue;
@@ -411,13 +414,13 @@ export default async function handler(req, res) {
     }
   }
 
-  // POST sync — scan the primary business calendar for the last 60 days (ongoing auto-detection)
+  // POST sync — scan personal calendar from 1/1/25 to +30 days (full history + upcoming)
   if (req.method === 'POST' && action === 'sync') {
     const calendarId = process.env.GOOGLE_PERSONAL_CALENDAR_ID || process.env.GOOGLE_CALENDAR_ID;
     if (!calendarId) return res.status(500).json({ error: 'GOOGLE_CALENDAR_ID not set' });
     try {
-      const timeMin = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
-      const timeMax = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // include upcoming 30 days too
+      const timeMin = new Date('2025-01-01T00:00:00-08:00').toISOString();
+      const timeMax = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
       const result = await syncCalendarToStudents(calendarId, timeMin, timeMax);
       return res.status(200).json({ ok: true, ...result });
     } catch (err) {
