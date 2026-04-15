@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 248 68" width="248" height="68">
+  <defs>
+    <clipPath id="paddleClipA">
+      <rect x="172" y="3" width="54" height="62" rx="16" ry="16"/>
+    </clipPath>
+  </defs>
+
+  <!-- DMPB wordmark -->
+  <text
+    x="2" y="54"
+    font-family="'Century Gothic','Futura','Trebuchet MS',Arial,sans-serif"
+    font-size="52"
+    font-weight="400"
+    letter-spacing="3"
+    fill="#111111">DMPB</text>
+
+  <!-- Paddle head outline -->
+  <rect x="172" y="3" width="54" height="62" rx="16" ry="16"
+    fill="white" stroke="#111111" stroke-width="2.2"/>
+
+  <!-- Two horizontal accent stripes near top -->
+  <line x1="172" y1="21" x2="226" y2="21"
+    stroke="#111111" stroke-width="1.6" clip-path="url(#paddleClipA)"/>
+  <line x1="172" y1="29" x2="226" y2="29"
+    stroke="#111111" stroke-width="1.6" clip-path="url(#paddleClipA)"/>
+
+  <!-- Black wedge — lower portion of face -->
+  <polygon points="172,48 226,29 226,65 172,65"
+    fill="#111111" clip-path="url(#paddleClipA)"/>
+
+  <!-- Ball circle at the tip of the wedge -->
+  <circle cx="204" cy="48" r="7.5"
+    fill="white" stroke="#111111" stroke-width="1.6"
+    clip-path="url(#paddleClipA)"/>
+
+  <!-- Handle -->
+  <rect x="226" y="28" width="22" height="13" rx="6.5" ry="6.5"
+    fill="white" stroke="#111111" stroke-width="2.2"/>
+</svg>

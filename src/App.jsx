@@ -1755,7 +1755,7 @@ function BookingPage({user,setPage,onAddLesson,stanfordEnabled=true}){
     const additionalEmails=lessonType==="semi"&&partnerEmail?[partnerEmail]:(lessonType==="group"||lessonType==="clinic")?groupMembers.slice(0,groupSize-1).map(m=>m.email).filter(Boolean):[];
     let eventId="";
     try{
-      const r=await fetch("/api/create-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({summary,description,date,startTime,endTime,location,studentEmail:user.email,studentName:user.name,additionalEmails})});
+      const r=await fetch("/api/bookings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({summary,description,date,startTime,endTime,location,studentEmail:user.email,studentName:user.name,additionalEmails})});
       const d=await r.json();
       if(d.eventId)eventId=d.eventId;
       if(!d.attendeesAdded)console.warn("GCal attendees NOT added:",d.attendeeError||"unknown reason","emails attempted:",user.email,...(additionalEmails||[]));
@@ -3223,7 +3223,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
     const additionalEmails2=schedLessonType==="semi"&&schedPartner.email?[schedPartner.email]:(schedLessonType==="group"||schedLessonType==="clinic")?schedGroupMembers.slice(0,schedGroupSize-1).map(m=>m.email).filter(Boolean):[];
     let eventId="";
     try{
-      const r=await fetch("/api/create-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({summary,description,date:schedDate,startTime,endTime,location,studentEmail:selectedStudent,studentName:student.name,additionalEmails:additionalEmails2})});
+      const r=await fetch("/api/bookings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({summary,description,date:schedDate,startTime,endTime,location,studentEmail:selectedStudent,studentName:student.name,additionalEmails:additionalEmails2})});
       const d=await r.json();
       if(d.eventId)eventId=d.eventId;
       if(!d.attendeesAdded)console.warn("GCal attendees NOT added:",d.attendeeError||"unknown reason","emails attempted:",selectedStudent,...(additionalEmails2||[]));
@@ -3824,7 +3824,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                       <button key={reason} disabled={cancelLoading} onClick={async()=>{
                         setCancelLoading(true);
                         // Remove from calendar
-                        if(l.gcalEventId){fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:l.gcalEventId,mode:"delete"})}).catch(()=>{});}
+                        if(l.gcalEventId){fetch("/api/bookings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"cancel",eventId:l.gcalEventId,mode:"delete"})}).catch(()=>{});}
                         // Update state + DB
                         onUpdateLesson(selectedStudent,l.id,{status:"cancelled",cancelReason:reason});
                         fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id,updates:{status:"cancelled",cancel_reason:reason,cancelled_by:reason==="student"?"student":"admin",cancelled_at:new Date().toISOString()}})}).catch(()=>{});
@@ -3839,7 +3839,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                   <div style={{display:"flex",gap:8,alignItems:"center",justifyContent:"space-between",flexWrap:"wrap"}}>
                     <button disabled={cancelLoading} onClick={async()=>{
                       setCancelLoading(true);
-                      if(l.gcalEventId){fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:l.gcalEventId,mode:"delete"})}).catch(()=>{});}
+                      if(l.gcalEventId){fetch("/api/bookings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"cancel",eventId:l.gcalEventId,mode:"delete"})}).catch(()=>{});}
                       onUpdateLesson(selectedStudent,l.id,{status:"cancelled",cancelReason:"student"});
                       fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id,updates:{status:"cancelled",cancel_reason:"student",cancelled_by:"student",cancelled_at:new Date().toISOString()}})}).catch(()=>{});
                       await onCancelLesson(selectedStudent,l.id);
@@ -3863,7 +3863,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                     <button onClick={()=>setConfirmDelete(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>Keep it</button>
                     <button onClick={async()=>{
                       // Remove from Google Calendar first
-                      if(l.gcalEventId){fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:l.gcalEventId,mode:"delete"})}).catch(()=>{});}
+                      if(l.gcalEventId){fetch("/api/bookings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"cancel",eventId:l.gcalEventId,mode:"delete"})}).catch(()=>{});}
                       await fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id,updates:{status:"archived"}})}).catch(e=>console.error("Archive failed:",e));
                       onUpdateLesson(selectedStudent,l.id,{status:"archived"});
                       setConfirmDelete(null);setDeletedToast(true);setTimeout(()=>setDeletedToast(false),3000);
@@ -4341,7 +4341,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                     <button onClick={()=>setConfirmCalDelete(null)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>Keep it</button>
                     <button disabled={calDeleteLoading} onClick={async()=>{
                       setCalDeleteLoading(true);
-                      try{await fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:e.gcalEventId,mode:"delete"})});}
+                      try{await fetch("/api/bookings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"cancel",eventId:e.gcalEventId,mode:"delete"})});}
                       catch(err){console.error("Cal delete failed:",err);}
                       // Remove from calendarItems state immediately
                       setCalendarItems(prev=>prev.filter(c=>c.gcalEventId!==e.gcalEventId));
@@ -4789,7 +4789,7 @@ function TrafficTab(){
 
   useEffect(()=>{
     setLoading(true);
-    fetch("/api/get-traffic").then(r=>r.json()).then(d=>{
+    fetch("/api/traffic").then(r=>r.json()).then(d=>{
       if(d.error)setError(d.error);
       else setData(d);
     }).catch(()=>setError("Failed to load traffic data.")).finally(()=>setLoading(false));
@@ -4957,7 +4957,7 @@ function LessonsDbTab({allLessons,mockUsers,onDeleteLesson,onUpdateLesson,setSel
                   <button onClick={()=>{setSelectedStudent(l.studentEmail);setTab("students");}} style={{background:"#e8f0ee",color:G,border:"none",padding:"4px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:600}}>View Student</button>
                   {l.status!=="archived"&&<button onClick={async()=>{
                     onUpdateLesson(l.studentEmail,l.id,{status:"archived"});
-                    if(l.gcalEventId){fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:l.gcalEventId,mode:"delete"})}).catch(()=>{});}
+                    if(l.gcalEventId){fetch("/api/bookings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"cancel",eventId:l.gcalEventId,mode:"delete"})}).catch(()=>{});}
                     fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id,updates:{status:"archived"}})}).catch(()=>{});
                   }} style={{background:"white",color:"#6b7280",border:"1.5px solid #d1d5db",padding:"4px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:600}}>Archive</button>}
                   {dbDeleteTarget===(l.id||l.studentEmail+'|'+l.date+'|'+l.time)?(
@@ -5266,7 +5266,7 @@ export default function App(){
     try{
       let sid=sessionStorage.getItem("_dm_sid");
       if(!sid){sid=Math.random().toString(36).slice(2)+Date.now().toString(36);sessionStorage.setItem("_dm_sid",sid);}
-      fetch("/api/track-visit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({page:window.location.pathname||"/",referrer:document.referrer||null,sessionId:sid})}).catch(()=>{});
+      fetch("/api/traffic",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({page:window.location.pathname||"/",referrer:document.referrer||null,sessionId:sid})}).catch(()=>{});
     }catch{}
   },[]);
 
@@ -5387,7 +5387,7 @@ export default function App(){
     setAllLessons(prev=>({...prev,[user.email]:prev[user.email].map(l=>l.id===id?{...l,status:cancelStatus}:l)}));
     // GCal removal — await this so calendar is cleaned up before modal closes
     if(lesson?.gcalEventId){
-      try{await fetch('/api/cancel-booking',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({eventId:lesson.gcalEventId,mode:"delete"})});}
+      try{await fetch('/api/bookings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:"cancel",eventId:lesson.gcalEventId,mode:"delete"})});}
       catch(e){console.error('Calendar cancel failed:',e);}
     }
     // Emails and DB update fire in background — don't block the UI
@@ -5415,7 +5415,7 @@ export default function App(){
     const lesson=(allLessons[email]||[]).find(l=>l.id===id);
     if(lesson?.gcalEventId){
       try{
-        await fetch("/api/cancel-booking",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({eventId:lesson.gcalEventId,mode:"delete"})});
+        await fetch("/api/bookings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"cancel",eventId:lesson.gcalEventId,mode:"delete"})});
       }catch(e){console.error("Admin GCal cancel failed:",e);}
     }
     const cancelNow2=new Date();const lDeadline2=new Date(getLessonStart(lesson.date,lesson.time).getTime()-12*60*60*1000);const withinGrace2=lesson.createdAt&&((cancelNow2-new Date(lesson.createdAt))/60000)<15;const cancelStatus2=(!withinGrace2&&cancelNow2>lDeadline2)?"late_cancel":"cancelled";

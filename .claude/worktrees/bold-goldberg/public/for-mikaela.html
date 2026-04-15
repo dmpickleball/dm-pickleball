@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Dad's Mission Briefing 💰</title>
+  <!-- EmailJS for sending notifications to Dad -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f0f1a;
+      color: #fff;
+      min-height: 100vh;
+      padding: 20px 16px 60px;
+      overflow-x: hidden;
+    }
+    /* ── Lock screen ── */
+    .lock-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      text-align: center;
+      padding: 20px;
+    }
+    .lock-icon { font-size: 64px; margin-bottom: 20px; }
+    .lock-screen h2 { font-size: 26px; font-weight: 900; margin-bottom: 8px; color: #f5a623; }
+    .lock-screen p { color: #aaa; font-size: 14px; margin-bottom: 28px; }
+    .btn-accept {
+      background: linear-gradient(135deg, #f5a623, #f0c040);
+      color: #1a1000;
+      border: none;
+      border-radius: 16px;
+      padding: 18px 40px;
+      font-size: 18px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform 0.15s;
+      width: 100%;
+      max-width: 320px;
+    }
+    .btn-accept:active { transform: scale(0.97); }
+    .btn-accept-sub { font-size: 12px; color: #666; margin-top: 12px; }
+    /* ── Header ── */
+    .header { text-align: center; padding: 28px 0 20px; }
+    .header .badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #f5a623, #f0c040);
+      color: #1a1000;
+      font-weight: 800;
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 10px;
+    }
+    .header h1 {
+      font-size: 28px;
+      font-weight: 900;
+      line-height: 1.2;
+      background: linear-gradient(135deg, #f5a623, #f0c040);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header p { margin-top: 8px; font-size: 14px; color: #aaa; font-style: italic; }
+    /* ── Reward bar ── */
+    .reward-card {
+      background: linear-gradient(135deg, #1c2a1c, #213321);
+      border: 2px solid #2ecc71;
+      border-radius: 20px;
+      padding: 20px;
+      text-align: center;
+      margin: 20px 0;
+    }
+    .reward-card .amount { font-size: 52px; font-weight: 900; color: #2ecc71; line-height: 1; }
+    .reward-card .label { font-size: 13px; color: #aaa; margin-top: 4px; letter-spacing: 1px; text-transform: uppercase; }
+    .progress-wrap { margin-top: 16px; }
+    .progress-bar-bg { background: #0f2010; border-radius: 99px; height: 14px; overflow: hidden; }
+    .progress-bar-fill { background: linear-gradient(90deg, #27ae60, #2ecc71); height: 100%; border-radius: 99px; width: 0%; transition: width 0.6s cubic-bezier(.4,0,.2,1); }
+    .progress-text { font-size: 12px; color: #7fba7f; margin-top: 6px; }
+    /* ── Mission cards ── */
+    .mission {
+      background: #1a1a2e;
+      border: 2px solid #2a2a4a;
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 16px;
+      transition: border-color 0.3s, background 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+    .mission.done { border-color: #2ecc71; background: #111d18; }
+    .mission.done::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(46,204,113,0.05), transparent); pointer-events: none; }
+    .mission-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .mission-icon { font-size: 32px; line-height: 1; flex-shrink: 0; }
+    .mission-meta { flex: 1; }
+    .mission-number { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #666; font-weight: 700; }
+    .mission-title { font-size: 20px; font-weight: 800; margin-top: 2px; }
+    .mission-body { font-size: 14px; color: #ccc; line-height: 1.7; }
+    .mission-body ul { list-style: none; margin-top: 10px; }
+    .mission-body ul li { padding: 6px 0; display: flex; align-items: flex-start; gap: 8px; }
+    .mission-body ul li::before { content: '→'; color: #f5a623; font-weight: 700; flex-shrink: 0; }
+    .tip { margin-top: 12px; background: #12121f; border-left: 3px solid #f5a623; border-radius: 0 10px 10px 0; padding: 10px 12px; font-size: 13px; color: #f5a623; }
+    /* ── Complete button ── */
+    .btn-complete {
+      display: block; width: 100%; margin-top: 18px; padding: 14px;
+      border-radius: 14px; border: none; font-size: 16px; font-weight: 800;
+      cursor: pointer; letter-spacing: 0.5px;
+      background: linear-gradient(135deg, #3a3a6a, #4a4a8a);
+      color: #fff; transition: transform 0.15s, background 0.3s;
+    }
+    .btn-complete:active { transform: scale(0.97); }
+    .btn-complete:disabled { background: linear-gradient(135deg, #27ae60, #2ecc71); color: #fff; cursor: default; opacity: 1; }
+    .done-check { display: none; position: absolute; top: 16px; right: 16px; background: #2ecc71; color: #fff; border-radius: 50%; width: 30px; height: 30px; align-items: center; justify-content: center; font-size: 16px; font-weight: 900; }
+    .mission.done .done-check { display: flex; }
+    /* ── Note from dad ── */
+    .dad-note { background: #1a1a2e; border: 2px dashed #3a3a6a; border-radius: 20px; padding: 20px; margin-bottom: 20px; font-size: 14px; color: #ccc; line-height: 1.7; }
+    .dad-note strong { color: #f5a623; }
+    /* ── Toast notification ── */
+    .toast {
+      position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px);
+      background: #2ecc71; color: #fff; padding: 12px 24px; border-radius: 99px;
+      font-size: 14px; font-weight: 700; z-index: 1000;
+      transition: transform 0.4s cubic-bezier(.4,0,.2,1);
+      white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    /* ── Win screen ── */
+    .win-screen { display: none; text-align: center; padding: 40px 20px; animation: popIn 0.5s cubic-bezier(.4,0,.2,1); }
+    .win-screen.show { display: block; }
+    @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .win-screen .trophy { font-size: 80px; margin-bottom: 16px; }
+    .win-screen h2 { font-size: 32px; font-weight: 900; background: linear-gradient(135deg, #f5a623, #f0c040); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .win-screen p { color: #ccc; margin-top: 10px; font-size: 16px; }
+    .win-screen .big-money { font-size: 72px; font-weight: 900; color: #2ecc71; margin: 20px 0; animation: pulse 1s infinite alternate; }
+    @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.05); } }
+    /* ── Confetti ── */
+    #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 999; }
+    /* ── Footer ── */
+    .footer { text-align: center; font-size: 12px; color: #444; margin-top: 30px; }
+  </style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<div class="toast" id="toast"></div>
+
+<!-- ACCEPT SCREEN -->
+<div id="lockScreen" class="lock-screen">
+  <div class="lock-icon">📋</div>
+  <h2>Hey Mikaela! 👋</h2>
+  <p>Dad has a special offer just for you.<br>Tap below to see what's inside 👇</p>
+  <button class="btn-accept" onclick="acceptMission()">🎯 Accept Mission</button>
+  <div class="btn-accept-sub">Dad will be notified when you accept</div>
+</div>
+
+<!-- MAIN MISSION PAGE -->
+<div id="main" style="display:none;">
+  <div class="header">
+    <div class="badge">🔒 Top Secret</div>
+    <h1>Dad's Mission<br>Briefing 🗂️</h1>
+    <p>Complete all missions. Collect your reward.</p>
+  </div>
+  <div class="reward-card">
+    <div class="amount">$15</div>
+    <div class="label">Cash Reward on completion</div>
+    <div class="progress-wrap">
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBar"></div></div>
+      <div class="progress-text" id="progressText">0 of 3 missions complete</div>
+    </div>
+  </div>
+  <div class="dad-note">
+    👋 Hey Mikaela! Dad here. I need your help with a few things around the house.
+    Knock out all 3 missions and <strong>$15 cash is yours</strong>.
+    You got this 💪 — tap each button when you finish a step!
+  </div>
+
+  <!-- Mission 1 -->
+  <div class="mission" id="m1">
+    <div class="done-check">✓</div>
+    <div class="mission-header">
+      <div class="mission-icon">🌀</div>
+      <div class="mission-meta">
+        <div class="mission-number">Mission 01</div>
+        <div class="mission-title">The Transfer</div>
+      </div>
+    </div>
+    <div class="mission-body">
+      Head to the <strong>garage</strong>. The silver LG washing machine is done!
+      <ul>
+        <li>Grab the white laundry basket nearby</li>
+        <li>Move ALL the clothes from the washer into the dryer</li>
+        <li>Turn the dryer dial to <strong>Cotton/Towels</strong></li>
+        <li>Press the power button, then press <strong>Start ▶️</strong></li>
+      </ul>
+      <div class="tip">💡 The dryer is the silver LG TROMM right next to the washer</div>
+    </div>
+    <button class="btn-complete" onclick="complete(1)">✅ Done! Dryer is ON 🔥</button>
+  </div>
+
+  <!-- Mission 2 -->
+  <div class="mission" id="m2">
+    <div class="done-check">✓</div>
+    <div class="mission-header">
+      <div class="mission-icon">👕</div>
+      <div class="mission-meta">
+        <div class="mission-number">Mission 02</div>
+        <div class="mission-title">The Big Fold</div>
+      </div>
+    </div>
+    <div class="mission-body">
+      Head to the <strong>living room</strong>. There's a pile of dark clothes on the couch ottoman.
+      <ul>
+        <li>Fold each piece neatly</li>
+        <li>Stack them in a tidy pile on the couch</li>
+      </ul>
+      <div class="tip">💡 Pro tip: fold in front of a show or playlist to make it go faster 🎵</div>
+    </div>
+    <button class="btn-complete" onclick="complete(2)">✅ Done! All Folded 🧺</button>
+  </div>
+
+  <!-- Mission 3 -->
+  <div class="mission" id="m3">
+    <div class="done-check">✓</div>
+    <div class="mission-header">
+      <div class="mission-icon">🏁</div>
+      <div class="mission-meta">
+        <div class="mission-number">Mission 03</div>
+        <div class="mission-title">The Finish Line</div>
+      </div>
+    </div>
+    <div class="mission-body">
+      Go back to the <strong>garage</strong>. Wait for the dryer to finish (or check if it's done — it beeps!).
+      <ul>
+        <li>Take all the clothes out of the dryer</li>
+        <li>Fold them neatly and place in the basket</li>
+      </ul>
+      <div class="tip">💡 Fold right away so they don't wrinkle — Dad's orders 😄</div>
+    </div>
+    <button class="btn-complete" onclick="complete(3)">✅ Done! Mission Complete 🏆</button>
+  </div>
+
+  <div class="footer">Made with ❤️ by Dad · Powered by Claude</div>
+</div>
+
+<!-- Win screen -->
+<div class="win-screen" id="winScreen">
+  <div class="trophy">🏆</div>
+  <h2>YOU DID IT!</h2>
+  <div class="big-money">$15</div>
+  <p>All 3 missions complete, Mikaela!<br>Go find Dad and collect your cash 💵</p>
+  <p style="margin-top:20px; font-size:20px;">Love you! 😄<br>— Dad</p>
+</div>
+
+<script>
+  // ── EmailJS CONFIG ──
+  const EMAILJS_PUBLIC_KEY  = "6HZSJHqwj5DAWYbiF";
+  const EMAILJS_SERVICE_ID  = "service_4k18pqc";
+  const EMAILJS_TEMPLATE_ID = "template_f2c01vc";
+  const DAD_EMAIL           = "dlogfx@gmail.com";
+
+  emailjs.init(EMAILJS_PUBLIC_KEY);
+
+  function sendEmail(subject, message) {
+    return emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      to_email: DAD_EMAIL,
+      subject:  subject,
+      message:  message,
+      time:     new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+    });
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  function acceptMission() {
+    document.getElementById('lockScreen').style.display = 'none';
+    document.getElementById('main').style.display = 'block';
+    sendEmail(
+      '🎯 Mission Accepted!',
+      "Mikaela just opened the mission page and accepted the laundry challenge! She's on it 💪"
+    ).catch(() => {});
+    showToast('Mission accepted! Dad has been notified 📬');
+  }
+
+  let done = [false, false, false];
+
+  function complete(n) {
+    const idx = n - 1;
+    if (done[idx]) return;
+    done[idx] = true;
+    const mission = document.getElementById('m' + n);
+    mission.classList.add('done');
+    const btn = mission.querySelector('.btn-complete');
+    btn.disabled = true;
+    btn.textContent = '✓ Complete!';
+    const count = done.filter(Boolean).length;
+    const pct = (count / 3) * 100;
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('progressText').textContent = count + ' of 3 missions complete';
+    const missionNames = ['The Transfer 🌀', 'The Big Fold 👕', 'The Finish Line 🏁'];
+    showToast('Mission ' + n + ' complete! ✅');
+    if (count === 3) {
+      sendEmail(
+        '🏆 All Missions Complete — Pay Up, Dad!',
+        'Mikaela crushed it! All 3 laundry missions are done:\n\n✅ Mission 1: The Transfer\n✅ Mission 2: The Big Fold\n✅ Mission 3: The Finish Line\n\n$15 is owed! Go pay Mikaela 💸'
+      ).catch(() => {});
+      setTimeout(showWin, 600);
+    } else {
+      sendEmail(
+        '✅ Mission ' + n + ' done: ' + missionNames[idx],
+        'Progress update! Mikaela completed Mission ' + n + ' (' + missionNames[idx] + '). ' + count + ' of 3 done so far.'
+      ).catch(() => {});
+    }
+  }
+
+  function showWin() {
+    document.getElementById('main').style.display = 'none';
+    document.getElementById('winScreen').classList.add('show');
+    startConfetti();
+  }
+
+  function startConfetti() {
+    const canvas = document.getElementById('confetti');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const pieces = Array.from({length: 120}, () => ({
+      x: Math.random() * canvas.width, y: Math.random() * -canvas.height,
+      w: Math.random() * 10 + 5, h: Math.random() * 6 + 3,
+      color: ['#f5a623','#2ecc71','#3498db','#e91e63','#f0c040','#fff'][Math.floor(Math.random()*6)],
+      speed: Math.random() * 3 + 1.5, angle: Math.random() * Math.PI * 2,
+      spin: (Math.random() - 0.5) * 0.15, drift: (Math.random() - 0.5) * 1.5,
+    }));
+    let frame = 0;
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      pieces.forEach(p => {
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle);
+        ctx.fillStyle = p.color; ctx.globalAlpha = 0.9;
+        ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h); ctx.restore();
+        p.y += p.speed; p.x += p.drift; p.angle += p.spin;
+        if (p.y > canvas.height + 20) { p.y = -20; p.x = Math.random() * canvas.width; }
+      });
+      frame++;
+      if (frame < 300) requestAnimationFrame(draw);
+      else ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    draw();
+  }
+</script>
+</body>
+</html>

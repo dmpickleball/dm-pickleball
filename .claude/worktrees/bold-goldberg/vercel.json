@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/for-mikaela", "destination": "/for-mikaela.html" },
+    { "source": "/(.*)", "destination": "/" }
+  ]
+}

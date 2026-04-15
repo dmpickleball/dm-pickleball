@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 248 68" width="248" height="68">
+  <defs>
+    <clipPath id="paddleClipB">
+      <rect x="172" y="3" width="54" height="62" rx="16" ry="16"/>
+    </clipPath>
+  </defs>
+
+  <!-- DMPB wordmark — white -->
+  <text
+    x="2" y="54"
+    font-family="'Century Gothic','Futura','Trebuchet MS',Arial,sans-serif"
+    font-size="52"
+    font-weight="400"
+    letter-spacing="3"
+    fill="white">DMPB</text>
+
+  <!-- Paddle head outline — white stroke, transparent fill -->
+  <rect x="172" y="3" width="54" height="62" rx="16" ry="16"
+    fill="transparent" stroke="white" stroke-width="2.2"/>
+
+  <!-- Two horizontal accent stripes near top -->
+  <line x1="172" y1="21" x2="226" y2="21"
+    stroke="white" stroke-width="1.6" clip-path="url(#paddleClipB)"/>
+  <line x1="172" y1="29" x2="226" y2="29"
+    stroke="white" stroke-width="1.6" clip-path="url(#paddleClipB)"/>
+
+  <!-- White filled wedge — lower portion -->
+  <polygon points="172,48 226,29 226,65 172,65"
+    fill="white" clip-path="url(#paddleClipB)"/>
+
+  <!-- Ball circle — dark on white wedge -->
+  <circle cx="204" cy="48" r="7.5"
+    fill="transparent" stroke="white" stroke-width="1.6"
+    clip-path="url(#paddleClipB)"/>
+
+  <!-- Handle -->
+  <rect x="226" y="28" width="22" height="13" rx="6.5" ry="6.5"
+    fill="transparent" stroke="white" stroke-width="2.2"/>
+</svg>
