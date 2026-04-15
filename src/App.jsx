@@ -2217,6 +2217,8 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
   const[allisonEnd,setAllisonEnd]=useState("");
   const[allisonSending,setAllisonSending]=useState(false);
   const[allisonSent,setAllisonSent]=useState(false);
+  const[allisonConfirm,setAllisonConfirm]=useState(false);
+  const[allisonError,setAllisonError]=useState("");
   const ALLISON_EMAIL="allisons@menlocircusclub.com";
   // Parse participant full names from a calendar event.
   // Priority: pre-parsed names from API → structured labels → unstructured lines → slash fallback in title
@@ -2435,12 +2437,14 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
         const report=allisonStart&&allisonEnd?buildAllisonReport(allisonStart,allisonEnd):null;
         const sendToAllison=async()=>{
           if(!report)return;
-          setAllisonSending(true);setAllisonSent(false);
+          setAllisonSending(true);setAllisonSent(false);setAllisonError("");
           try{
             const subject="Pickleball Lessons — "+allisonStart+" to "+allisonEnd;
-            await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:ALLISON_EMAIL,bcc:"david@dmpickleball.com",subject,text:report,fromAlias:"david@dmpickleball.com"})});
-            setAllisonSent(true);
-          }catch(e){console.error("Allison email error:",e);}
+            const res=await fetch("/api/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:ALLISON_EMAIL,bcc:"david@dmpickleball.com",subject,text:report})});
+            const data=await res.json();
+            if(!res.ok||data.error){setAllisonError("Failed to send: "+(data.error||res.status));}
+            else{setAllisonSent(true);setAllisonConfirm(false);}
+          }catch(e){setAllisonError("Network error — check connection and try again.");}
           setAllisonSending(false);
         };
         return(
@@ -2448,17 +2452,28 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
             <div style={{fontWeight:700,fontSize:"0.97rem",color:G,marginBottom:4}}>Allison Report — Menlo Circus Club</div>
             <div style={{fontSize:"0.82rem",color:"#6b7280",marginBottom:16}}>Select a date range to generate the billing report. Each member is listed individually with their lesson type. Send directly to Allison at MCC or copy and paste.</div>
             <div style={{display:"flex",gap:12,flexWrap:"wrap",alignItems:"flex-end",marginBottom:16}}>
-              <div><div style={{...lbl,marginBottom:4}}>From</div><input type="date" value={allisonStart} onChange={e=>{setAllisonStart(e.target.value);setAllisonSent(false);}} style={{...inp,marginBottom:0,width:"auto",fontSize:"1rem"}}/></div>
-              <div><div style={{...lbl,marginBottom:4}}>To</div><input type="date" value={allisonEnd} onChange={e=>{setAllisonEnd(e.target.value);setAllisonSent(false);}} style={{...inp,marginBottom:0,width:"auto",fontSize:"1rem"}}/></div>
+              <div><div style={{...lbl,marginBottom:4}}>From</div><input type="date" value={allisonStart} onChange={e=>{setAllisonStart(e.target.value);setAllisonSent(false);setAllisonConfirm(false);setAllisonError("");}} style={{...inp,marginBottom:0,width:"auto",fontSize:"1rem"}}/></div>
+              <div><div style={{...lbl,marginBottom:4}}>To</div><input type="date" value={allisonEnd} onChange={e=>{setAllisonEnd(e.target.value);setAllisonSent(false);setAllisonConfirm(false);setAllisonError("");}} style={{...inp,marginBottom:0,width:"auto",fontSize:"1rem"}}/></div>
             </div>
             {report?(
               <>
                 <textarea readOnly value={report} style={{width:"100%",height:260,borderRadius:8,border:"1.5px solid #e5e7eb",padding:"12px",fontSize:"0.82rem",fontFamily:"monospace",color:"#374151",background:"#f9fafb",boxSizing:"border-box",resize:"vertical",marginBottom:12}}/>
-                <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+                <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center"}}>
                   <button onClick={()=>{try{navigator.clipboard.writeText(report);}catch(e){}}} style={{background:"#f0f4ff",color:"#3730a3",border:"1.5px solid #c7d2fe",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>📋 Copy</button>
-                  <button onClick={sendToAllison} disabled={allisonSending||allisonSent} style={{background:allisonSent?"#16a34a":G,color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:allisonSending||allisonSent?"default":"pointer",fontWeight:700,fontSize:"0.85rem",opacity:allisonSending?0.7:1}}>{allisonSent?"✓ Sent to Allison":allisonSending?"Sending…":"✉ Email to Allison"}</button>
-                  <button onClick={()=>setShowAllisonReport(false)} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}>Done</button>
+                  {allisonSent?(
+                    <span style={{background:"#16a34a",color:"white",padding:"9px 20px",borderRadius:50,fontWeight:700,fontSize:"0.85rem"}}>✓ Sent to Allison</span>
+                  ):allisonConfirm?(
+                    <div style={{display:"flex",alignItems:"center",gap:8,background:"#fef3c7",border:"1.5px solid #f59e0b",borderRadius:12,padding:"8px 14px"}}>
+                      <span style={{fontSize:"0.82rem",fontWeight:600,color:"#92400e"}}>Send to {ALLISON_EMAIL}?</span>
+                      <button onClick={sendToAllison} disabled={allisonSending} style={{background:"#f59e0b",color:"white",border:"none",padding:"6px 16px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.82rem",opacity:allisonSending?0.7:1}}>{allisonSending?"Sending…":"Yes, Send"}</button>
+                      <button onClick={()=>{setAllisonConfirm(false);setAllisonError("");}} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"6px 14px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.82rem"}}>Cancel</button>
+                    </div>
+                  ):(
+                    <button onClick={()=>{setAllisonConfirm(true);setAllisonError("");}} style={{background:G,color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>✉ Email to Allison</button>
+                  )}
+                  <button onClick={()=>{setShowAllisonReport(false);setAllisonConfirm(false);setAllisonError("");}} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}>Done</button>
                 </div>
+                {allisonError&&<div style={{marginTop:10,fontSize:"0.82rem",color:"#dc2626",fontWeight:600}}>⚠ {allisonError}</div>}
               </>
             ):(
               <div style={{fontSize:"0.84rem",color:"#9ca3af",padding:"12px 0"}}>Select a date range to preview the report.</div>
