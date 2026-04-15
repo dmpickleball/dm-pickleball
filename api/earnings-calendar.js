@@ -76,17 +76,17 @@ function getMenloEarnings(summary, hrs, description) {
   let gross = 0;
   if (isClinic) {
     gross = 35 * personCount;
-  } else if (slashCount === 0) {
-    // Private (1 person)
+  } else if (personCount === 1) {
+    // Private
     gross = is90 ? 170 : 115;
-  } else if (slashCount === 1) {
-    // Semi-private (2 people)
-    gross = is90 ? 90 * 2 : 60 * 2; // $180 or $120 total
-  } else if (slashCount === 2) {
-    // Group (3 people)
-    gross = is90 ? 55 * 3 : 50 * 3; // $165 or $150 total
+  } else if (personCount === 2) {
+    // S/P (2)
+    gross = is90 ? 90 * 2 : 60 * 2;
+  } else if (personCount === 3) {
+    // S/P (3)
+    gross = is90 ? 55 * 3 : 50 * 3;
   } else {
-    // Group (4+ people)
+    // S/P (4+)
     gross = is90 ? 45 * personCount : 40 * personCount;
   }
 

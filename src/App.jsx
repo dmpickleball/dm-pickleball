@@ -2249,16 +2249,24 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
     const s=new Date(start+"T00:00:00");const e=new Date(end+"T23:59:59");
     const items=(financeData?.events||[]).filter(ev=>ev.isMenlo&&!ev.isPickup).filter(ev=>{const d=new Date(ev.date+"T12:00:00");return d>=s&&d<=e;}).sort((a,b)=>a.date.localeCompare(b.date));
     if(!items.length)return null;
-    const fmt=(ds)=>{const d=new Date(ds+"T12:00:00");return d.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"});};
-    const typeLabel=(ev)=>{const is90=ev.hours>=1.4;const dur=(is90?"90":"60")+" Min";if(ev.type==="private")return dur+" Private Pickleball Lesson";if(ev.type==="semi")return dur+" Semi-Private Pickleball Lesson";if(ev.type==="clinic")return "Pickleball Clinic";return dur+" Group Pickleball Lesson";};
-    const lines=["Hi Allison,","","Please process the following lesson charges for the period "+fmt(start)+" – "+fmt(end)+":",""];
+    const fmtShort=(ds)=>{const d=new Date(ds+"T12:00:00");return(d.getMonth()+1)+"/"+d.getDate()+"/"+String(d.getFullYear()).slice(2);};
+    const fmtLong=(ds)=>{const d=new Date(ds+"T12:00:00");return d.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"});};
+    // Build type label matching Allison's format: "60 min Private", "60 min S/P (2)", "60 min Clinic" etc.
+    const typeLabel=(ev)=>{
+      const dur=(ev.hours>=1.4?"90":"60")+" min";
+      const n=ev.personCount||1;
+      if(ev.type==="clinic")return dur+" Clinic";
+      if(n===1)return dur+" Private";
+      return dur+" S/P ("+n+")";
+    };
+    const lines=["Hi Allison,","","Please process the following lesson charges for the period "+fmtLong(start)+" – "+fmtLong(end)+":",""];
     items.forEach(ev=>{
       const names=parseMenloNames(ev.summary,ev.description,ev.parsedNames);
       const type=typeLabel(ev);
-      if(names.length<=1){lines.push(names[0]||ev.summary);lines.push("Date: "+fmt(ev.date));lines.push("Lesson: "+type);lines.push("");}
-      else{names.forEach(n=>{lines.push(n);lines.push("Date: "+fmt(ev.date));lines.push("Lesson: "+type+(names.length>1?" ("+names.length+" participants)":""));lines.push("");});}
+      const nameStr=names.length>0?names.join(", "):(ev.summary||"");
+      lines.push(fmtShort(ev.date)+" - "+type+" - "+nameStr);
     });
-    lines.push("Total lessons: "+items.length);lines.push("");lines.push("Thank you,");lines.push("David Mok");
+    lines.push("");lines.push("Total lessons: "+items.length);lines.push("");lines.push("Thank you,");lines.push("David Mok");
     return lines.join("\n");
   };
   const loadData=async(start,end,withStanford)=>{
