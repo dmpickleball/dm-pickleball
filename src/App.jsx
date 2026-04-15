@@ -2437,7 +2437,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
       {!projectedMode&&<>
       {/* Allison Report */}
       {!readOnly&&<div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}>
-        <button onClick={()=>{setShowAllisonReport(!showAllisonReport);setAllisonSent(false);}} style={{background:G,color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>📋 MCC Billing Report</button>
+        <button onClick={()=>{setShowAllisonReport(!showAllisonReport);setAllisonSent(false);}} style={{background:G,color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>MCC Report</button>
       </div>}
       {!readOnly&&showAllisonReport&&(()=>{
         const report=allisonStart&&allisonEnd?buildAllisonReport(allisonStart,allisonEnd):null;
@@ -2465,7 +2465,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
               <>
                 <textarea readOnly value={report} style={{width:"100%",height:260,borderRadius:8,border:"1.5px solid #e5e7eb",padding:"12px",fontSize:"0.82rem",fontFamily:"monospace",color:"#374151",background:"#f9fafb",boxSizing:"border-box",resize:"vertical",marginBottom:12}}/>
                 <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center"}}>
-                  <button onClick={()=>{try{navigator.clipboard.writeText(report);}catch(e){}}} style={{background:"#f0f4ff",color:"#3730a3",border:"1.5px solid #c7d2fe",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>📋 Copy</button>
+                  <button onClick={()=>{try{navigator.clipboard.writeText(report);}catch(e){}}} style={{background:"#f0f4ff",color:"#3730a3",border:"1.5px solid #c7d2fe",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>Copy</button>
                   {allisonSent?(
                     <span style={{background:"#16a34a",color:"white",padding:"9px 20px",borderRadius:50,fontWeight:700,fontSize:"0.85rem"}}>✓ Sent to Allison</span>
                   ):allisonConfirm?(
@@ -2537,8 +2537,8 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
           <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:4}}>{calendarLessons.length} lessons</div>
         </div>
         {includeStanford&&(
-          <div style={{background:"#fdf2f2",borderRadius:12,padding:"20px",border:"1.5px solid #8C1515"}}>
-            <div style={{fontSize:"0.7rem",fontWeight:700,color:"#8C1515",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Stanford {showNetStanford?"(Net)":"(Gross)"}</div>
+          <div style={{background:"white",borderRadius:12,padding:"20px",border:"1.5px solid #e5e7eb"}}>
+            <div style={{fontSize:"0.7rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Stanford {showNetStanford?"(Net)":"(Gross)"}</div>
             <div style={{fontSize:"1.8rem",fontWeight:900,color:"#1a1a1a"}}>${stanfordAmt.toFixed(2)}</div>
             <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:4}}>{(financeData?.stanfordHours||0).toFixed(1)} hrs</div>
           </div>
@@ -3258,7 +3258,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
 
       {/* ── Admin nav: tabs on desktop, burger on mobile ── */}
       {(()=>{
-        const TABS=[["students","👥 Students"],["lessons","📅 Lessons"],["finances","💰 Finances"],["database","🗄 All Lessons"],["gear","🎾 Gear"],["traffic","📊 Traffic"]];
+        const TABS=[["students","Students"],["lessons","Lessons"],["finances","Finances"],["database","All Lessons"],["gear","Gear"],["traffic","Traffic"]];
         const isMobNav=window.innerWidth<640;
         if(!isMobNav){
           return(
@@ -3755,7 +3755,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontWeight:700,fontSize:"0.93rem"}}>{fmtDateShort(l.date)} · {l.time}</div>
                   <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:2}}>{l.type} · {l.duration}{l.focus?" · "+l.focus:""}</div>
-                  {l.customPrice&&<div style={{fontSize:"0.75rem",color:"#0ea5e9",marginTop:2,fontWeight:600}}>💰 Custom: ${l.customPrice}</div>}
+                  {l.customPrice&&<div style={{fontSize:"0.75rem",color:"#0ea5e9",marginTop:2,fontWeight:600}}>Custom: ${l.customPrice}</div>}
                   {l.notes&&editingId!==l.id&&<div style={{background:"#f9f9f6",borderRadius:6,padding:"7px 10px",marginTop:8,fontSize:"0.82rem",color:"#374151",lineHeight:1.5}}>{l.notes}</div>}
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
@@ -3776,7 +3776,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
               {isMenuOpen&&(
                 <div style={{borderTop:"1px solid #f3f4f6",background:"#fafafa",padding:"10px 18px",display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
                   <button onClick={()=>{setEditingId(editingId===l.id?null:l.id);setEditNotes(l.notes||"");setActiveMenu(null);}} style={{background:G,color:"white",border:"none",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>✏️ Notes</button>
-                  <button onClick={()=>{setEditPriceId(editPriceId===l.id?null:l.id);setEditPriceVal(String(l.customPrice||getRate(l.type,parseInt(l.duration))));setActiveMenu(null);}} style={{background:G,color:"white",border:"none",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>💰 Price</button>
+                  <button onClick={()=>{setEditPriceId(editPriceId===l.id?null:l.id);setEditPriceVal(String(l.customPrice||getRate(l.type,parseInt(l.duration))));setActiveMenu(null);}} style={{background:G,color:"white",border:"none",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>Price</button>
                   {!isCancelled&&<button onClick={()=>{setConfirmCancel(l.id);setActiveMenu(null);}} style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 14px",borderRadius:50,cursor:"pointer",fontSize:"0.8rem",fontWeight:700}}>✕ Cancel</button>}
                   <DelBtn onClick={()=>{setConfirmDelete(l.id);setActiveMenu(null);}} style={{color:"#6b7280",borderColor:"#d1d5db"}}>📦 Archive</DelBtn>
                   <span style={{flex:1}}/>
