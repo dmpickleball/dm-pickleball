@@ -2537,7 +2537,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
           <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:4}}>{calendarLessons.length} lessons</div>
         </div>
         {includeStanford&&(
-          <div style={{background:"#f5f3ff",borderRadius:12,padding:"20px",border:"1.5px solid #8b5cf6"}}>
+          <div style={{background:"#fdf2f2",borderRadius:12,padding:"20px",border:"1.5px solid #8C1515"}}>
             <div style={{fontSize:"0.7rem",fontWeight:700,color:"#8C1515",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Stanford {showNetStanford?"(Net)":"(Gross)"}</div>
             <div style={{fontSize:"1.8rem",fontWeight:900,color:"#8C1515"}}>${stanfordAmt.toFixed(2)}</div>
             <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:4}}>{(financeData?.stanfordHours||0).toFixed(1)} hrs</div>
@@ -2623,9 +2623,9 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
                             <span style={{fontSize:"0.85rem",color:"#374151",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.summary}</span>
                             <span
-                              style={{background:badgeColor+"22",color:isTypeOverridden?"#0ea5e9":badgeColor,padding:"2px 9px",borderRadius:50,fontSize:"0.68rem",fontWeight:700,flexShrink:0,whiteSpace:"nowrap"}}
+                              style={{background:e.isStanford?badgeColor:badgeColor+"22",color:e.isStanford?"white":isTypeOverridden?"#0ea5e9":badgeColor,padding:"2px 9px",borderRadius:50,fontSize:"0.68rem",fontWeight:700,flexShrink:0,whiteSpace:"nowrap"}}
                             >
-                              {e.category}{(e.type==="group"||e.type==="clinic")&&e.personCount>1?` (${e.personCount})`:""}
+                              {e.isStanford?"Stanford":e.category}{(e.type==="group"||e.type==="clinic")&&e.personCount>1?` (${e.personCount})`:""}
                               {isTypeOverridden&&" ✎"}
                             </span>
                           </div>
@@ -2658,10 +2658,10 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                           </td>
                           <td onClick={openEdit} style={{padding:"12px 16px",cursor:e.isStanford?"default":"pointer",userSelect:"none"}}>
                             <span
-                              style={{background:badgeColor+"22",color:isTypeOverridden?"#0ea5e9":badgeColor,padding:"2px 8px",borderRadius:50,fontSize:"0.72rem",fontWeight:700,cursor:e.isStanford?"default":"pointer"}}
+                              style={{background:e.isStanford?badgeColor:badgeColor+"22",color:e.isStanford?"white":isTypeOverridden?"#0ea5e9":badgeColor,padding:"2px 8px",borderRadius:50,fontSize:"0.72rem",fontWeight:700,cursor:e.isStanford?"default":"pointer"}}
                               title={e.isStanford?undefined:"Click to edit type"}
                             >
-                              {e.category}{(e.type==="group"||e.type==="clinic")&&e.personCount>1?` (${e.personCount})`:""}
+                              {e.isStanford?"Stanford":e.category}{(e.type==="group"||e.type==="clinic")&&e.personCount>1?` (${e.personCount})`:""}
                               {isTypeOverridden&&" ✎"}
                             </span>
                           </td>
