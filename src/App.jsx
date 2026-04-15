@@ -2539,7 +2539,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
         {includeStanford&&(
           <div style={{background:"#fdf2f2",borderRadius:12,padding:"20px",border:"1.5px solid #8C1515"}}>
             <div style={{fontSize:"0.7rem",fontWeight:700,color:"#8C1515",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Stanford {showNetStanford?"(Net)":"(Gross)"}</div>
-            <div style={{fontSize:"1.8rem",fontWeight:900,color:"#8C1515"}}>${stanfordAmt.toFixed(2)}</div>
+            <div style={{fontSize:"1.8rem",fontWeight:900,color:"#1a1a1a"}}>${stanfordAmt.toFixed(2)}</div>
             <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:4}}>{(financeData?.stanfordHours||0).toFixed(1)} hrs</div>
           </div>
         )}
@@ -2580,7 +2580,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                       <td style={{padding:"12px 16px",fontWeight:800}}>Total</td>
                       <td style={{padding:"12px 16px",fontWeight:700}}>${adjustedLessonEarnings.toFixed(2)}</td>
                       <td style={{padding:"12px 16px",color:"#6b7280",fontWeight:600}}>{(adjustedCalLessons.reduce((s,e)=>s+(e.hours||0),0)+(includeStanford?stanfordEvents.reduce((s,e)=>s+(e.hours||0),0):0)).toFixed(1)}h</td>
-                      {includeStanford&&<td style={{padding:"12px 16px",fontWeight:700,color:"#8C1515"}}>${stanfordAmt.toFixed(2)}</td>}
+                      {includeStanford&&<td style={{padding:"12px 16px",fontWeight:700,color:"#1a3c34"}}>${stanfordAmt.toFixed(2)}</td>}
                       <td style={{padding:"12px 16px",fontWeight:800,color:"#1a3c34"}}>${totalEarnings.toFixed(2)}</td>
                     </tr>
                   </tbody>
@@ -2611,7 +2611,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                       const rowBg=e.isStanford?"#fdf2f2":e.isMenlo?"#f0fdf4":"white";
                       const openEdit=()=>{if(e.isStanford||readOnly)return;editRowRef.current={...e,isCalendar:true,calKey};setEditPriceVal(String(e.earnings));setEditTypeVal(e.type||"");dialogRef.current?.showModal();};
                       return(
-                        <div key={i} onClick={openEdit} style={{padding:"12px 14px",borderBottom:i<arr.length-1?"1px solid #f3f4f6":"none",cursor:e.isStanford?"default":"pointer",background:rowBg}}>
+                        <div key={i} onClick={openEdit} style={{padding:"12px 14px",borderBottom:i<arr.length-1?`1px solid ${rowBg==="white"?"#f3f4f6":"#e5e7eb"}`:"none",cursor:e.isStanford?"default":"pointer",background:rowBg}}>
                           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
                             <span style={{fontSize:"0.8rem",fontWeight:700,color:"#374151"}}>{fmtDateShort(e.date)}</span>
                             <div style={{display:"flex",alignItems:"center",gap:6}}>
@@ -2650,7 +2650,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                         const rowBg=e.isStanford?"#fdf2f2":e.isMenlo?"#f0fdf4":"white";
                         const openEdit=()=>{if(e.isStanford||readOnly)return;editRowRef.current={...e,isCalendar:true,calKey};setEditPriceVal(String(e.earnings));setEditTypeVal(e.type||"");dialogRef.current?.showModal();};
                         return(
-                        <tr key={i} style={{borderBottom:"1px solid #f3f4f6",background:rowBg}}>
+                        <tr key={i} style={{borderBottom:`1px solid ${rowBg==="white"?"#f3f4f6":"#e5e7eb"}`,background:rowBg}}>
                           <td style={{padding:"12px 16px"}}>{fmtDateShort(e.date)}</td>
                           <td style={{padding:"12px 16px",maxWidth:200}}>
                             <div style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.summary}</div>
