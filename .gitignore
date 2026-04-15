@@ -5,3 +5,4 @@ dist
 dm-pickleball-key.json
 .vercel
 .env*.local
+.claude/
