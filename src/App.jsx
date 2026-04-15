@@ -78,6 +78,7 @@ const PADDLE_HISTORY = [
 
 // ─── AUTH ─────────────────────────────────────────────────────────────────────
 const ADMIN_EMAIL = "david@dmpickleball.com";
+const PARTNER_EMAILS = ["amandale91@gmail.com", "david@dmpickleball.com"];
 
 const INIT_PENDING = [];
 
@@ -2185,7 +2186,7 @@ function LocationsTab({locations,setLocations}){
     </div>
   );
 }
-function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeStanford,showNetStanford,setShowNetStanford,financeData,setFinanceData,financeLoading,setFinanceLoading,allLessons,mockUsers,onUpdateLesson}){
+function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeStanford,showNetStanford,setShowNetStanford,financeData,setFinanceData,financeLoading,setFinanceLoading,allLessons,mockUsers,onUpdateLesson,readOnly=false}){
   const now=new Date();
   const[mob,setMob]=useState(()=>window.innerWidth<640);
   useEffect(()=>{const h=()=>setMob(window.innerWidth<640);window.addEventListener("resize",h);return()=>window.removeEventListener("resize",h);},[]);
@@ -2435,10 +2436,10 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
       {/* Actual View */}
       {!projectedMode&&<>
       {/* Allison Report */}
-      <div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}>
+      {!readOnly&&<div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}>
         <button onClick={()=>{setShowAllisonReport(!showAllisonReport);setAllisonSent(false);}} style={{background:G,color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>📋 Allison Report (MCC)</button>
-      </div>
-      {showAllisonReport&&(()=>{
+      </div>}
+      {!readOnly&&showAllisonReport&&(()=>{
         const report=allisonStart&&allisonEnd?buildAllisonReport(allisonStart,allisonEnd):null;
         const sendToAllison=async()=>{
           if(!report)return;
@@ -2607,7 +2608,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                       const dispEarnings=e.isStanford?(showNetStanford?(e.netEarnings??e.earnings):e.earnings):e.earnings;
                       const earningsColor=e.isStanford?"#8b5cf6":isOverridden?"#0ea5e9":"#1a3c34";
                       const badgeColor=e.isStanford?"#8b5cf6":(typeColors[e.type]||"#666");
-                      const openEdit=()=>{if(e.isStanford)return;editRowRef.current={...e,isCalendar:true,calKey};setEditPriceVal(String(e.earnings));setEditTypeVal(e.type||"");dialogRef.current?.showModal();};
+                      const openEdit=()=>{if(e.isStanford||readOnly)return;editRowRef.current={...e,isCalendar:true,calKey};setEditPriceVal(String(e.earnings));setEditTypeVal(e.type||"");dialogRef.current?.showModal();};
                       return(
                         <div key={i} onClick={openEdit} style={{padding:"12px 14px",borderBottom:i<arr.length-1?"1px solid #f3f4f6":"none",cursor:e.isStanford?"default":"pointer",background:e.isStanford?"#faf5ff":"white"}}>
                           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
@@ -2645,7 +2646,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                         const dispEarnings=e.isStanford?(showNetStanford?(e.netEarnings??e.earnings):e.earnings):e.earnings;
                         const earningsColor=e.isStanford?"#8b5cf6":isOverridden?"#0ea5e9":"#1a3c34";
                         const badgeColor=e.isStanford?"#8b5cf6":(typeColors[e.type]||"#666");
-                        const openEdit=()=>{if(e.isStanford)return;editRowRef.current={...e,isCalendar:true,calKey};setEditPriceVal(String(e.earnings));setEditTypeVal(e.type||"");dialogRef.current?.showModal();};
+                        const openEdit=()=>{if(e.isStanford||readOnly)return;editRowRef.current={...e,isCalendar:true,calKey};setEditPriceVal(String(e.earnings));setEditTypeVal(e.type||"");dialogRef.current?.showModal();};
                         return(
                         <tr key={i} style={{borderBottom:"1px solid #f3f4f6",background:e.isStanford?"#faf5ff":"white"}}>
                           <td style={{padding:"12px 16px"}}>{fmtDateShort(e.date)}</td>
@@ -2663,7 +2664,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                             </span>
                           </td>
                           <td style={{padding:"12px 16px"}}>{e.hours}h</td>
-                          <td onClick={openEdit} style={{padding:"12px 16px",fontWeight:700,color:earningsColor,cursor:e.isStanford?"default":"pointer",userSelect:"none"}} title={e.isStanford?undefined:"Click to edit"}>${typeof dispEarnings==="number"?dispEarnings.toFixed(2):dispEarnings}{!e.isStanford&&<span style={{fontSize:"0.7rem",color:isOverridden?"#0ea5e9":"#9ca3af",marginLeft:5,opacity:0.7}}>✎</span>}</td>
+                          <td onClick={openEdit} style={{padding:"12px 16px",fontWeight:700,color:earningsColor,cursor:(e.isStanford||readOnly)?"default":"pointer",userSelect:"none"}} title={(e.isStanford||readOnly)?undefined:"Click to edit"}>${typeof dispEarnings==="number"?dispEarnings.toFixed(2):dispEarnings}{!e.isStanford&&!readOnly&&<span style={{fontSize:"0.7rem",color:isOverridden?"#0ea5e9":"#9ca3af",marginLeft:5,opacity:0.7}}>✎</span>}</td>
                         </tr>
                       );})}
                     </tbody>
@@ -2672,7 +2673,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
               </div>
             </div>
           )}
-          <dialog ref={dialogRef} onClick={e=>{if(e.target===dialogRef.current)dialogRef.current.close();}} style={{border:"none",borderRadius:16,padding:"28px 32px",maxWidth:420,width:"90%",boxShadow:"0 8px 40px rgba(0,0,0,0.25)"}}>
+          {!readOnly&&<dialog ref={dialogRef} onClick={e=>{if(e.target===dialogRef.current)dialogRef.current.close();}} style={{border:"none",borderRadius:16,padding:"28px 32px",maxWidth:420,width:"90%",boxShadow:"0 8px 40px rgba(0,0,0,0.25)"}}>
             <div style={{fontWeight:800,fontSize:"1.05rem",marginBottom:4}}>Edit Lesson Income</div>
             <div style={{fontSize:"0.85rem",color:"#6b7280",marginBottom:20}}>{editRowRef.current?.isCalendar?editRowRef.current?.summary:editRowRef.current?.name} · {editRowRef.current?fmtDateShort(editRowRef.current.date):""} · {editRowRef.current?.isCalendar?(editRowRef.current?.hours+"h"):editRowRef.current?.duration}</div>
             {editRowRef.current?.isCalendar&&(
@@ -2734,7 +2735,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                 }} style={{background:"white",border:"1.5px solid #e5e7eb",color:"#6b7280",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:600,fontSize:"0.88rem"}}>Reset to Default</button>
               )}
             </div>
-          </dialog>
+          </dialog>}
           {calendarLessons.length===0&&!financeLoading&&(
             <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"40px",textAlign:"center",color:"#9ca3af"}}>No earnings data found for this period.</div>
           )}
@@ -5216,10 +5217,96 @@ function GearAdminTab(){
   );
 }
 
+// ─── PARTNER PORTAL ──────────────────────────────────────────────────────────
+function PartnerLoginPage({onLogin}){
+  const G="#1a3c34";
+  const[loading,setLoading]=useState(false);
+  const[error,setError]=useState("");
+  const handleGoogle=()=>{
+    setLoading(true);setError("");
+    const popup=window.open(
+      "https://accounts.google.com/o/oauth2/v2/auth?"+new URLSearchParams({
+        client_id:GOOGLE_CLIENT_ID,
+        redirect_uri:window.location.origin,
+        response_type:"token",
+        scope:"email profile",
+        prompt:"select_account",
+      }).toString(),
+      "partnerlogin","width=520,height=650,scrollbars=yes,resizable=yes"
+    );
+    const t=setInterval(async()=>{
+      try{
+        if(popup.closed){clearInterval(t);setLoading(false);return;}
+        const url=popup.location.href;
+        if(url.includes(window.location.origin)&&url.includes("access_token")){
+          clearInterval(t);popup.close();
+          const token=new URLSearchParams(url.split("#")[1]).get("access_token");
+          const info=await(await fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+token}})).json();
+          const email=(info.email||"").toLowerCase();
+          if(PARTNER_EMAILS.includes(email)){onLogin(email);}
+          else{setLoading(false);setError("Access denied. This portal is invite-only.");}
+        }
+      }catch(e){}
+    },500);
+  };
+  return(
+    <div style={{minHeight:"100vh",background:"#f4f9f6",display:"flex",alignItems:"center",justifyContent:"center",padding:"24px",fontFamily:"'Inter',sans-serif"}}>
+      <div style={{background:"white",borderRadius:16,padding:"40px 36px",boxShadow:"0 4px 24px rgba(0,0,0,0.08)",width:"100%",maxWidth:380}}>
+        <div style={{textAlign:"center",marginBottom:28}}>
+          <img src="/DMPBlogo.png" alt="DM Pickleball" style={{height:36,marginBottom:16,objectFit:"contain"}}/>
+          <h2 style={{fontWeight:900,color:"#1a1a1a",marginBottom:4}}>Finance Portal</h2>
+          <p style={{color:"#6b7280",fontSize:"0.85rem"}}>Authorized access only</p>
+        </div>
+        {error&&<div style={{background:"#fef2f2",border:"1.5px solid #fca5a5",borderRadius:8,padding:"10px 14px",color:"#991b1b",fontSize:"0.88rem",marginBottom:16}}>{error}</div>}
+        <button onClick={handleGoogle} disabled={loading} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:10,background:loading?"#f3f4f6":"white",color:"#374151",border:"1.5px solid #d1d5db",padding:"12px 16px",borderRadius:50,fontWeight:600,cursor:loading?"not-allowed":"pointer",fontSize:"0.95rem"}}>
+          <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          {loading?"Signing in…":"Sign in with Google"}
+        </button>
+      </div>
+    </div>
+  );
+}
+function PartnerPortal(){
+  const G="#1a3c34";
+  const[loggedIn,setLoggedIn]=useState(false);
+  const[partnerEmail,setPartnerEmail]=useState("");
+  const[financeData,setFinanceData]=useState(null);
+  const[financeLoading,setFinanceLoading]=useState(false);
+  const[financeRange,setFinanceRange]=useState(null);
+  const[includeStanford,setIncludeStanford]=useState(false);
+  const[showNetStanford,setShowNetStanford]=useState(true);
+  if(!loggedIn)return<PartnerLoginPage onLogin={e=>{setLoggedIn(true);setPartnerEmail(e);}}/>;
+  return(
+    <div style={{fontFamily:"'Inter',sans-serif",background:"#f4f9f6",minHeight:"100vh"}}>
+      <nav style={{background:G,padding:"14px 32px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <img src="/DMPBlogo-white.png" alt="DMPB" style={{height:34,width:"auto",display:"block"}}/>
+          <span style={{fontSize:"0.75rem",color:"rgba(255,255,255,0.6)",fontWeight:400}}>· Finances</span>
+        </div>
+        <button onClick={()=>setLoggedIn(false)} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.4)",color:"white",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem"}}>Log out</button>
+      </nav>
+      <div style={{maxWidth:1100,margin:"0 auto",padding:"32px 24px"}}>
+        <div style={{fontWeight:900,fontSize:"1.7rem",color:"#1a1a1a",marginBottom:28}}>Finance Overview</div>
+        <FinancesTab
+          financeRange={financeRange} setFinanceRange={setFinanceRange}
+          includeStanford={includeStanford} setIncludeStanford={setIncludeStanford}
+          showNetStanford={showNetStanford} setShowNetStanford={setShowNetStanford}
+          financeData={financeData} setFinanceData={setFinanceData}
+          financeLoading={financeLoading} setFinanceLoading={setFinanceLoading}
+          allLessons={{}} mockUsers={{}} onUpdateLesson={()=>{}}
+          readOnly={true}
+        />
+      </div>
+    </div>
+  );
+}
+
 // ─── ROOT APP ─────────────────────────────────────────────────────────────────
 export default function App(){
   const isAdminRoute=window.location.pathname==="/admin";
+  const isPartnerRoute=window.location.pathname==="/partner";
   const[page,setPage]=useState(isAdminRoute?"adminlogin":"home");
+  if(isPartnerRoute)return<PartnerPortal/>;
   const[user,setUser]=useState(null);
   const[isAdmin,setIsAdmin]=useState(false);
   const[allLessons,setAllLessons]=useState({});
