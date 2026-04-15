@@ -2437,7 +2437,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
       {!projectedMode&&<>
       {/* Allison Report */}
       {!readOnly&&<div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}>
-        <button onClick={()=>{setShowAllisonReport(!showAllisonReport);setAllisonSent(false);}} style={{background:G,color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>📋 Allison Report (MCC)</button>
+        <button onClick={()=>{setShowAllisonReport(!showAllisonReport);setAllisonSent(false);}} style={{background:G,color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>📋 MCC Billing Report</button>
       </div>}
       {!readOnly&&showAllisonReport&&(()=>{
         const report=allisonStart&&allisonEnd?buildAllisonReport(allisonStart,allisonEnd):null;
