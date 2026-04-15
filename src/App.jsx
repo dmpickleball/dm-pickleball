@@ -3116,6 +3116,23 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
   useEffect(()=>{if(tab==="lessons"&&calendarItems.length===0&&!calLoading)fetchCalendarItems();},[tab]);
   // Auto-sync calendar attendees → provisional student accounts when Students tab opens
   // Runs silently in background; results appear on next render if new accounts are created
+  // Calendar lesson history for provisional students
+  const[calLessons,setCalLessons]=useState({}); // email → lesson[]
+  const[calLessonsLoading,setCalLessonsLoading]=useState(false);
+  useEffect(()=>{
+    if(!selectedStudent)return;
+    const u=mockUsers[selectedStudent]||{};
+    const supabaseLessons=(allLessons[selectedStudent]||[]).filter(l=>l.status!=="archived");
+    // Fetch calendar history if: provisional account OR has no Supabase lessons at all
+    if(!u.provisional&&supabaseLessons.length>0)return;
+    if(calLessons[selectedStudent]!==undefined)return; // already fetched
+    setCalLessonsLoading(true);
+    fetch("/api/students?action=calendar-history&email="+encodeURIComponent(selectedStudent))
+      .then(r=>r.json())
+      .then(d=>{setCalLessons(prev=>({...prev,[selectedStudent]:d.lessons||[]}));setCalLessonsLoading(false);})
+      .catch(()=>{setCalLessons(prev=>({...prev,[selectedStudent]:[]}));setCalLessonsLoading(false);});
+  },[selectedStudent]);
+
   const calSyncedRef=React.useRef(false);
   useEffect(()=>{
     if(tab!=="students"||calSyncedRef.current)return;
@@ -3814,8 +3831,44 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
           })()}
           {/* ─────────────────────────────────────────────────────────── */}
 
-          <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>Lesson History</div>
-          {(allLessons[selectedStudent]||[]).filter(l=>l.status!=="archived").length===0&&<div style={{color:"#9ca3af",fontSize:"0.9rem",textAlign:"center",padding:"32px"}}>No lessons yet.</div>}
+          {(()=>{
+            const supabaseLessons=(allLessons[selectedStudent]||[]).filter(l=>l.status!=="archived");
+            const calHistoryLessons=calLessons[selectedStudent]||[];
+            const useCalHistory=supabaseLessons.length===0&&calHistoryLessons.length>0;
+            if(useCalHistory){
+              return(
+                <div style={{marginBottom:16}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+                    <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2}}>Lesson History</div>
+                    <span style={{background:"#f0fdf4",color:"#15803d",border:"1px solid #86efac",padding:"2px 9px",borderRadius:50,fontSize:"0.68rem",fontWeight:700}}>from Calendar</span>
+                    <span style={{fontSize:"0.78rem",color:"#6b7280"}}>{calHistoryLessons.length} lessons</span>
+                  </div>
+                  {calHistoryLessons.map(l=>(
+                    <div key={l.id} style={{background:"white",borderRadius:10,border:"1.5px solid #e5e7eb",padding:"12px 16px",marginBottom:8}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,flexWrap:"wrap"}}>
+                        <div>
+                          <div style={{fontWeight:700,fontSize:"0.9rem"}}>{fmtDateShort(l.date)}{l.time?" · "+l.time:""}</div>
+                          <div style={{fontSize:"0.8rem",color:"#6b7280",marginTop:2}}>{l.type}{l.duration?" · "+l.duration:""}{l.isMenlo?" · MCC":""}</div>
+                          {l.location&&<div style={{fontSize:"0.73rem",color:"#9ca3af",marginTop:1}}>{l.location}</div>}
+                        </div>
+                        <span style={{background:new Date(l.date)<new Date()?"#e8f0ee":"#fffbea",color:new Date(l.date)<new Date()?G:"#92400e",padding:"2px 10px",borderRadius:50,fontSize:"0.7rem",fontWeight:700,flexShrink:0}}>
+                          {new Date(l.date)<new Date()?"Completed":"Upcoming"}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            }
+            return null;
+          })()}
+          {calLessonsLoading&&(allLessons[selectedStudent]||[]).filter(l=>l.status!=="archived").length===0&&(
+            <div style={{color:"#9ca3af",fontSize:"0.85rem",padding:"20px 0",textAlign:"center"}}>Loading lesson history from calendar…</div>
+          )}
+          <div style={{fontSize:"0.8rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:12}}>
+            {(allLessons[selectedStudent]||[]).filter(l=>l.status!=="archived").length>0?"Portal Lessons":""}
+          </div>
+          {(allLessons[selectedStudent]||[]).filter(l=>l.status!=="archived").length===0&&(calLessons[selectedStudent]||[]).length===0&&!calLessonsLoading&&<div style={{color:"#9ca3af",fontSize:"0.9rem",textAlign:"center",padding:"32px"}}>No lessons yet.</div>}
           {(allLessons[selectedStudent]||[]).filter(l=>l.status!=="archived").sort((a,b)=>new Date(b.date)-new Date(a.date)).map(l=>{
             const smk="s_"+l.id;const isMenuOpen=activeMenu===smk;
             const isCancelled=cancelledStatuses2.includes(l.status);

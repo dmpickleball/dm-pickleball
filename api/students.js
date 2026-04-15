@@ -37,6 +37,52 @@ function parseName(displayName = '') {
   return { firstName, lastName, name: displayName.trim() };
 }
 
+// Format calendar event into a lesson-like object for display
+function calEventToLesson(event) {
+  const startDT = event.start?.dateTime || event.start?.date || '';
+  const endDT   = event.end?.dateTime   || event.end?.date   || '';
+  const date = startDT.substring(0, 10);
+
+  // Format time like "9:00 AM"
+  let time = '';
+  if (startDT.includes('T')) {
+    const d = new Date(startDT);
+    time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Los_Angeles' });
+  }
+
+  // Duration in minutes
+  let duration = '';
+  if (startDT && endDT) {
+    const mins = Math.round((new Date(endDT) - new Date(startDT)) / 60000);
+    duration = mins >= 60 ? (mins % 60 === 0 ? `${mins/60} hr` : `${mins} min`) : `${mins} min`;
+  }
+
+  // Derive lesson type from title
+  const s = (event.summary || '').toLowerCase();
+  let type = event.summary || 'Lesson';
+  if (s.includes('private') || (s.includes('pb lesson') && !s.includes('/') && !s.includes('group'))) type = 'Private Lesson';
+  else if (s.includes('semi') || (s.includes('pb lesson') && s.includes('/'))) type = 'Semi-Private Lesson';
+  else if (s.includes('group')) type = 'Group Lesson';
+  else if (s.includes('clinic')) type = 'Clinic';
+  else if (s.includes('stanford')) type = 'Stanford';
+
+  const isMenlo = (event.location||'').toLowerCase().includes('menlo') || (event.location||'').toLowerCase().includes('190 park');
+
+  return {
+    id: 'gcal_' + event.id,
+    gcalEventId: event.id,
+    date,
+    time,
+    duration,
+    type,
+    status: new Date(startDT) < new Date() ? 'completed' : 'confirmed',
+    isMenlo,
+    location: event.location || '',
+    notes: event.description || '',
+    fromCalendar: true, // flag so we know it's not from Supabase
+  };
+}
+
 // Core sync logic: scan a calendar for lesson attendees and upsert provisional accounts
 async function syncCalendarToStudents(calendarId, timeMin, timeMax) {
   const calendar = google.calendar({ version: 'v3', auth: getCalAuth() });
@@ -423,6 +469,46 @@ export default async function handler(req, res) {
       const timeMax = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
       const result = await syncCalendarToStudents(calendarId, timeMin, timeMax);
       return res.status(200).json({ ok: true, ...result });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // GET calendar-history — fetch all calendar events for a specific student email
+  if (req.method === 'GET' && action === 'calendar-history') {
+    const { email } = req.query;
+    if (!email) return res.status(400).json({ error: 'email required' });
+    const calendarId = process.env.GOOGLE_PERSONAL_CALENDAR_ID || process.env.GOOGLE_CALENDAR_ID;
+    if (!calendarId) return res.status(500).json({ error: 'Calendar not configured' });
+    try {
+      const calendar = google.calendar({ version: 'v3', auth: getCalAuth() });
+      const timeMin = new Date('2025-01-01T00:00:00-08:00').toISOString();
+      const timeMax = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
+      let pageToken = null;
+      const lessons = [];
+      do {
+        const response = await calendar.events.list({
+          calendarId,
+          timeMin,
+          timeMax,
+          singleEvents: true,
+          orderBy: 'startTime',
+          maxResults: 2500,
+          ...(pageToken ? { pageToken } : {}),
+        });
+        const items = response.data.items || [];
+        for (const event of items) {
+          if (event.status === 'cancelled') continue;
+          if (!event.attendees || event.attendees.length === 0) continue;
+          const match = event.attendees.find(a => (a.email||'').toLowerCase() === email.toLowerCase());
+          if (!match) continue;
+          lessons.push(calEventToLesson(event));
+        }
+        pageToken = response.data.nextPageToken || null;
+      } while (pageToken);
+      // Sort newest first
+      lessons.sort((a, b) => b.date.localeCompare(a.date));
+      return res.status(200).json({ lessons });
     } catch (err) {
       return res.status(500).json({ error: err.message });
     }
