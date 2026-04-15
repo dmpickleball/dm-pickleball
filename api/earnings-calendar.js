@@ -265,6 +265,7 @@ export default async function handler(req, res) {
         }
         lessonEarnings += earnings;
         totalEarnings += earnings;
+        const slashes = (event.summary.match(/\//g) || []).length;
         events.push({
           date: startDT.substring(0, 10),
           summary: event.summary,
@@ -272,6 +273,7 @@ export default async function handler(req, res) {
           type: category.type,
           hours: Math.round(hrs * 100) / 100,
           earnings,
+          personCount: slashes + 1,
           isStanford: false,
           gcalEventId: event.id,
           location: event.location || '',
