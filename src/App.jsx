@@ -2251,13 +2251,14 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
     if(!items.length)return null;
     const fmtShort=(ds)=>{const d=new Date(ds+"T12:00:00");return(d.getMonth()+1)+"/"+d.getDate()+"/"+String(d.getFullYear()).slice(2);};
     const fmtLong=(ds)=>{const d=new Date(ds+"T12:00:00");return d.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"});};
-    // Build type label matching Allison's format: "60 min Private", "60 min S/P (2)", "60 min Clinic" etc.
+    // Build type label using Allison's exact item names from the MCC billing system
     const typeLabel=(ev)=>{
-      const dur=(ev.hours>=1.4?"90":"60")+" min";
+      const is90=ev.hours>=1.4;
+      const dur=is90?"90 Min":"60 Min";
       const n=ev.personCount||1;
-      if(ev.type==="clinic")return dur+" Clinic";
-      if(n===1)return dur+" Private";
-      return dur+" S/P ("+n+")";
+      if(ev.type==="clinic")return "Pickleball Clinic";
+      if(n===1)return dur+" Private - Pickleball";
+      return dur+" S/P ("+n+") Person - Pickleball";
     };
     const lines=["Hi Allison,","","Please process the following lesson charges for the period "+fmtLong(start)+" – "+fmtLong(end)+":",""];
     items.forEach(ev=>{
