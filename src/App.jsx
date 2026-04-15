@@ -2622,12 +2622,12 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                             <span style={{fontSize:"0.85rem",color:"#374151",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.summary}</span>
                             <span
                               style={{background:badgeColor+"22",color:isTypeOverridden?"#0ea5e9":badgeColor,padding:"2px 9px",borderRadius:50,fontSize:"0.68rem",fontWeight:700,flexShrink:0,whiteSpace:"nowrap"}}
-                              title={hoverNames||undefined}
                             >
                               {e.category}{(e.type==="group"||e.type==="clinic")&&e.personCount>1?` (${e.personCount})`:""}
                               {isTypeOverridden&&" ✎"}
                             </span>
                           </div>
+                          {hoverNames&&<div style={{fontSize:"0.72rem",color:"#9ca3af",marginTop:3,paddingLeft:1}}>{hoverNames}</div>}
                         </div>
                       );
                     })}
@@ -2649,11 +2649,14 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                         return(
                         <tr key={i} style={{borderBottom:"1px solid #f3f4f6",background:e.isStanford?"#faf5ff":"white"}}>
                           <td style={{padding:"12px 16px"}}>{fmtDateShort(e.date)}</td>
-                          <td style={{padding:"12px 16px",maxWidth:180,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.summary}</td>
+                          <td style={{padding:"12px 16px",maxWidth:200}}>
+                            <div style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.summary}</div>
+                            {hoverNames&&<div style={{fontSize:"0.72rem",color:"#9ca3af",marginTop:2,whiteSpace:"normal"}}>{hoverNames}</div>}
+                          </td>
                           <td onClick={openEdit} style={{padding:"12px 16px",cursor:e.isStanford?"default":"pointer",userSelect:"none"}}>
                             <span
-                              style={{background:badgeColor+"22",color:isTypeOverridden?"#0ea5e9":badgeColor,padding:"2px 8px",borderRadius:50,fontSize:"0.72rem",fontWeight:700,cursor:hoverNames?"help":e.isStanford?"default":"pointer"}}
-                              title={hoverNames||(e.isStanford?undefined:"Click to edit type")}
+                              style={{background:badgeColor+"22",color:isTypeOverridden?"#0ea5e9":badgeColor,padding:"2px 8px",borderRadius:50,fontSize:"0.72rem",fontWeight:700,cursor:e.isStanford?"default":"pointer"}}
+                              title={e.isStanford?undefined:"Click to edit type"}
                             >
                               {e.category}{(e.type==="group"||e.type==="clinic")&&e.personCount>1?` (${e.personCount})`:""}
                               {isTypeOverridden&&" ✎"}
