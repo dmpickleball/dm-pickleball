@@ -2606,7 +2606,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                       const isTypeOverridden=!e.isStanford&&calTypeOverrides[calKey]!=null;
                       const hoverNames=getHoverNames(e);
                       const dispEarnings=e.isStanford?(showNetStanford?(e.netEarnings??e.earnings):e.earnings):e.earnings;
-                      const earningsColor=e.isStanford?"#8C1515":e.isMenlo?"#16a34a":isOverridden?"#0ea5e9":"#1a3c34";
+                      const earningsColor=e.isMenlo?"#16a34a":isOverridden?"#0ea5e9":"#1a3c34";
                       const badgeColor=e.isStanford?"#8C1515":e.isMenlo?"#16a34a":(typeColors[e.type]||"#666");
                       const rowBg=e.isStanford?"#fdf2f2":e.isMenlo?"#f0fdf4":"white";
                       const openEdit=()=>{if(e.isStanford||readOnly)return;editRowRef.current={...e,isCalendar:true,calKey};setEditPriceVal(String(e.earnings));setEditTypeVal(e.type||"");dialogRef.current?.showModal();};
@@ -2645,7 +2645,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                         const isTypeOverridden=!e.isStanford&&calTypeOverrides[calKey]!=null;
                         const hoverNames=getHoverNames(e);
                         const dispEarnings=e.isStanford?(showNetStanford?(e.netEarnings??e.earnings):e.earnings):e.earnings;
-                        const earningsColor=e.isStanford?"#8C1515":e.isMenlo?"#16a34a":isOverridden?"#0ea5e9":"#1a3c34";
+                        const earningsColor=e.isMenlo?"#16a34a":isOverridden?"#0ea5e9":"#1a3c34";
                         const badgeColor=e.isStanford?"#8C1515":e.isMenlo?"#16a34a":(typeColors[e.type]||"#666");
                         const rowBg=e.isStanford?"#fdf2f2":e.isMenlo?"#f0fdf4":"white";
                         const openEdit=()=>{if(e.isStanford||readOnly)return;editRowRef.current={...e,isCalendar:true,calKey};setEditPriceVal(String(e.earnings));setEditTypeVal(e.type||"");dialogRef.current?.showModal();};
