@@ -54,12 +54,12 @@ function parseNamesFromNotes(description) {
   const allLines = description.split('\n').map(l => l.trim()).filter(Boolean);
   for (const line of allLines) {
     if (!line.includes(':') && line.includes(',')) {
-      const parts = line.split(',').map(n => n.trim()).filter(n => n.length > 0 && n.length < 50);
+      const parts = line.split(',').map(n => n.trim()).filter(n => n.length > 0);
       if (parts.length > 1) return parts;
     }
   }
-  // Fall back: one-name-per-line (lines without colons, reasonable single-name length)
-  const nameLines = allLines.filter(l => !l.includes(':') && l.length < 50);
+  // Fall back: one-name-per-line (any line without a colon)
+  const nameLines = allLines.filter(l => !l.includes(':'));
   if (nameLines.length > 0) return nameLines;
 
   return [];
