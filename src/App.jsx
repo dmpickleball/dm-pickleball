@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, Fragment, Component } from "react";
+import { Analytics } from "@vercel/analytics/react";
 
 // ─── ERROR BOUNDARY ──────────────────────────────────────────────────────────
 class ErrorBoundary extends Component {
@@ -2996,6 +2997,7 @@ function AdminCalendarView(){
 }
 function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pendingStudents,onApprove,onDeny,mockUsers,onAddStudent,onAddLesson,onToggleMenlo,onToggleSaturday,onBlockStudent,onRemoveStudent,removedStudents,onRestoreStudent,onBlockRemoved,onToggleGrandfathered,stanfordEnabled=true,onToggleStanford}){
   const[tab,setTab]=useState("students");
+  const[adminMenuOpen,setAdminMenuOpen]=useState(false);
   const[studentSearch,setStudentSearch]=useState("");
   const[selectedStudent,setSelectedStudent]=useState(null);
   const[editingStudent,setEditingStudent]=useState(false);
@@ -3280,17 +3282,46 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
         </div>
       </div>
 
-      <div style={{borderBottom:"2px solid #e5e7eb",marginBottom:28,overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
-        <div style={{display:"flex",gap:0,minWidth:"max-content"}}>
-          {[["students","Students"],["lessons","Lessons"],["finances","Finances"],["database","All Lessons"],["gear","Gear"]].map(([t,label])=>(
-            <button key={t} onClick={()=>{setTab(t);setSelectedStudent(null);setShowSchedule(false);}}
-              style={{background:"none",border:"none",borderBottom:"2px solid "+(tab===t?G:"transparent"),marginBottom:-2,padding:"10px 18px",fontSize:"0.88rem",fontWeight:tab===t?700:500,color:tab===t?G:"#6b7280",cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
-              {label}
-              {t==="students"&&pendingStudents.length>0&&<span style={{background:"#dc2626",color:"white",borderRadius:50,padding:"1px 7px",fontSize:"0.7rem",fontWeight:800,marginLeft:6}}>{pendingStudents.length}</span>}
+      {/* ── Admin nav: tabs on desktop, burger on mobile ── */}
+      {(()=>{
+        const TABS=[["students","👥 Students"],["lessons","📅 Lessons"],["finances","💰 Finances"],["database","🗄 All Lessons"],["gear","🎾 Gear"],["traffic","📊 Traffic"]];
+        const isMobNav=window.innerWidth<640;
+        if(!isMobNav){
+          return(
+            <div style={{borderBottom:"2px solid #e5e7eb",marginBottom:28,overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+              <div style={{display:"flex",gap:0,minWidth:"max-content"}}>
+                {TABS.map(([t,label])=>(
+                  <button key={t} onClick={()=>{setTab(t);setSelectedStudent(null);setShowSchedule(false);setAdminMenuOpen(false);}}
+                    style={{background:"none",border:"none",borderBottom:"2px solid "+(tab===t?G:"transparent"),marginBottom:-2,padding:"10px 18px",fontSize:"0.88rem",fontWeight:tab===t?700:500,color:tab===t?G:"#6b7280",cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>
+                    {label}
+                    {t==="students"&&pendingStudents.length>0&&<span style={{background:"#dc2626",color:"white",borderRadius:50,padding:"1px 7px",fontSize:"0.7rem",fontWeight:800,marginLeft:6}}>{pendingStudents.length}</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        }
+        const activeLabel=TABS.find(([t])=>t===tab)?.[1]||"Menu";
+        return(
+          <div style={{marginBottom:20,position:"relative"}}>
+            <button onClick={()=>setAdminMenuOpen(o=>!o)} style={{display:"flex",alignItems:"center",gap:10,background:"white",border:"1.5px solid #e5e7eb",borderRadius:12,padding:"10px 16px",width:"100%",cursor:"pointer",fontWeight:700,fontSize:"0.9rem",color:"#1a1a1a"}}>
+              <span style={{flex:1,textAlign:"left"}}>{activeLabel}{tab==="students"&&pendingStudents.length>0&&<span style={{background:"#dc2626",color:"white",borderRadius:50,padding:"1px 7px",fontSize:"0.7rem",fontWeight:800,marginLeft:8}}>{pendingStudents.length}</span>}</span>
+              <span style={{fontSize:"1.2rem",lineHeight:1}}>{adminMenuOpen?"✕":"☰"}</span>
             </button>
-          ))}
-        </div>
-      </div>
+            {adminMenuOpen&&(
+              <div style={{position:"absolute",top:"calc(100% + 6px)",left:0,right:0,background:"white",border:"1.5px solid #e5e7eb",borderRadius:12,zIndex:100,overflow:"hidden",boxShadow:"0 8px 24px rgba(0,0,0,0.1)"}}>
+                {TABS.map(([t,label])=>(
+                  <button key={t} onClick={()=>{setTab(t);setSelectedStudent(null);setShowSchedule(false);setAdminMenuOpen(false);}}
+                    style={{display:"block",width:"100%",textAlign:"left",background:tab===t?"#f0faf5":"white",border:"none",borderBottom:"1px solid #f3f4f6",padding:"12px 16px",fontSize:"0.9rem",fontWeight:tab===t?700:500,color:tab===t?G:"#374151",cursor:"pointer"}}>
+                    {label}
+                    {t==="students"&&pendingStudents.length>0&&<span style={{background:"#dc2626",color:"white",borderRadius:50,padding:"1px 7px",fontSize:"0.7rem",fontWeight:800,marginLeft:8}}>{pendingStudents.length}</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {tab==="students"&&!selectedStudent&&(
         <div>
@@ -4743,6 +4774,130 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
       {tab==="gear"&&<GearAdminTab/>}
 
       {tab==="database"&&<LessonsDbTab allLessons={allLessons} mockUsers={mockUsers} onDeleteLesson={onDeleteLesson} onUpdateLesson={onUpdateLesson} setSelectedStudent={setSelectedStudent} setTab={setTab}/>}
+
+      {tab==="traffic"&&<TrafficTab/>}
+    </div>
+  );
+}
+
+// ─── TRAFFIC TAB ─────────────────────────────────────────────────────────────
+function TrafficTab(){
+  const[data,setData]=useState(null);
+  const[loading,setLoading]=useState(true);
+  const[error,setError]=useState("");
+  const G="#1a3c34";
+
+  useEffect(()=>{
+    setLoading(true);
+    fetch("/api/get-traffic").then(r=>r.json()).then(d=>{
+      if(d.error)setError(d.error);
+      else setData(d);
+    }).catch(()=>setError("Failed to load traffic data.")).finally(()=>setLoading(false));
+  },[]);
+
+  if(loading)return<div style={{padding:40,textAlign:"center",color:"#9ca3af"}}>Loading traffic data…</div>;
+  if(error)return<div style={{padding:40,textAlign:"center",color:"#dc2626"}}>{error}</div>;
+  if(!data)return null;
+
+  const{summary,daily,topPages,devices,topCountries,topReferrers}=data;
+  const totalDevices=devices.mobile+devices.desktop+devices.tablet||1;
+  const maxDaily=Math.max(...daily.map(d=>d.views),1);
+
+  const StatCard=({label,views,sessions})=>(
+    <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"18px 20px",flex:1,minWidth:130}}>
+      <div style={{fontSize:"0.7rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>{label}</div>
+      <div style={{fontSize:"2rem",fontWeight:900,color:G,lineHeight:1}}>{views.toLocaleString()}</div>
+      <div style={{fontSize:"0.75rem",color:"#6b7280",marginTop:4}}>{sessions.toLocaleString()} unique session{sessions!==1?"s":""}</div>
+    </div>
+  );
+
+  return(
+    <div>
+      {/* Summary cards */}
+      <div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:24}}>
+        <StatCard label="Today" views={summary.today.views} sessions={summary.today.sessions}/>
+        <StatCard label="Last 7 days" views={summary.week.views} sessions={summary.week.sessions}/>
+        <StatCard label="Last 30 days" views={summary.month.views} sessions={summary.month.sessions}/>
+        <StatCard label="All time" views={summary.allTime.views} sessions={summary.allTime.sessions}/>
+      </div>
+
+      {/* 30-day bar chart */}
+      <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"20px 24px",marginBottom:20}}>
+        <div style={{fontWeight:700,fontSize:"0.88rem",color:"#374151",marginBottom:16}}>Page Views — Last 30 Days</div>
+        <div style={{display:"flex",alignItems:"flex-end",gap:3,height:80}}>
+          {daily.map((d,i)=>(
+            <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}} title={d.date+": "+d.views+" views"}>
+              <div style={{width:"100%",background:d.views>0?G:"#f3f4f6",borderRadius:"3px 3px 0 0",height:Math.max(d.views/maxDaily*72,d.views>0?3:0)}}/>
+            </div>
+          ))}
+        </div>
+        <div style={{display:"flex",justifyContent:"space-between",marginTop:6,fontSize:"0.68rem",color:"#9ca3af"}}>
+          <span>{daily[0]?.date?.slice(5)}</span>
+          <span>{daily[daily.length-1]?.date?.slice(5)}</span>
+        </div>
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:16,marginBottom:20}}>
+        {/* Top pages */}
+        <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"20px 24px"}}>
+          <div style={{fontWeight:700,fontSize:"0.88rem",color:"#374151",marginBottom:14}}>Top Pages (30 days)</div>
+          {topPages.length===0?<div style={{color:"#9ca3af",fontSize:"0.82rem"}}>No data yet</div>:topPages.map((p,i)=>(
+            <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:i<topPages.length-1?"1px solid #f3f4f6":"none"}}>
+              <span style={{fontSize:"0.82rem",color:"#374151",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"75%"}}>{p.page==="/"?"Home":p.page}</span>
+              <span style={{fontWeight:700,fontSize:"0.82rem",color:G,flexShrink:0}}>{p.views.toLocaleString()}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Devices */}
+        <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"20px 24px"}}>
+          <div style={{fontWeight:700,fontSize:"0.88rem",color:"#374151",marginBottom:14}}>Devices (30 days)</div>
+          {[["📱 Mobile",devices.mobile,"#0ea5e9"],["🖥 Desktop",devices.desktop,G],["📟 Tablet",devices.tablet,"#f97316"]].map(([label,count,color])=>(
+            <div key={label} style={{marginBottom:12}}>
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:"0.82rem",marginBottom:4}}>
+                <span style={{color:"#374151"}}>{label}</span>
+                <span style={{fontWeight:700,color}}>{Math.round(count/totalDevices*100)}%</span>
+              </div>
+              <div style={{background:"#f3f4f6",borderRadius:99,height:8,overflow:"hidden"}}>
+                <div style={{width:Math.round(count/totalDevices*100)+"%",height:"100%",background:color,borderRadius:99,transition:"width 0.6s"}}/>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Top referrers */}
+        <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"20px 24px"}}>
+          <div style={{fontWeight:700,fontSize:"0.88rem",color:"#374151",marginBottom:14}}>Top Referrers (30 days)</div>
+          {topReferrers.length===0?<div style={{color:"#9ca3af",fontSize:"0.82rem"}}>No referrer data yet</div>:topReferrers.map((r,i)=>(
+            <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:i<topReferrers.length-1?"1px solid #f3f4f6":"none"}}>
+              <span style={{fontSize:"0.82rem",color:"#374151"}}>{r.referrer}</span>
+              <span style={{fontWeight:700,fontSize:"0.82rem",color:G}}>{r.views.toLocaleString()}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Top countries */}
+        {topCountries.length>0&&(
+          <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"20px 24px"}}>
+            <div style={{fontWeight:700,fontSize:"0.88rem",color:"#374151",marginBottom:14}}>Top Countries (30 days)</div>
+            {topCountries.map((c,i)=>(
+              <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:i<topCountries.length-1?"1px solid #f3f4f6":"none"}}>
+                <span style={{fontSize:"0.82rem",color:"#374151"}}>{c.country}</span>
+                <span style={{fontWeight:700,fontSize:"0.82rem",color:G}}>{c.views.toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Vercel dashboard link */}
+      <div style={{background:"#f0faf5",border:"1.5px solid #bbf7d0",borderRadius:12,padding:"14px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10}}>
+        <div>
+          <div style={{fontWeight:700,fontSize:"0.88rem",color:G}}>Vercel Analytics</div>
+          <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:2}}>Full analytics including Web Vitals, performance, and more</div>
+        </div>
+        <a href="https://vercel.com/dashboard" target="_blank" rel="noreferrer" style={{background:G,color:"white",padding:"8px 18px",borderRadius:50,fontSize:"0.82rem",fontWeight:700,textDecoration:"none"}}>Open Dashboard ↗</a>
+      </div>
     </div>
   );
 }
@@ -5106,6 +5261,15 @@ export default function App(){
 
   useEffect(()=>{window.scrollTo(0,0);},[page]);
 
+  // ── Page view tracking ──
+  useEffect(()=>{
+    try{
+      let sid=sessionStorage.getItem("_dm_sid");
+      if(!sid){sid=Math.random().toString(36).slice(2)+Date.now().toString(36);sessionStorage.setItem("_dm_sid",sid);}
+      fetch("/api/track-visit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({page:window.location.pathname||"/",referrer:document.referrer||null,sessionId:sid})}).catch(()=>{});
+    }catch{}
+  },[]);
+
   useEffect(()=>{
     const loadFromSupabase=async()=>{
       try{
@@ -5425,6 +5589,7 @@ export default function App(){
   );
   return(
     <div style={{fontFamily:"'DM Sans',sans-serif",background:"#f4f9f6",minHeight:"100vh"}}>
+      <Analytics/>
       <Nav user={user} onLogin={()=>setPage("login")} onLogout={logout} setPage={setPage} currentPage={page}/>
       {page==="adminlogin"&&<AdminLoginPage onAdminLogin={()=>setIsAdmin(true)}/>}
       {page==="home"&&!isAdminRoute&&<Homepage setPage={setPage}/>}
