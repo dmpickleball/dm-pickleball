@@ -3023,6 +3023,8 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
   const[showAddStudent,setShowAddStudent]=useState(false);
   const[newStudent,setNewStudent]=useState({name:"",email:"",memberType:"public"});
   const[studentView,setStudentView]=useState("active"); // "active" | "removed"
+  const[calSyncStatus,setCalSyncStatus]=useState("idle"); // "idle"|"syncing"|"done"|"error"
+  const[calSyncResult,setCalSyncResult]=useState(null); // {created,skipped,emails}
   const[confirmDeleteLogin,setConfirmDeleteLogin]=useState(null); // email being confirmed for deletion
   const[showCalendar,setShowCalendar]=useState(true);
   const[showEvents,setShowEvents]=useState(true);
@@ -3112,6 +3114,26 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
   // Load calendar on mount so dashboard earnings + upcoming are always populated
   useEffect(()=>{fetchCalendarItems();},[]);
   useEffect(()=>{if(tab==="lessons"&&calendarItems.length===0&&!calLoading)fetchCalendarItems();},[tab]);
+  // Auto-sync calendar attendees → provisional student accounts when Students tab opens
+  // Runs silently in background; results appear on next render if new accounts are created
+  useEffect(()=>{
+    if(tab!=="students"||!dbLoaded)return;
+    fetch("/api/students?action=sync",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({})})
+      .then(r=>r.json())
+      .then(async d=>{
+        if(d.created>0){
+          const sr2=await fetch("/api/students?action=list").then(x=>x.json()).catch(()=>({}));
+          if(sr2.students){
+            const users2={};
+            sr2.students.forEach(s=>{
+              const se=(s.email||"").toLowerCase();
+              users2[se]={name:s.name||s.email,firstName:s.first_name||"",lastName:s.last_name||"",commEmail:s.comm_email||"",skillLevel:s.skill_level||"",duprRating:s.dupr_rating||"",duprDoublesRating:s.dupr_doubles_rating||"",duprId:s.dupr_id||"",duprPlayerName:s.dupr_player_name||"",memberType:s.member_type||"public",approved:s.approved,blocked:s.blocked,grandfathered:!!(s.grandfathered),phone:s.phone||"",city:s.city||"",homeCourt:s.home_court||"",picture:s.picture||"",provisional:!!(s.provisional),source:s.source||"self_registered",calendarName:s.calendar_name||""};
+            });
+            setMockUsersState(users2);
+          }
+        }
+      }).catch(()=>{});
+  },[tab,dbLoaded]);
   // Reset DUPR input when switching students
   useEffect(()=>{setDuprIdInput("");setDuprSyncStatus("idle");setDuprSyncError("");},[selectedStudent]);
   useEffect(()=>{if(tab==="lessons"&&eventsData.length===0&&!eventsLoading){const s=toDS(new Date());const e=toDS(addDays(new Date(),90));setEventsLoading(true);fetch("/api/calendar-events?start="+s+"&end="+e+"&keywords=rental,tournament").then(r=>r.json()).then(d=>{setEventsData(d.events||[]);setEventsLoading(false);}).catch(()=>setEventsLoading(false));}},[tab]);
@@ -3370,10 +3392,42 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
 
           {/* Active */}
           {studentView==="active"&&<>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
-              <input placeholder="🔍 Search students..." value={studentSearch} onChange={e=>setStudentSearch(e.target.value)} style={{...inp,marginBottom:0,maxWidth:300,flex:1}}/>
-              <button onClick={()=>setShowAddStudent(!showAddStudent)} style={{background:G,color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>+ Add Student</button>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:calSyncResult?8:16,flexWrap:"wrap",gap:8}}>
+              <input placeholder="🔍 Search students..." value={studentSearch} onChange={e=>setStudentSearch(e.target.value)} style={{...inp,marginBottom:0,maxWidth:260,flex:1}}/>
+              <div style={{display:"flex",gap:8,flexShrink:0}}>
+                <button onClick={async()=>{
+                  setCalSyncStatus("syncing");setCalSyncResult(null);
+                  try{
+                    const r=await fetch("/api/students?action=sync",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({})});
+                    const d=await r.json();
+                    if(d.error)throw new Error(d.error);
+                    setCalSyncResult(d);
+                    if(d.created>0){
+                      // Reload students list to pick up new provisional accounts
+                      const sr2=await fetch("/api/students?action=list").then(x=>x.json()).catch(()=>({}));
+                      if(sr2.students){
+                        const users2={};
+                        sr2.students.forEach(s=>{
+                          const se=(s.email||"").toLowerCase();
+                          users2[se]={name:s.name||s.email,firstName:s.first_name||"",lastName:s.last_name||"",commEmail:s.comm_email||"",skillLevel:s.skill_level||"",duprRating:s.dupr_rating||"",duprDoublesRating:s.dupr_doubles_rating||"",duprId:s.dupr_id||"",duprPlayerName:s.dupr_player_name||"",memberType:s.member_type||"public",approved:s.approved,blocked:s.blocked,grandfathered:!!(s.grandfathered),phone:s.phone||"",city:s.city||"",homeCourt:s.home_court||"",picture:s.picture||"",provisional:!!(s.provisional),source:s.source||"self_registered",calendarName:s.calendar_name||""};
+                        });
+                        setMockUsersState(users2);
+                      }
+                    }
+                    setCalSyncStatus("done");
+                  }catch(e){setCalSyncStatus("error");setCalSyncResult({error:e.message});}
+                }} disabled={calSyncStatus==="syncing"} style={{background:calSyncStatus==="error"?"#dc2626":calSyncStatus==="done"?"#15803d":"white",color:calSyncStatus==="error"||calSyncStatus==="done"?"white":"#374151",border:"1.5px solid "+(calSyncStatus==="error"?"#dc2626":calSyncStatus==="done"?"#15803d":"#e5e7eb"),padding:"7px 16px",borderRadius:50,cursor:calSyncStatus==="syncing"?"not-allowed":"pointer",fontWeight:600,fontSize:"0.8rem",whiteSpace:"nowrap"}}>
+                  {calSyncStatus==="syncing"?"Syncing…":calSyncStatus==="done"?"Synced ✓":calSyncStatus==="error"?"Sync Error":"Sync from Calendar"}
+                </button>
+                <button onClick={()=>setShowAddStudent(!showAddStudent)} style={{background:G,color:"white",border:"none",padding:"9px 20px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.85rem"}}>+ Add Student</button>
+              </div>
             </div>
+            {calSyncResult&&!calSyncResult.error&&(
+              <div style={{background:calSyncResult.created>0?"#f0fdf4":"#f9fafb",border:"1.5px solid "+(calSyncResult.created>0?"#86efac":"#e5e7eb"),borderRadius:10,padding:"10px 16px",marginBottom:14,fontSize:"0.82rem",color:calSyncResult.created>0?"#15803d":"#6b7280",display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+                <span>{calSyncResult.created>0?`✓ Created ${calSyncResult.created} new student account${calSyncResult.created===1?"":"s"} from your calendar.`:`No new students found — all calendar attendees already have accounts.`}</span>
+                <button onClick={()=>{setCalSyncResult(null);setCalSyncStatus("idle");}} style={{background:"none",border:"none",cursor:"pointer",color:"#9ca3af",fontSize:"1rem",lineHeight:1,padding:"0 4px"}}>✕</button>
+              </div>
+            )}
             {showAddStudent&&(
               <div style={{background:"#f9f9f6",borderRadius:12,padding:"20px",marginBottom:16,border:"1.5px solid #e5e7eb"}}>
                 <div style={{fontWeight:700,marginBottom:12}}>Add Student Manually</div>
@@ -3410,6 +3464,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                       </div>
                     </div>
                     <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",justifyContent:"flex-end"}}>
+                      {u.provisional&&<span style={{background:"#f0fdf4",color:"#15803d",border:"1px solid #86efac",padding:"2px 10px",borderRadius:50,fontSize:"0.7rem",fontWeight:700}}>Auto</span>}
                       {u.memberType==="menlo"&&<span style={{background:G,color:"white",padding:"2px 10px",borderRadius:50,fontSize:"0.7rem",fontWeight:700}}>MCC</span>}
                       {u.grandfathered&&<span style={{background:"#fef3c7",color:"#92400e",padding:"2px 10px",borderRadius:50,fontSize:"0.7rem",fontWeight:700}}>GF</span>}
                       {u.blocked&&<span style={{background:"#dc2626",color:"white",padding:"2px 10px",borderRadius:50,fontSize:"0.7rem",fontWeight:700}}>Blocked</span>}
@@ -3552,6 +3607,21 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                 <button onClick={()=>setShowSchedule(true)} style={{background:G,color:"white",border:"none",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.82rem"}}>+ Schedule Lesson</button>
               </div>
             </div>
+            {/* ── Provisional banner ── */}
+            {mockUsers[selectedStudent]?.provisional&&(
+              <div style={{background:"#f0fdf4",border:"1.5px solid #86efac",borderRadius:10,padding:"12px 16px",marginBottom:12,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10}}>
+                <div>
+                  <div style={{fontWeight:700,color:"#15803d",fontSize:"0.88rem",marginBottom:2}}>Auto-created account</div>
+                  <div style={{fontSize:"0.78rem",color:"#166534"}}>This account was auto-created from your Google Calendar. Once the student registers and logs in, their profile will be enriched automatically. You can also edit their info now.</div>
+                </div>
+                <button onClick={async()=>{
+                  await fetch("/api/students?action=promote",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:selectedStudent})});
+                  setMockUsersState(prev=>({...prev,[selectedStudent]:{...prev[selectedStudent],provisional:false,source:"self_registered"}}));
+                }} style={{background:"#15803d",color:"white",border:"none",padding:"7px 18px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.8rem",whiteSpace:"nowrap"}}>
+                  Mark as Full Account
+                </button>
+              </div>
+            )}
             {/* ── Student Modifiers ── */}
             <div style={{background:"#f9fafb",borderRadius:10,border:"1.5px solid #e5e7eb",padding:"14px 16px",marginBottom:0}}>
               <div style={{fontSize:"0.7rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1.5,marginBottom:10}}>Account Modifiers</div>
@@ -5373,6 +5443,9 @@ export default function App(){
               city:s.city||"",
               homeCourt:s.home_court||"",
               picture:s.picture||"",
+              provisional:!!(s.provisional),
+              source:s.source||"self_registered",
+              calendarName:s.calendar_name||"",
             };
             lessonsByStudent[sEmail]=[];
           });

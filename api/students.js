@@ -1,4 +1,117 @@
 import { supabase } from './_supabase.js';
+import { google } from 'googleapis';
+
+// ── Google Calendar auth (same pattern as earnings-calendar.js) ───────────────
+function getCalAuth() {
+  const rawKey = process.env.GOOGLE_PRIVATE_KEY || '';
+  const privateKey = rawKey.includes('\\n') ? rawKey.replace(/\\n/g, '\n') : rawKey;
+  return new google.auth.JWT({
+    email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+    key: privateKey,
+    scopes: ['https://www.googleapis.com/auth/calendar.readonly'],
+  });
+}
+
+// Looks like a lesson event (same heuristics as earnings-calendar)
+function isLessonEvent(summary = '') {
+  const s = summary.toLowerCase();
+  return s.includes('pb lesson') || s.includes('clinic') || s.includes('stanford') || s.includes('pickup');
+}
+
+// Extract real attendees (filter out calendar resources and the organiser)
+function getRealAttendees(event) {
+  return (event.attendees || []).filter(a => {
+    const em = (a.email || '').toLowerCase();
+    return em && !em.includes('resource.calendar.google') && !em.includes('serviceaccount') && !a.organizer;
+  }).map(a => ({
+    email: a.email.toLowerCase().trim(),
+    displayName: (a.displayName || '').trim(),
+  }));
+}
+
+// Parse first/last name from a display name string
+function parseName(displayName = '') {
+  const parts = displayName.trim().split(/\s+/);
+  const firstName = parts[0] || '';
+  const lastName = parts.slice(1).join(' ') || '';
+  return { firstName, lastName, name: displayName.trim() };
+}
+
+// Core sync logic: scan a calendar for lesson attendees and upsert provisional accounts
+async function syncCalendarToStudents(calendarId, timeMin, timeMax) {
+  const calendar = google.calendar({ version: 'v3', auth: getCalAuth() });
+  let pageToken = null;
+  const uniqueAttendees = new Map(); // email → { email, displayName }
+
+  do {
+    const response = await calendar.events.list({
+      calendarId,
+      timeMin,
+      timeMax,
+      singleEvents: true,
+      orderBy: 'startTime',
+      maxResults: 2500,
+      ...(pageToken ? { pageToken } : {}),
+    });
+    const items = response.data.items || [];
+    for (const event of items) {
+      if (!isLessonEvent(event.summary)) continue;
+      const attendees = getRealAttendees(event);
+      for (const a of attendees) {
+        if (!a.email) continue;
+        if (!uniqueAttendees.has(a.email)) {
+          uniqueAttendees.set(a.email, a);
+        } else if (!uniqueAttendees.get(a.email).displayName && a.displayName) {
+          // Prefer whichever entry actually has a name
+          uniqueAttendees.set(a.email, a);
+        }
+      }
+    }
+    pageToken = response.data.nextPageToken || null;
+  } while (pageToken);
+
+  if (uniqueAttendees.size === 0) return { created: 0, skipped: 0, emails: [] };
+
+  // Check which emails already exist in students table
+  const emails = [...uniqueAttendees.keys()];
+  const { data: existing } = await supabase
+    .from('students')
+    .select('email')
+    .in('email', emails);
+  const existingSet = new Set((existing || []).map(s => s.email.toLowerCase()));
+
+  const newAttendees = emails.filter(e => !existingSet.has(e));
+  if (newAttendees.length === 0) return { created: 0, skipped: emails.length, emails: [] };
+
+  // Upsert provisional accounts for new attendees
+  const rows = newAttendees.map(email => {
+    const { displayName } = uniqueAttendees.get(email);
+    const { firstName, lastName, name } = parseName(displayName);
+    return {
+      email,
+      name: name || email.split('@')[0],
+      first_name: firstName,
+      last_name: lastName,
+      calendar_name: name || '',
+      provisional: true,
+      source: 'calendar',
+      approved: true,
+      blocked: false,
+      member_type: 'public',
+      phone: '',
+      comm_email: '',
+      home_court: '',
+      skill_level: '',
+      dupr_rating: '',
+      dupr_id: '',
+    };
+  });
+
+  const { error } = await supabase.from('students').upsert(rows, { onConflict: 'email', ignoreDuplicates: true });
+  if (error) throw new Error(error.message);
+
+  return { created: newAttendees.length, skipped: existingSet.size, emails: newAttendees };
+}
 
 export default async function handler(req, res) {
   const action = req.query.action;
@@ -281,6 +394,44 @@ export default async function handler(req, res) {
     const { data, error } = await supabase.from('access_requests').select('*').eq('status', 'pending').order('requested_at', { ascending: true });
     if (error) return res.status(500).json({ error: error.message });
     return res.status(200).json({ requests: data });
+  }
+
+  // POST backfill — scan personal calendar from 1/1/25 to today, create provisional accounts
+  // Uses GOOGLE_PERSONAL_CALENDAR_ID env var (set to dmpickleball@gmail.com once shared)
+  if (req.method === 'POST' && action === 'backfill') {
+    const calendarId = process.env.GOOGLE_PERSONAL_CALENDAR_ID || process.env.GOOGLE_CALENDAR_ID;
+    if (!calendarId) return res.status(500).json({ error: 'GOOGLE_PERSONAL_CALENDAR_ID not set' });
+    try {
+      const timeMin = new Date('2025-01-01T00:00:00-08:00').toISOString();
+      const timeMax = new Date().toISOString();
+      const result = await syncCalendarToStudents(calendarId, timeMin, timeMax);
+      return res.status(200).json({ ok: true, ...result });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // POST sync — scan the primary business calendar for the last 60 days (ongoing auto-detection)
+  if (req.method === 'POST' && action === 'sync') {
+    const calendarId = process.env.GOOGLE_PERSONAL_CALENDAR_ID || process.env.GOOGLE_CALENDAR_ID;
+    if (!calendarId) return res.status(500).json({ error: 'GOOGLE_CALENDAR_ID not set' });
+    try {
+      const timeMin = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
+      const timeMax = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // include upcoming 30 days too
+      const result = await syncCalendarToStudents(calendarId, timeMin, timeMax);
+      return res.status(200).json({ ok: true, ...result });
+    } catch (err) {
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // POST promote — mark a provisional account as fully set up (remove provisional flag)
+  if (req.method === 'POST' && action === 'promote') {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'email required' });
+    const { error } = await supabase.from('students').update({ provisional: false, source: 'self_registered' }).eq('email', email.toLowerCase());
+    if (error) return res.status(500).json({ error: error.message });
+    return res.status(200).json({ success: true });
   }
 
   res.status(400).json({ error: 'Invalid action' });
