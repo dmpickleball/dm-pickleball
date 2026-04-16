@@ -4872,7 +4872,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
 
       {tab==="gear"&&<GearAdminTab/>}
 
-      {tab==="database"&&<LessonsDbTab allLessons={allLessons} mockUsers={mockUsers} onDeleteLesson={onDeleteLesson} onUpdateLesson={onUpdateLesson} setSelectedStudent={setSelectedStudent} setTab={setTab}/>}
+      {tab==="database"&&<LessonLedgerTab mockUsers={mockUsers} setSelectedStudent={setSelectedStudent} setTab={setTab}/>}
 
       {tab==="traffic"&&<TrafficTab/>}
     </div>
@@ -5002,79 +5002,163 @@ function TrafficTab(){
 }
 
 // ─── ALL LESSONS DATABASE TAB ────────────────────────────────────────────────
-function LessonsDbTab({allLessons,mockUsers,onDeleteLesson,onUpdateLesson,setSelectedStudent,setTab}){
-  const [dbSearch,setDbSearch]=useState("");
-  const [dbStatus,setDbStatus]=useState("all");
-  const [dbDeleteTarget,setDbDeleteTarget]=useState(null);
-  const statusOptions=[["all","All"],["confirmed","Confirmed"],["pending","Pending"],["cancelled","Cancelled"],["archived","Archived"],["late_cancel","Late Cancel"],["no_show","No-Show"],["completed","Completed"],["weather_cancel","Weather Cancel"]];
-  const allRows=Object.entries(allLessons).flatMap(([email,lessons])=>lessons.map(l=>({...l,studentEmail:email,studentName:mockUsers[email]?.name||email})));
-  const q=dbSearch.toLowerCase().trim();
-  const filtered=allRows.filter(l=>{
-    if(dbStatus!=="all"&&l.status!==dbStatus)return false;
-    if(!q)return true;
-    return (l.studentName||"").toLowerCase().includes(q)||(l.studentEmail||"").toLowerCase().includes(q)||(l.date||"").includes(q)||(l.type||"").toLowerCase().includes(q)||(l.focus||"").toLowerCase().includes(q)||(l.ticketId||"").toLowerCase().includes(q)||(l.time||"").toLowerCase().includes(q);
-  }).sort((a,b)=>new Date(b.date)-new Date(a.date));
-  const statusBadge=(s,lesson={})=>{
-    const r=lesson.cancelReason||(s==="late_cancel"?"late":s==="no_show"?"no_show":s==="weather_cancel"?"weather":s==="cancelled_forgiven"?"forgiven":null);
-    const isCx=["cancelled","late_cancel","no_show","weather_cancel","cancelled_forgiven"].includes(s);
-    if(s==="confirmed")return<span style={{background:"#e8f0ee",color:G,padding:"2px 8px",borderRadius:50,fontSize:"0.7rem",fontWeight:700,whiteSpace:"nowrap"}}>✓ Confirmed</span>;
-    if(s==="completed")return<span style={{background:"#e8f0ee",color:G,padding:"2px 8px",borderRadius:50,fontSize:"0.7rem",fontWeight:700,whiteSpace:"nowrap"}}>✓ Completed</span>;
-    if(s==="pending")return<span style={{background:"#fffbea",color:"#92400e",padding:"2px 8px",borderRadius:50,fontSize:"0.7rem",fontWeight:700,whiteSpace:"nowrap"}}>⏳ Pending</span>;
-    if(s==="archived")return<span style={{background:"#f3f4f6",color:"#6b7280",padding:"2px 8px",borderRadius:50,fontSize:"0.7rem",fontWeight:700,whiteSpace:"nowrap"}}>📦 Archived</span>;
-    if(isCx){
-      const bg=r==="late"?"#fff7ed":r==="no_show"?"#fef2f2":r==="weather"?"#eff6ff":r==="forgiven"?"#f3f4f6":"#fef2f2";
-      const col=r==="late"?"#c2410c":r==="no_show"?"#7f1d1d":r==="weather"?"#1d4ed8":r==="forgiven"?"#6b7280":"#dc2626";
-      const lbl=r==="late"?"⚠️ Late Cancel":r==="no_show"?"✕ No-Show":r==="weather"?"🌧 Weather":r==="forgiven"?"✓ Forgiven":lesson.cancelledByGcal?"📅 Removed":"✕ Cancelled";
-      return<span style={{background:bg,color:col,padding:"2px 8px",borderRadius:50,fontSize:"0.7rem",fontWeight:700,whiteSpace:"nowrap"}}>{lbl}</span>;
+function LessonLedgerTab({mockUsers,setSelectedStudent,setTab}){
+  const [search,setSearch]=useState("");
+  const [typeFilter,setTypeFilter]=useState("all");
+  const [monthFilter,setMonthFilter]=useState("all");
+  const [ledgerData,setLedgerData]=useState(null);
+  const [loading,setLoading]=useState(false);
+  const [error,setError]=useState(null);
+
+  // Load on mount
+  useEffect(()=>{
+    setLoading(true);
+    const start="2025-01-01";
+    const future=new Date();future.setDate(future.getDate()+60);
+    const end=future.toISOString().slice(0,10);
+    fetch(`/api/earnings-calendar?start=${start}&end=${end}&includeStanford=true&includeFuture=true`)
+      .then(r=>r.json())
+      .then(d=>{setLedgerData(d);setLoading(false);})
+      .catch(e=>{setError(e.message);setLoading(false);});
+  },[]);
+
+  const events=ledgerData?.events||[];
+
+  // Build display name for each event
+  const getNames=(e)=>{
+    if(e.parsedNames&&e.parsedNames.length>0)return e.parsedNames.join(", ");
+    if(e.attendees&&e.attendees.length>0){
+      const names=e.attendees.map(a=>a.displayName||(mockUsers[a.email]?.name)||a.email.split("@")[0]).filter(Boolean);
+      if(names.length>0)return names.join(", ");
     }
-    return<span style={{background:"#f3f4f6",color:"#6b7280",padding:"2px 8px",borderRadius:50,fontSize:"0.7rem",fontWeight:700,whiteSpace:"nowrap"}}>{s}</span>;
+    return "";
   };
+
+  // Month options from data
+  const monthSet=new Set(events.map(e=>e.date.slice(0,7)));
+  const months=[...monthSet].sort((a,b)=>b.localeCompare(a));
+
+  // Type options
+  const typeSet=new Set(events.map(e=>e.type));
+  const types=[...typeSet].sort();
+
+  // Filter
+  const q=search.toLowerCase().trim();
+  const filtered=events.filter(e=>{
+    if(typeFilter!=="all"&&e.type!==typeFilter)return false;
+    if(monthFilter!=="all"&&!e.date.startsWith(monthFilter))return false;
+    if(!q)return true;
+    const names=getNames(e).toLowerCase();
+    const emails=(e.attendeeEmails||[]).join(" ").toLowerCase();
+    return names.includes(q)||emails.includes(q)||e.date.includes(q)||(e.category||"").toLowerCase().includes(q)||(e.summary||"").toLowerCase().includes(q);
+  });
+
+  // Stats
+  const totalEarnings=filtered.reduce((s,e)=>s+(e.earnings||0),0);
+  const pastFiltered=filtered.filter(e=>new Date(e.date)<new Date());
+
+  // Badge for event type
+  const typeBadge=(e)=>{
+    if(e.isStanford)return<span style={{background:"#8C1515",color:"white",padding:"2px 8px",borderRadius:50,fontSize:"0.65rem",fontWeight:700,flexShrink:0}}>Stanford</span>;
+    if(e.isMenlo)return<span style={{background:G,color:"white",padding:"2px 8px",borderRadius:50,fontSize:"0.65rem",fontWeight:700,flexShrink:0}}>MCC</span>;
+    return null;
+  };
+
+  const typeColors2={private:"#e8f0ee",semi:"#e0e7ff",group:"#fef3c7",clinic:"#fce7f3",pickup:"#f3f4f6",stanford_rec:"#fdf2f2",stanford_open:"#fdf2f2"};
+  const typeTextColors2={private:G,semi:"#4338ca",group:"#92400e",clinic:"#9d174d",pickup:"#6b7280",stanford_rec:"#7f1d1d",stanford_open:"#7f1d1d"};
+
+  const fmtMonth=m=>{const[y,mo]=m.split("-");return new Date(y,parseInt(mo)-1).toLocaleDateString("en-US",{month:"long",year:"numeric"});};
+
+  if(loading)return<div style={{textAlign:"center",padding:"60px",color:"#9ca3af"}}>Loading lesson history…</div>;
+  if(error)return<div style={{textAlign:"center",padding:"60px",color:"#dc2626"}}>Error: {error}</div>;
+
   return(
     <div>
-      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,flexWrap:"wrap"}}>
-        <input value={dbSearch} onChange={e=>setDbSearch(e.target.value)} placeholder="Search by name, email, date, type, focus, ticket…" style={{flex:1,minWidth:220,padding:"9px 14px",border:"1.5px solid #e5e7eb",borderRadius:8,fontSize:"0.88rem",outline:"none"}}/>
-        <select value={dbStatus} onChange={e=>setDbStatus(e.target.value)} style={{padding:"9px 12px",border:"1.5px solid #e5e7eb",borderRadius:8,fontSize:"0.85rem",outline:"none",background:"white"}}>
-          {statusOptions.map(([v,l])=><option key={v} value={v}>{l}</option>)}
+      {/* Filters */}
+      <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap",alignItems:"center"}}>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by student, date, type…"
+          style={{flex:1,minWidth:200,padding:"8px 14px",border:"1.5px solid #e5e7eb",borderRadius:8,fontSize:"0.85rem",outline:"none"}}/>
+        <select value={typeFilter} onChange={e=>setTypeFilter(e.target.value)}
+          style={{padding:"8px 12px",border:"1.5px solid #e5e7eb",borderRadius:8,fontSize:"0.82rem",outline:"none",background:"white"}}>
+          <option value="all">All Types</option>
+          {types.map(t=><option key={t} value={t}>{t.charAt(0).toUpperCase()+t.slice(1).replace("_"," ")}</option>)}
         </select>
-        <span style={{fontSize:"0.8rem",color:"#9ca3af",whiteSpace:"nowrap"}}>{filtered.length} lesson{filtered.length!==1?"s":""}</span>
+        <select value={monthFilter} onChange={e=>setMonthFilter(e.target.value)}
+          style={{padding:"8px 12px",border:"1.5px solid #e5e7eb",borderRadius:8,fontSize:"0.82rem",outline:"none",background:"white"}}>
+          <option value="all">All Months</option>
+          {months.map(m=><option key={m} value={m}>{fmtMonth(m)}</option>)}
+        </select>
       </div>
+
+      {/* Summary strip */}
+      <div style={{display:"flex",gap:12,marginBottom:16,flexWrap:"wrap"}}>
+        {[
+          ["Lessons",pastFiltered.length],
+          ["Earnings","$"+totalEarnings.toFixed(0)],
+          ["Students",new Set(filtered.flatMap(e=>e.attendeeEmails||[])).size||"—"],
+        ].map(([lbl,val])=>(
+          <div key={lbl} style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:10,padding:"10px 18px",flex:1,minWidth:100,textAlign:"center"}}>
+            <div style={{fontSize:"1.2rem",fontWeight:800,color:"#1a1a1a"}}>{val}</div>
+            <div style={{fontSize:"0.7rem",color:"#9ca3af",fontWeight:600,textTransform:"uppercase",letterSpacing:1,marginTop:2}}>{lbl}</div>
+          </div>
+        ))}
+        <div style={{background:"white",border:"1.5px solid #e5e7eb",borderRadius:10,padding:"10px 18px",flex:1,minWidth:100,textAlign:"center"}}>
+          <div style={{fontSize:"0.72rem",color:"#9ca3af",fontWeight:600,textTransform:"uppercase",letterSpacing:1,marginBottom:2}}>Showing</div>
+          <div style={{fontSize:"0.85rem",fontWeight:700,color:"#374151"}}>{filtered.length} lesson{filtered.length!==1?"s":""}</div>
+        </div>
+      </div>
+
+      {/* Lesson list */}
       <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden"}}>
-        {filtered.length===0?(<div style={{padding:"40px",textAlign:"center",color:"#9ca3af"}}>No lessons match your search.</div>):(
-          filtered.map((l,i)=>(
-            <div key={l.id} style={{borderBottom:i<filtered.length-1?"1px solid #f3f4f6":"none",padding:"12px 18px"}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:3}}>
-                    <span style={{fontWeight:700,fontSize:"0.88rem",color:"#1a1a1a"}}>{l.studentName}</span>
-                    <span style={{fontSize:"0.75rem",color:"#9ca3af"}}>{l.studentEmail}</span>
-                    {statusBadge(l.status,l)}
-                  </div>
-                  <div style={{fontSize:"0.82rem",color:"#4b5563"}}>{fmtDate(l.date)} · {l.time} · {l.type} · {l.duration}{l.focus?" · "+l.focus:""}</div>
-                  {l.ticketId&&<div style={{fontSize:"0.72rem",color:"#9ca3af",marginTop:2,fontFamily:"monospace"}}>{l.ticketId}</div>}
-                </div>
-                <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
-                  <button onClick={()=>{setSelectedStudent(l.studentEmail);setTab("students");}} style={{background:"#e8f0ee",color:G,border:"none",padding:"4px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:600}}>View Student</button>
-                  {l.status!=="archived"&&<button onClick={async()=>{
-                    onUpdateLesson(l.studentEmail,l.id,{status:"archived"});
-                    if(l.gcalEventId){fetch("/api/bookings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"cancel",eventId:l.gcalEventId,mode:"delete"})}).catch(()=>{});}
-                    fetch("/api/lessons?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id,updates:{status:"archived"}})}).catch(()=>{});
-                  }} style={{background:"white",color:"#6b7280",border:"1.5px solid #d1d5db",padding:"4px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:600}}>Archive</button>}
-                  {dbDeleteTarget===(l.id||l.studentEmail+'|'+l.date+'|'+l.time)?(
-                    <div style={{display:"flex",gap:5,alignItems:"center",flexWrap:"wrap"}}>
-                      <span style={{fontSize:"0.73rem",color:"#dc2626",fontWeight:600}}>Permanently delete?</span>
-                      <button onClick={async()=>{
-                        onDeleteLesson(l.studentEmail,l.id);setDbDeleteTarget(null);
-                        if(l.id){fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})}).then(r=>{if(!r.ok&&r.status!==404)r.json().then(d=>console.warn("Delete API error:",d.error)).catch(()=>{});}).catch(()=>{});}
-                      }} style={{background:"#dc2626",color:"white",border:"none",padding:"3px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:700}}>Yes, Delete</button>
-                      <button onClick={()=>{setDbDeleteTarget(null);}} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"3px 8px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:600}}>Cancel</button>
+        {filtered.length===0?(
+          <div style={{padding:"40px",textAlign:"center",color:"#9ca3af"}}>No lessons match your filters.</div>
+        ):(
+          filtered.map((e,i)=>{
+            const names=getNames(e);
+            const isPast=new Date(e.date)<new Date();
+            const rowBg=e.isStanford?"#fdf2f2":e.isMenlo?"#f0fdf4":"white";
+            const dividerColor=rowBg==="white"?"#f3f4f6":"#e5e7eb";
+            // Find linked student email
+            const linkedEmail=(e.attendeeEmails||[]).find(em=>mockUsers[em]);
+            return(
+              <div key={e.gcalEventId||i} style={{background:rowBg,borderBottom:i<filtered.length-1?"1px solid "+dividerColor:"none",padding:"12px 18px"}}>
+                <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    {/* Date + time */}
+                    <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:4}}>
+                      <span style={{fontWeight:700,fontSize:"0.88rem",color:"#1a1a1a"}}>{fmtDateShort(e.date)}</span>
+                      {e.startTime&&<span style={{fontSize:"0.8rem",color:"#6b7280"}}>{e.startTime}{e.endTime?" – "+e.endTime:""}</span>}
+                      <span style={{background:typeColors2[e.type]||"#f3f4f6",color:typeTextColors2[e.type]||"#6b7280",padding:"1px 8px",borderRadius:50,fontSize:"0.68rem",fontWeight:700}}>{e.category||e.type}</span>
+                      {typeBadge(e)}
+                      {!isPast&&<span style={{background:"#fffbea",color:"#92400e",padding:"1px 8px",borderRadius:50,fontSize:"0.68rem",fontWeight:700}}>Upcoming</span>}
                     </div>
-                  ):(
-                    <button onClick={()=>{setDbDeleteTarget(l.id||l.studentEmail+'|'+l.date+'|'+l.time);setDbPw("");setDbPwError("");}} style={{background:"white",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"4px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.73rem",fontWeight:700}}>🗑 Delete</button>
-                  )}
+                    {/* Student names */}
+                    {names&&<div style={{fontSize:"0.85rem",fontWeight:600,color:"#374151",marginBottom:2}}>{names}</div>}
+                    {/* Location + duration */}
+                    <div style={{fontSize:"0.78rem",color:"#9ca3af"}}>
+                      {e.hours&&<span>{Math.round(e.hours*60)} min</span>}
+                      {e.location&&<span>{e.hours?" · ":""}{e.location}</span>}
+                    </div>
+                  </div>
+                  {/* Earnings + actions */}
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+                    {e.earnings>0&&(
+                      <div style={{textAlign:"right"}}>
+                        <div style={{fontWeight:800,fontSize:"0.95rem",color:G}}>${e.earnings.toFixed(0)}</div>
+                        {e.grossEarnings&&e.grossEarnings!==e.earnings&&<div style={{fontSize:"0.68rem",color:"#9ca3af"}}>${e.grossEarnings.toFixed(0)} gross</div>}
+                      </div>
+                    )}
+                    {linkedEmail&&(
+                      <button onClick={()=>{setSelectedStudent(linkedEmail);setTab("students");}}
+                        style={{background:"#e8f0ee",color:G,border:"none",padding:"4px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.72rem",fontWeight:600,whiteSpace:"nowrap"}}>
+                        View Student
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
@@ -5428,13 +5512,38 @@ function PartnerPortal({preLoggedIn=false}){
   );
 }
 
+// ─── Persistent admin session helpers ─────────────────────────────────────────
+const ADMIN_SESSION_KEY="dm_admin_session";
+const SESSION_DAYS=30;
+function saveAdminSession(email){
+  try{localStorage.setItem(ADMIN_SESSION_KEY,JSON.stringify({email,expiresAt:Date.now()+SESSION_DAYS*24*60*60*1000}));}catch{}
+}
+function loadAdminSession(){
+  try{
+    const raw=localStorage.getItem(ADMIN_SESSION_KEY);
+    if(!raw)return null;
+    const s=JSON.parse(raw);
+    if(!s||!s.email||!s.expiresAt||Date.now()>s.expiresAt){localStorage.removeItem(ADMIN_SESSION_KEY);return null;}
+    return s.email;
+  }catch{return null;}
+}
+function clearAdminSession(){try{localStorage.removeItem(ADMIN_SESSION_KEY);}catch{}}
+
 // ─── ROOT APP ─────────────────────────────────────────────────────────────────
 export default function App(){
   const isAdminRoute=window.location.pathname==="/admin"||window.location.pathname==="/partner";
-  const[page,setPage]=useState(isAdminRoute?"adminlogin":"home");
+  // Restore session from localStorage on first load
+  const savedEmail=isAdminRoute?loadAdminSession():null;
+  const restoredAdmin=savedEmail===ADMIN_EMAIL;
+  const restoredPartner=savedEmail&&PARTNER_EMAILS.includes(savedEmail)&&savedEmail!==ADMIN_EMAIL;
+  const[page,setPage]=useState(()=>{
+    if(isAdminRoute&&(restoredAdmin||restoredPartner))return"admin";
+    if(isAdminRoute)return"adminlogin";
+    return"home";
+  });
   const[user,setUser]=useState(null);
-  const[isAdmin,setIsAdmin]=useState(false);
-  const[isPartner,setIsPartner]=useState(false);
+  const[isAdmin,setIsAdmin]=useState(restoredAdmin);
+  const[isPartner,setIsPartner]=useState(restoredPartner);
   const[allLessons,setAllLessons]=useState({});
   const[pendingStudents,setPendingStudents]=useState([]);
   const[mockUsersState,setMockUsersState]=useState({});
@@ -5758,7 +5867,7 @@ export default function App(){
     }
     setRemovedStudents(prev=>prev.filter(x=>x.email!==email));
   };
-  const logout=()=>{setUser(null);setIsAdmin(false);setIsPartner(false);setPage("home");};
+  const logout=()=>{clearAdminSession();setUser(null);setIsAdmin(false);setIsPartner(false);setPage(isAdminRoute?"adminlogin":"home");};
   if(isPartner)return<PartnerPortal preLoggedIn/>;
   if(isAdmin)return(
     <div style={{fontFamily:"'Inter',sans-serif",background:"#f4f9f6",minHeight:"100vh"}}>
@@ -5779,7 +5888,7 @@ export default function App(){
     <div style={{fontFamily:"'DM Sans',sans-serif",background:"#f4f9f6",minHeight:"100vh"}}>
       <Analytics/>
       <Nav user={user} onLogin={()=>setPage("login")} onLogout={logout} setPage={setPage} currentPage={page}/>
-      {page==="adminlogin"&&<AdminLoginPage onAdminLogin={email=>{if(email===ADMIN_EMAIL)setIsAdmin(true);else if(PARTNER_EMAILS.includes(email))setIsPartner(true);}}/>}
+      {page==="adminlogin"&&<AdminLoginPage onAdminLogin={email=>{saveAdminSession(email);if(email===ADMIN_EMAIL)setIsAdmin(true);else if(PARTNER_EMAILS.includes(email))setIsPartner(true);}}/>}
       {page==="home"&&!isAdminRoute&&<Homepage setPage={setPage}/>}
       {page==="pricing"&&<PricingPage setPage={setPage}/>}
       {page==="gear"&&<GearPage/>}
