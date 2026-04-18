@@ -396,7 +396,7 @@ function Nav({user,onLogin,onLogout,setPage,currentPage}){
     window.addEventListener("resize",h);
     return()=>window.removeEventListener("resize",h);
   },[]);
-  const links=[["pricing","Rates"],["gear","Paddle/Gear"],["resources","Watch & Links"],["contact","Contact"]];
+  const links=[["pricing","Rates"],["gear","Paddle/Gear"],["resources","Watch/Links"],["contact","Contact"]];
   const navTo=(p)=>{setPage(p);setMenuOpen(false);};
   if(mob){
     return(
