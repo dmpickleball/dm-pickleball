@@ -1246,10 +1246,10 @@ function AdminLoginPage({onAdminLogin}){
           if(email===ADMIN_EMAIL||PARTNER_EMAILS.includes(email)){
             // Exchange Google token for server-side HMAC token, then open admin panel
             if(accessToken){
-              fetch('/api/students',{
+              fetch('/api/students?action=get-admin-token',{
                 method:'POST',
                 headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({action:'get-admin-token',googleToken:accessToken}),
+                body:JSON.stringify({googleToken:accessToken}),
               }).then(r=>r.json()).then(d=>{
                 if(d.token){
                   sessionStorage.setItem('dm_admin_token',d.token);
