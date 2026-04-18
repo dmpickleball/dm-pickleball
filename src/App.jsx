@@ -5753,6 +5753,12 @@ export default function App(){
   useEffect(()=>{window.scrollTo(0,0);},[page]);
 
   // ── URL routing: keep browser URL in sync with page state ──────────────────
+  // On first load, stamp the current page into the history entry so the back
+  // button returns here instead of skipping straight to the previous website.
+  useEffect(()=>{
+    if(isAdminRoute)return;
+    window.history.replaceState({page},document.title,window.location.pathname);
+  },[]);
   useEffect(()=>{
     if(isAdminRoute)return; // admin routes manage their own URLs
     const url=PAGE_TO_URL[page]||"/";
