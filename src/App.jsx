@@ -1091,9 +1091,13 @@ function ResourcesPage(){
             {/* Body */}
             <div style={{padding:"28px 36px 32px"}}>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:16,marginBottom:28}}>
-                {[["🏆","PPA Tour","Pro matches live"],["🎯","On Demand","Full match replays"],["📺","24/7","Always on network"]].map(([icon,title,sub])=>(
+                {[
+                  {icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="6"/><path d="M9 12l2 2 4-4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>,title:"PPA Tour",sub:"Pro matches live"},
+                  {icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>,title:"On Demand",sub:"Full match replays"},
+                  {icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/></svg>,title:"24/7",sub:"Always on network"},
+                ].map(({icon,title,sub})=>(
                   <div key={title} style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:12,padding:"14px 16px",textAlign:"center"}}>
-                    <div style={{fontSize:"1.4rem",marginBottom:6}}>{icon}</div>
+                    <div style={{display:"flex",justifyContent:"center",marginBottom:8}}>{icon}</div>
                     <div style={{color:"white",fontWeight:700,fontSize:"0.82rem"}}>{title}</div>
                     <div style={{color:"rgba(255,255,255,0.35)",fontSize:"0.72rem",marginTop:2}}>{sub}</div>
                   </div>
