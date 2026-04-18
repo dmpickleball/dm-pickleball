@@ -39,6 +39,19 @@ const YAHOO_CLIENT_ID     = "dj0yJmk9dEVscml2TzNha0JVJmQ9WVdrOU5XOWFUMG95WjBNbWN
 
 // ─── THEME ───────────────────────────────────────────────────────────────────
 const G = "#1a3c34", Y = "#c0c0c0";
+
+// ── Event tracking ─────────────────────────────────────────────────────────────
+function trackEvent(eventName, eventData) {
+  try {
+    let sid = sessionStorage.getItem("_dm_sid");
+    if (!sid) { sid = Math.random().toString(36).slice(2) + Date.now().toString(36); sessionStorage.setItem("_dm_sid", sid); }
+    fetch("/api/traffic", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "event", eventName, page: window.location.pathname || "/", sessionId: sid, ...(eventData ? { eventData } : {}) }),
+    }).catch(() => {});
+  } catch {}
+}
 const inp = { padding:"11px 14px", border:"1.5px solid #e5e7eb", borderRadius:8, fontSize:"1rem", outline:"none", background:"#fafafa", width:"100%", boxSizing:"border-box", marginBottom:12 };
 const lbl = { fontSize:"0.78rem", fontWeight:700, color:"#6b7280", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:5, display:"block" };
 
@@ -467,11 +480,11 @@ function Nav({user,onLogin,onLogout,setPage,currentPage}){
           <>
             <span onClick={()=>setPage("dashboard")} style={{color:Y,cursor:"pointer",fontWeight:700,fontSize:"0.92rem",whiteSpace:"nowrap"}}>My Lessons</span>
             <span onClick={()=>setPage("account")} title="Account Settings" style={{color:"white",cursor:"pointer",opacity:currentPage==="account"?1:0.7,lineHeight:1,display:"inline-flex",alignItems:"center"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span>
-            <span onClick={()=>setPage("booking")} style={{background:"rgba(255,255,255,0.15)",color:"white",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.92rem",whiteSpace:"nowrap"}}>Book</span>
+            <span onClick={()=>{trackEvent("nav_book_click");setPage("booking");}} style={{background:"rgba(255,255,255,0.15)",color:"white",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.92rem",whiteSpace:"nowrap"}}>Book</span>
             <button onClick={onLogout} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.4)",color:"white",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontSize:"0.85rem"}}>Log out</button>
           </>
         ):(
-          <button onClick={onLogin} style={{background:Y,color:G,border:"none",padding:"8px 20px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"0.92rem",whiteSpace:"nowrap"}}>Login</button>
+          <button onClick={()=>{trackEvent("nav_login_click");onLogin();}} style={{background:Y,color:G,border:"none",padding:"8px 20px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"0.92rem",whiteSpace:"nowrap"}}>Login</button>
         )}
       </div>
     </nav>
@@ -700,8 +713,8 @@ function Homepage({setPage}){
           <h1 style={{fontSize:mob?"2rem":"3rem",fontWeight:900,lineHeight:1.15,marginBottom:mob?12:16}}>Coach David<br/><span style={{color:Y}}>SF Peninsula Pickleball</span></h1>
           <p style={{fontSize:mob?"0.97rem":"1.1rem",opacity:0.9,maxWidth:500,margin:mob?"0 auto 24px":"0 auto 32px",lineHeight:1.7}}>Private, semi-private and group lessons on the SF Peninsula. Personalized coaching from a tournament competitor who knows what it takes to win.</p>
           <div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>
-            <button onClick={()=>setPage("pricing")} style={{background:Y,color:G,border:"none",padding:mob?"11px 24px":"13px 30px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:mob?"0.95rem":"1rem"}}>View Rates</button>
-            <button onClick={()=>setPage("contact")} style={{background:"transparent",color:"white",border:"2px solid rgba(255,255,255,0.5)",padding:mob?"11px 24px":"13px 30px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:mob?"0.95rem":"1rem"}}>Get in Touch</button>
+            <button onClick={()=>{trackEvent("hero_view_rates_click");setPage("pricing");}} style={{background:Y,color:G,border:"none",padding:mob?"11px 24px":"13px 30px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:mob?"0.95rem":"1rem"}}>View Rates</button>
+            <button onClick={()=>{trackEvent("hero_get_in_touch_click");setPage("contact");}} style={{background:"transparent",color:"white",border:"2px solid rgba(255,255,255,0.5)",padding:mob?"11px 24px":"13px 30px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:mob?"0.95rem":"1rem"}}>Get in Touch</button>
           </div>
         </div>
       </div>
@@ -971,6 +984,7 @@ function GearPage(){
                   </div>
                 </div>
                 <a href={brand.link} target="_blank" rel="noreferrer"
+                  onClick={()=>trackEvent("gear_discount_shop_click",{brand:brand.name})}
                   style={{display:"flex",alignItems:"center",justifyContent:"center",background:brand.shopBg,color:brand.shopColor,padding:"12px 20px",borderRadius:50,fontWeight:700,textDecoration:"none",fontSize:"0.9rem"}}>
                   Shop {brand.name} →
                 </a>
@@ -999,6 +1013,7 @@ function GearPage(){
                   <div style={{color:"rgba(255,255,255,0.45)",fontSize:"0.8rem",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.detail}</div>
                 </div>
                 <a href={item.link} target="_blank" rel="noreferrer"
+                  onClick={()=>trackEvent("gear_bag_item_click",{item:item.name})}
                   style={{background:"rgba(255,255,255,0.07)",color:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.12)",padding:"6px 13px",borderRadius:50,textDecoration:"none",fontSize:"0.77rem",fontWeight:600,whiteSpace:"nowrap",flexShrink:0}}>
                   Shop →
                 </a>
@@ -1370,6 +1385,7 @@ function LoginPage({onLogin,onAdminLogin}){
           if(!phone){setError("Phone number is required.");return;}
           if(!skillLevel){setError("Please select your skill level.");return;}
           const fullName=firstName.trim()+" "+lastName.trim();
+          trackEvent("register_request_submitted",{referralSource,skillLevel});
           fetch("/api/students?action=request",{method:"POST",headers:{"Content-Type":"application/json"},
             body:JSON.stringify({email:providerInfo.email,name:fullName,firstName:firstName.trim(),lastName:lastName.trim(),commEmail:commEmail.trim().toLowerCase(),phone,homeCourt,skillLevel,goals,referralSource,duprRating:"",duprId:duprId.trim(),authProvider:providerInfo.provider})
           }).then(r=>r.json()).then(data=>{
@@ -4898,7 +4914,7 @@ function TrafficTab(){
   if(error)return<div style={{padding:40,textAlign:"center",color:"#dc2626"}}>{error}</div>;
   if(!data)return null;
 
-  const{summary,daily,topPages,devices,topCountries,topReferrers}=data;
+  const{summary,daily,topPages,devices,topCountries,topReferrers,topEvents=[],totalEvents30d=0}=data;
   const totalDevices=devices.mobile+devices.desktop+devices.tablet||1;
   const maxDaily=Math.max(...daily.map(d=>d.views),1);
 
@@ -4987,6 +5003,39 @@ function TrafficTab(){
             ))}
           </div>
         )}
+      </div>
+
+      {/* Click Events */}
+      <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"20px 24px",marginBottom:20}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:8}}>
+          <div style={{fontWeight:700,fontSize:"0.88rem",color:"#374151"}}>Click Events (30 days)</div>
+          {totalEvents30d>0&&<span style={{fontSize:"0.78rem",color:"#9ca3af"}}>{totalEvents30d.toLocaleString()} total clicks</span>}
+        </div>
+        {topEvents.length===0?(
+          <div style={{color:"#9ca3af",fontSize:"0.82rem"}}>No click events recorded yet — data will appear here once visitors start interacting with the site.</div>
+        ):(()=>{
+          const maxCount=Math.max(...topEvents.map(e=>e.count),1);
+          const eventLabels={
+            gear_discount_shop_click:"Gear — Shop Discount Brand",
+            gear_bag_item_click:"Gear — Shop Bag Item",
+            hero_view_rates_click:"Homepage — View Rates",
+            hero_get_in_touch_click:"Homepage — Get in Touch",
+            nav_book_click:"Nav — Book a Lesson",
+            nav_login_click:"Nav — Login",
+            register_request_submitted:"Registration — Access Requested",
+          };
+          return topEvents.map((e,i)=>(
+            <div key={i} style={{marginBottom:10}}>
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:"0.82rem",marginBottom:4}}>
+                <span style={{color:"#374151",fontWeight:600}}>{eventLabels[e.event]||e.event}</span>
+                <span style={{fontWeight:700,color:G,flexShrink:0,marginLeft:8}}>{e.count.toLocaleString()}</span>
+              </div>
+              <div style={{background:"#f3f4f6",borderRadius:99,height:7,overflow:"hidden"}}>
+                <div style={{width:Math.round(e.count/maxCount*100)+"%",height:"100%",background:G,borderRadius:99,transition:"width 0.6s"}}/>
+              </div>
+            </div>
+          ));
+        })()}
       </div>
 
       {/* Vercel dashboard link */}
