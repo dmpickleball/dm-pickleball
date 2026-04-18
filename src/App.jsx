@@ -1244,14 +1244,18 @@ function AdminLoginPage({onAdminLogin}){
           const info=await(await fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+accessToken}})).json();
           const email=(info.email||"").toLowerCase();
           if(email===ADMIN_EMAIL||PARTNER_EMAILS.includes(email)){
-            // Exchange Google token for server-side admin token
+            // Exchange Google token for server-side HMAC token, then save session
             if(accessToken){
               fetch('/api/students',{
                 method:'POST',
                 headers:{'Content-Type':'application/json'},
                 body:JSON.stringify({action:'get-admin-token',googleToken:accessToken}),
               }).then(r=>r.json()).then(d=>{
-                if(d.token)sessionStorage.setItem('dm_admin_token',d.token);
+                if(d.token){
+                  sessionStorage.setItem('dm_admin_token',d.token);
+                  // Also persist so page refreshes don't lose the token
+                  localStorage.setItem('dm_admin_token_store',d.token);
+                }
               }).catch(()=>{});
             }
             onAdminLogin(email);
@@ -5672,19 +5676,25 @@ function PartnerPortal({preLoggedIn=false}){
 // ─── Persistent admin session helpers ─────────────────────────────────────────
 const ADMIN_SESSION_KEY="dm_admin_session";
 const SESSION_DAYS=30;
-function saveAdminSession(email){
-  try{localStorage.setItem(ADMIN_SESSION_KEY,JSON.stringify({email,expiresAt:Date.now()+SESSION_DAYS*24*60*60*1000}));}catch{}
+function saveAdminSession(email,hmacToken){
+  try{
+    localStorage.setItem(ADMIN_SESSION_KEY,JSON.stringify({email,expiresAt:Date.now()+SESSION_DAYS*24*60*60*1000}));
+    if(hmacToken)localStorage.setItem('dm_admin_token_store',hmacToken);
+  }catch{}
 }
 function loadAdminSession(){
   try{
     const raw=localStorage.getItem(ADMIN_SESSION_KEY);
     if(!raw)return null;
     const s=JSON.parse(raw);
-    if(!s||!s.email||!s.expiresAt||Date.now()>s.expiresAt){localStorage.removeItem(ADMIN_SESSION_KEY);return null;}
+    if(!s||!s.email||!s.expiresAt||Date.now()>s.expiresAt){localStorage.removeItem(ADMIN_SESSION_KEY);localStorage.removeItem('dm_admin_token_store');return null;}
+    // Restore HMAC token to sessionStorage so adminFetch works after page refresh
+    const stored=localStorage.getItem('dm_admin_token_store');
+    if(stored)sessionStorage.setItem('dm_admin_token',stored);
     return s.email;
   }catch{return null;}
 }
-function clearAdminSession(){try{localStorage.removeItem(ADMIN_SESSION_KEY);}catch{}}
+function clearAdminSession(){try{localStorage.removeItem(ADMIN_SESSION_KEY);localStorage.removeItem('dm_admin_token_store');sessionStorage.removeItem('dm_admin_token');}catch{}}
 
 // ─── URL routing map ──────────────────────────────────────────────────────────
 const PAGE_TO_URL={
