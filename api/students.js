@@ -191,7 +191,7 @@ async function syncCalendarToStudents(calendarId, timeMin, timeMax) {
 }
 
 export default async function handler(req, res) {
-  const action = req.query.action;
+  const action = req.query.action || (req.body && req.body.action);
 
   // POST get-admin-token — exchange Google token for server-side admin token
   if (req.method === 'POST' && action === 'get-admin-token') {
