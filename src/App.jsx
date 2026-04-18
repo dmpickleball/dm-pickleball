@@ -396,7 +396,7 @@ function Nav({user,onLogin,onLogout,setPage,currentPage}){
     window.addEventListener("resize",h);
     return()=>window.removeEventListener("resize",h);
   },[]);
-  const links=[["pricing","Rates"],["gear","Paddle/Gear"],["contact","Contact"]];
+  const links=[["pricing","Rates"],["gear","Paddle/Gear"],["resources","Watch & Links"],["contact","Contact"]];
   const navTo=(p)=>{setPage(p);setMenuOpen(false);};
   if(mob){
     return(
@@ -1051,6 +1051,100 @@ function GearPage(){
               style={{background:"rgba(255,255,255,0.06)",color:"rgba(255,255,255,0.5)",border:"1px solid rgba(255,255,255,0.1)",padding:"9px 22px",borderRadius:50,cursor:"pointer",fontSize:"0.82rem",fontWeight:600}}>
               ↑ Back to Top
             </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── RESOURCES PAGE ──────────────────────────────────────────────────────────
+const RESOURCE_LINKS=[
+  {name:"USA Pickleball",url:"https://usapickleball.org/",description:"The national governing body for pickleball in the US. Official rules, player ratings, and tournament registration.",color:"#003087",badge:"Governing Body"},
+  {name:"Pickleball Tournaments",url:"https://www.pickleballtournaments.com/",description:"Find and register for local and national pickleball tournaments near you.",color:"#16a34a",badge:"Find Events"},
+  {name:"PPA Tour",url:"https://www.ppatour.com/",description:"The Professional Pickleball Association Tour — the top pro circuit in the sport. Watch the best players compete.",color:"#dc2626",badge:"Pro Tour"},
+];
+function ResourcesPage(){
+  const [iframeBlocked,setIframeBlocked]=React.useState(false);
+  const iframeRef=React.useRef(null);
+  // Detect if iframe is blocked (blank / X-Frame-Options) after a short delay
+  React.useEffect(()=>{
+    const t=setTimeout(()=>{
+      try{
+        const f=iframeRef.current;
+        if(!f)return;
+        // If we can access contentDocument it loaded; if null it's cross-origin (fine); if blocked it may throw
+        // Most reliable: just show fallback link always for cross-origin streams
+      }catch{}
+    },2500);
+    return()=>clearTimeout(t);
+  },[]);
+  return(
+    <div style={{background:"#f5f5f3",minHeight:"100vh"}}>
+      {/* PickleballTV Section */}
+      <div style={{background:"#0a0a0a",padding:"56px 24px 48px"}}>
+        <div style={{maxWidth:960,margin:"0 auto"}}>
+          <div style={{textAlign:"center",marginBottom:32}}>
+            <div style={{fontSize:"0.72rem",fontWeight:700,color:"#4ade80",textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>Live & On Demand</div>
+            <h2 style={{fontSize:"2rem",fontWeight:900,color:"white",marginBottom:10}}>Watch Pickleball TV</h2>
+            <p style={{color:"rgba(255,255,255,0.45)",fontSize:"0.9rem",maxWidth:480,margin:"0 auto",lineHeight:1.7}}>Live broadcasts, highlights, and full match replays from the biggest events in pickleball.</p>
+          </div>
+          {/* Embed */}
+          <div style={{borderRadius:16,overflow:"hidden",position:"relative",background:"#111",boxShadow:"0 20px 60px rgba(0,0,0,0.6)",border:"1px solid rgba(255,255,255,0.06)"}}>
+            <div style={{paddingTop:"56.25%",position:"relative"}}>
+              <iframe
+                ref={iframeRef}
+                src="https://www.pickleballtv.com"
+                title="PickleballTV"
+                frameBorder="0"
+                allowFullScreen
+                allow="autoplay; fullscreen"
+                style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none",display:"block"}}
+              />
+            </div>
+          </div>
+          <div style={{textAlign:"center",marginTop:18,display:"flex",alignItems:"center",justifyContent:"center",gap:16,flexWrap:"wrap"}}>
+            <a href="https://www.pickleballtv.com" target="_blank" rel="noreferrer"
+              onClick={()=>trackEvent("resource_ptv_click")}
+              style={{background:G,color:"white",padding:"10px 24px",borderRadius:50,fontWeight:700,textDecoration:"none",fontSize:"0.88rem"}}>
+              Open PickleballTV →
+            </a>
+            <span style={{color:"rgba(255,255,255,0.3)",fontSize:"0.8rem"}}>Opens in new tab if blocked above</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Helpful Links Section */}
+      <div style={{padding:"60px 24px 72px"}}>
+        <div style={{maxWidth:960,margin:"0 auto"}}>
+          <div style={{textAlign:"center",marginBottom:44}}>
+            <div style={{fontSize:"0.72rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>Community</div>
+            <h2 style={{fontSize:"2rem",fontWeight:900,color:"#111",marginBottom:10}}>Helpful Links</h2>
+            <p style={{color:"#6b7280",fontSize:"0.92rem",maxWidth:440,margin:"0 auto",lineHeight:1.7}}>Everything you need to stay connected to the pickleball world — ratings, events, and pro play.</p>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(300px,100%),1fr))",gap:20}}>
+            {RESOURCE_LINKS.map(link=>(
+              <a key={link.url} href={link.url} target="_blank" rel="noreferrer"
+                onClick={()=>trackEvent("resource_link_click",{name:link.name})}
+                style={{background:"white",borderRadius:18,padding:"28px 26px",textDecoration:"none",boxShadow:"0 4px 20px rgba(0,0,0,0.07)",border:"1.5px solid #ebebeb",display:"flex",flexDirection:"column",gap:14}}
+                onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-3px)";e.currentTarget.style.boxShadow="0 10px 32px rgba(0,0,0,0.11)";}}
+                onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 4px 20px rgba(0,0,0,0.07)";}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
+                  <div style={{width:44,height:44,borderRadius:12,background:link.color,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                  </div>
+                  <span style={{background:link.color+"18",color:link.color,fontSize:"0.68rem",fontWeight:800,textTransform:"uppercase",letterSpacing:1,padding:"3px 10px",borderRadius:50}}>{link.badge}</span>
+                </div>
+                <div>
+                  <div style={{fontWeight:800,fontSize:"1.08rem",color:"#111",marginBottom:6}}>{link.name}</div>
+                  <div style={{color:"#6b7280",fontSize:"0.87rem",lineHeight:1.75}}>{link.description}</div>
+                </div>
+                <div style={{marginTop:"auto",color:G,fontWeight:700,fontSize:"0.85rem",display:"flex",alignItems:"center",gap:5}}>
+                  Visit site
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </div>
+              </a>
+            ))}
           </div>
         </div>
       </div>
@@ -5584,6 +5678,7 @@ const PAGE_TO_URL={
   home:"/",
   pricing:"/rates",
   gear:"/gear",
+  resources:"/resources",
   contact:"/contact",
   login:"/login",
   dashboard:"/dashboard",
@@ -5985,6 +6080,7 @@ export default function App(){
       {page==="home"&&!isAdminRoute&&<Homepage setPage={setPage}/>}
       {page==="pricing"&&<PricingPage setPage={setPage}/>}
       {page==="gear"&&<GearPage/>}
+      {page==="resources"&&<ResourcesPage/>}
       {page==="contact"&&<ContactPage/>}
       {page==="login"&&<LoginPage onLogin={u=>{setUser(u);setPage("dashboard");}} onAdminLogin={()=>setIsAdmin(true)}/>}
       {page==="account"&&(user?<AccountPage user={user} setPage={setPage} onUpdateUser={updateUser}/>:<LoginPage onLogin={u=>{setUser(u);setPage("dashboard");}} onAdminLogin={()=>setIsAdmin(true)}/>)}
