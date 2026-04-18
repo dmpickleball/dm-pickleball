@@ -1067,39 +1067,53 @@ const RESOURCE_LINKS=[
 function ResourcesPage(){
   return(
     <div style={{background:"#f5f5f3",minHeight:"100vh"}}>
-      {/* PickleballTV YouTube Embed Section */}
-      <div style={{background:"#0a0a0a",padding:"56px 24px 48px"}}>
+      {/* PickleballTV Featured Card */}
+      <div style={{background:"#0a0a0a",padding:"56px 24px 64px"}}>
         <div style={{maxWidth:960,margin:"0 auto"}}>
-          <div style={{textAlign:"center",marginBottom:32}}>
+          <div style={{textAlign:"center",marginBottom:40}}>
             <div style={{fontSize:"0.72rem",fontWeight:700,color:"#4ade80",textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>Live & On Demand</div>
             <h2 style={{fontSize:"2rem",fontWeight:900,color:"white",marginBottom:10}}>Watch Pickleball TV</h2>
             <p style={{color:"rgba(255,255,255,0.45)",fontSize:"0.9rem",maxWidth:480,margin:"0 auto",lineHeight:1.7}}>Live broadcasts, highlights, and full match replays from the biggest events in pickleball.</p>
           </div>
-          {/* YouTube channel embed — no popups, clean player */}
-          <div style={{borderRadius:16,overflow:"hidden",position:"relative",background:"#111",boxShadow:"0 20px 60px rgba(0,0,0,0.6)",border:"1px solid rgba(255,255,255,0.06)"}}>
-            <div style={{paddingTop:"56.25%",position:"relative"}}>
-              <iframe
-                src="https://www.youtube.com/embed?listType=user_uploads&list=Pickleballtv&rel=0&modestbranding=1"
-                title="PickleballTV on YouTube"
-                frameBorder="0"
-                allowFullScreen
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none",display:"block"}}
-              />
+          {/* Featured card */}
+          <div style={{maxWidth:680,margin:"0 auto",background:"linear-gradient(135deg,#1a2e28 0%,#0f1f1a 100%)",borderRadius:24,overflow:"hidden",boxShadow:"0 24px 64px rgba(0,0,0,0.7)",border:"1px solid rgba(255,255,255,0.07)"}}>
+            {/* Header band */}
+            <div style={{background:"linear-gradient(90deg,#1d4a3a,#0d2e24)",padding:"28px 36px",display:"flex",alignItems:"center",gap:18,borderBottom:"1px solid rgba(255,255,255,0.06)"}}>
+              {/* PBTV logo placeholder — play icon in green circle */}
+              <div style={{width:56,height:56,borderRadius:14,background:"#4ade80",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 4px 20px rgba(74,222,128,0.35)"}}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              </div>
+              <div>
+                <div style={{color:"white",fontWeight:900,fontSize:"1.3rem",letterSpacing:"-0.3px"}}>PickleballTV</div>
+                <div style={{color:"rgba(255,255,255,0.4)",fontSize:"0.8rem",marginTop:2}}>The home of professional pickleball</div>
+              </div>
             </div>
-          </div>
-          <div style={{textAlign:"center",marginTop:18,display:"flex",alignItems:"center",justifyContent:"center",gap:16,flexWrap:"wrap"}}>
-            <a href="https://www.youtube.com/@Pickleballtv" target="_blank" rel="noreferrer"
-              onClick={()=>trackEvent("resource_ptv_youtube_click")}
-              style={{background:"#FF0000",color:"white",padding:"10px 24px",borderRadius:50,fontWeight:700,textDecoration:"none",fontSize:"0.88rem",display:"flex",alignItems:"center",gap:8}}>
-              <svg width="18" height="14" viewBox="0 0 18 14" fill="white"><path d="M17.6 2.2A2.3 2.3 0 0 0 16 .5C14.6 0 9 0 9 0S3.4 0 2 .5A2.3 2.3 0 0 0 .4 2.2C0 3.7 0 7 0 7s0 3.3.4 4.8A2.3 2.3 0 0 0 2 13.5C3.4 14 9 14 9 14s5.6 0 7-.5a2.3 2.3 0 0 0 1.6-1.7C18 10.3 18 7 18 7s0-3.3-.4-4.8zM7.2 10V4l4.8 3-4.8 3z"/></svg>
-              Watch on YouTube
-            </a>
-            <a href="https://www.pickleballtv.com" target="_blank" rel="noreferrer"
-              onClick={()=>trackEvent("resource_ptv_site_click")}
-              style={{color:"rgba(255,255,255,0.45)",fontSize:"0.85rem",textDecoration:"none",padding:"10px 0"}}>
-              or visit pickleballtv.com →
-            </a>
+            {/* Body */}
+            <div style={{padding:"28px 36px 32px"}}>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:16,marginBottom:28}}>
+                {[["🏆","PPA Tour","Pro matches live"],["🎯","On Demand","Full match replays"],["📺","24/7","Always on network"]].map(([icon,title,sub])=>(
+                  <div key={title} style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:12,padding:"14px 16px",textAlign:"center"}}>
+                    <div style={{fontSize:"1.4rem",marginBottom:6}}>{icon}</div>
+                    <div style={{color:"white",fontWeight:700,fontSize:"0.82rem"}}>{title}</div>
+                    <div style={{color:"rgba(255,255,255,0.35)",fontSize:"0.72rem",marginTop:2}}>{sub}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
+                <a href="https://www.pickleballtv.com" target="_blank" rel="noreferrer"
+                  onClick={()=>trackEvent("resource_ptv_site_click")}
+                  style={{flex:1,minWidth:160,background:"#4ade80",color:"#0a2018",padding:"13px 20px",borderRadius:50,fontWeight:800,textDecoration:"none",fontSize:"0.92rem",textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  Watch on PickleballTV
+                </a>
+                <a href="https://www.youtube.com/@Pickleballtv" target="_blank" rel="noreferrer"
+                  onClick={()=>trackEvent("resource_ptv_youtube_click")}
+                  style={{background:"rgba(255,255,255,0.08)",color:"rgba(255,255,255,0.7)",padding:"13px 20px",borderRadius:50,fontWeight:700,textDecoration:"none",fontSize:"0.88rem",display:"flex",alignItems:"center",justifyContent:"center",gap:8,border:"1px solid rgba(255,255,255,0.1)"}}>
+                  <svg width="16" height="12" viewBox="0 0 18 14" fill="#FF0000"><path d="M17.6 2.2A2.3 2.3 0 0 0 16 .5C14.6 0 9 0 9 0S3.4 0 2 .5A2.3 2.3 0 0 0 .4 2.2C0 3.7 0 7 0 7s0 3.3.4 4.8A2.3 2.3 0 0 0 2 13.5C3.4 14 9 14 9 14s5.6 0 7-.5a2.3 2.3 0 0 0 1.6-1.7C18 10.3 18 7 18 7s0-3.3-.4-4.8zM7.2 10V4l4.8 3-4.8 3z"/></svg>
+                  YouTube
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </div>
