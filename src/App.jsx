@@ -55,7 +55,7 @@ function trackEvent(eventName, eventData) {
 
 // ── Admin token fetch helper — automatically includes x-admin-token header ────
 function adminFetch(url, options={}) {
-  const token = sessionStorage.getItem('dm_admin_token') || '';
+  const token = sessionStorage.getItem('dm_admin_token') || localStorage.getItem('dm_admin_token_store') || '';
   return fetch(url, {
     ...options,
     headers: { 'Content-Type':'application/json', ...(options.headers||{}), 'x-admin-token': token },
@@ -3264,7 +3264,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
     if(!u.provisional&&supabaseLessons.length>0)return;
     if(calLessons[selectedStudent]!==undefined)return; // already fetched
     setCalLessonsLoading(true);
-    fetch("/api/students?action=calendar-history&email="+encodeURIComponent(selectedStudent))
+    adminFetch("/api/students?action=calendar-history&email="+encodeURIComponent(selectedStudent))
       .then(r=>r.json())
       .then(d=>{setCalLessons(prev=>({...prev,[selectedStudent]:d.lessons||[]}));setCalLessonsLoading(false);})
       .catch(()=>{setCalLessons(prev=>({...prev,[selectedStudent]:[]}));setCalLessonsLoading(false);});

@@ -2,6 +2,20 @@ import { supabase } from './_supabase.js';
 import { google } from 'googleapis';
 import { createHmac, timingSafeEqual } from 'crypto';
 
+// Simple in-memory rate limiter
+const _rateMap = new Map();
+function rateLimit(ip, max, windowMs) {
+  const now = Date.now();
+  const entry = _rateMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    _rateMap.set(ip, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  if (entry.count >= max) return false;
+  entry.count++;
+  return true;
+}
+
 // ── HMAC-based admin token signing and verification ──────────────────────────
 function signAdminToken(email) {
   const ts = Date.now();
@@ -258,6 +272,10 @@ export default async function handler(req, res) {
 
   // POST request access
   if (req.method === 'POST' && action === 'request') {
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
+    if (!rateLimit(ip, 3, 60 * 60 * 1000)) {
+      return res.status(429).json({ error: 'Too many registration attempts. Please try again later.' });
+    }
     const { email, name, firstName, lastName, commEmail, phone, homeCourt, skillLevel, goals, referralSource, duprRating, duprId, authProvider } = req.body;
     if (!email || !name || !phone) return res.status(400).json({ error: 'Missing required fields' });
     const lowerEmail = email.toLowerCase();
@@ -535,8 +553,9 @@ export default async function handler(req, res) {
     }
   }
 
-  // GET calendar-history — fetch all calendar events for a specific student email
+  // GET calendar-history — fetch all calendar events for a specific student email (admin only)
   if (req.method === 'GET' && action === 'calendar-history') {
+    const adminEmail = requireAdmin(req, res); if (!adminEmail) return;
     const { email } = req.query;
     if (!email) return res.status(400).json({ error: 'email required' });
     const calendarId = process.env.GOOGLE_PERSONAL_CALENDAR_ID || process.env.GOOGLE_CALENDAR_ID;

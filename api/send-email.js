@@ -1,5 +1,19 @@
 import nodemailer from 'nodemailer';
 
+// Simple in-memory rate limiter (resets if function instance recycles, which is fine)
+const _rateMap = new Map();
+function rateLimit(ip, max = 5, windowMs = 15 * 60 * 1000) {
+  const now = Date.now();
+  const entry = _rateMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    _rateMap.set(ip, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  if (entry.count >= max) return false;
+  entry.count++;
+  return true;
+}
+
 // Unified email handler for all outbound mail (booking confirmations, cancellations,
 // contact form, access requests, account approvals).
 //
@@ -10,7 +24,14 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Rate limit contact-form submissions: 5 per IP per 15 minutes
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
   const body = req.body || {};
+  const isContactForm = body.name && body.email && !body.to;
+  if (isContactForm && !rateLimit(ip, 5, 15 * 60 * 1000)) {
+    return res.status(429).json({ error: 'Too many requests. Please wait before submitting again.' });
+  }
+
   const gmailUser = process.env.CONTACT_GMAIL;
   const gmailPass = process.env.CONTACT_GMAIL_APP_PASSWORD;
 
