@@ -1065,23 +1065,9 @@ const RESOURCE_LINKS=[
   {name:"PPA Tour",url:"https://www.ppatour.com/",description:"The Professional Pickleball Association Tour — the top pro circuit in the sport. Watch the best players compete.",color:"#dc2626",badge:"Pro Tour"},
 ];
 function ResourcesPage(){
-  const [iframeBlocked,setIframeBlocked]=React.useState(false);
-  const iframeRef=React.useRef(null);
-  // Detect if iframe is blocked (blank / X-Frame-Options) after a short delay
-  React.useEffect(()=>{
-    const t=setTimeout(()=>{
-      try{
-        const f=iframeRef.current;
-        if(!f)return;
-        // If we can access contentDocument it loaded; if null it's cross-origin (fine); if blocked it may throw
-        // Most reliable: just show fallback link always for cross-origin streams
-      }catch{}
-    },2500);
-    return()=>clearTimeout(t);
-  },[]);
   return(
     <div style={{background:"#f5f5f3",minHeight:"100vh"}}>
-      {/* PickleballTV Section */}
+      {/* PickleballTV YouTube Embed Section */}
       <div style={{background:"#0a0a0a",padding:"56px 24px 48px"}}>
         <div style={{maxWidth:960,margin:"0 auto"}}>
           <div style={{textAlign:"center",marginBottom:32}}>
@@ -1089,27 +1075,31 @@ function ResourcesPage(){
             <h2 style={{fontSize:"2rem",fontWeight:900,color:"white",marginBottom:10}}>Watch Pickleball TV</h2>
             <p style={{color:"rgba(255,255,255,0.45)",fontSize:"0.9rem",maxWidth:480,margin:"0 auto",lineHeight:1.7}}>Live broadcasts, highlights, and full match replays from the biggest events in pickleball.</p>
           </div>
-          {/* Embed */}
+          {/* YouTube channel embed — no popups, clean player */}
           <div style={{borderRadius:16,overflow:"hidden",position:"relative",background:"#111",boxShadow:"0 20px 60px rgba(0,0,0,0.6)",border:"1px solid rgba(255,255,255,0.06)"}}>
             <div style={{paddingTop:"56.25%",position:"relative"}}>
               <iframe
-                ref={iframeRef}
-                src="https://www.pickleballtv.com"
-                title="PickleballTV"
+                src="https://www.youtube.com/embed?listType=user_uploads&list=Pickleballtv&rel=0&modestbranding=1"
+                title="PickleballTV on YouTube"
                 frameBorder="0"
                 allowFullScreen
-                allow="autoplay; fullscreen"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none",display:"block"}}
               />
             </div>
           </div>
           <div style={{textAlign:"center",marginTop:18,display:"flex",alignItems:"center",justifyContent:"center",gap:16,flexWrap:"wrap"}}>
-            <a href="https://www.pickleballtv.com" target="_blank" rel="noreferrer"
-              onClick={()=>trackEvent("resource_ptv_click")}
-              style={{background:G,color:"white",padding:"10px 24px",borderRadius:50,fontWeight:700,textDecoration:"none",fontSize:"0.88rem"}}>
-              Open PickleballTV →
+            <a href="https://www.youtube.com/@Pickleballtv" target="_blank" rel="noreferrer"
+              onClick={()=>trackEvent("resource_ptv_youtube_click")}
+              style={{background:"#FF0000",color:"white",padding:"10px 24px",borderRadius:50,fontWeight:700,textDecoration:"none",fontSize:"0.88rem",display:"flex",alignItems:"center",gap:8}}>
+              <svg width="18" height="14" viewBox="0 0 18 14" fill="white"><path d="M17.6 2.2A2.3 2.3 0 0 0 16 .5C14.6 0 9 0 9 0S3.4 0 2 .5A2.3 2.3 0 0 0 .4 2.2C0 3.7 0 7 0 7s0 3.3.4 4.8A2.3 2.3 0 0 0 2 13.5C3.4 14 9 14 9 14s5.6 0 7-.5a2.3 2.3 0 0 0 1.6-1.7C18 10.3 18 7 18 7s0-3.3-.4-4.8zM7.2 10V4l4.8 3-4.8 3z"/></svg>
+              Watch on YouTube
             </a>
-            <span style={{color:"rgba(255,255,255,0.3)",fontSize:"0.8rem"}}>Opens in new tab if blocked above</span>
+            <a href="https://www.pickleballtv.com" target="_blank" rel="noreferrer"
+              onClick={()=>trackEvent("resource_ptv_site_click")}
+              style={{color:"rgba(255,255,255,0.45)",fontSize:"0.85rem",textDecoration:"none",padding:"10px 0"}}>
+              or visit pickleballtv.com →
+            </a>
           </div>
         </div>
       </div>
