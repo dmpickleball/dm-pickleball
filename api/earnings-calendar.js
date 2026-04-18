@@ -1,4 +1,19 @@
 import { google } from 'googleapis';
+import { createHmac, timingSafeEqual } from 'crypto';
+
+// Shared HMAC token verification (mirrors students.js)
+function verifyAdminToken(token) {
+  try {
+    if (!token) return null;
+    const { email, ts, sig } = JSON.parse(Buffer.from(token, 'base64url').toString());
+    if (Date.now() - ts > 8 * 60 * 60 * 1000) return null;
+    const secret = process.env.ADMIN_SESSION_SECRET || '';
+    const expected = createHmac('sha256', secret).update(`${email}:${ts}`).digest('hex');
+    if (sig.length !== expected.length) return null;
+    if (!timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'))) return null;
+    return email;
+  } catch { return null; }
+}
 
 function getAuth() {
   const rawKey = process.env.GOOGLE_PRIVATE_KEY || '';
@@ -135,14 +150,9 @@ function categorizeEvent(summary, location) {
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  // SECURITY: Verify admin token from request header
+  // SECURITY: Verify admin HMAC token (same mechanism as students.js)
   const adminToken = req.headers['x-admin-token'] || '';
-  const adminApiKey = process.env.ADMIN_API_KEY;
-  if (!adminApiKey) {
-    console.warn('ADMIN_API_KEY not set in environment — blocking earnings-calendar access');
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-  if (adminToken !== adminApiKey) {
+  if (!verifyAdminToken(adminToken)) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
