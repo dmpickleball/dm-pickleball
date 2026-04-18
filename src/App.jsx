@@ -5643,14 +5643,17 @@ export default function App(){
     return()=>window.removeEventListener("popstate",onPop);
   },[]);
 
-  // ── Page view tracking ──
+  // ── Page view tracking — fires on every navigation, skips admin pages ──
   useEffect(()=>{
     try{
+      const url=window.location.pathname||"/";
+      // Don't track admin/partner portal visits (those are just you)
+      if(url==="/admin"||url==="/partner")return;
       let sid=sessionStorage.getItem("_dm_sid");
       if(!sid){sid=Math.random().toString(36).slice(2)+Date.now().toString(36);sessionStorage.setItem("_dm_sid",sid);}
-      fetch("/api/traffic",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({page:window.location.pathname||"/",referrer:document.referrer||null,sessionId:sid})}).catch(()=>{});
+      fetch("/api/traffic",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({page:url,referrer:document.referrer||null,sessionId:sid})}).catch(()=>{});
     }catch{}
-  },[]);
+  },[page]);
 
   useEffect(()=>{
     const loadFromSupabase=async()=>{
