@@ -5578,9 +5578,28 @@ function loadAdminSession(){
 }
 function clearAdminSession(){try{localStorage.removeItem(ADMIN_SESSION_KEY);}catch{}}
 
+// ─── URL routing map ──────────────────────────────────────────────────────────
+const PAGE_TO_URL={
+  home:"/",
+  pricing:"/rates",
+  gear:"/gear",
+  contact:"/contact",
+  login:"/login",
+  dashboard:"/dashboard",
+  booking:"/book",
+  account:"/account",
+  adminlogin:"/admin",
+  admin:"/admin",
+  partner:"/partner",
+};
+const URL_TO_PAGE=Object.fromEntries(Object.entries(PAGE_TO_URL).map(([p,u])=>[u,p]));
+// Dedupe reversed map (admin/adminlogin both → /admin, pick adminlogin as default)
+URL_TO_PAGE["/admin"]="adminlogin";
+
 // ─── ROOT APP ─────────────────────────────────────────────────────────────────
 export default function App(){
-  const isAdminRoute=window.location.pathname==="/admin"||window.location.pathname==="/partner";
+  const pathname=window.location.pathname;
+  const isAdminRoute=pathname==="/admin"||pathname==="/partner";
   // Restore session from localStorage on first load
   const savedEmail=isAdminRoute?loadAdminSession():null;
   const restoredAdmin=savedEmail===ADMIN_EMAIL;
@@ -5588,7 +5607,9 @@ export default function App(){
   const[page,setPage]=useState(()=>{
     if(isAdminRoute&&(restoredAdmin||restoredPartner))return"admin";
     if(isAdminRoute)return"adminlogin";
-    return"home";
+    // Initialise from the current URL so direct links work
+    const fromUrl=URL_TO_PAGE[pathname];
+    return fromUrl||"home";
   });
   const[user,setUser]=useState(null);
   const[isAdmin,setIsAdmin]=useState(restoredAdmin);
@@ -5602,6 +5623,25 @@ export default function App(){
   const[stanfordEnabled,setStanfordEnabled]=useState(()=>{try{return localStorage.getItem("stanfordEnabled")!=="false";}catch{return true;}});
 
   useEffect(()=>{window.scrollTo(0,0);},[page]);
+
+  // ── URL routing: keep browser URL in sync with page state ──────────────────
+  useEffect(()=>{
+    if(isAdminRoute)return; // admin routes manage their own URLs
+    const url=PAGE_TO_URL[page]||"/";
+    if(window.location.pathname!==url){
+      window.history.pushState({page},`DM Pickleball — ${page}`,url);
+    }
+  },[page]);
+
+  // Handle browser back/forward buttons
+  useEffect(()=>{
+    const onPop=(e)=>{
+      const p=e.state?.page||URL_TO_PAGE[window.location.pathname]||"home";
+      setPage(p);
+    };
+    window.addEventListener("popstate",onPop);
+    return()=>window.removeEventListener("popstate",onPop);
+  },[]);
 
   // ── Page view tracking ──
   useEffect(()=>{
