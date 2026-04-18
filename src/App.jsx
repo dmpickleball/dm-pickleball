@@ -1104,8 +1104,6 @@ function ResourcesPage(){
           </div>
         </div>
       </div>
-        </div>
-      </div>
 
       {/* Helpful Links Section */}
       <div style={{padding:"60px 24px 72px"}}>
