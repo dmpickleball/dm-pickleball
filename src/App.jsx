@@ -1244,7 +1244,7 @@ function AdminLoginPage({onAdminLogin}){
           const info=await(await fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+accessToken}})).json();
           const email=(info.email||"").toLowerCase();
           if(email===ADMIN_EMAIL||PARTNER_EMAILS.includes(email)){
-            // Exchange Google token for server-side HMAC token, then save session
+            // Exchange Google token for server-side HMAC token, then open admin panel
             if(accessToken){
               fetch('/api/students',{
                 method:'POST',
@@ -1256,9 +1256,13 @@ function AdminLoginPage({onAdminLogin}){
                   // Also persist so page refreshes don't lose the token
                   localStorage.setItem('dm_admin_token_store',d.token);
                 }
-              }).catch(()=>{});
+                onAdminLogin(email); // Only open admin panel after token is stored
+              }).catch(()=>{
+                onAdminLogin(email); // Fallback: open admin panel even if token fetch fails
+              });
+            } else {
+              onAdminLogin(email);
             }
-            onAdminLogin(email);
           }
           else{setLoading(false);setError("Access denied.");}
         }

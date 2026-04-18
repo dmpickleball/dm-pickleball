@@ -6,7 +6,7 @@ function verifyAdminToken(token) {
   try {
     if (!token) return null;
     const { email, ts, sig } = JSON.parse(Buffer.from(token, 'base64url').toString());
-    if (Date.now() - ts > 8 * 60 * 60 * 1000) return null;
+    if (Date.now() - ts > 30 * 24 * 60 * 60 * 1000) return null; // 30d expiry
     const secret = process.env.ADMIN_SESSION_SECRET || '';
     const expected = createHmac('sha256', secret).update(`${email}:${ts}`).digest('hex');
     if (sig.length !== expected.length) return null;
