@@ -1,5 +1,33 @@
 import { supabase } from './_supabase.js';
 import { google } from 'googleapis';
+import { createHmac, timingSafeEqual } from 'crypto';
+
+// ── HMAC-based admin token signing and verification ──────────────────────────
+function signAdminToken(email) {
+  const ts = Date.now();
+  const secret = process.env.ADMIN_SESSION_SECRET || '';
+  const sig = createHmac('sha256', secret).update(`${email}:${ts}`).digest('hex');
+  return Buffer.from(JSON.stringify({email, ts, sig})).toString('base64url');
+}
+
+function verifyAdminToken(token) {
+  try {
+    if (!token) return null;
+    const {email, ts, sig} = JSON.parse(Buffer.from(token, 'base64url').toString());
+    if (Date.now() - ts > 8 * 60 * 60 * 1000) return null; // 8h expiry
+    const secret = process.env.ADMIN_SESSION_SECRET || '';
+    const expected = createHmac('sha256', secret).update(`${email}:${ts}`).digest('hex');
+    if (!timingSafeEqual(Buffer.from(sig,'hex'), Buffer.from(expected,'hex'))) return null;
+    return email;
+  } catch { return null; }
+}
+
+function requireAdmin(req, res) {
+  const token = req.headers['x-admin-token'] || '';
+  const email = verifyAdminToken(token);
+  if (!email) { res.status(401).json({error:'Unauthorized'}); return null; }
+  return email;
+}
 
 // ── Google Calendar auth (same pattern as earnings-calendar.js) ───────────────
 function getCalAuth() {
@@ -165,8 +193,28 @@ async function syncCalendarToStudents(calendarId, timeMin, timeMax) {
 export default async function handler(req, res) {
   const action = req.query.action;
 
+  // POST get-admin-token — exchange Google token for server-side admin token
+  if (req.method === 'POST' && action === 'get-admin-token') {
+    const { googleToken } = req.body || {};
+    if (!googleToken) return res.status(400).json({error:'googleToken required'});
+    try {
+      // Verify with Google
+      const r = await fetch(`https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${encodeURIComponent(googleToken)}`);
+      const info = await r.json();
+      const adminEmail = process.env.ADMIN_EMAIL || '';
+      const partnerEmails = (process.env.PARTNER_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
+      const allowed = [adminEmail, ...partnerEmails];
+      if (!info.email || !allowed.includes(info.email)) return res.status(403).json({error:'Not authorized'});
+      return res.status(200).json({token: signAdminToken(info.email), email: info.email});
+    } catch (err) {
+      console.error('get-admin-token error:', err);
+      return res.status(500).json({error:'Token verification failed'});
+    }
+  }
+
   // GET all approved active students
   if (req.method === 'GET' && action === 'list') {
+    const adminEmail = requireAdmin(req, res); if (!adminEmail) return;
     const { data, error } = await supabase.from('students').select('*').eq('approved', true).neq('blocked', true).order('last_name', { ascending: true });
     if (error) return res.status(500).json({ error: error.message });
     return res.status(200).json({ students: data });
@@ -175,6 +223,7 @@ export default async function handler(req, res) {
   // GET removed students (archived — email freed for re-registration)
   // Cross-references deleted_students with students table to get blocked status
   if (req.method === 'GET' && action === 'list-deleted') {
+    const adminEmail = requireAdmin(req, res); if (!adminEmail) return;
     const { data, error } = await supabase.from('deleted_students').select('*').order('deleted_at', { ascending: false });
     if (error) return res.status(500).json({ error: error.message });
     // Find which removed students have a blocked sentinel in the students table
@@ -195,6 +244,7 @@ export default async function handler(req, res) {
 
   // POST update student
   if (req.method === 'POST' && action === 'update') {
+    const adminEmail = requireAdmin(req, res); if (!adminEmail) return;
     const { email, updates } = req.body;
     if (!email) return res.status(400).json({ error: 'email required' });
     const { error } = await supabase.from('students').update(updates).eq('email', email.toLowerCase());
@@ -244,6 +294,7 @@ export default async function handler(req, res) {
 
   // POST approve/deny
   if (req.method === 'POST' && action === 'approve') {
+    const adminEmail = requireAdmin(req, res); if (!adminEmail) return;
     const { requestId, email, name, firstName, lastName, commEmail, phone, homeCourt, skillLevel, duprRating, duprId, memberType, grandfathered, action: approveAction } = req.body;
     if (approveAction === 'deny') {
       await supabase.from('access_requests').update({ status: 'denied' }).eq('id', requestId);
@@ -273,6 +324,7 @@ export default async function handler(req, res) {
   // POST remove student — archives profile to deleted_students, removes from students
   // This frees the email for re-registration while preserving lesson history
   if (req.method === 'POST' && action === 'delete') {
+    const adminEmail = requireAdmin(req, res); if (!adminEmail) return;
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: 'email required' });
     const lowerEmail = email.toLowerCase();
@@ -306,6 +358,7 @@ export default async function handler(req, res) {
 
   // POST restore student — moves from deleted_students back to students (active)
   if (req.method === 'POST' && action === 'restore') {
+    const adminEmail = requireAdmin(req, res); if (!adminEmail) return;
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: 'email required' });
     const lowerEmail = email.toLowerCase();
@@ -344,6 +397,7 @@ export default async function handler(req, res) {
   // POST block/unblock a removed student
   // Uses a sentinel record in students table (approved:false, blocked:true) to gate re-registration
   if (req.method === 'POST' && action === 'block-removed') {
+    const adminEmail = requireAdmin(req, res); if (!adminEmail) return;
     const { email, block } = req.body;
     if (!email) return res.status(400).json({ error: 'email required' });
     const lowerEmail = email.toLowerCase();
@@ -440,6 +494,7 @@ export default async function handler(req, res) {
 
   // GET pending requests
   if (req.method === 'GET' && action === 'pending') {
+    const adminEmail = requireAdmin(req, res); if (!adminEmail) return;
     const { data, error } = await supabase.from('access_requests').select('*').eq('status', 'pending').order('requested_at', { ascending: true });
     if (error) return res.status(500).json({ error: error.message });
     return res.status(200).json({ requests: data });
@@ -448,6 +503,7 @@ export default async function handler(req, res) {
   // POST backfill — scan personal calendar from 1/1/25 to today, create provisional accounts
   // Uses GOOGLE_PERSONAL_CALENDAR_ID env var (set to dmpickleball@gmail.com once shared)
   if (req.method === 'POST' && action === 'backfill') {
+    const adminEmail = requireAdmin(req, res); if (!adminEmail) return;
     const calendarId = process.env.GOOGLE_PERSONAL_CALENDAR_ID || process.env.GOOGLE_CALENDAR_ID;
     if (!calendarId) return res.status(500).json({ error: 'GOOGLE_PERSONAL_CALENDAR_ID not set' });
     try {
@@ -462,6 +518,7 @@ export default async function handler(req, res) {
 
   // POST sync — scan personal calendar from 1/1/25 to +30 days (full history + upcoming)
   if (req.method === 'POST' && action === 'sync') {
+    const adminEmail = requireAdmin(req, res); if (!adminEmail) return;
     const calendarId = process.env.GOOGLE_PERSONAL_CALENDAR_ID || process.env.GOOGLE_CALENDAR_ID;
     if (!calendarId) return res.status(500).json({ error: 'GOOGLE_CALENDAR_ID not set' });
     try {
@@ -516,6 +573,7 @@ export default async function handler(req, res) {
 
   // POST promote — mark a provisional account as fully set up (remove provisional flag)
   if (req.method === 'POST' && action === 'promote') {
+    const adminEmail = requireAdmin(req, res); if (!adminEmail) return;
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: 'email required' });
     const { error } = await supabase.from('students').update({ provisional: false, source: 'self_registered' }).eq('email', email.toLowerCase());

@@ -52,6 +52,16 @@ function trackEvent(eventName, eventData) {
     }).catch(() => {});
   } catch {}
 }
+
+// ── Admin token fetch helper — automatically includes x-admin-token header ────
+function adminFetch(url, options={}) {
+  const token = sessionStorage.getItem('dm_admin_token') || '';
+  return fetch(url, {
+    ...options,
+    headers: { 'Content-Type':'application/json', ...(options.headers||{}), 'x-admin-token': token },
+  });
+}
+
 const inp = { padding:"11px 14px", border:"1.5px solid #e5e7eb", borderRadius:8, fontSize:"1rem", outline:"none", background:"#fafafa", width:"100%", boxSizing:"border-box", marginBottom:12 };
 const lbl = { fontSize:"0.78rem", fontWeight:700, color:"#6b7280", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:5, display:"block" };
 
@@ -1230,10 +1240,22 @@ function AdminLoginPage({onAdminLogin}){
         const url=popup.location.href;
         if(url.includes(window.location.origin)&&url.includes("access_token")){
           clearInterval(t);popup.close();
-          const token=new URLSearchParams(url.split("#")[1]).get("access_token");
-          const info=await(await fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+token}})).json();
+          const accessToken=new URLSearchParams(url.split("#")[1]).get("access_token");
+          const info=await(await fetch("https://www.googleapis.com/oauth2/v3/userinfo",{headers:{Authorization:"Bearer "+accessToken}})).json();
           const email=(info.email||"").toLowerCase();
-          if(email===ADMIN_EMAIL||PARTNER_EMAILS.includes(email)){onAdminLogin(email);}
+          if(email===ADMIN_EMAIL||PARTNER_EMAILS.includes(email)){
+            // Exchange Google token for server-side admin token
+            if(accessToken){
+              fetch('/api/students',{
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({action:'get-admin-token',googleToken:accessToken}),
+              }).then(r=>r.json()).then(d=>{
+                if(d.token)sessionStorage.setItem('dm_admin_token',d.token);
+              }).catch(()=>{});
+            }
+            onAdminLogin(email);
+          }
           else{setLoading(false);setError("Access denied.");}
         }
       }catch(e){}
@@ -2378,7 +2400,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
   const loadData=async(start,end,withStanford)=>{
     setFinanceLoading(true);setFinanceError("");
     try{
-      const r=await fetch("/api/earnings-calendar?start="+start+"&end="+end+"&includeStanford="+(withStanford?"true":"false"));
+      const r=await adminFetch("/api/earnings-calendar?start="+start+"&end="+end+"&includeStanford="+(withStanford?"true":"false"));
       const data=await r.json();
       if(data.error){setFinanceError(data.error);}
       setFinanceData(data);
@@ -2396,7 +2418,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
     const future=new Date(now);future.setMonth(future.getMonth()+6);
     const end=fmtD(future);
     setProjectedCalLoading(true);
-    fetch("/api/earnings-calendar?start="+start+"&end="+end+"&includeStanford=false&includeFuture=true")
+    adminFetch("/api/earnings-calendar?start="+start+"&end="+end+"&includeStanford=false&includeFuture=true")
       .then(r=>r.json()).then(data=>setProjectedCalData(data)).catch(e=>console.error("Projected load error:",e)).finally(()=>setProjectedCalLoading(false));
   },[projectedMode]);
   const handleStanfordToggle=()=>{const next=!includeStanford;setIncludeStanford(next);loadData(viewRange.start,viewRange.end,next);};
@@ -3185,7 +3207,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
     try{
       const past=toDS(addDays(new Date(),-180));
       const future=toDS(addDays(new Date(),90));
-      const r=await fetch("/api/earnings-calendar?start="+past+"&end="+future+"&includeFuture=true&includeStanford=true");
+      const r=await adminFetch("/api/earnings-calendar?start="+past+"&end="+future+"&includeFuture=true&includeStanford=true");
       const d=await r.json();
       setCalendarItems(d.events||[]);
     }catch(e){console.error("Cal fetch:",e);setCalendarItems([]);}
@@ -3239,11 +3261,11 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
   useEffect(()=>{
     if(tab!=="students"||calSyncedRef.current)return;
     calSyncedRef.current=true;
-    fetch("/api/students?action=sync",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({})})
+    adminFetch("/api/students?action=sync",{method:"POST",body:JSON.stringify({})})
       .then(r=>r.json())
       .then(async d=>{
         if(d.created>0){
-          const sr2=await fetch("/api/students?action=list").then(x=>x.json()).catch(()=>({}));
+          const sr2=await adminFetch("/api/students?action=list").then(x=>x.json()).catch(()=>({}));
           if(sr2.students){
             const users2={};
             sr2.students.forEach(s=>{
@@ -3519,13 +3541,13 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                 <button onClick={async()=>{
                   setCalSyncStatus("syncing");setCalSyncResult(null);
                   try{
-                    const r=await fetch("/api/students?action=sync",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({})});
+                    const r=await adminFetch("/api/students?action=sync",{method:"POST",body:JSON.stringify({})});
                     const d=await r.json();
                     if(d.error)throw new Error(d.error);
                     setCalSyncResult(d);
                     if(d.created>0){
                       // Reload students list to pick up new provisional accounts
-                      const sr2=await fetch("/api/students?action=list").then(x=>x.json()).catch(()=>({}));
+                      const sr2=await adminFetch("/api/students?action=list").then(x=>x.json()).catch(()=>({}));
                       if(sr2.students){
                         const users2={};
                         sr2.students.forEach(s=>{
@@ -3704,7 +3726,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
               const lastName=(editStudentData.lastName||"").trim();
               const fullName=(firstName+" "+lastName).trim()||editStudentData.name||"";
               try{
-                const r=await fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:selectedStudent,updates:{name:fullName,first_name:firstName,last_name:lastName,comm_email:(editStudentData.commEmail||"").toLowerCase(),phone:editStudentData.phone||"",city:editStudentData.city||"",home_court:editStudentData.homeCourt||"",skill_level:editStudentData.duprRating?"":editStudentData.skillLevel||"",dupr_rating:editStudentData.duprRating||"",dupr_id:editStudentData.duprId||""}})});
+                const r=await adminFetch("/api/students?action=update",{method:"POST",body:JSON.stringify({email:selectedStudent,updates:{name:fullName,first_name:firstName,last_name:lastName,comm_email:(editStudentData.commEmail||"").toLowerCase(),phone:editStudentData.phone||"",city:editStudentData.city||"",home_court:editStudentData.homeCourt||"",skill_level:editStudentData.duprRating?"":editStudentData.skillLevel||"",dupr_rating:editStudentData.duprRating||"",dupr_id:editStudentData.duprId||""}})});
                 if(!r.ok)throw new Error("Save failed");
                 onAddStudent({name:fullName,firstName,lastName,commEmail:(editStudentData.commEmail||"").toLowerCase(),phone:editStudentData.phone||"",city:editStudentData.city||"",homeCourt:editStudentData.homeCourt||"",skillLevel:editStudentData.duprRating?"":editStudentData.skillLevel||"",duprRating:editStudentData.duprRating||"",duprId:editStudentData.duprId||"",email:selectedStudent,memberType:mockUsers[selectedStudent]?.memberType||"public"});
                 setStudentSaveStatus("idle");
@@ -3736,7 +3758,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                   <div style={{fontSize:"0.78rem",color:"#166534"}}>This account was auto-created from your Google Calendar. Once the student registers and logs in, their profile will be enriched automatically. You can also edit their info now.</div>
                 </div>
                 <button onClick={async()=>{
-                  await fetch("/api/students?action=promote",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:selectedStudent})});
+                  await adminFetch("/api/students?action=promote",{method:"POST",body:JSON.stringify({email:selectedStudent})});
                   setMockUsersState(prev=>({...prev,[selectedStudent]:{...prev[selectedStudent],provisional:false,source:"self_registered"}}));
                 }} style={{background:"#15803d",color:"white",border:"none",padding:"7px 18px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.8rem",whiteSpace:"nowrap"}}>
                   Mark as Full Account
@@ -3794,7 +3816,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
               const entry={id:Date.now(),rating:val,note:ratingNoteInput.trim(),date:new Date().toISOString()};
               const updated=[...history,entry];
               setRatingHistories(prev=>({...prev,[selectedStudent]:updated}));
-              fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},
+              adminFetch("/api/students?action=update",{method:"POST",
                 body:JSON.stringify({email:selectedStudent,updates:{coach_rating:val,rating_history:JSON.stringify(updated)}})}).catch(()=>{});
               setCoachRatingInput("");setRatingNoteInput("");
             };
@@ -3802,7 +3824,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
               const updated=history.filter(e=>e.id!==id);
               setRatingHistories(prev=>({...prev,[selectedStudent]:updated}));
               const newCurrent=updated.length>0?updated[updated.length-1].rating:null;
-              fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},
+              adminFetch("/api/students?action=update",{method:"POST",
                 body:JSON.stringify({email:selectedStudent,updates:{coach_rating:newCurrent||"",rating_history:JSON.stringify(updated)}})}).catch(()=>{});
             };
             return(
@@ -3843,11 +3865,11 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                   const storedPlayerName=mockUsers[selectedStudent]?.duprPlayerName||"";
                   const saveDupr=async(updates)=>{
                     onAddStudent({...mockUsers[selectedStudent],email:selectedStudent,...updates});
-                    fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:selectedStudent,updates:Object.fromEntries(Object.entries({dupr_id:updates.duprId,dupr_rating:updates.duprRating,dupr_doubles_rating:updates.duprDoublesRating,dupr_player_name:updates.duprPlayerName}).filter(([,v])=>v!=null))})}).catch(()=>{});
+                    adminFetch("/api/students?action=update",{method:"POST",body:JSON.stringify({email:selectedStudent,updates:Object.fromEntries(Object.entries({dupr_id:updates.duprId,dupr_rating:updates.duprRating,dupr_doubles_rating:updates.duprDoublesRating,dupr_player_name:updates.duprPlayerName}).filter(([,v])=>v!=null))})}).catch(()=>{});
                   };
                   const clearDupr=async()=>{
                     onAddStudent({...mockUsers[selectedStudent],email:selectedStudent,duprId:"",duprRating:"",duprDoublesRating:"",duprPlayerName:""});
-                    fetch("/api/students?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:selectedStudent,updates:{dupr_id:"",dupr_rating:"",dupr_doubles_rating:"",dupr_player_name:""}})}).catch(()=>{});
+                    adminFetch("/api/students?action=update",{method:"POST",body:JSON.stringify({email:selectedStudent,updates:{dupr_id:"",dupr_rating:"",dupr_doubles_rating:"",dupr_player_name:""}})}).catch(()=>{});
                     setDuprIdInput("");setDuprSyncStatus("idle");setDuprSyncError("✓ DUPR data cleared");setTimeout(()=>setDuprSyncError(""),3000);
                   };
                   const syncDupr=async(id)=>{
@@ -5151,7 +5173,7 @@ function LessonLedgerTab({mockUsers,setSelectedStudent,setTab}){
     const start="2025-01-01";
     const future=new Date();future.setDate(future.getDate()+60);
     const end=future.toISOString().slice(0,10);
-    fetch(`/api/earnings-calendar?start=${start}&end=${end}&includeStanford=true&includeFuture=true`)
+    adminFetch(`/api/earnings-calendar?start=${start}&end=${end}&includeStanford=true&includeFuture=true`)
       .then(r=>r.json())
       .then(d=>{setLedgerData(d);setLoading(false);})
       .catch(e=>{setError(e.message);setLoading(false);});
@@ -5929,7 +5951,7 @@ export default function App(){
   };
   const approveStudent=async(student,memberType,grandfathered=false)=>{
     try{
-      await fetch("/api/students?action=approve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({requestId:student.id,email:student.email,name:student.name,firstName:student.firstName||"",lastName:student.lastName||"",commEmail:student.commEmail||"",phone:student.phone||"",homeCourt:student.homeCourt||"",skillLevel:student.skillLevel||"",duprRating:student.duprRating||"",duprId:student.duprId||"",memberType,grandfathered,action:"approve"})});
+      await adminFetch("/api/students?action=approve",{method:"POST",body:JSON.stringify({requestId:student.id,email:student.email,name:student.name,firstName:student.firstName||"",lastName:student.lastName||"",commEmail:student.commEmail||"",phone:student.phone||"",homeCourt:student.homeCourt||"",skillLevel:student.skillLevel||"",duprRating:student.duprRating||"",duprId:student.duprId||"",memberType,grandfathered,action:"approve"})});
       setAllLessons(prev=>({...prev,[student.email]:[]}));
       setMockUsersState(prev=>({...prev,[student.email]:{name:student.name,firstName:student.firstName||"",lastName:student.lastName||"",commEmail:student.commEmail||"",skillLevel:student.skillLevel||"",duprRating:student.duprRating||"",duprDoublesRating:student.duprDoublesRating||"",duprId:student.duprId||"",memberType,approved:true,grandfathered:!!grandfathered}}));
       // Auto-sync DUPR ratings if student provided a Player ID at registration
@@ -5954,7 +5976,7 @@ export default function App(){
     const student=pendingStudents.find(s=>s.id===id);
     if(student){
       try{
-        await fetch("/api/students?action=approve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({requestId:id,action:"deny"})});
+        await adminFetch("/api/students?action=approve",{method:"POST",body:JSON.stringify({requestId:id,action:"deny"})});
       }catch(e){console.error("Deny error:",e);}
       // Add to removed list so admin can see & optionally block
       setRemovedStudents(prev=>[{
@@ -6020,7 +6042,7 @@ export default function App(){
   };
   const removeStudent=async(email)=>{
     // Archives to deleted_students, removes from students — frees email for re-registration
-    await fetch("/api/students?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email})});
+    await adminFetch("/api/students?action=delete",{method:"POST",body:JSON.stringify({email})});
     const u=mockUsersState[email];
     const now=new Date().toISOString();
     setRemovedStudents(prev=>[{
@@ -6034,7 +6056,7 @@ export default function App(){
   };
   const restoreStudent=async(email)=>{
     // Moves from deleted_students back to students (active)
-    await fetch("/api/students?action=restore",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email})});
+    await adminFetch("/api/students?action=restore",{method:"POST",body:JSON.stringify({email})});
     const s=removedStudents.find(x=>x.email===email);
     if(s){
       setMockUsersState(prev=>({...prev,[email]:{

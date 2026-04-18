@@ -22,9 +22,10 @@ export default async function handler(req, res) {
   // Detect contact-form mode: has name + email but no to/subject/text
   let to, subject, text, replyTo, html, fromAlias;
   if (body.name && body.email && !body.to) {
+    // Contact form: ALWAYS send to ADMIN_CONTACT_EMAIL, ignore any 'to' field
     const { name, email, phone, message } = body;
     if (!name || !email) return res.status(400).json({ error: 'Name and email are required.' });
-    to        = gmailUser;
+    to        = process.env.ADMIN_CONTACT_EMAIL || 'dlogfx@gmail.com';
     replyTo   = email;
     fromAlias = 'info@dmpickleball.com';
     subject = `New contact form message from ${name}`;
@@ -41,11 +42,15 @@ export default async function handler(req, res) {
         <p style="font-size:0.8rem;color:#9ca3af;margin:0;">Sent from dmpickleball.com contact form</p>
       </div>`;
   } else {
-    // General mode
-    ({ to, subject, text, html, replyTo, fromAlias, bcc } = body);
-    if (!to || !subject || (!text && !html)) {
-      return res.status(400).json({ error: 'to, subject, and text or html are required.' });
+    // General mode — SECURITY: ignore 'to', 'bcc', 'fromAlias' from body
+    // Only use subject, text, html, replyTo from request body
+    ({ subject, text, html, replyTo } = body);
+    if (!subject || (!text && !html)) {
+      return res.status(400).json({ error: 'subject and text or html are required.' });
     }
+    // Never allow client to specify recipient or set BCC
+    to = process.env.ADMIN_CONTACT_EMAIL || 'dlogfx@gmail.com';
+    fromAlias = 'info@dmpickleball.com';
   }
 
   const transporter = nodemailer.createTransport({
@@ -55,10 +60,10 @@ export default async function handler(req, res) {
 
   try {
     await transporter.sendMail({
-      from: `"DM Pickleball" <${fromAlias || gmailUser}>`,
+      from: `"DM Pickleball" <${fromAlias}>`,
       to,
       subject,
-      ...(bcc ? { bcc } : {}),
+      // SECURITY: Never include bcc from request body — contact form only goes to David
       ...(html ? { html } : { text }),
       ...(replyTo ? { replyTo } : {}),
     });

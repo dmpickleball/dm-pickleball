@@ -134,6 +134,18 @@ function categorizeEvent(summary, location) {
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  // SECURITY: Verify admin token from request header
+  const adminToken = req.headers['x-admin-token'] || '';
+  const adminApiKey = process.env.ADMIN_API_KEY;
+  if (!adminApiKey) {
+    console.warn('ADMIN_API_KEY not set in environment — blocking earnings-calendar access');
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  if (adminToken !== adminApiKey) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
   const { start, end, includeStanford, includeFuture } = req.query;
   if (!start || !end) return res.status(400).json({ error: 'start and end dates required' });
 
