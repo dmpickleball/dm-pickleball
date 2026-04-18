@@ -1255,10 +1255,15 @@ function AdminLoginPage({onAdminLogin}){
                   sessionStorage.setItem('dm_admin_token',d.token);
                   // Also persist so page refreshes don't lose the token
                   localStorage.setItem('dm_admin_token_store',d.token);
+                  onAdminLogin(email);
+                } else {
+                  // Token exchange failed — show the server error instead of opening broken admin
+                  setLoading(false);
+                  setError('Token error: '+(d.error||'Unknown error from server. Check ADMIN_EMAIL env var in Vercel.'));
                 }
-                onAdminLogin(email); // Only open admin panel after token is stored
               }).catch(()=>{
-                onAdminLogin(email); // Fallback: open admin panel even if token fetch fails
+                // Network error — still open admin (will just lack token)
+                onAdminLogin(email);
               });
             } else {
               onAdminLogin(email);
