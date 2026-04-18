@@ -203,13 +203,11 @@ export default async function handler(req, res) {
       const info = await r.json();
       const adminEmail = process.env.ADMIN_EMAIL || '';
       const partnerEmails = (process.env.PARTNER_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
-      // Always include the primary admin email from env var; also allow dmpickleball.com domain
-      const allowed = [adminEmail, ...partnerEmails].filter(Boolean);
+      const allowed = [adminEmail, ...partnerEmails].filter(Boolean).map(e => e.toLowerCase());
       const receivedEmail = (info.email || '').toLowerCase();
-      const isAllowed = allowed.map(e=>e.toLowerCase()).includes(receivedEmail) || receivedEmail.endsWith('@dmpickleball.com');
-      if (!receivedEmail || !isAllowed) {
+      if (!receivedEmail || !allowed.includes(receivedEmail)) {
         console.error('get-admin-token: rejected email:', receivedEmail, 'allowed:', allowed);
-        return res.status(403).json({error:'Not authorized — email: '+receivedEmail});
+        return res.status(403).json({error:'Not authorized — received: '+receivedEmail});
       }
       return res.status(200).json({token: signAdminToken(info.email), email: info.email});
     } catch (err) {
