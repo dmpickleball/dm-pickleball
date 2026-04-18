@@ -2986,7 +2986,8 @@ function AdminCalendarView(){
   );
 }
 function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pendingStudents,onApprove,onDeny,mockUsers,onAddStudent,onAddLesson,onToggleMenlo,onToggleSaturday,onBlockStudent,onRemoveStudent,removedStudents,onRestoreStudent,onBlockRemoved,onToggleGrandfathered,stanfordEnabled=true,onToggleStanford}){
-  const[tab,setTab]=useState("students");
+  const[tab,setTab]=useState(()=>{try{return localStorage.getItem("dm_admin_tab")||"students";}catch{return"students";}});
+  useEffect(()=>{try{localStorage.setItem("dm_admin_tab",tab);}catch{}},[tab]);
   const[adminMenuOpen,setAdminMenuOpen]=useState(false);
   const[studentSearch,setStudentSearch]=useState("");
   const[selectedStudent,setSelectedStudent]=useState(null);
