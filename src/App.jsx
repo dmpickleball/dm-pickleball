@@ -1067,58 +1067,43 @@ const RESOURCE_LINKS=[
 function ResourcesPage(){
   return(
     <div style={{background:"#f5f5f3",minHeight:"100vh"}}>
-      {/* PickleballTV Featured Card */}
-      <div style={{background:"#0a0a0a",padding:"56px 24px 64px"}}>
+      {/* PPA Tour / PickleballTV Video Section */}
+      <div style={{background:"#0a0a0a",padding:"56px 24px 48px"}}>
         <div style={{maxWidth:960,margin:"0 auto"}}>
-          <div style={{textAlign:"center",marginBottom:40}}>
+          <div style={{textAlign:"center",marginBottom:32}}>
             <div style={{fontSize:"0.72rem",fontWeight:700,color:"#4ade80",textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>Live & On Demand</div>
-            <h2 style={{fontSize:"2rem",fontWeight:900,color:"white",marginBottom:10}}>Watch Pickleball TV</h2>
-            <p style={{color:"rgba(255,255,255,0.45)",fontSize:"0.9rem",maxWidth:480,margin:"0 auto",lineHeight:1.7}}>Live broadcasts, highlights, and full match replays from the biggest events in pickleball.</p>
+            <h2 style={{fontSize:"2rem",fontWeight:900,color:"white",marginBottom:10}}>Watch Pro Pickleball</h2>
+            <p style={{color:"rgba(255,255,255,0.45)",fontSize:"0.9rem",maxWidth:480,margin:"0 auto",lineHeight:1.7}}>Latest matches, highlights, and full replays from the PPA Tour — muted by default, click to unmute.</p>
           </div>
-          {/* Featured card */}
-          <div style={{maxWidth:680,margin:"0 auto",background:"linear-gradient(135deg,#1a2e28 0%,#0f1f1a 100%)",borderRadius:24,overflow:"hidden",boxShadow:"0 24px 64px rgba(0,0,0,0.7)",border:"1px solid rgba(255,255,255,0.07)"}}>
-            {/* Header band */}
-            <div style={{background:"linear-gradient(90deg,#1d4a3a,#0d2e24)",padding:"28px 36px",display:"flex",alignItems:"center",gap:18,borderBottom:"1px solid rgba(255,255,255,0.06)"}}>
-              {/* PBTV logo placeholder — play icon in green circle */}
-              <div style={{width:56,height:56,borderRadius:14,background:"#4ade80",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 4px 20px rgba(74,222,128,0.35)"}}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-              </div>
-              <div>
-                <div style={{color:"white",fontWeight:900,fontSize:"1.3rem",letterSpacing:"-0.3px"}}>PickleballTV</div>
-                <div style={{color:"rgba(255,255,255,0.4)",fontSize:"0.8rem",marginTop:2}}>The home of professional pickleball</div>
-              </div>
-            </div>
-            {/* Body */}
-            <div style={{padding:"28px 36px 32px"}}>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:16,marginBottom:28}}>
-                {[
-                  {icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="6"/><path d="M9 12l2 2 4-4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>,title:"PPA Tour",sub:"Pro matches live"},
-                  {icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>,title:"On Demand",sub:"Full match replays"},
-                  {icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="15" rx="2"/><polyline points="17 2 12 7 7 2"/></svg>,title:"24/7",sub:"Always on network"},
-                ].map(({icon,title,sub})=>(
-                  <div key={title} style={{background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.07)",borderRadius:12,padding:"14px 16px",textAlign:"center"}}>
-                    <div style={{display:"flex",justifyContent:"center",marginBottom:8}}>{icon}</div>
-                    <div style={{color:"white",fontWeight:700,fontSize:"0.82rem"}}>{title}</div>
-                    <div style={{color:"rgba(255,255,255,0.35)",fontSize:"0.72rem",marginTop:2}}>{sub}</div>
-                  </div>
-                ))}
-              </div>
-              <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
-                <a href="https://www.pickleballtv.com" target="_blank" rel="noreferrer"
-                  onClick={()=>trackEvent("resource_ptv_site_click")}
-                  style={{flex:1,minWidth:160,background:"#4ade80",color:"#0a2018",padding:"13px 20px",borderRadius:50,fontWeight:800,textDecoration:"none",fontSize:"0.92rem",textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                  Watch on PickleballTV
-                </a>
-                <a href="https://www.youtube.com/@Pickleballtv" target="_blank" rel="noreferrer"
-                  onClick={()=>trackEvent("resource_ptv_youtube_click")}
-                  style={{background:"rgba(255,255,255,0.08)",color:"rgba(255,255,255,0.7)",padding:"13px 20px",borderRadius:50,fontWeight:700,textDecoration:"none",fontSize:"0.88rem",display:"flex",alignItems:"center",justifyContent:"center",gap:8,border:"1px solid rgba(255,255,255,0.1)"}}>
-                  <svg width="16" height="12" viewBox="0 0 18 14" fill="#FF0000"><path d="M17.6 2.2A2.3 2.3 0 0 0 16 .5C14.6 0 9 0 9 0S3.4 0 2 .5A2.3 2.3 0 0 0 .4 2.2C0 3.7 0 7 0 7s0 3.3.4 4.8A2.3 2.3 0 0 0 2 13.5C3.4 14 9 14 9 14s5.6 0 7-.5a2.3 2.3 0 0 0 1.6-1.7C18 10.3 18 7 18 7s0-3.3-.4-4.8zM7.2 10V4l4.8 3-4.8 3z"/></svg>
-                  YouTube
-                </a>
-              </div>
+          {/* PPA Tour YouTube playlist embed — actually works, no popups, muted */}
+          <div style={{borderRadius:16,overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,0.6)",border:"1px solid rgba(255,255,255,0.06)"}}>
+            <div style={{paddingTop:"56.25%",position:"relative",background:"#000"}}>
+              <iframe
+                src="https://www.youtube.com/embed/videoseries?list=UUSP6HlrMmRqogym2aHBPHpw&mute=1&rel=0&modestbranding=1&color=white"
+                title="PPA Tour Pickleball"
+                frameBorder="0"
+                allowFullScreen
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none",display:"block"}}
+              />
             </div>
           </div>
+          <div style={{textAlign:"center",marginTop:18,display:"flex",alignItems:"center",justifyContent:"center",gap:16,flexWrap:"wrap"}}>
+            <a href="https://www.pickleballtv.com" target="_blank" rel="noreferrer"
+              onClick={()=>trackEvent("resource_ptv_site_click")}
+              style={{background:"#4ade80",color:"#0a2018",padding:"10px 22px",borderRadius:50,fontWeight:800,textDecoration:"none",fontSize:"0.88rem",display:"flex",alignItems:"center",gap:7}}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              PickleballTV
+            </a>
+            <a href="https://www.youtube.com/channel/UCSP6HlrMmRqogym2aHBPHpw" target="_blank" rel="noreferrer"
+              onClick={()=>trackEvent("resource_ppatour_youtube_click")}
+              style={{background:"rgba(255,255,255,0.07)",color:"rgba(255,255,255,0.6)",padding:"10px 22px",borderRadius:50,fontWeight:700,textDecoration:"none",fontSize:"0.85rem",display:"flex",alignItems:"center",gap:7,border:"1px solid rgba(255,255,255,0.1)"}}>
+              <svg width="15" height="11" viewBox="0 0 18 14" fill="#FF0000"><path d="M17.6 2.2A2.3 2.3 0 0 0 16 .5C14.6 0 9 0 9 0S3.4 0 2 .5A2.3 2.3 0 0 0 .4 2.2C0 3.7 0 7 0 7s0 3.3.4 4.8A2.3 2.3 0 0 0 2 13.5C3.4 14 9 14 9 14s5.6 0 7-.5a2.3 2.3 0 0 0 1.6-1.7C18 10.3 18 7 18 7s0-3.3-.4-4.8zM7.2 10V4l4.8 3-4.8 3z"/></svg>
+              PPA Tour on YouTube
+            </a>
+          </div>
+        </div>
+      </div>
         </div>
       </div>
 
