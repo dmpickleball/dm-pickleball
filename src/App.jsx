@@ -2336,7 +2336,8 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
   const[viewYear,setViewYear]=useState(now.getFullYear());
   const[viewYearOnly,setViewYearOnly]=useState(now.getFullYear());
   const[projectedMode,setProjectedMode]=useState(false);
-  const[projectedRange,setProjectedRange]=useState("month");
+  const[projectedRange,setProjectedRange]=useState("week");
+  const[projectedStanford,setProjectedStanford]=useState(false);
   const[financeSearch,setFinanceSearch]=useState("");
   const[expandedFinRow,setExpandedFinRow]=useState(null);
   const[projectedCalData,setProjectedCalData]=useState(null);
@@ -2465,7 +2466,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
     const map={};
     projectedMonthKeys.forEach(mk=>{map[mk]={total:0,count:0,rows:[]};});
     const add=(mk,row)=>{if(!map[mk])return;map[mk].total+=row.earnings;map[mk].count++;map[mk].rows.push(row);};
-    (projectedCalData?.events||[]).filter(e=>!e.isStanford&&!e.isPickup).forEach(e=>{
+    (projectedCalData?.events||[]).filter(e=>(!e.isStanford||projectedStanford)&&!e.isPickup).forEach(e=>{
       const mk=e.date.substring(0,7);
       const k=e.date+"|"+e.summary;
       const earnings=calOverrides[k]!=null?calOverrides[k]:e.earnings;
@@ -2489,10 +2490,20 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
       {/* Projected View */}
       {projectedMode&&(
         <div>
-          {/* Week / Month toggle */}
-          <div style={{display:"flex",gap:0,marginBottom:20,background:"#f3f4f6",borderRadius:50,padding:4,width:"fit-content"}}>
-            <button onClick={()=>setProjectedRange("week")} style={{padding:"6px 20px",borderRadius:50,border:"none",cursor:"pointer",fontWeight:700,fontSize:"0.83rem",background:projectedRange==="week"?"white":"transparent",color:projectedRange==="week"?"#1a3c34":"#9ca3af",boxShadow:projectedRange==="week"?"0 1px 4px rgba(0,0,0,0.10)":"none",transition:"all 0.15s"}}>This Week</button>
-            <button onClick={()=>setProjectedRange("month")} style={{padding:"6px 20px",borderRadius:50,border:"none",cursor:"pointer",fontWeight:700,fontSize:"0.83rem",background:projectedRange==="month"?"white":"transparent",color:projectedRange==="month"?"#1a3c34":"#9ca3af",boxShadow:projectedRange==="month"?"0 1px 4px rgba(0,0,0,0.10)":"none",transition:"all 0.15s"}}>Next 30 Days</button>
+          {/* Day / Week / Month toggle + Stanford toggle */}
+          <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:20,flexWrap:"wrap"}}>
+            <div style={{display:"flex",gap:0,background:"#f3f4f6",borderRadius:50,padding:4}}>
+              <button onClick={()=>setProjectedRange("today")} style={{padding:"6px 20px",borderRadius:50,border:"none",cursor:"pointer",fontWeight:700,fontSize:"0.83rem",background:projectedRange==="today"?"white":"transparent",color:projectedRange==="today"?"#1a3c34":"#9ca3af",boxShadow:projectedRange==="today"?"0 1px 4px rgba(0,0,0,0.10)":"none",transition:"all 0.15s"}}>Today</button>
+              <button onClick={()=>setProjectedRange("week")} style={{padding:"6px 20px",borderRadius:50,border:"none",cursor:"pointer",fontWeight:700,fontSize:"0.83rem",background:projectedRange==="week"?"white":"transparent",color:projectedRange==="week"?"#1a3c34":"#9ca3af",boxShadow:projectedRange==="week"?"0 1px 4px rgba(0,0,0,0.10)":"none",transition:"all 0.15s"}}>This Week</button>
+              <button onClick={()=>setProjectedRange("month")} style={{padding:"6px 20px",borderRadius:50,border:"none",cursor:"pointer",fontWeight:700,fontSize:"0.83rem",background:projectedRange==="month"?"white":"transparent",color:projectedRange==="month"?"#1a3c34":"#9ca3af",boxShadow:projectedRange==="month"?"0 1px 4px rgba(0,0,0,0.10)":"none",transition:"all 0.15s"}}>Next 30 Days</button>
+            </div>
+            {/* Stanford toggle */}
+            <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",userSelect:"none"}}>
+              <div onClick={()=>setProjectedStanford(p=>!p)} style={{width:38,height:22,borderRadius:11,background:projectedStanford?"#8C1515":"#d1d5db",transition:"background 0.2s",position:"relative",cursor:"pointer"}}>
+                <div style={{position:"absolute",top:3,left:projectedStanford?18:3,width:16,height:16,borderRadius:"50%",background:"white",boxShadow:"0 1px 3px rgba(0,0,0,0.2)",transition:"left 0.2s"}}/>
+              </div>
+              <span style={{fontSize:"0.82rem",fontWeight:600,color:projectedStanford?"#8C1515":"#9ca3af"}}>Stanford</span>
+            </label>
           </div>
           {projectedCalLoading?(
             <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"40px",textAlign:"center",color:"#9ca3af"}}>Loading calendar data…</div>
@@ -2500,12 +2511,11 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
             // Build flat list of all projected rows filtered to the chosen range
             const weekEnd=new Date(now);weekEnd.setDate(now.getDate()+7);
             const monthEnd=new Date(now);monthEnd.setDate(now.getDate()+30);
-            const cutoff=projectedRange==="week"?weekEnd:monthEnd;
-            const cutoffStr=fmtD(cutoff);
             const todayStr=fmtD(now);
+            const cutoffStr=projectedRange==="today"?todayStr:projectedRange==="week"?fmtD(weekEnd):fmtD(monthEnd);
             const allRows=projectedByMonth.flatMap(([,v])=>v.rows).filter(r=>r.date>=todayStr&&r.date<=cutoffStr).sort((a,b)=>a.date.localeCompare(b.date));
             const rangeTotal=allRows.reduce((s,r)=>s+r.earnings,0);
-            const rangeLabel=projectedRange==="week"?"Next 7 Days":"Next 30 Days";
+            const rangeLabel=projectedRange==="today"?"Today":projectedRange==="week"?"Next 7 Days":"Next 30 Days";
             // Group by date for nicer display
             const byDate={};
             allRows.forEach(r=>{if(!byDate[r.date])byDate[r.date]=[];byDate[r.date].push(r);});
