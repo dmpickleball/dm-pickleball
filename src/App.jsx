@@ -2498,7 +2498,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
       {/* Earnings / Forecast toggle */}
       <div style={{display:"flex",gap:0,marginBottom:24,background:"#f3f4f6",borderRadius:50,padding:4,width:"fit-content"}}>
         <button onClick={()=>setProjectedMode(false)} style={{padding:"7px 22px",borderRadius:50,border:"none",cursor:"pointer",fontWeight:700,fontSize:"0.85rem",background:!projectedMode?"white":"transparent",color:!projectedMode?"#1a3c34":"#9ca3af",boxShadow:!projectedMode?"0 1px 4px rgba(0,0,0,0.10)":"none",transition:"all 0.15s"}}>Earnings</button>
-        <button onClick={()=>setProjectedMode(true)} style={{padding:"7px 22px",borderRadius:50,border:"none",cursor:"pointer",fontWeight:700,fontSize:"0.85rem",background:projectedMode?"white":"transparent",color:projectedMode?"#1a3c34":"#9ca3af",boxShadow:projectedMode?"0 1px 4px rgba(0,0,0,0.10)":"none",transition:"all 0.15s"}}>📅 Forecast</button>
+        <button onClick={()=>setProjectedMode(true)} style={{padding:"7px 22px",borderRadius:50,border:"none",cursor:"pointer",fontWeight:700,fontSize:"0.85rem",background:projectedMode?"white":"transparent",color:projectedMode?"#1a3c34":"#9ca3af",boxShadow:projectedMode?"0 1px 4px rgba(0,0,0,0.10)":"none",transition:"all 0.15s"}}>Forecast</button>
       </div>
       {/* Projected View */}
       {projectedMode&&(
@@ -2520,14 +2520,22 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
             return(
               <div>
                 {/* Summary card */}
-                <div style={{background:"#1a3c34",borderRadius:12,padding:"20px 28px",marginBottom:projectedRange==="restofmonth"?0:20,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
-                  <div>
-                    <div style={{fontSize:"0.7rem",fontWeight:700,color:"rgba(255,255,255,0.6)",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>{rangeLabel}</div>
-                    <div style={{fontSize:"2rem",fontWeight:900,color:"white"}}>${rangeTotal.toFixed(2)}</div>
-                    <div style={{fontSize:"0.78rem",color:"rgba(255,255,255,0.7)",marginTop:3}}>{allRows.length} lesson{allRows.length!==1?"s":""} scheduled</div>
-                  </div>
-                  <div style={{fontSize:"2rem",opacity:0.4}}>📈</div>
-                </div>
+                {(()=>{
+                  const stanfordRows=allRows.filter(r=>r.isStanford);
+                  const lessonRows=allRows.filter(r=>!r.isStanford);
+                  const stanfordTotal=stanfordRows.reduce((s,r)=>s+r.earnings,0);
+                  const lessonTotal=lessonRows.reduce((s,r)=>s+r.earnings,0);
+                  return(
+                    <div style={{background:"#1a3c34",borderRadius:12,padding:"20px 28px",marginBottom:0}}>
+                      <div style={{fontSize:"0.7rem",fontWeight:700,color:"rgba(255,255,255,0.6)",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>{rangeLabel}</div>
+                      <div style={{fontSize:"2rem",fontWeight:900,color:"white",marginBottom:10}}>${rangeTotal.toFixed(2)}</div>
+                      <div style={{display:"flex",gap:20,flexWrap:"wrap",paddingTop:10,borderTop:"1px solid rgba(255,255,255,0.15)"}}>
+                        <div style={{fontSize:"0.78rem",color:"rgba(255,255,255,0.6)"}}>Lessons <span style={{color:"white",fontWeight:700,marginLeft:4}}>${lessonTotal.toFixed(2)}</span> <span style={{color:"rgba(255,255,255,0.35)"}}>({lessonRows.length})</span></div>
+                        {stanfordTotal>0&&<div style={{fontSize:"0.78rem",color:"rgba(255,255,255,0.6)"}}>Stanford <span style={{color:"white",fontWeight:700,marginLeft:4}}>${stanfordTotal.toFixed(2)}</span> <span style={{color:"rgba(255,255,255,0.35)"}}>({stanfordRows.length})</span></div>}
+                      </div>
+                    </div>
+                  );
+                })()}
                 {/* EOM Total breakdown — always visible in This Month view */}
                 {projectedRange==="restofmonth"&&(()=>{
                   if(eomLoading||!eomActual){
