@@ -2513,6 +2513,10 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
             const allRows=projectedByMonth.flatMap(([,v])=>v.rows).filter(r=>r.date>=todayStr&&r.date<=cutoffStr).sort((a,b)=>a.date.localeCompare(b.date));
             const rangeTotal=allRows.reduce((s,r)=>s+r.earnings,0);
             const rangeLabel="Rest of "+now.toLocaleString("en-US",{month:"long"});
+            const remainStanfordRows=allRows.filter(r=>r.isStanford);
+            const remainLessonRows=allRows.filter(r=>!r.isStanford);
+            const remainStanfordTotal=remainStanfordRows.reduce((s,r)=>s+r.earnings,0);
+            const remainLessonTotal=remainLessonRows.reduce((s,r)=>s+r.earnings,0);
             // Group by date for nicer display
             const byDate={};
             allRows.forEach(r=>{if(!byDate[r.date])byDate[r.date]=[];byDate[r.date].push(r);});
@@ -2520,22 +2524,14 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
             return(
               <div>
                 {/* Summary card */}
-                {(()=>{
-                  const stanfordRows=allRows.filter(r=>r.isStanford);
-                  const lessonRows=allRows.filter(r=>!r.isStanford);
-                  const stanfordTotal=stanfordRows.reduce((s,r)=>s+r.earnings,0);
-                  const lessonTotal=lessonRows.reduce((s,r)=>s+r.earnings,0);
-                  return(
-                    <div style={{background:"#1a3c34",borderRadius:12,padding:"20px 28px",marginBottom:0}}>
-                      <div style={{fontSize:"0.7rem",fontWeight:700,color:"rgba(255,255,255,0.6)",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>{rangeLabel}</div>
-                      <div style={{fontSize:"2rem",fontWeight:900,color:"white",marginBottom:10}}>${rangeTotal.toFixed(2)}</div>
-                      <div style={{display:"flex",gap:20,flexWrap:"wrap",paddingTop:10,borderTop:"1px solid rgba(255,255,255,0.15)"}}>
-                        <div style={{fontSize:"0.78rem",color:"rgba(255,255,255,0.6)"}}>Lessons <span style={{color:"white",fontWeight:700,marginLeft:4}}>${lessonTotal.toFixed(2)}</span> <span style={{color:"rgba(255,255,255,0.35)"}}>({lessonRows.length})</span></div>
-                        {stanfordTotal>0&&<div style={{fontSize:"0.78rem",color:"rgba(255,255,255,0.6)"}}>Stanford <span style={{color:"white",fontWeight:700,marginLeft:4}}>${stanfordTotal.toFixed(2)}</span> <span style={{color:"rgba(255,255,255,0.35)"}}>({stanfordRows.length})</span></div>}
-                      </div>
-                    </div>
-                  );
-                })()}
+                <div style={{background:"#1a3c34",borderRadius:12,padding:"20px 28px",marginBottom:0}}>
+                  <div style={{fontSize:"0.7rem",fontWeight:700,color:"rgba(255,255,255,0.6)",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>{rangeLabel}</div>
+                  <div style={{fontSize:"2rem",fontWeight:900,color:"white",marginBottom:10}}>${rangeTotal.toFixed(2)}</div>
+                  <div style={{display:"flex",gap:20,flexWrap:"wrap",paddingTop:10,borderTop:"1px solid rgba(255,255,255,0.15)"}}>
+                    <div style={{fontSize:"0.78rem",color:"rgba(255,255,255,0.6)"}}>Lessons <span style={{color:"white",fontWeight:700,marginLeft:4}}>${remainLessonTotal.toFixed(2)}</span> <span style={{color:"rgba(255,255,255,0.35)"}}>({remainLessonRows.length})</span></div>
+                    {remainStanfordTotal>0&&<div style={{fontSize:"0.78rem",color:"rgba(255,255,255,0.6)"}}>Stanford <span style={{color:"white",fontWeight:700,marginLeft:4}}>${remainStanfordTotal.toFixed(2)}</span> <span style={{color:"rgba(255,255,255,0.35)"}}>({remainStanfordRows.length})</span></div>}
+                  </div>
+                </div>
                 {/* EOM Total breakdown — always visible in This Month view */}
                 {projectedRange==="restofmonth"&&(()=>{
                   if(eomLoading||!eomActual){
@@ -2574,9 +2570,13 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                           )}
                         </div>
                         <div style={{fontSize:"1.4rem",color:"#9ca3af",fontWeight:300}}>+</div>
-                        <div style={{textAlign:"center"}}>
+                        <div>
                           <div style={{fontSize:"0.72rem",color:"#6b7280",fontWeight:700,marginBottom:4}}>Remaining</div>
-                          <div style={{fontSize:"1.4rem",fontWeight:900,color:"#1a3c34"}}>${rangeTotal.toFixed(2)}</div>
+                          <div style={{fontSize:"1.4rem",fontWeight:900,color:"#1a3c34",marginBottom:6}}>${rangeTotal.toFixed(2)}</div>
+                          <div style={{display:"flex",flexDirection:"column",gap:2}}>
+                            <div style={{fontSize:"0.72rem",color:"#6b7280"}}>Lessons: <span style={{fontWeight:700,color:"#374151"}}>${remainLessonTotal.toFixed(2)}</span></div>
+                            {remainStanfordTotal>0&&<div style={{fontSize:"0.72rem",color:"#6b7280"}}>Stanford: <span style={{fontWeight:700,color:"#374151"}}>${remainStanfordTotal.toFixed(2)}</span></div>}
+                          </div>
                         </div>
                         <div style={{fontSize:"1.4rem",color:"#9ca3af",fontWeight:300}}>=</div>
                         <div style={{textAlign:"center",background:"#1a3c34",borderRadius:10,padding:"10px 20px"}}>
