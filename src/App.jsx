@@ -2572,7 +2572,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                           {stanfordEarned>0&&(
                             <div style={{marginTop:6,display:"flex",flexDirection:"column",gap:2}}>
                               <div style={{fontSize:"0.72rem",color:"#6b7280"}}>Lessons: <span style={{fontWeight:700,color:"#374151"}}>${lessonsEarned.toFixed(2)}</span></div>
-                              <div style={{fontSize:"0.72rem",color:"#8C1515"}}>Stanford: <span style={{fontWeight:700}}>${stanfordEarned.toFixed(2)}</span></div>
+                              <div style={{fontSize:"0.72rem",color:"#6b7280"}}>Stanford: <span style={{fontWeight:700,color:"#1a3c34"}}>${stanfordEarned.toFixed(2)}</span></div>
                             </div>
                           )}
                         </div>
@@ -2776,7 +2776,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                           <td style={{padding:"12px 16px",fontWeight:600}}>{m}</td>
                           <td style={{padding:"12px 16px"}}>{mLessons.length>0?<span>${lessonTotal.toFixed(2)}<span style={{color:"#9ca3af",fontSize:"0.78rem",marginLeft:4}}>({mLessons.length})</span></span>:<span style={{color:"#d1d5db"}}>—</span>}</td>
                           <td style={{padding:"12px 16px",color:"#6b7280"}}>{(lessonHrs+(includeStanford?stanfordHrs:0)).toFixed(1)}h</td>
-                          {includeStanford&&<td style={{padding:"12px 16px",color:"#8C1515"}}>{mStanford.length>0?<span>${stanfordTotal.toFixed(2)}<span style={{fontSize:"0.78rem",marginLeft:4,color:"#a78bfa"}}>({mStanford.length})</span></span>:<span style={{color:"#d1d5db"}}>—</span>}</td>}
+                          {includeStanford&&<td style={{padding:"12px 16px",color:"#374151"}}>{mStanford.length>0?<span>${stanfordTotal.toFixed(2)}<span style={{fontSize:"0.78rem",marginLeft:4,color:"#9ca3af"}}>({mStanford.length})</span></span>:<span style={{color:"#d1d5db"}}>—</span>}</td>}
                           <td style={{padding:"12px 16px",fontWeight:700,color:"#1a3c34"}}>${rowTotal.toFixed(2)}</td>
                         </tr>
                       );
@@ -2813,7 +2813,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                       const dispEarnings=e.isStanford?(showNetStanford?(e.netEarnings??e.earnings):e.earnings):e.earnings;
                       const earningsColor=e.isMenlo?"#16a34a":isOverridden?"#0ea5e9":"#1a3c34";
                       const badgeColor=e.isStanford?"#8C1515":e.isMenlo?"#16a34a":(typeColors[e.type]||"#666");
-                      const rowBg=e.isStanford?"#fdf2f2":e.isMenlo?"#f0fdf4":"white";
+                      const rowBg=e.isStanford?"#f9f5f0":e.isMenlo?"#f0fdf4":"white";
                       const openEdit=()=>{if(e.isStanford||readOnly)return;editRowRef.current={...e,isCalendar:true,calKey};setEditPriceVal(String(e.earnings));setEditTypeVal(e.type||"");dialogRef.current?.showModal();};
                       return(
                         <div key={i} onClick={openEdit} style={{padding:"12px 14px",borderBottom:i<arr.length-1?`1px solid ${rowBg==="white"?"#f3f4f6":"#e5e7eb"}`:"none",cursor:e.isStanford?"default":"pointer",background:rowBg}}>
@@ -2852,7 +2852,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                         const dispEarnings=e.isStanford?(showNetStanford?(e.netEarnings??e.earnings):e.earnings):e.earnings;
                         const earningsColor=e.isMenlo?"#16a34a":isOverridden?"#0ea5e9":"#1a3c34";
                         const badgeColor=e.isStanford?"#8C1515":e.isMenlo?"#16a34a":(typeColors[e.type]||"#666");
-                        const rowBg=e.isStanford?"#fdf2f2":e.isMenlo?"#f0fdf4":"white";
+                        const rowBg=e.isStanford?"#f9f5f0":e.isMenlo?"#f0fdf4":"white";
                         const openEdit=()=>{if(e.isStanford||readOnly)return;editRowRef.current={...e,isCalendar:true,calKey};setEditPriceVal(String(e.earnings));setEditTypeVal(e.type||"");dialogRef.current?.showModal();};
                         return(
                         <tr key={i} style={{borderBottom:`1px solid ${rowBg==="white"?"#f3f4f6":"#e5e7eb"}`,background:rowBg}}>
@@ -5303,8 +5303,8 @@ function LessonLedgerTab({mockUsers,setSelectedStudent,setTab}){
     return null;
   };
 
-  const typeColors2={private:"#e8f0ee",semi:"#e0e7ff",group:"#fef3c7",clinic:"#fce7f3",pickup:"#f3f4f6",stanford_rec:"#fdf2f2",stanford_open:"#fdf2f2"};
-  const typeTextColors2={private:G,semi:"#4338ca",group:"#92400e",clinic:"#9d174d",pickup:"#6b7280",stanford_rec:"#7f1d1d",stanford_open:"#7f1d1d"};
+  const typeColors2={private:"#e8f0ee",semi:"#e0e7ff",group:"#fef3c7",clinic:"#fce7f3",pickup:"#f3f4f6",stanford_rec:"#f5ede6",stanford_open:"#f5ede6"};
+  const typeTextColors2={private:G,semi:"#4338ca",group:"#92400e",clinic:"#9d174d",pickup:"#6b7280",stanford_rec:"#7c4c1e",stanford_open:"#7c4c1e"};
 
   const fmtMonth=m=>{const[y,mo]=m.split("-");return new Date(y,parseInt(mo)-1).toLocaleDateString("en-US",{month:"long",year:"numeric"});};
 
@@ -5355,7 +5355,7 @@ function LessonLedgerTab({mockUsers,setSelectedStudent,setTab}){
           filtered.map((e,i)=>{
             const names=getNames(e);
             const isPast=new Date(e.date)<new Date();
-            const rowBg=e.isStanford?"#fdf2f2":e.isMenlo?"#f0fdf4":"white";
+            const rowBg=e.isStanford?"#f9f5f0":e.isMenlo?"#f0fdf4":"white";
             const dividerColor=rowBg==="white"?"#f3f4f6":"#e5e7eb";
             // Find linked student email
             const linkedEmail=(e.attendeeEmails||[]).find(em=>mockUsers[em]);
