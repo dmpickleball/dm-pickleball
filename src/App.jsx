@@ -2337,7 +2337,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
   const[viewYearOnly,setViewYearOnly]=useState(now.getFullYear());
   const[projectedMode,setProjectedMode]=useState(false);
   const[projectedRange,setProjectedRange]=useState("week");
-  const[projectedStanford,setProjectedStanford]=useState(false);
+  // Stanford always included in projected view
   const[financeSearch,setFinanceSearch]=useState("");
   const[expandedFinRow,setExpandedFinRow]=useState(null);
   const[projectedCalData,setProjectedCalData]=useState(null);
@@ -2448,7 +2448,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
       .then(r=>r.json()).then(d=>setEomActual(d)).catch(()=>setEomActual({error:true})).finally(()=>setEomLoading(false));
   };
   // Auto-load EOM actuals whenever the user switches to This Month view
-  useEffect(()=>{if(projectedRange==="restofmonth"&&projectedMode&&!eomActual&&!eomLoading)fetchEomActual();},[projectedRange,projectedMode]);
+  useEffect(()=>{if(projectedRange==="restofmonth"&&projectedMode&&!eomActual&&!eomLoading)fetchEomActual();},[projectedRange,projectedMode]); // eslint-disable-line react-hooks/exhaustive-deps
   const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const MONFULL=["January","February","March","April","May","June","July","August","September","October","November","December"];
   const viewLabel=financeView==="day"?new Date(selectedDay+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):financeView==="week"?(()=>{const sd=new Date(viewRange.start+"T12:00:00");const ed=new Date(viewRange.end+"T12:00:00");return"Week of "+MON[sd.getMonth()]+" "+sd.getDate()+", "+sd.getFullYear();})():financeView==="month"?MONFULL[viewMonth-1]+" "+viewYear:String(viewYearOnly);
@@ -2479,7 +2479,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
     const map={};
     projectedMonthKeys.forEach(mk=>{map[mk]={total:0,count:0,rows:[]};});
     const add=(mk,row)=>{if(!map[mk])return;map[mk].total+=row.earnings;map[mk].count++;map[mk].rows.push(row);};
-    (projectedCalData?.events||[]).filter(e=>(!e.isStanford||projectedStanford)&&!e.isPickup).forEach(e=>{
+    (projectedCalData?.events||[]).filter(e=>!e.isPickup).forEach(e=>{
       const mk=e.date.substring(0,7);
       const k=e.date+"|"+e.summary;
       const earnings=calOverrides[k]!=null?calOverrides[k]:e.earnings;
@@ -2503,7 +2503,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
       {/* Projected View */}
       {projectedMode&&(
         <div>
-          {/* Day / Week / Month toggle + Stanford toggle */}
+          {/* Day / Week / Month toggle */}
           <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:20,flexWrap:"wrap"}}>
             <div style={{display:"flex",gap:0,background:"#f3f4f6",borderRadius:50,padding:4}}>
               <button onClick={()=>setProjectedRange("today")} style={{padding:"6px 20px",borderRadius:50,border:"none",cursor:"pointer",fontWeight:700,fontSize:"0.83rem",background:projectedRange==="today"?"white":"transparent",color:projectedRange==="today"?"#1a3c34":"#9ca3af",boxShadow:projectedRange==="today"?"0 1px 4px rgba(0,0,0,0.10)":"none",transition:"all 0.15s"}}>Today</button>
@@ -2511,13 +2511,6 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
               <button onClick={()=>setProjectedRange("restofmonth")} style={{padding:"6px 20px",borderRadius:50,border:"none",cursor:"pointer",fontWeight:700,fontSize:"0.83rem",background:projectedRange==="restofmonth"?"white":"transparent",color:projectedRange==="restofmonth"?"#1a3c34":"#9ca3af",boxShadow:projectedRange==="restofmonth"?"0 1px 4px rgba(0,0,0,0.10)":"none",transition:"all 0.15s"}}>This Month</button>
               <button onClick={()=>setProjectedRange("month")} style={{padding:"6px 20px",borderRadius:50,border:"none",cursor:"pointer",fontWeight:700,fontSize:"0.83rem",background:projectedRange==="month"?"white":"transparent",color:projectedRange==="month"?"#1a3c34":"#9ca3af",boxShadow:projectedRange==="month"?"0 1px 4px rgba(0,0,0,0.10)":"none",transition:"all 0.15s"}}>Next 30 Days</button>
             </div>
-            {/* Stanford toggle */}
-            <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",userSelect:"none"}}>
-              <div onClick={()=>setProjectedStanford(p=>!p)} style={{width:38,height:22,borderRadius:11,background:projectedStanford?"#8C1515":"#d1d5db",transition:"background 0.2s",position:"relative",cursor:"pointer"}}>
-                <div style={{position:"absolute",top:3,left:projectedStanford?18:3,width:16,height:16,borderRadius:"50%",background:"white",boxShadow:"0 1px 3px rgba(0,0,0,0.2)",transition:"left 0.2s"}}/>
-              </div>
-              <span style={{fontSize:"0.82rem",fontWeight:600,color:projectedStanford?"#8C1515":"#9ca3af"}}>Stanford</span>
-            </label>
           </div>
           {projectedCalLoading?(
             <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"40px",textAlign:"center",color:"#9ca3af"}}>Loading calendar data…</div>
@@ -2563,17 +2556,25 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                       </div>
                     );
                   }
-                  // Always use totalEarnings (includes Stanford) for actuals
+                  // totalEarnings includes Stanford; lessonEarnings is MCC/private only
                   const earned=eomActual.totalEarnings||0;
+                  const stanfordEarned=eomActual.stanfordEarnings||0;
+                  const lessonsEarned=eomActual.lessonEarnings||0;
                   const eomTotal=earned+rangeTotal;
                   const monthName=now.toLocaleString("en-US",{month:"long"});
                   return(
                     <div style={{background:"#f0faf5",border:"1.5px solid #1a3c34",borderTop:"none",borderRadius:"0 0 12px 12px",padding:"18px 28px",marginBottom:20}}>
                       <div style={{fontSize:"0.7rem",fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:1,marginBottom:12}}>{monthName} End-of-Month Projection</div>
                       <div style={{display:"flex",gap:24,flexWrap:"wrap",alignItems:"center"}}>
-                        <div style={{textAlign:"center"}}>
+                        <div>
                           <div style={{fontSize:"0.72rem",color:"#6b7280",fontWeight:700,marginBottom:4}}>Earned So Far</div>
                           <div style={{fontSize:"1.4rem",fontWeight:900,color:"#1a3c34"}}>${earned.toFixed(2)}</div>
+                          {stanfordEarned>0&&(
+                            <div style={{marginTop:6,display:"flex",flexDirection:"column",gap:2}}>
+                              <div style={{fontSize:"0.72rem",color:"#6b7280"}}>Lessons: <span style={{fontWeight:700,color:"#374151"}}>${lessonsEarned.toFixed(2)}</span></div>
+                              <div style={{fontSize:"0.72rem",color:"#8C1515"}}>Stanford: <span style={{fontWeight:700}}>${stanfordEarned.toFixed(2)}</span></div>
+                            </div>
+                          )}
                         </div>
                         <div style={{fontSize:"1.4rem",color:"#9ca3af",fontWeight:300}}>+</div>
                         <div style={{textAlign:"center"}}>
