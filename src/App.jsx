@@ -2336,7 +2336,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
   const[viewYear,setViewYear]=useState(now.getFullYear());
   const[viewYearOnly,setViewYearOnly]=useState(now.getFullYear());
   const[projectedMode,setProjectedMode]=useState(false);
-  const[projectedRange,setProjectedRange]=useState("week");
+  const projectedRange="restofmonth"; // always This Month — range picker removed
   // Stanford always included in projected view
   const[financeSearch,setFinanceSearch]=useState("");
   const[expandedFinRow,setExpandedFinRow]=useState(null);
@@ -2448,7 +2448,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
       .then(r=>r.json()).then(d=>setEomActual(d)).catch(()=>setEomActual({error:true})).finally(()=>setEomLoading(false));
   };
   // Auto-load EOM actuals whenever the user switches to This Month view
-  useEffect(()=>{if(projectedRange==="restofmonth"&&projectedMode&&!eomActual&&!eomLoading)fetchEomActual();},[projectedRange,projectedMode]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(()=>{if(projectedMode&&!eomActual&&!eomLoading)fetchEomActual();},[projectedMode]); // eslint-disable-line react-hooks/exhaustive-deps
   const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const MONFULL=["January","February","March","April","May","June","July","August","September","October","November","December"];
   const viewLabel=financeView==="day"?new Date(selectedDay+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):financeView==="week"?(()=>{const sd=new Date(viewRange.start+"T12:00:00");const ed=new Date(viewRange.end+"T12:00:00");return"Week of "+MON[sd.getMonth()]+" "+sd.getDate()+", "+sd.getFullYear();})():financeView==="month"?MONFULL[viewMonth-1]+" "+viewYear:String(viewYearOnly);
@@ -2495,35 +2495,24 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
       {financeError&&<div style={{background:"#fff8f8",border:"1.5px solid #fca5a5",borderRadius:10,padding:"12px 18px",marginBottom:16,fontSize:"0.83rem",color:"#7f1d1d",display:"flex",alignItems:"center",gap:10}}>
         <span style={{fontWeight:700}}>⚠ Calendar API:</span> {financeError}
       </div>}
-      {/* Actual / Projected toggle */}
+      {/* Earnings / Forecast toggle */}
       <div style={{display:"flex",gap:0,marginBottom:24,background:"#f3f4f6",borderRadius:50,padding:4,width:"fit-content"}}>
-        <button onClick={()=>setProjectedMode(false)} style={{padding:"7px 22px",borderRadius:50,border:"none",cursor:"pointer",fontWeight:700,fontSize:"0.85rem",background:!projectedMode?"white":"transparent",color:!projectedMode?"#1a3c34":"#9ca3af",boxShadow:!projectedMode?"0 1px 4px rgba(0,0,0,0.10)":"none",transition:"all 0.15s"}}>Actual</button>
-        <button onClick={()=>setProjectedMode(true)} style={{padding:"7px 22px",borderRadius:50,border:"none",cursor:"pointer",fontWeight:700,fontSize:"0.85rem",background:projectedMode?"white":"transparent",color:projectedMode?"#1a3c34":"#9ca3af",boxShadow:projectedMode?"0 1px 4px rgba(0,0,0,0.10)":"none",transition:"all 0.15s"}}>📈 Projected</button>
+        <button onClick={()=>setProjectedMode(false)} style={{padding:"7px 22px",borderRadius:50,border:"none",cursor:"pointer",fontWeight:700,fontSize:"0.85rem",background:!projectedMode?"white":"transparent",color:!projectedMode?"#1a3c34":"#9ca3af",boxShadow:!projectedMode?"0 1px 4px rgba(0,0,0,0.10)":"none",transition:"all 0.15s"}}>Earnings</button>
+        <button onClick={()=>setProjectedMode(true)} style={{padding:"7px 22px",borderRadius:50,border:"none",cursor:"pointer",fontWeight:700,fontSize:"0.85rem",background:projectedMode?"white":"transparent",color:projectedMode?"#1a3c34":"#9ca3af",boxShadow:projectedMode?"0 1px 4px rgba(0,0,0,0.10)":"none",transition:"all 0.15s"}}>📅 Forecast</button>
       </div>
       {/* Projected View */}
       {projectedMode&&(
         <div>
-          {/* Day / Week / Month toggle */}
-          <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:20,flexWrap:"wrap"}}>
-            <div style={{display:"flex",gap:0,background:"#f3f4f6",borderRadius:50,padding:4}}>
-              <button onClick={()=>setProjectedRange("today")} style={{padding:"6px 20px",borderRadius:50,border:"none",cursor:"pointer",fontWeight:700,fontSize:"0.83rem",background:projectedRange==="today"?"white":"transparent",color:projectedRange==="today"?"#1a3c34":"#9ca3af",boxShadow:projectedRange==="today"?"0 1px 4px rgba(0,0,0,0.10)":"none",transition:"all 0.15s"}}>Today</button>
-              <button onClick={()=>setProjectedRange("week")} style={{padding:"6px 20px",borderRadius:50,border:"none",cursor:"pointer",fontWeight:700,fontSize:"0.83rem",background:projectedRange==="week"?"white":"transparent",color:projectedRange==="week"?"#1a3c34":"#9ca3af",boxShadow:projectedRange==="week"?"0 1px 4px rgba(0,0,0,0.10)":"none",transition:"all 0.15s"}}>This Week</button>
-              <button onClick={()=>setProjectedRange("restofmonth")} style={{padding:"6px 20px",borderRadius:50,border:"none",cursor:"pointer",fontWeight:700,fontSize:"0.83rem",background:projectedRange==="restofmonth"?"white":"transparent",color:projectedRange==="restofmonth"?"#1a3c34":"#9ca3af",boxShadow:projectedRange==="restofmonth"?"0 1px 4px rgba(0,0,0,0.10)":"none",transition:"all 0.15s"}}>This Month</button>
-              <button onClick={()=>setProjectedRange("month")} style={{padding:"6px 20px",borderRadius:50,border:"none",cursor:"pointer",fontWeight:700,fontSize:"0.83rem",background:projectedRange==="month"?"white":"transparent",color:projectedRange==="month"?"#1a3c34":"#9ca3af",boxShadow:projectedRange==="month"?"0 1px 4px rgba(0,0,0,0.10)":"none",transition:"all 0.15s"}}>Next 30 Days</button>
-            </div>
-          </div>
           {projectedCalLoading?(
             <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"40px",textAlign:"center",color:"#9ca3af"}}>Loading calendar data…</div>
           ):(()=>{
-            // Build flat list of all projected rows filtered to the chosen range
-            const weekEnd=new Date(now);weekEnd.setDate(now.getDate()+7);
-            const monthEnd=new Date(now);monthEnd.setDate(now.getDate()+30);
+            // Build flat list — always scoped to the rest of this month
             const endOfMonth=new Date(now.getFullYear(),now.getMonth()+1,0);
             const todayStr=fmtD(now);
-            const cutoffStr=projectedRange==="today"?todayStr:projectedRange==="week"?fmtD(weekEnd):projectedRange==="restofmonth"?fmtD(endOfMonth):fmtD(monthEnd);
+            const cutoffStr=fmtD(endOfMonth);
             const allRows=projectedByMonth.flatMap(([,v])=>v.rows).filter(r=>r.date>=todayStr&&r.date<=cutoffStr).sort((a,b)=>a.date.localeCompare(b.date));
             const rangeTotal=allRows.reduce((s,r)=>s+r.earnings,0);
-            const rangeLabel=projectedRange==="today"?"Today":projectedRange==="week"?"Next 7 Days":projectedRange==="restofmonth"?"Rest of "+now.toLocaleString("en-US",{month:"long"}):"Next 30 Days";
+            const rangeLabel="Rest of "+now.toLocaleString("en-US",{month:"long"});
             // Group by date for nicer display
             const byDate={};
             allRows.forEach(r=>{if(!byDate[r.date])byDate[r.date]=[];byDate[r.date].push(r);});
@@ -2592,7 +2581,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                 })()}
                 {/* Day-by-day breakdown */}
                 {dates.length===0?(
-                  <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"32px",textAlign:"center",color:"#9ca3af"}}>No lessons scheduled for {projectedRange==="week"?"the next 7 days":"the next 30 days"}.</div>
+                  <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"32px",textAlign:"center",color:"#9ca3af"}}>No lessons scheduled for the rest of {now.toLocaleString("en-US",{month:"long"})}.</div>
                 ):(
                   <div style={{display:"flex",flexDirection:"column",gap:10}}>
                     {dates.map(day=>{
@@ -2638,7 +2627,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
           })()}
         </div>
       )}
-      {/* Actual View */}
+      {/* Earnings View */}
       {!projectedMode&&<>
       {/* Allison Report */}
       {!readOnly&&<div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}>
