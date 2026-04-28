@@ -2495,6 +2495,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
             <div style={{display:"flex",gap:0,background:"#f3f4f6",borderRadius:50,padding:4}}>
               <button onClick={()=>setProjectedRange("today")} style={{padding:"6px 20px",borderRadius:50,border:"none",cursor:"pointer",fontWeight:700,fontSize:"0.83rem",background:projectedRange==="today"?"white":"transparent",color:projectedRange==="today"?"#1a3c34":"#9ca3af",boxShadow:projectedRange==="today"?"0 1px 4px rgba(0,0,0,0.10)":"none",transition:"all 0.15s"}}>Today</button>
               <button onClick={()=>setProjectedRange("week")} style={{padding:"6px 20px",borderRadius:50,border:"none",cursor:"pointer",fontWeight:700,fontSize:"0.83rem",background:projectedRange==="week"?"white":"transparent",color:projectedRange==="week"?"#1a3c34":"#9ca3af",boxShadow:projectedRange==="week"?"0 1px 4px rgba(0,0,0,0.10)":"none",transition:"all 0.15s"}}>This Week</button>
+              <button onClick={()=>setProjectedRange("restofmonth")} style={{padding:"6px 20px",borderRadius:50,border:"none",cursor:"pointer",fontWeight:700,fontSize:"0.83rem",background:projectedRange==="restofmonth"?"white":"transparent",color:projectedRange==="restofmonth"?"#1a3c34":"#9ca3af",boxShadow:projectedRange==="restofmonth"?"0 1px 4px rgba(0,0,0,0.10)":"none",transition:"all 0.15s"}}>This Month</button>
               <button onClick={()=>setProjectedRange("month")} style={{padding:"6px 20px",borderRadius:50,border:"none",cursor:"pointer",fontWeight:700,fontSize:"0.83rem",background:projectedRange==="month"?"white":"transparent",color:projectedRange==="month"?"#1a3c34":"#9ca3af",boxShadow:projectedRange==="month"?"0 1px 4px rgba(0,0,0,0.10)":"none",transition:"all 0.15s"}}>Next 30 Days</button>
             </div>
             {/* Stanford toggle */}
@@ -2511,11 +2512,12 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
             // Build flat list of all projected rows filtered to the chosen range
             const weekEnd=new Date(now);weekEnd.setDate(now.getDate()+7);
             const monthEnd=new Date(now);monthEnd.setDate(now.getDate()+30);
+            const endOfMonth=new Date(now.getFullYear(),now.getMonth()+1,0);
             const todayStr=fmtD(now);
-            const cutoffStr=projectedRange==="today"?todayStr:projectedRange==="week"?fmtD(weekEnd):fmtD(monthEnd);
+            const cutoffStr=projectedRange==="today"?todayStr:projectedRange==="week"?fmtD(weekEnd):projectedRange==="restofmonth"?fmtD(endOfMonth):fmtD(monthEnd);
             const allRows=projectedByMonth.flatMap(([,v])=>v.rows).filter(r=>r.date>=todayStr&&r.date<=cutoffStr).sort((a,b)=>a.date.localeCompare(b.date));
             const rangeTotal=allRows.reduce((s,r)=>s+r.earnings,0);
-            const rangeLabel=projectedRange==="today"?"Today":projectedRange==="week"?"Next 7 Days":"Next 30 Days";
+            const rangeLabel=projectedRange==="today"?"Today":projectedRange==="week"?"Next 7 Days":projectedRange==="restofmonth"?"Rest of "+now.toLocaleString("en-US",{month:"long"}):"Next 30 Days";
             // Group by date for nicer display
             const byDate={};
             allRows.forEach(r=>{if(!byDate[r.date])byDate[r.date]=[];byDate[r.date].push(r);});
