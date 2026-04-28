@@ -2441,11 +2441,14 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
   const fetchEomActual=()=>{
     const startOfMonth=fmtD(new Date(now.getFullYear(),now.getMonth(),1));
     const yesterday=fmtD(new Date(now.getTime()-86400000));
-    if(startOfMonth>yesterday){setEomActual({lessonEarnings:0,totalEarnings:0});return;}
+    if(startOfMonth>yesterday){setEomActual({lessonEarnings:0,totalEarnings:0,stanfordEarnings:0});return;}
     setEomLoading(true);setEomActual(null);
-    adminFetch("/api/earnings-calendar?start="+startOfMonth+"&end="+yesterday+"&includeStanford="+(projectedStanford?"true":"false"))
+    // Always include Stanford in actuals — it's real income already earned
+    adminFetch("/api/earnings-calendar?start="+startOfMonth+"&end="+yesterday+"&includeStanford=true")
       .then(r=>r.json()).then(d=>setEomActual(d)).catch(()=>setEomActual({error:true})).finally(()=>setEomLoading(false));
   };
+  // Auto-load EOM actuals whenever the user switches to This Month view
+  useEffect(()=>{if(projectedRange==="restofmonth"&&projectedMode&&!eomActual&&!eomLoading)fetchEomActual();},[projectedRange,projectedMode]);
   const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const MONFULL=["January","February","March","April","May","June","July","August","September","October","November","December"];
   const viewLabel=financeView==="day"?new Date(selectedDay+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):financeView==="week"?(()=>{const sd=new Date(viewRange.start+"T12:00:00");const ed=new Date(viewRange.end+"T12:00:00");return"Week of "+MON[sd.getMonth()]+" "+sd.getDate()+", "+sd.getFullYear();})():financeView==="month"?MONFULL[viewMonth-1]+" "+viewYear:String(viewYearOnly);
@@ -2535,26 +2538,33 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
             return(
               <div>
                 {/* Summary card */}
-                <div style={{background:"#1a3c34",borderRadius:12,padding:"20px 28px",marginBottom:eomActual&&!eomActual.error?0:20,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
+                <div style={{background:"#1a3c34",borderRadius:12,padding:"20px 28px",marginBottom:projectedRange==="restofmonth"?0:20,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
                   <div>
                     <div style={{fontSize:"0.7rem",fontWeight:700,color:"rgba(255,255,255,0.6)",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>{rangeLabel}</div>
                     <div style={{fontSize:"2rem",fontWeight:900,color:"white"}}>${rangeTotal.toFixed(2)}</div>
                     <div style={{fontSize:"0.78rem",color:"rgba(255,255,255,0.7)",marginTop:3}}>{allRows.length} lesson{allRows.length!==1?"s":""} scheduled</div>
                   </div>
-                  <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:10}}>
-                    {projectedRange==="restofmonth"&&(
-                      <button
-                        onClick={()=>{if(eomActual)setEomActual(null);else fetchEomActual();}}
-                        disabled={eomLoading}
-                        style={{background:"rgba(255,255,255,0.15)",color:"white",border:"1.5px solid rgba(255,255,255,0.3)",padding:"7px 16px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.78rem",whiteSpace:"nowrap"}}
-                      >{eomLoading?"Loading…":eomActual?"Hide EOM Total":"📊 EOM Total"}</button>
-                    )}
-                    <div style={{fontSize:"2rem",opacity:0.4}}>📈</div>
-                  </div>
+                  <div style={{fontSize:"2rem",opacity:0.4}}>📈</div>
                 </div>
-                {/* EOM Total breakdown card */}
-                {projectedRange==="restofmonth"&&eomActual&&!eomActual.error&&(()=>{
-                  const earned=projectedStanford?(eomActual.totalEarnings||0):(eomActual.lessonEarnings||0);
+                {/* EOM Total breakdown — always visible in This Month view */}
+                {projectedRange==="restofmonth"&&(()=>{
+                  if(eomLoading||!eomActual){
+                    return(
+                      <div style={{background:"#f0faf5",border:"1.5px solid #1a3c34",borderTop:"none",borderRadius:"0 0 12px 12px",padding:"16px 28px",marginBottom:20,color:"#6b7280",fontSize:"0.83rem",fontWeight:600}}>
+                        {eomLoading?"Loading actuals…":"—"}
+                      </div>
+                    );
+                  }
+                  if(eomActual.error){
+                    return(
+                      <div style={{background:"#fff8f8",border:"1.5px solid #fca5a5",borderTop:"none",borderRadius:"0 0 12px 12px",padding:"14px 28px",marginBottom:20,color:"#7f1d1d",fontSize:"0.83rem",fontWeight:600,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                        <span>Failed to load actuals.</span>
+                        <button onClick={fetchEomActual} style={{background:"#fca5a5",color:"#7f1d1d",border:"none",padding:"5px 12px",borderRadius:50,cursor:"pointer",fontWeight:700,fontSize:"0.78rem"}}>Retry</button>
+                      </div>
+                    );
+                  }
+                  // Always use totalEarnings (includes Stanford) for actuals
+                  const earned=eomActual.totalEarnings||0;
                   const eomTotal=earned+rangeTotal;
                   const monthName=now.toLocaleString("en-US",{month:"long"});
                   return(
@@ -2579,9 +2589,6 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
                     </div>
                   );
                 })()}
-                {projectedRange==="restofmonth"&&eomActual?.error&&(
-                  <div style={{background:"#fff8f8",border:"1.5px solid #fca5a5",borderTop:"none",borderRadius:"0 0 12px 12px",padding:"14px 28px",marginBottom:20,color:"#7f1d1d",fontSize:"0.83rem",fontWeight:600}}>Failed to load actuals. Try again.</div>
-                )}
                 {/* Day-by-day breakdown */}
                 {dates.length===0?(
                   <div style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"32px",textAlign:"center",color:"#9ca3af"}}>No lessons scheduled for {projectedRange==="week"?"the next 7 days":"the next 30 days"}.</div>
