@@ -5823,6 +5823,8 @@ export default function App(){
   // button returns here instead of skipping straight to the previous website.
   useEffect(()=>{
     if(isAdminRoute)return;
+    // Don't strip the hash if this is an OAuth popup return (access_token in hash)
+    if(window.location.hash.includes("access_token"))return;
     window.history.replaceState({page},document.title,window.location.pathname);
   },[]);
   useEffect(()=>{
