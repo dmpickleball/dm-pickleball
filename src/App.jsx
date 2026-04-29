@@ -2483,7 +2483,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
       const mk=e.date.substring(0,7);
       const k=e.date+"|"+e.summary;
       const earnings=calOverrides[k]!=null?calOverrides[k]:e.earnings;
-      add(mk,{date:e.date,label:e.summary,category:e.category,earnings,hours:e.hours,source:"calendar",type:e.type,personCount:e.personCount,parsedNames:e.parsedNames,isMenlo:e.isMenlo});
+      add(mk,{date:e.date,label:e.summary,category:e.category,earnings,hours:e.hours,source:"calendar",type:e.type,personCount:e.personCount,parsedNames:e.parsedNames,isMenlo:e.isMenlo,isStanford:e.isStanford});
     });
     return projectedMonthKeys.map(mk=>[mk,map[mk]]);
   })();
