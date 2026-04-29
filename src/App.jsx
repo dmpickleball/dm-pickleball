@@ -2434,7 +2434,7 @@ function FinancesTab({financeRange,setFinanceRange,includeStanford,setIncludeSta
     const future=new Date(now);future.setMonth(future.getMonth()+6);
     const end=fmtD(future);
     setProjectedCalLoading(true);
-    adminFetch("/api/earnings-calendar?start="+start+"&end="+end+"&includeStanford=false&includeFuture=true")
+    adminFetch("/api/earnings-calendar?start="+start+"&end="+end+"&includeStanford=true&includeFuture=true")
       .then(r=>r.json()).then(data=>setProjectedCalData(data)).catch(e=>console.error("Projected load error:",e)).finally(()=>setProjectedCalLoading(false));
   },[projectedMode]);
   const handleStanfordToggle=()=>{const next=!includeStanford;setIncludeStanford(next);loadData(viewRange.start,viewRange.end,next);};
