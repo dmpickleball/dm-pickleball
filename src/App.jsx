@@ -833,12 +833,123 @@ function Homepage({setPage}){
           <button onClick={()=>setPage("gear")} style={{background:"#f97316",color:"white",border:"none",padding:"12px 28px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"0.95rem"}}>View All Codes →</button>
         </div>
       </div>
+      {/* ── News Strip ── */}
+      <HomepageNews setPage={setPage} mob={mob}/>
       {/* ── CTA ── */}
       <div style={{background:`linear-gradient(135deg,${G},#0d2620)`,color:"white",textAlign:"center",padding:mob?"48px 20px":"60px 24px"}}>
         <h2 style={{fontSize:mob?"1.5rem":"1.8rem",fontWeight:900,marginBottom:12}}>Ready to Improve Your Game?</h2>
         <p style={{opacity:0.9,marginBottom:24}}>Reach out via text or call to get started.</p>
         <button onClick={()=>setPage("contact")} style={{background:Y,color:G,border:"none",padding:"13px 32px",borderRadius:50,fontWeight:700,cursor:"pointer",fontSize:"1rem"}}>Contact Coach David</button>
       </div>
+    </div>
+  );
+}
+
+// ─── HOMEPAGE NEWS STRIP ──────────────────────────────────────────────────────
+const NEWS_CATEGORY_COLORS={tournament:"#1a3c34",tips:"#0ea5e9",gear:"#f97316",general:"#6b7280"};
+const NEWS_CATEGORY_LABELS={tournament:"Tournament",tips:"Tips",gear:"Gear",general:"News"};
+
+function HomepageNews({setPage,mob}){
+  const[items,setItems]=useState([]);
+  const[loading,setLoading]=useState(true);
+  useEffect(()=>{
+    fetch("/api/news?limit=3")
+      .then(r=>r.json()).then(d=>setItems(d.items||[])).catch(()=>{}).finally(()=>setLoading(false));
+  },[]);
+  if(!loading&&items.length===0)return null;
+  return(
+    <div style={{background:"#f4f9f6",padding:mob?"40px 20px":"56px 24px"}}>
+      <div style={{maxWidth:900,margin:"0 auto"}}>
+        <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:24,flexWrap:"wrap",gap:8}}>
+          <div>
+            <div style={{fontSize:"0.75rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:6}}>Pickleball News</div>
+            <h2 style={{fontSize:mob?"1.3rem":"1.6rem",fontWeight:900,color:"#1a1a1a",margin:0}}>What's happening in pickleball</h2>
+          </div>
+          <button onClick={()=>setPage("news")} style={{background:"transparent",color:G,border:`1.5px solid ${G}`,padding:"7px 18px",borderRadius:50,fontWeight:700,fontSize:"0.82rem",cursor:"pointer",whiteSpace:"nowrap"}}>All News →</button>
+        </div>
+        {loading?(
+          <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"repeat(3,1fr)",gap:16}}>
+            {[0,1,2].map(i=><div key={i} style={{background:"white",borderRadius:12,height:160,opacity:0.4,animation:"pulse 1.5s infinite"}}/>)}
+          </div>
+        ):(
+          <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"repeat(3,1fr)",gap:16}}>
+            {items.map(item=>(
+              <a key={item.id} href={item.url} target="_blank" rel="noopener noreferrer"
+                style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"20px",display:"flex",flexDirection:"column",gap:10,textDecoration:"none",color:"inherit",transition:"box-shadow 0.15s,border-color 0.15s",cursor:"pointer"}}
+                onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,0.10)";e.currentTarget.style.borderColor=G;}}
+                onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor="#e5e7eb";}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+                  <span style={{background:(NEWS_CATEGORY_COLORS[item.category]||"#6b7280")+"18",color:NEWS_CATEGORY_COLORS[item.category]||"#6b7280",fontSize:"0.65rem",fontWeight:700,padding:"2px 8px",borderRadius:50,textTransform:"uppercase",letterSpacing:0.5}}>{NEWS_CATEGORY_LABELS[item.category]||"News"}</span>
+                  <span style={{fontSize:"0.7rem",color:"#9ca3af"}}>{item.source}</span>
+                </div>
+                <div style={{fontWeight:700,fontSize:"0.92rem",color:"#1a1a1a",lineHeight:1.4,flex:1}}>{item.title}</div>
+                <div style={{fontSize:"0.78rem",color:"#6b7280",lineHeight:1.55,display:"-webkit-box",WebkitLineClamp:3,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{item.summary}</div>
+                <div style={{fontSize:"0.72rem",color:G,fontWeight:600,marginTop:4}}>Read more →</div>
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── FULL NEWS PAGE ───────────────────────────────────────────────────────────
+function NewsPage(){
+  const[items,setItems]=useState([]);
+  const[loading,setLoading]=useState(true);
+  const[catFilter,setCatFilter]=useState("all");
+  useEffect(()=>{
+    fetch("/api/news?limit=200")
+      .then(r=>r.json()).then(d=>setItems(d.items||[])).catch(()=>{}).finally(()=>setLoading(false));
+  },[]);
+  const filtered=catFilter==="all"?items:items.filter(i=>i.category===catFilter);
+  const cats=["all","tournament","tips","gear"];
+  return(
+    <div style={{maxWidth:900,margin:"0 auto",padding:"40px 20px"}}>
+      <div style={{marginBottom:28}}>
+        <div style={{fontSize:"0.75rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>Pickleball News</div>
+        <h1 style={{fontSize:"1.9rem",fontWeight:900,color:"#1a1a1a",marginBottom:16,margin:0}}>Latest News</h1>
+        <p style={{color:"#6b7280",marginTop:8,fontSize:"0.9rem"}}>Daily pickleball news — tournaments, tips, and gear. Updated every morning.</p>
+      </div>
+      {/* Category filter */}
+      <div style={{display:"flex",gap:8,marginBottom:28,flexWrap:"wrap"}}>
+        {cats.map(c=>(
+          <button key={c} onClick={()=>setCatFilter(c)}
+            style={{padding:"6px 16px",borderRadius:50,border:"1.5px solid "+(catFilter===c?G:"#e5e7eb"),background:catFilter===c?G:"white",color:catFilter===c?"white":"#374151",fontWeight:600,fontSize:"0.82rem",cursor:"pointer",transition:"all 0.15s",textTransform:"capitalize"}}>
+            {c==="all"?"All":NEWS_CATEGORY_LABELS[c]}
+          </button>
+        ))}
+      </div>
+      {loading?(
+        <div style={{textAlign:"center",padding:"60px",color:"#9ca3af"}}>Loading news…</div>
+      ):filtered.length===0?(
+        <div style={{textAlign:"center",padding:"60px",color:"#9ca3af"}}>No news yet — check back tomorrow.</div>
+      ):(
+        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+          {filtered.map(item=>{
+            const dObj=new Date(item.created_at);
+            const dateStr=dObj.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+            return(
+              <a key={item.id} href={item.url} target="_blank" rel="noopener noreferrer"
+                style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"20px 24px",display:"flex",gap:16,alignItems:"flex-start",textDecoration:"none",color:"inherit",transition:"box-shadow 0.15s,border-color 0.15s"}}
+                onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,0.08)";e.currentTarget.style.borderColor=G;}}
+                onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor="#e5e7eb";}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,flexWrap:"wrap"}}>
+                    <span style={{background:(NEWS_CATEGORY_COLORS[item.category]||"#6b7280")+"18",color:NEWS_CATEGORY_COLORS[item.category]||"#6b7280",fontSize:"0.65rem",fontWeight:700,padding:"2px 8px",borderRadius:50,textTransform:"uppercase",letterSpacing:0.5}}>{NEWS_CATEGORY_LABELS[item.category]||"News"}</span>
+                    <span style={{fontSize:"0.75rem",color:"#9ca3af"}}>{item.source}</span>
+                    <span style={{fontSize:"0.75rem",color:"#9ca3af",marginLeft:"auto"}}>{dateStr}</span>
+                  </div>
+                  <div style={{fontWeight:700,fontSize:"1rem",color:"#1a1a1a",lineHeight:1.4,marginBottom:8}}>{item.title}</div>
+                  <div style={{fontSize:"0.85rem",color:"#6b7280",lineHeight:1.6}}>{item.summary}</div>
+                </div>
+                <div style={{fontSize:"0.78rem",color:G,fontWeight:600,whiteSpace:"nowrap",paddingTop:4,flexShrink:0}}>Read →</div>
+              </a>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -3502,7 +3613,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
 
       {/* ── Admin nav: tabs on desktop, burger on mobile ── */}
       {(()=>{
-        const TABS=[["students","Students"],["lessons","Lessons"],["finances","Finances"],["database","All Lessons"],["gear","Gear"],["traffic","Traffic"]];
+        const TABS=[["students","Students"],["lessons","Lessons"],["finances","Finances"],["database","All Lessons"],["gear","Gear"],["news","News"],["traffic","Traffic"]];
         const isMobNav=window.innerWidth<640;
         if(!isMobNav){
           return(
@@ -5077,7 +5188,110 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
 
       {tab==="database"&&<LessonLedgerTab mockUsers={mockUsers} setSelectedStudent={setSelectedStudent} setTab={setTab}/>}
 
+      {tab==="news"&&<AdminNewsTab/>}
+
       {tab==="traffic"&&<TrafficTab/>}
+    </div>
+  );
+}
+
+// ─── ADMIN NEWS TAB ───────────────────────────────────────────────────────────
+function AdminNewsTab(){
+  const[items,setItems]=useState([]);
+  const[loading,setLoading]=useState(true);
+  const[working,setWorking]=useState(null); // id of item currently being acted on
+
+  useEffect(()=>{
+    adminFetch("/api/news?admin=true&limit=200")
+      .then(r=>r.json()).then(d=>setItems(d.items||[])).catch(()=>{}).finally(()=>setLoading(false));
+  },[]);
+
+  const act=async(id,action)=>{
+    setWorking(id);
+    await adminFetch("/api/news",{method:"POST",body:JSON.stringify({action,id})}).catch(()=>{});
+    // Update local state optimistically
+    setItems(prev=>prev.map(item=>{
+      if(item.id!==id)return item;
+      if(action==="hide")return{...item,status:"hidden"};
+      if(action==="unhide")return{...item,status:"published"};
+      if(action==="like")return{...item,likes:(item.likes||0)+1};
+      if(action==="dislike")return{...item,dislikes:(item.dislikes||0)+1};
+      return item;
+    }));
+    setWorking(null);
+  };
+
+  if(loading)return<div style={{textAlign:"center",padding:"60px",color:"#9ca3af"}}>Loading news…</div>;
+
+  const published=items.filter(i=>i.status==="published");
+  const hidden=items.filter(i=>i.status==="hidden");
+
+  const renderItem=(item)=>{
+    const dObj=new Date(item.created_at);
+    const dateStr=dObj.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+    const isHidden=item.status==="hidden";
+    return(
+      <div key={item.id} style={{background:isHidden?"#f9f9f9":"white",borderRadius:12,border:"1.5px solid "+(isHidden?"#e5e7eb":"#e5e7eb"),padding:"16px 20px",opacity:isHidden?0.6:1}}>
+        <div style={{display:"flex",alignItems:"flex-start",gap:12,flexWrap:"wrap"}}>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,flexWrap:"wrap"}}>
+              <span style={{background:(NEWS_CATEGORY_COLORS[item.category]||"#6b7280")+"18",color:NEWS_CATEGORY_COLORS[item.category]||"#6b7280",fontSize:"0.65rem",fontWeight:700,padding:"2px 8px",borderRadius:50,textTransform:"uppercase"}}>{NEWS_CATEGORY_LABELS[item.category]||"News"}</span>
+              <span style={{fontSize:"0.72rem",color:"#9ca3af"}}>{item.source}</span>
+              <span style={{fontSize:"0.72rem",color:"#9ca3af",marginLeft:"auto"}}>{dateStr}</span>
+            </div>
+            <a href={item.url} target="_blank" rel="noopener noreferrer" style={{fontWeight:700,fontSize:"0.92rem",color:"#1a1a1a",lineHeight:1.4,display:"block",marginBottom:6,textDecoration:"none"}}
+              onMouseEnter={e=>e.currentTarget.style.color=G} onMouseLeave={e=>e.currentTarget.style.color="#1a1a1a"}>
+              {item.title} ↗
+            </a>
+            <div style={{fontSize:"0.8rem",color:"#6b7280",lineHeight:1.5}}>{item.summary}</div>
+          </div>
+          {/* Actions */}
+          <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0,flexWrap:"wrap"}}>
+            <button onClick={()=>act(item.id,"like")} disabled={working===item.id}
+              title="Good story — keep showing these"
+              style={{background:"#f0faf5",color:"#16a34a",border:"1.5px solid #bbf7d0",padding:"5px 10px",borderRadius:8,cursor:"pointer",fontSize:"0.8rem",fontWeight:600,display:"flex",alignItems:"center",gap:4}}>
+              👍 {item.likes||0}
+            </button>
+            <button onClick={()=>act(item.id,"dislike")} disabled={working===item.id}
+              title="Not relevant — fewer like this"
+              style={{background:"#f9f9f9",color:"#6b7280",border:"1.5px solid #e5e7eb",padding:"5px 10px",borderRadius:8,cursor:"pointer",fontSize:"0.8rem",fontWeight:600,display:"flex",alignItems:"center",gap:4}}>
+              👎 {item.dislikes||0}
+            </button>
+            <button onClick={()=>act(item.id,isHidden?"unhide":"hide")} disabled={working===item.id}
+              style={{background:isHidden?"#e8f0ee":"#fff8f8",color:isHidden?G:"#b91c1c",border:"1.5px solid "+(isHidden?"#1a3c3430":"#fca5a5"),padding:"5px 12px",borderRadius:8,cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>
+              {isHidden?"↩ Restore":"✕ Hide"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return(
+    <div>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap",gap:8}}>
+        <div>
+          <div style={{fontWeight:800,fontSize:"1.1rem",color:"#1a1a1a"}}>News Feed</div>
+          <div style={{fontSize:"0.8rem",color:"#9ca3af",marginTop:2}}>👍 = show more like this · 👎 = fewer like this · Hide removes from public site</div>
+        </div>
+        <div style={{fontSize:"0.82rem",color:"#6b7280"}}>{published.length} published · {hidden.length} hidden</div>
+      </div>
+
+      {items.length===0?(
+        <div style={{textAlign:"center",padding:"60px",color:"#9ca3af",background:"white",borderRadius:12,border:"1.5px solid #e5e7eb"}}>
+          No news yet. The daily task runs every morning at 7am and will populate this automatically.
+        </div>
+      ):(
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {published.map(renderItem)}
+          {hidden.length>0&&(
+            <>
+              <div style={{fontSize:"0.75rem",fontWeight:700,color:"#9ca3af",textTransform:"uppercase",letterSpacing:1,marginTop:12,marginBottom:4}}>Hidden</div>
+              {hidden.map(renderItem)}
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -5774,6 +5988,7 @@ function clearAdminSession(){try{localStorage.removeItem(ADMIN_SESSION_KEY);loca
 // ─── URL routing map ──────────────────────────────────────────────────────────
 const PAGE_TO_URL={
   home:"/",
+  news:"/news",
   pricing:"/rates",
   gear:"/gear",
   resources:"/resources",
@@ -6186,6 +6401,7 @@ export default function App(){
       {page==="home"&&!isAdminRoute&&<Homepage setPage={setPage}/>}
       {page==="pricing"&&<PricingPage setPage={setPage}/>}
       {page==="gear"&&<GearPage/>}
+      {page==="news"&&<NewsPage/>}
       {page==="resources"&&<ResourcesPage/>}
       {page==="contact"&&<ContactPage/>}
       {page==="login"&&<LoginPage onLogin={u=>{setUser(u);setPage("dashboard");}} onAdminLogin={()=>setIsAdmin(true)}/>}
