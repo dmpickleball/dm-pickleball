@@ -353,7 +353,7 @@ function LocationInput({value, onChange, placeholder, style}){
     timerRef.current=setTimeout(async()=>{
       setLoading(true);
       try{
-        const r=await fetch("/api/places-search?query="+encodeURIComponent(v));
+        const r=await fetch("/api/locations?action=search&query="+encodeURIComponent(v));
         const data=await r.json();
         setSuggestions(data.suggestions||[]);
         setShowDropdown(true);

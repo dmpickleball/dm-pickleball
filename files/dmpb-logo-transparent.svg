@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 180">
+  <defs>
+    <clipPath id="paddleInner">
+      <rect x="414" y="15" width="82" height="100" rx="32" ry="32"/>
+    </clipPath>
+  </defs>
+
+  <!-- === DMPB WORDMARK === -->
+  <g fill="none" stroke="#1a1a1a" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <!-- D -->
+    <path d="M 18,30 L 18,148 Q 18,148 46,148 Q 90,148 90,89 Q 90,30 46,30 Z"/>
+    <!-- M -->
+    <line x1="108" y1="30" x2="108" y2="148"/>
+    <polyline points="108,30 152,100 196,30"/>
+    <line x1="196" y1="30" x2="196" y2="148"/>
+    <!-- P -->
+    <line x1="214" y1="30" x2="214" y2="148"/>
+    <path d="M 214,30 Q 214,30 244,30 Q 272,30 272,68 Q 272,106 244,106 L 214,106"/>
+    <!-- B -->
+    <line x1="290" y1="30" x2="290" y2="148"/>
+    <path d="M 290,30 Q 290,30 320,30 Q 350,30 350,60 Q 350,89 320,89 L 290,89"/>
+    <path d="M 290,89 Q 290,89 322,89 Q 356,89 356,118 Q 356,148 322,148 L 290,148"/>
+  </g>
+
+  <!-- === PICKLEBALL PADDLE === -->
+  <rect x="406" y="8" width="100" height="116" rx="40" ry="40"
+        fill="white" fill-opacity="0" stroke="#1a1a1a" stroke-width="7"/>
+  <rect x="416" y="18" width="80" height="96" rx="33" ry="33"
+        fill="none" stroke="#1a1a1a" stroke-width="5"/>
+  <rect x="416" y="18" width="80" height="54"
+        fill="#1a1a1a" clip-path="url(#paddleInner)"/>
+  <line x1="441" y1="18" x2="441" y2="72" stroke="white" stroke-width="6"/>
+  <line x1="471" y1="18" x2="471" y2="72" stroke="white" stroke-width="6"/>
+  <circle cx="456" cy="90" r="11"
+          fill="white" stroke="#1a1a1a" stroke-width="5"/>
+  <path d="M 432,122 L 432,140 Q 432,148 440,148 L 472,148 Q 480,148 480,140 L 480,122"
+        fill="none" stroke="#1a1a1a" stroke-width="6.5"/>
+  <rect x="438" y="146" width="36" height="22" rx="8" ry="8"
+        fill="none" stroke="#1a1a1a" stroke-width="6"/>
+</svg>
