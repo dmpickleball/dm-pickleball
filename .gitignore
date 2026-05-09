@@ -6,3 +6,6 @@ dm-pickleball-key.json
 .vercel
 .env*.local
 .claude/
+*.zip
+dmpickleball@gmail/
+files/
