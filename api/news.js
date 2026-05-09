@@ -65,7 +65,7 @@ export default async function handler(req, res) {
       if (!verifyIngestSecret(req)) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
-      const { title, summary, url, source, category } = body;
+      const { title, summary, url, source, category, image_url } = body;
       if (!title || !url) return res.status(400).json({ error: 'title and url required' });
 
       // Deduplicate by URL
@@ -80,10 +80,11 @@ export default async function handler(req, res) {
 
       const { error } = await supabase.from('news_items').insert({
         title: (title || '').slice(0, 200),
-        summary: (summary || '').slice(0, 1000),
+        summary: (summary || '').slice(0, 2000),
         url,
         source: source || '',
         category: category || 'general',
+        image_url: image_url || null,
         status: 'published',
         likes: 0,
         dislikes: 0,
@@ -98,6 +99,13 @@ export default async function handler(req, res) {
 
     const { id } = body;
     if (!id) return res.status(400).json({ error: 'id required' });
+
+    // ── delete (permanent) ─────────────────────────────────────────────────
+    if (action === 'delete') {
+      const { error } = await supabase.from('news_items').delete().eq('id', id);
+      if (error) return res.status(500).json({ error: error.message });
+      return res.status(200).json({ ok: true });
+    }
 
     // ── hide / unhide ───────────────────────────────────────────────────────
     if (action === 'hide' || action === 'unhide') {

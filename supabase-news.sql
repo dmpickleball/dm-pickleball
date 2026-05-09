@@ -28,5 +28,8 @@ CREATE POLICY "Public can read published news"
   ON public.news_items FOR SELECT
   USING (status = 'published');
 
+-- Add image_url column (run once if table already exists)
+ALTER TABLE public.news_items ADD COLUMN IF NOT EXISTS image_url text;
+
 -- Auto-cleanup: delete items older than 90 days (optional — run manually or via cron)
 -- DELETE FROM public.news_items WHERE created_at < now() - interval '90 days';

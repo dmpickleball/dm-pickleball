@@ -406,7 +406,7 @@ function Nav({user,onLogin,onLogout,setPage,currentPage}){
     window.addEventListener("resize",h);
     return()=>window.removeEventListener("resize",h);
   },[]);
-  const links=[["pricing","Rates"],["gear","Paddle/Gear"],["resources","Watch/Links"],["contact","Contact"]];
+  const links=[["pricing","Rates"],["gear","Paddle/Gear"],["news","News"],["resources","Watch/Links"],["contact","Contact"]];
   const navTo=(p)=>{setPage(p);setMenuOpen(false);};
   if(mob){
     return(
@@ -853,14 +853,15 @@ function HomepageNews({setPage,mob}){
   const[items,setItems]=useState([]);
   const[loading,setLoading]=useState(true);
   useEffect(()=>{
-    fetch("/api/news?limit=3")
+    fetch("/api/news?limit=6")
       .then(r=>r.json()).then(d=>setItems(d.items||[])).catch(()=>{}).finally(()=>setLoading(false));
   },[]);
   if(!loading&&items.length===0)return null;
+  const catColor=(c)=>NEWS_CATEGORY_COLORS[c]||"#6b7280";
   return(
     <div style={{background:"#f4f9f6",padding:mob?"40px 20px":"56px 24px"}}>
-      <div style={{maxWidth:900,margin:"0 auto"}}>
-        <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:24,flexWrap:"wrap",gap:8}}>
+      <div style={{maxWidth:960,margin:"0 auto"}}>
+        <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:28,flexWrap:"wrap",gap:8}}>
           <div>
             <div style={{fontSize:"0.75rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:6}}>Pickleball News</div>
             <h2 style={{fontSize:mob?"1.3rem":"1.6rem",fontWeight:900,color:"#1a1a1a",margin:0}}>What's happening in pickleball</h2>
@@ -869,22 +870,31 @@ function HomepageNews({setPage,mob}){
         </div>
         {loading?(
           <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"repeat(3,1fr)",gap:16}}>
-            {[0,1,2].map(i=><div key={i} style={{background:"white",borderRadius:12,height:160,opacity:0.4,animation:"pulse 1.5s infinite"}}/>)}
+            {[0,1,2,3,4,5].map(i=><div key={i} style={{background:"white",borderRadius:12,height:220,opacity:0.4,animation:"pulse 1.5s infinite"}}/>)}
           </div>
         ):(
-          <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"repeat(3,1fr)",gap:16}}>
+          <div style={{display:"grid",gridTemplateColumns:mob?"1fr":items.length===1?"1fr":"repeat(3,1fr)",gap:16}}>
             {items.map(item=>(
               <a key={item.id} href={item.url} target="_blank" rel="noopener noreferrer"
-                style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"20px",display:"flex",flexDirection:"column",gap:10,textDecoration:"none",color:"inherit",transition:"box-shadow 0.15s,border-color 0.15s",cursor:"pointer"}}
-                onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,0.10)";e.currentTarget.style.borderColor=G;}}
+                style={{background:"white",borderRadius:14,border:"1.5px solid #e5e7eb",overflow:"hidden",display:"flex",flexDirection:"column",textDecoration:"none",color:"inherit",transition:"box-shadow 0.15s,border-color 0.15s",cursor:"pointer"}}
+                onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 6px 24px rgba(0,0,0,0.10)";e.currentTarget.style.borderColor=G;}}
                 onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor="#e5e7eb";}}>
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
-                  <span style={{background:(NEWS_CATEGORY_COLORS[item.category]||"#6b7280")+"18",color:NEWS_CATEGORY_COLORS[item.category]||"#6b7280",fontSize:"0.65rem",fontWeight:700,padding:"2px 8px",borderRadius:50,textTransform:"uppercase",letterSpacing:0.5}}>{NEWS_CATEGORY_LABELS[item.category]||"News"}</span>
-                  <span style={{fontSize:"0.7rem",color:"#9ca3af"}}>{item.source}</span>
+                {item.image_url?(
+                  <div style={{width:"100%",height:160,overflow:"hidden",flexShrink:0}}>
+                    <img src={item.image_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{e.currentTarget.parentElement.style.display="none";}}/>
+                  </div>
+                ):(
+                  <div style={{width:"100%",height:5,background:catColor(item.category),flexShrink:0}}/>
+                )}
+                <div style={{padding:"16px 18px",display:"flex",flexDirection:"column",gap:9,flex:1}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+                    <span style={{background:catColor(item.category)+"18",color:catColor(item.category),fontSize:"0.65rem",fontWeight:700,padding:"2px 8px",borderRadius:50,textTransform:"uppercase",letterSpacing:0.5}}>{NEWS_CATEGORY_LABELS[item.category]||"News"}</span>
+                    <span style={{fontSize:"0.7rem",color:"#9ca3af"}}>{item.source}</span>
+                  </div>
+                  <div style={{fontWeight:700,fontSize:"0.93rem",color:"#1a1a1a",lineHeight:1.4}}>{item.title}</div>
+                  <div style={{fontSize:"0.8rem",color:"#6b7280",lineHeight:1.6,flex:1}}>{item.summary}</div>
+                  <div style={{fontSize:"0.72rem",color:G,fontWeight:600,marginTop:4}}>Read more →</div>
                 </div>
-                <div style={{fontWeight:700,fontSize:"0.92rem",color:"#1a1a1a",lineHeight:1.4,flex:1}}>{item.title}</div>
-                <div style={{fontSize:"0.78rem",color:"#6b7280",lineHeight:1.55,display:"-webkit-box",WebkitLineClamp:3,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{item.summary}</div>
-                <div style={{fontSize:"0.72rem",color:G,fontWeight:600,marginTop:4}}>Read more →</div>
               </a>
             ))}
           </div>
@@ -899,20 +909,23 @@ function NewsPage(){
   const[items,setItems]=useState([]);
   const[loading,setLoading]=useState(true);
   const[catFilter,setCatFilter]=useState("all");
+  const[mob,setMob]=useState(()=>typeof window!=="undefined"&&window.innerWidth<640);
   useEffect(()=>{
+    const h=()=>setMob(window.innerWidth<640);window.addEventListener("resize",h);
     fetch("/api/news?limit=200")
       .then(r=>r.json()).then(d=>setItems(d.items||[])).catch(()=>{}).finally(()=>setLoading(false));
+    return()=>window.removeEventListener("resize",h);
   },[]);
   const filtered=catFilter==="all"?items:items.filter(i=>i.category===catFilter);
   const cats=["all","tournament","tips","gear"];
+  const catColor=(c)=>NEWS_CATEGORY_COLORS[c]||"#6b7280";
   return(
-    <div style={{maxWidth:900,margin:"0 auto",padding:"40px 20px"}}>
+    <div style={{maxWidth:960,margin:"0 auto",padding:mob?"32px 16px":"48px 24px"}}>
       <div style={{marginBottom:28}}>
         <div style={{fontSize:"0.75rem",fontWeight:700,color:G,textTransform:"uppercase",letterSpacing:2,marginBottom:8}}>Pickleball News</div>
         <h1 style={{fontSize:"1.9rem",fontWeight:900,color:"#1a1a1a",marginBottom:16,margin:0}}>Latest News</h1>
         <p style={{color:"#6b7280",marginTop:8,fontSize:"0.9rem"}}>Daily pickleball news — tournaments, tips, and gear. Updated every morning.</p>
       </div>
-      {/* Category filter */}
       <div style={{display:"flex",gap:8,marginBottom:28,flexWrap:"wrap"}}>
         {cats.map(c=>(
           <button key={c} onClick={()=>setCatFilter(c)}
@@ -926,25 +939,32 @@ function NewsPage(){
       ):filtered.length===0?(
         <div style={{textAlign:"center",padding:"60px",color:"#9ca3af"}}>No news yet — check back tomorrow.</div>
       ):(
-        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+        <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"repeat(2,1fr)",gap:16}}>
           {filtered.map(item=>{
             const dObj=new Date(item.created_at);
             const dateStr=dObj.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
             return(
               <a key={item.id} href={item.url} target="_blank" rel="noopener noreferrer"
-                style={{background:"white",borderRadius:12,border:"1.5px solid #e5e7eb",padding:"20px 24px",display:"flex",gap:16,alignItems:"flex-start",textDecoration:"none",color:"inherit",transition:"box-shadow 0.15s,border-color 0.15s"}}
+                style={{background:"white",borderRadius:14,border:"1.5px solid #e5e7eb",overflow:"hidden",display:"flex",flexDirection:"column",textDecoration:"none",color:"inherit",transition:"box-shadow 0.15s,border-color 0.15s"}}
                 onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,0.08)";e.currentTarget.style.borderColor=G;}}
                 onMouseLeave={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.borderColor="#e5e7eb";}}>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,flexWrap:"wrap"}}>
-                    <span style={{background:(NEWS_CATEGORY_COLORS[item.category]||"#6b7280")+"18",color:NEWS_CATEGORY_COLORS[item.category]||"#6b7280",fontSize:"0.65rem",fontWeight:700,padding:"2px 8px",borderRadius:50,textTransform:"uppercase",letterSpacing:0.5}}>{NEWS_CATEGORY_LABELS[item.category]||"News"}</span>
+                {item.image_url?(
+                  <div style={{width:"100%",height:180,overflow:"hidden",flexShrink:0}}>
+                    <img src={item.image_url} alt="" style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{e.currentTarget.parentElement.style.display="none";}}/>
+                  </div>
+                ):(
+                  <div style={{width:"100%",height:5,background:catColor(item.category),flexShrink:0}}/>
+                )}
+                <div style={{padding:"18px 20px",flex:1,display:"flex",flexDirection:"column",gap:8}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                    <span style={{background:catColor(item.category)+"18",color:catColor(item.category),fontSize:"0.65rem",fontWeight:700,padding:"2px 8px",borderRadius:50,textTransform:"uppercase",letterSpacing:0.5}}>{NEWS_CATEGORY_LABELS[item.category]||"News"}</span>
                     <span style={{fontSize:"0.75rem",color:"#9ca3af"}}>{item.source}</span>
                     <span style={{fontSize:"0.75rem",color:"#9ca3af",marginLeft:"auto"}}>{dateStr}</span>
                   </div>
-                  <div style={{fontWeight:700,fontSize:"1rem",color:"#1a1a1a",lineHeight:1.4,marginBottom:8}}>{item.title}</div>
-                  <div style={{fontSize:"0.85rem",color:"#6b7280",lineHeight:1.6}}>{item.summary}</div>
+                  <div style={{fontWeight:700,fontSize:"1rem",color:"#1a1a1a",lineHeight:1.4}}>{item.title}</div>
+                  <div style={{fontSize:"0.85rem",color:"#6b7280",lineHeight:1.65,flex:1}}>{item.summary}</div>
+                  <div style={{fontSize:"0.78rem",color:G,fontWeight:600,marginTop:4}}>Read more →</div>
                 </div>
-                <div style={{fontSize:"0.78rem",color:G,fontWeight:600,whiteSpace:"nowrap",paddingTop:4,flexShrink:0}}>Read →</div>
               </a>
             );
           })}
@@ -5209,15 +5229,18 @@ function AdminNewsTab(){
   const act=async(id,action)=>{
     setWorking(id);
     await adminFetch("/api/news",{method:"POST",body:JSON.stringify({action,id})}).catch(()=>{});
-    // Update local state optimistically
-    setItems(prev=>prev.map(item=>{
-      if(item.id!==id)return item;
-      if(action==="hide")return{...item,status:"hidden"};
-      if(action==="unhide")return{...item,status:"published"};
-      if(action==="like")return{...item,likes:(item.likes||0)+1};
-      if(action==="dislike")return{...item,dislikes:(item.dislikes||0)+1};
-      return item;
-    }));
+    if(action==="delete"){
+      setItems(prev=>prev.filter(item=>item.id!==id));
+    } else {
+      setItems(prev=>prev.map(item=>{
+        if(item.id!==id)return item;
+        if(action==="hide")return{...item,status:"hidden"};
+        if(action==="unhide")return{...item,status:"published"};
+        if(action==="like")return{...item,likes:(item.likes||0)+1};
+        if(action==="dislike")return{...item,dislikes:(item.dislikes||0)+1};
+        return item;
+      }));
+    }
     setWorking(null);
   };
 
@@ -5261,6 +5284,11 @@ function AdminNewsTab(){
               style={{background:isHidden?"#e8f0ee":"#fff8f8",color:isHidden?G:"#b91c1c",border:"1.5px solid "+(isHidden?"#1a3c3430":"#fca5a5"),padding:"5px 12px",borderRadius:8,cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>
               {isHidden?"↩ Restore":"✕ Hide"}
             </button>
+            <button onClick={()=>{if(window.confirm("Permanently delete this story?"))act(item.id,"delete");}} disabled={working===item.id}
+              title="Permanently delete this story"
+              style={{background:"#fff0f0",color:"#dc2626",border:"1.5px solid #fca5a5",padding:"5px 10px",borderRadius:8,cursor:"pointer",fontSize:"0.8rem",fontWeight:600}}>
+              🗑
+            </button>
           </div>
         </div>
       </div>
@@ -5272,7 +5300,7 @@ function AdminNewsTab(){
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20,flexWrap:"wrap",gap:8}}>
         <div>
           <div style={{fontWeight:800,fontSize:"1.1rem",color:"#1a1a1a"}}>News Feed</div>
-          <div style={{fontSize:"0.8rem",color:"#9ca3af",marginTop:2}}>👍 = show more like this · 👎 = fewer like this · Hide removes from public site</div>
+          <div style={{fontSize:"0.8rem",color:"#9ca3af",marginTop:2}}>👍 = show more like this · 👎 = fewer like this · Hide removes from public site · 🗑 = permanent delete</div>
         </div>
         <div style={{fontSize:"0.82rem",color:"#6b7280"}}>{published.length} published · {hidden.length} hidden</div>
       </div>
