@@ -1936,7 +1936,7 @@ function BookingPage({user,setPage,onAddLesson,stanfordEnabled=true}){
     setLoadingAvail(true);
     setFullyBookedDays(new Set());
     setSlotCounts(new Map());
-    fetch("/api/get-busy-times?date="+startStr+"&endDate="+endStr+"&memberType="+mt)
+    fetch("/api/calendar-events?action=busytimes&date="+startStr+"&endDate="+endStr+"&memberType="+mt)
       .then(r=>r.json())
       .then(data=>{
         const busyAll=data.busy||[];
@@ -2148,7 +2148,7 @@ function BookingPage({user,setPage,onAddLesson,stanfordEnabled=true}){
             {loadingAvail&&<span style={{fontSize:"0.75rem",color:"#9ca3af",display:"flex",alignItems:"center",gap:4}}><span style={{display:"inline-block",width:10,height:10,border:"2px solid #9ca3af",borderTop:"2px solid transparent",borderRadius:"50%",animation:"spin 0.7s linear infinite"}}/> Checking availability…</span>}
           </div>
           <div style={{marginBottom:20,pointerEvents:loadingAvail?"none":"auto",opacity:loadingAvail?0.5:1,transition:"opacity 0.2s"}}>
-            <CalendarPicker value={date} onChange={async d=>{setSlot(null);setSlotIdx(-1);if(!d){setDate('');setBusyTimes([]);return;}setDate(d);setLoadingSlots(true);try{const r=await fetch("/api/get-busy-times?date="+d);const data=await r.json();setBusyTimes(data.busy||[]);}catch(e){setBusyTimes([]);}setLoadingSlots(false);}} memberType={isMenlo?"menlo":"public"} fullyBookedDays={fullyBookedDays} slotCounts={slotCounts}/>
+            <CalendarPicker value={date} onChange={async d=>{setSlot(null);setSlotIdx(-1);if(!d){setDate('');setBusyTimes([]);return;}setDate(d);setLoadingSlots(true);try{const r=await fetch("/api/calendar-events?action=busytimes&date="+d);const data=await r.json();setBusyTimes(data.busy||[]);}catch(e){setBusyTimes([]);}setLoadingSlots(false);}} memberType={isMenlo?"menlo":"public"} fullyBookedDays={fullyBookedDays} slotCounts={slotCounts}/>
           </div>
           {date&&(
             <div style={{marginBottom:24}}>
@@ -3088,7 +3088,7 @@ function AdminCalendarView(){
     setLoading(true);
     const{start,end}=getDateRange();
     try{
-      const r=await fetch("/api/get-busy-times?date="+start+"&endDate="+end+"&allEvents=true");
+      const r=await fetch("/api/calendar-events?action=busytimes&date="+start+"&endDate="+end+"&allEvents=true");
       const data=await r.json();
       setEvents(data.busy||[]);
     }catch(e){console.error("Calendar load error:",e);}
@@ -3475,7 +3475,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
     const days=getWeekDays(selectedDay);
     const weekStart=days[0];const weekEnd=days[6];
     setWeekBusyLoading(true);
-    fetch("/api/get-busy-times?date="+weekStart+"&endDate="+weekEnd)
+    fetch("/api/calendar-events?action=busytimes&date="+weekStart+"&endDate="+weekEnd)
       .then(r=>r.json())
       .then(d=>{
         const map={};
@@ -3507,7 +3507,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
     setSchedLoadingAvail(true);
     setSchedFullyBookedDays(new Set());
     setSchedSlotCounts(new Map());
-    fetch("/api/get-busy-times?date="+startStr+"&endDate="+endStr+"&memberType="+mt)
+    fetch("/api/calendar-events?action=busytimes&date="+startStr+"&endDate="+endStr+"&memberType="+mt)
       .then(r=>r.json())
       .then(data=>{
         const busyAll=data.busy||[];
@@ -4474,7 +4474,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                 {schedLoadingAvail&&<span style={{fontSize:"0.75rem",color:"#9ca3af",display:"flex",alignItems:"center",gap:4}}><span style={{display:"inline-block",width:10,height:10,border:"2px solid #9ca3af",borderTop:"2px solid transparent",borderRadius:"50%",animation:"spin 0.7s linear infinite"}}/> Checking availability…</span>}
               </div>
               <div style={{marginBottom:20,pointerEvents:schedLoadingAvail?"none":"auto",opacity:schedLoadingAvail?0.5:1,transition:"opacity 0.2s"}}>
-                <CalendarPicker value={schedDate} onChange={async d=>{setSchedDate(d);setSchedSlot(null);setSchedSlotIdx(-1);setSchedLoadingSlots(true);try{const r=await fetch("/api/get-busy-times?date="+d);const data=await r.json();setSchedBusyTimes(data.busy||[]);}catch(e){setSchedBusyTimes([]);}setSchedLoadingSlots(false);}} memberType={schedIsMenlo?"menlo":"public"} fullyBookedDays={schedFullyBookedDays} slotCounts={schedSlotCounts}/>
+                <CalendarPicker value={schedDate} onChange={async d=>{setSchedDate(d);setSchedSlot(null);setSchedSlotIdx(-1);setSchedLoadingSlots(true);try{const r=await fetch("/api/calendar-events?action=busytimes&date="+d);const data=await r.json();setSchedBusyTimes(data.busy||[]);}catch(e){setSchedBusyTimes([]);}setSchedLoadingSlots(false);}} memberType={schedIsMenlo?"menlo":"public"} fullyBookedDays={schedFullyBookedDays} slotCounts={schedSlotCounts}/>
               </div>
               {schedDate&&(
                 <div style={{marginBottom:20}}>
@@ -4901,7 +4901,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                         setQuickBook(null);
                         // Pre-fetch busy times in background so step 2 is instant
                         setSchedLoadingSlots(true);
-                        fetch("/api/get-busy-times?date="+day)
+                        fetch("/api/calendar-events?action=busytimes&date="+day)
                           .then(r=>r.json())
                           .then(d=>setSchedBusyTimes(d.busy||[]))
                           .catch(()=>setSchedBusyTimes([]))
