@@ -1,6 +1,7 @@
 {
-  "rewrites": [
-    { "source": "/for-mikaela", "destination": "/for-mikaela.html" },
-    { "source": "/((?!api/).*)", "destination": "/" }
+  "routes": [
+    { "src": "/for-mikaela", "dest": "/for-mikaela.html" },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/" }
   ]
 }
