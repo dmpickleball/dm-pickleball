@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Italy 2026 — Travel Schedule</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Georgia', serif; background: #f5f0eb; color: #2c2c2c; }
+
+  /* ── AUTH SCREEN ── */
+  #auth-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1a3a2a 0%, #2d6a4f 50%, #1b4332 100%);
+    padding: 40px 20px;
+  }
+  .auth-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 48px 40px;
+    max-width: 420px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.35);
+  }
+  .auth-flag { font-size: 3.5rem; margin-bottom: 16px; }
+  .auth-card h1 {
+    font-size: 1.7rem;
+    font-weight: normal;
+    color: #1b4332;
+    margin-bottom: 6px;
+  }
+  .auth-card .auth-subtitle {
+    font-size: 0.95rem;
+    color: #666;
+    font-style: italic;
+    margin-bottom: 8px;
+  }
+  .auth-card .auth-dates {
+    font-size: 0.8rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #2d6a4f;
+    margin-bottom: 32px;
+  }
+  .auth-divider {
+    border: none;
+    border-top: 1px solid #e8e3dd;
+    margin: 0 0 28px;
+  }
+  .auth-label {
+    font-size: 0.82rem;
+    color: #888;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  #g-signin-btn {
+    display: flex;
+    justify-content: center;
+  }
+  #auth-error {
+    margin-top: 18px;
+    padding: 12px 16px;
+    background: #fff3f3;
+    border: 1px solid #f5c6cb;
+    border-radius: 8px;
+    color: #721c24;
+    font-size: 0.88rem;
+    display: none;
+  }
+  #auth-loading {
+    margin-top: 18px;
+    color: #2d6a4f;
+    font-size: 0.9rem;
+    display: none;
+  }
+
+  /* ── SCHEDULE (hidden until authed) ── */
+  #schedule-wrap { display: none; }
+  #signout-bar {
+    display: none;
+    background: #1b4332;
+    color: rgba(255,255,255,0.75);
+    font-size: 0.78rem;
+    text-align: right;
+    padding: 6px 20px;
+    letter-spacing: 0.04em;
+  }
+  #signout-bar button {
+    background: none;
+    border: 1px solid rgba(255,255,255,0.4);
+    color: rgba(255,255,255,0.9);
+    padding: 3px 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    margin-left: 10px;
+    font-size: 0.75rem;
+  }
+  #signout-bar button:hover { background: rgba(255,255,255,0.1); }
+
+  /* ── EMBEDDED SCHEDULE CSS ── */
+  
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Georgia', serif;
+    background: #f5f0eb;
+    color: #2c2c2c;
+    line-height: 1.7;
+  }
+
+  /* HERO */
+  .hero {
+    background: linear-gradient(135deg, #1a3a2a 0%, #2d6a4f 50%, #1b4332 100%);
+    color: #fff;
+    padding: 56px 32px 48px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  .hero h1 {
+    font-size: 2.8rem;
+    font-weight: normal;
+    letter-spacing: 0.04em;
+    margin-bottom: 8px;
+    position: relative;
+  }
+  .hero .dates {
+    font-size: 1.1rem;
+    opacity: 0.8;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    position: relative;
+  }
+  .hero .subtitle {
+    margin-top: 18px;
+    font-size: 1rem;
+    opacity: 0.7;
+    font-style: italic;
+    position: relative;
+  }
+
+  /* SUMMARY BAR */
+  .summary-bar {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0;
+    background: #2d6a4f;
+    border-top: 1px solid rgba(255,255,255,0.15);
+  }
+  .summary-item {
+    padding: 14px 28px;
+    color: rgba(255,255,255,0.9);
+    font-size: 0.88rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border-right: 1px solid rgba(255,255,255,0.15);
+    text-align: center;
+  }
+  .summary-item:last-child { border-right: none; }
+  .summary-item strong { display: block; font-size: 1.3rem; color: #fff; letter-spacing: 0; text-transform: none; margin-bottom: 2px; }
+
+  /* PHASE HEADERS */
+  .phase {
+    text-align: center;
+    padding: 36px 24px 8px;
+  }
+  .phase-tag {
+    display: inline-block;
+    background: #2d6a4f;
+    color: #fff;
+    font-size: 0.75rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    padding: 5px 18px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+  }
+  .phase h2 {
+    font-size: 1.7rem;
+    font-weight: normal;
+    color: #1b4332;
+  }
+
+  /* DAY CARDS */
+  .days-container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 16px 20px 48px;
+  }
+
+  .day-card {
+    background: #fff;
+    border-radius: 14px;
+    margin-bottom: 22px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    overflow: hidden;
+    border: 1px solid #e8e2da;
+  }
+
+  .day-header {
+    display: flex;
+    align-items: stretch;
+    background: #f9f6f1;
+    border-bottom: 1px solid #e8e2da;
+  }
+  .day-number {
+    background: #1b4332;
+    color: #fff;
+    min-width: 70px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 18px 14px;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .day-number strong {
+    font-size: 2rem;
+    display: block;
+    line-height: 1;
+    margin: 4px 0;
+  }
+  .day-info {
+    padding: 14px 20px;
+    flex: 1;
+  }
+  .day-info h3 {
+    font-size: 1.3rem;
+    color: #1b4332;
+    font-weight: normal;
+  }
+  .day-info .location-meta {
+    font-size: 0.82rem;
+    color: #888;
+    margin-top: 3px;
+    letter-spacing: 0.04em;
+  }
+  .hotel-badge {
+    display: inline-block;
+    background: #e8f5e9;
+    color: #2d6a4f;
+    font-size: 0.75rem;
+    padding: 2px 10px;
+    border-radius: 10px;
+    margin-top: 6px;
+    font-style: italic;
+  }
+
+  .day-body {
+    padding: 20px 24px;
+  }
+
+  /* TRANSPORT ALERT */
+  .transport-box {
+    background: #fff8e1;
+    border-left: 4px solid #f9a825;
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    margin-bottom: 18px;
+    font-size: 0.9rem;
+  }
+  .transport-box .transport-title {
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #e65100;
+    font-weight: bold;
+    margin-bottom: 4px;
+  }
+  .transport-box .why {
+    font-size: 0.82rem;
+    color: #795548;
+    margin-top: 6px;
+    font-style: italic;
+  }
+
+  /* TIMELINE */
+  .timeline {
+    position: relative;
+    padding-left: 28px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px; top: 6px; bottom: 6px;
+    width: 2px;
+    background: #e0d8cc;
+  }
+  .tl-item {
+    position: relative;
+    margin-bottom: 16px;
+  }
+  .tl-dot {
+    position: absolute;
+    left: -24px;
+    top: 5px;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #2d6a4f;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px #2d6a4f;
+  }
+  .tl-dot.morning { background: #f9a825; box-shadow: 0 0 0 2px #f9a825; }
+  .tl-dot.afternoon { background: #2d6a4f; box-shadow: 0 0 0 2px #2d6a4f; }
+  .tl-dot.evening { background: #4a148c; box-shadow: 0 0 0 2px #4a148c; }
+  .tl-dot.tip { background: #0277bd; box-shadow: 0 0 0 2px #0277bd; }
+
+  .tl-label {
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: bold;
+    margin-bottom: 2px;
+  }
+  .tl-label.morning { color: #e65100; }
+  .tl-label.afternoon { color: #2d6a4f; }
+  .tl-label.evening { color: #4a148c; }
+  .tl-label.tip { color: #0277bd; }
+
+  .tl-content {
+    font-size: 0.93rem;
+    color: #3c3c3c;
+  }
+  .tl-why {
+    font-size: 0.82rem;
+    color: #777;
+    font-style: italic;
+    margin-top: 3px;
+  }
+
+  /* FOOD TAGS */
+  .food-section {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px dashed #e0d8cc;
+  }
+  .food-title {
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 8px;
+  }
+  .food-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .food-tag {
+    background: #f3ede4;
+    border: 1px solid #ddd5c8;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 0.8rem;
+    color: #5c4a2a;
+  }
+  .food-tag .emoji { margin-right: 4px; }
+
+  /* ALERT BOX */
+  .alert-box {
+    background: #fce4ec;
+    border-left: 4px solid #e91e63;
+    border-radius: 0 8px 8px 0;
+    padding: 10px 14px;
+    margin-top: 14px;
+    font-size: 0.85rem;
+    color: #880e4f;
+  }
+  .alert-box strong { display: block; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 3px; }
+
+  /* DIVIDERS */
+  .section-divider {
+    text-align: center;
+    padding: 8px 24px;
+    color: #aaa;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* FOOTER LEGEND */
+  .legend {
+    max-width: 860px;
+    margin: 0 auto 48px;
+    padding: 0 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 0.8rem;
+    color: #666;
+  }
+  .legend-item { display: flex; align-items: center; gap: 7px; }
+  .legend-dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 600px) {
+    .hero h1 { font-size: 1.9rem; }
+    .summary-item { padding: 10px 16px; }
+    .day-body { padding: 16px; }
+  }
+
+</style>
+</head>
+<body>
+
+<!-- ════════════════════ AUTH SCREEN ════════════════════ -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-flag">🇮🇹</div>
+    <h1>Italy 2026</h1>
+    <p class="auth-subtitle">David &amp; Amanda's Honeymoon</p>
+    <p class="auth-dates">May 30 – June 12, 2026</p>
+    <hr class="auth-divider">
+    <p class="auth-label">Sign in to view your itinerary</p>
+    <div id="g-signin-btn"></div>
+    <div id="auth-loading">Verifying access…</div>
+    <div id="auth-error"></div>
+  </div>
+</div>
+
+<!-- ════════════════════ SCHEDULE ════════════════════ -->
+<div id="signout-bar">
+  <span id="signout-email"></span>
+  <button onclick="signOut()">Sign out</button>
+</div>
+<div id="schedule-wrap">
+
+
+<!-- HERO -->
+<div class="hero">
+  <h1>🇮🇹 Italy 2026</h1>
+  <div class="dates">May 31 – June 12 · 13 Days</div>
+  <div class="subtitle">Venice → Dolomites → Lake Como → Milan</div>
+</div>
+
+<div class="summary-bar">
+  <div class="summary-item"><strong>2</strong> Nights Venice</div>
+  <div class="summary-item"><strong>4</strong> Nights Ortisei</div>
+  <div class="summary-item"><strong>2</strong> Nights Dobbiaco</div>
+  <div class="summary-item"><strong>3</strong> Nights Varenna</div>
+  <div class="summary-item"><strong>1</strong> Night Milan</div>
+  <div class="summary-item"><strong>$6,520</strong> Spent</div>
+</div>
+
+<!-- NAV BAR -->
+<div style="background:#1b4332;display:flex;justify-content:center;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,0.1);position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.3);">
+  <a href="#phase-0" style="color:rgba(255,255,255,0.8);text-decoration:none;padding:13px 18px;font-size:0.78rem;letter-spacing:0.07em;font-family:sans-serif;border-right:1px solid rgba(255,255,255,0.12);" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.color='rgba(255,255,255,0.8)';this.style.background='transparent'">✈️ Departure</a>
+  <a href="#phase-1" style="color:rgba(255,255,255,0.8);text-decoration:none;padding:13px 18px;font-size:0.78rem;letter-spacing:0.07em;font-family:sans-serif;border-right:1px solid rgba(255,255,255,0.12);" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.color='rgba(255,255,255,0.8)';this.style.background='transparent'">🚤 Venice</a>
+  <a href="#phase-2" style="color:rgba(255,255,255,0.8);text-decoration:none;padding:13px 18px;font-size:0.78rem;letter-spacing:0.07em;font-family:sans-serif;border-right:1px solid rgba(255,255,255,0.12);" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.color='rgba(255,255,255,0.8)';this.style.background='transparent'">⛰️ Dolomites</a>
+  <a href="#phase-3" style="color:rgba(255,255,255,0.8);text-decoration:none;padding:13px 18px;font-size:0.78rem;letter-spacing:0.07em;font-family:sans-serif;border-right:1px solid rgba(255,255,255,0.12);" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.color='rgba(255,255,255,0.8)';this.style.background='transparent'">🌊 Lake Como</a>
+  <a href="#phase-4" style="color:rgba(255,255,255,0.8);text-decoration:none;padding:13px 18px;font-size:0.78rem;letter-spacing:0.07em;font-family:sans-serif;" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.color='rgba(255,255,255,0.8)';this.style.background='transparent'">🏙️ Milan</a>
+</div>
+
+<!-- ===================== PHASE 0: DEPARTURE ===================== -->
+<div id="phase-0" class="phase">
+  <div class="phase-tag">Departure Day</div>
+  <h2>Leave Home — SFO to Venice</h2>
+</div>
+
+<div class="days-container">
+
+  <!-- DAY 0 -->
+  <div class="day-card">
+    <div class="day-header">
+      <div class="day-number" style="background:#555;">Day<strong>0</strong>Sat</div>
+      <div class="day-info">
+        <h3>Depart Home → SFO ✈️</h3>
+        <div class="location-meta">May 30 · Departure Day · SFO → Venice (VCE)</div>
+        <span class="hotel-badge" style="background:#eee;color:#555;">🏠 1164 Westminster Ave, Palo Alto CA 94303</span>
+      </div>
+    </div>
+    <div class="day-body">
+
+      <div class="transport-box" style="border-color:#90a4ae;background:#eceff1;">
+        <div class="transport-title" style="color:#37474f;">🚗 Home → SFO International Terminal</div>
+        From 1164 Westminster Ave, Palo Alto — SFO is ~27 miles north, typically 30–45 min without traffic. Take US-101 N to SFO International Terminal (United/airlines use Terminal 3 or International G — confirm with your ticket). Allow extra time for bags and international security.
+        <div class="why" style="color:#546e7a;">💡 Rideshare (Lyft/Uber) recommended over driving — no parking costs on a 13-day trip. Book ahead or allow surge pricing time. Departures from SFO International can have long lines on weekends.</div>
+      </div>
+
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot tip"></div>
+          <div class="tl-label tip">Before You Leave Home</div>
+          <div class="tl-content">Double-check: Passports · Travel insurance · Phone international plan activated · Hertz confirmation (L5834530461) · Booking.com app downloaded · Offline maps for Italy downloaded (Google Maps or Maps.me).</div>
+        </div>
+        <!-- FLIGHT CONFIRMATION BOX -->
+        <div style="background:#e3f2fd;border:1px solid #90caf9;border-radius:10px;padding:16px 20px;margin:4px 0 12px;">
+          <div style="font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;color:#0d47a1;font-weight:bold;margin-bottom:10px;">✈️ Air Canada — Outbound Flights · Ref: BVIVZ4</div>
+          <div style="font-size:0.9rem;margin-bottom:8px;">
+            <strong>AC 756</strong> · SFO depart <strong>8:05 AM</strong> → Montreal (YUL) arrive <strong>4:45 PM</strong><br>
+            <span style="font-size:0.78rem;color:#555;">2h 45m layover in Montreal</span><br><br>
+            <strong>AC 818</strong> · YUL depart <strong>7:30 PM</strong> → Venice (VCE) arrive <strong>9:10 AM</strong> (May 31)<br>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;font-size:0.83rem;margin-top:8px;">
+            <div><span style="color:#777;font-size:0.75rem;">Airline Reference</span><br><strong>BVIVZ4</strong></div>
+            <div><span style="color:#777;font-size:0.75rem;">Agency Reference</span><br><strong>WTKBEE</strong></div>
+            <div><span style="color:#777;font-size:0.75rem;">Chase Travel Trip ID</span><br><strong>1014607785</strong></div>
+          </div>
+          <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
+            <a href="Flight_Itinerary_AirCanada_BVIVZ4.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#1565c0;color:#fff;text-decoration:none;padding:7px 14px;border-radius:6px;font-size:0.8rem;font-weight:bold;font-family:sans-serif;">📄 Itinerary (Offline)</a>
+            <a href="https://www.aircanada.com/us/en/aco/home/book/manage-bookings.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#cc0000;color:#fff;text-decoration:none;padding:7px 14px;border-radius:6px;font-size:0.8rem;font-weight:bold;font-family:sans-serif;">🌐 Air Canada Live</a>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot morning"></div>
+          <div class="tl-label morning">Outbound Flight — May 30</div>
+          <div class="tl-content">Leave home by <strong>5:30 AM</strong> to reach SFO by 6:30 AM for 8:05 AM departure. Check in online beforehand — Air Canada lets you check in 24 hrs before. Arrive Venice May 31 at 9:10 AM.</div>
+          <div class="tl-why">Overnight transatlantic with a Montreal connection. Try to sleep on the YUL→VCE leg — you'll land straight into a full Venice day with no hotel room until 2 PM.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot tip"></div>
+          <div class="tl-label tip">On the Plane — Set Up Offline</div>
+          <div class="tl-content">Download this schedule to your phone before boarding. Save the Booking.com app confirmations offline. Screenshot hotel addresses and phone numbers. You'll have spotty data when you first land in Venice.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- ===================== PHASE 1: VENICE ===================== -->
+<div id="phase-1" class="phase">
+  <div class="phase-tag">Phase 1</div>
+  <h2>Venice — The Grand Opening</h2>
+</div>
+
+<div class="days-container">
+
+  <!-- DAY 1 -->
+  <div class="day-card">
+    <div class="day-header">
+      <div class="day-number">Day<strong>1</strong>Sun</div>
+      <div class="day-info">
+        <h3>Arrive in Venice 🛬</h3>
+        <div class="location-meta">May 31 · Venice Arrivals Day</div>
+        <span class="hotel-badge">🏨 Alle Guglie Boutique Hotel · Rio San Leonardo 1523, Venice · Check-in from 2:00 PM · Conf: 2425283654</span>
+      </div>
+    </div>
+    <div class="day-body">
+
+      <!-- ALLE GUGLIE CONFIRMATION -->
+      <div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:10px;padding:16px 20px;margin-bottom:18px;font-size:0.88rem;">
+        <div style="font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;color:#2d6a4f;font-weight:bold;margin-bottom:10px;">🏨 Alle Guglie Boutique Hotel — Venice</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;">
+          <div><span style="color:#777;font-size:0.75rem;">Confirmation #</span><br><strong>2425283654</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Chase Travel Trip ID</span><br><strong>1015445142</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Address</span><br><strong>Rio San Leonardo 1523, Venice 30121</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Room</span><br><strong>Classic Double Room · 2 guests</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Check-in</span><br><strong>Sun May 31 · from 2:00 PM</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Check-out</span><br><strong>Tue Jun 2 · by 11:00 AM</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Total Paid</span><br><strong>$612.74 · Non-refundable</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Due at Property</span><br><strong>Resort fee $16.11</strong></div>
+        </div>
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid #c8e6c9;font-size:0.8rem;color:#555;">Front desk greets guests on arrival · Bring photo ID + credit card</div>
+        <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
+          <a href="Alle_Guglie_Venice_Confirmation.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#2d6a4f;color:#fff;text-decoration:none;padding:7px 14px;border-radius:6px;font-size:0.8rem;font-weight:bold;font-family:sans-serif;">📄 Confirmation (Offline)</a>
+          <a href="https://www.chasetravel.com" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#117aca;color:#fff;text-decoration:none;padding:7px 14px;border-radius:6px;font-size:0.8rem;font-weight:bold;font-family:sans-serif;">🌐 Chase Travel Live</a>
+        </div>
+      </div>
+
+      <div class="transport-box">
+        <div class="transport-title">✈️ Arrival — VCE Airport at 9:10 AM</div>
+        Get to your hotel via Water Bus (Vaporetto), Land Bus, or Taxi from Piazzale Roma. Expect 45–60 min.
+        <div class="why">💡 Why this hotel: Alle Guglie is in Cannaregio — Venice's most local, least touristy neighborhood. Perfect base for cicchetti bars and easy canal-side wandering without the St. Mark's crowds.</div>
+      </div>
+
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot morning"></div>
+          <div class="tl-label morning">Morning — 9:10 AM Arrival</div>
+          <div class="tl-content">Land, clear customs, get to your hotel. Drop your bags — check-in likely isn't until 2–3 PM. Head straight out. Don't waste the morning sleeping off the flight.</div>
+          <div class="tl-why">You're arriving in Venice in the morning on Republic Day (national holiday tomorrow). Get your bearings today while it's relatively calm.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot morning"></div>
+          <div class="tl-label morning">Mid-Morning</div>
+          <div class="tl-content">Walk Cannaregio: stroll the Fondamenta della Misericordia, cross small bridges, watch the boats. Stop at <strong>Torrefazione Cannaregio</strong> for a proper espresso — no-frills, local, perfect.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot afternoon"></div>
+          <div class="tl-label afternoon">Afternoon</div>
+          <div class="tl-content">Take Vaporetto Line 1 down the Grand Canal — one of the best views in the world, and it's just a regular bus ticket. Sit outside at the back if you can. Get off at Rialto or Accademia and wander. Come back, check into hotel, rest.</div>
+          <div class="tl-why">The Grand Canal vaporetto is Venice 101 — free with a transit pass and an unmissable orientation to the city's layout.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot evening"></div>
+          <div class="tl-label evening">Evening — Cicchetti Crawl in Cannaregio</div>
+          <div class="tl-content">Do a bacaro (wine bar) crawl starting near your hotel. Hit <strong>Vino Vero</strong> for natural wines and canal-side cicchetti, then <strong>Cantina Aziende Agricole</strong> for more bites. Order little plates and stand at the bar like a local.</div>
+          <div class="tl-why">Cicchetti are Venice's answer to tapas — cheap, delicious, and the true local experience. This is the authentic evening, not a sit-down tourist dinner.</div>
+        </div>
+      </div>
+
+      <div class="food-section">
+        <div class="food-title">🍽️ Today's Food Picks</div>
+        <div class="food-tags">
+          <span class="food-tag"><span class="emoji">☕</span>Torrefazione Cannaregio (espresso)</span>
+          <span class="food-tag"><span class="emoji">🍷</span>Vino Vero (cicchetti + natural wine)</span>
+          <span class="food-tag"><span class="emoji">🥂</span>Cantina Aziende Agricole (bacaro)</span>
+          <span class="food-tag"><span class="emoji">🍦</span>Gelateria Nico (waterfront gianduiotto)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY 2 -->
+  <div class="day-card">
+    <div class="day-header">
+      <div class="day-number">Day<strong>2</strong>Mon</div>
+      <div class="day-info">
+        <h3>St. Mark's & The Palaces 🏛️</h3>
+        <div class="location-meta">June 1 · Venice Full Day · Republic Day Holiday</div>
+        <span class="hotel-badge">🏨 Alle Guglie Boutique Hotel — Cannaregio</span>
+      </div>
+    </div>
+    <div class="day-body">
+
+      <div class="alert-box">
+        <strong>⚠️ Republic Day — National Holiday</strong>
+        June 1 is a major Italian holiday. St. Mark's Basilica and Doge's Palace will be busier than usual. Get there EARLY — ideally before 9 AM — to beat the lines and the heat. Book tickets in advance if not already done.
+      </div>
+
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot morning"></div>
+          <div class="tl-label morning">Early Morning — Before 9 AM</div>
+          <div class="tl-content">Head to St. Mark's Square first thing. The light is stunning in the morning and the crowds haven't arrived. Walk into <strong>St. Mark's Basilica</strong> (free entry, book a time slot online). The gold mosaics inside are extraordinary.</div>
+          <div class="tl-why">By 10–11 AM the square is wall-to-wall tourists. Going early means you actually experience it rather than fight through it.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot morning"></div>
+          <div class="tl-label morning">Morning — 9:30 AM onward</div>
+          <div class="tl-content"><strong>Doge's Palace</strong> (Palazzo Ducale) — buy skip-the-line tickets. Marvel at the Bridge of Sighs and the massive council chambers. Plan 1.5–2 hours inside.</div>
+          <div class="tl-why">The Doge's Palace is the crown jewel of Venice's civic architecture. The interior scale genuinely surprises people — it's worth every minute.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot afternoon"></div>
+          <div class="tl-label afternoon">Afternoon</div>
+          <div class="tl-content">Escape the St. Mark's crowds — walk deep into Dorsoduro or cross to the Accademia neighborhood. Browse, find a canal-side café, take a break. Optionally visit the Peggy Guggenheim Collection (modern art, beautiful terrace on the Grand Canal).</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot evening"></div>
+          <div class="tl-label evening">Evening — Splurge Dinner</div>
+          <div class="tl-content"><strong>Il Ridotto</strong> — Venice's intimate 1 Michelin Star restaurant. Venetian seafood tasting menu. This is the one special dinner in Venice. Reserve well in advance.</div>
+          <div class="tl-why">You're leaving Venice tomorrow morning. This is your last Venice evening — worth the splurge.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot tip"></div>
+          <div class="tl-label tip">Tonight: Prep for Tomorrow</div>
+          <div class="tl-content">Pack your bags tonight. You're picking up the rental car at VCE airport tomorrow and driving to the Dolomites. Checkout + airport transfer + 3.5hr drive means an early start.</div>
+        </div>
+      </div>
+
+      <div class="food-section">
+        <div class="food-title">🍽️ Today's Food Picks</div>
+        <div class="food-tags">
+          <span class="food-tag"><span class="emoji">🌟</span>Il Ridotto (Michelin — book ahead!)</span>
+          <span class="food-tag"><span class="emoji">🥐</span>Pasticceria Tonolo (morning pastry)</span>
+          <span class="food-tag"><span class="emoji">🍦</span>Gelatoteca Suso — order "Manet" flavor</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end days-container -->
+
+<!-- ===================== PHASE 2: DOLOMITES ===================== -->
+<div id="phase-2" class="phase">
+  <div class="phase-tag">Phase 2</div>
+  <h2>The Dolomites — Alpine Adventure</h2>
+</div>
+
+<div class="days-container">
+
+  <!-- DAY 3 -->
+  <div class="day-card">
+    <div class="day-header">
+      <div class="day-number">Day<strong>3</strong>Tue</div>
+      <div class="day-info">
+        <h3>Drive to Ortisei — Enter the Alps 🏔️</h3>
+        <div class="location-meta">June 2 · Venice → Ortisei · ~3.5 hrs</div>
+        <span class="hotel-badge">🏨 Classic Hotel am Stetteneck · Via Rezia 14, Ortisei · Check-in from 3:00 PM · Expedia #73406801376057 · Hotel Conf: 1774681869456</span>
+      </div>
+    </div>
+    <div class="day-body">
+
+      <!-- STETTENECK CONFIRMATION -->
+      <div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:10px;padding:16px 20px;margin-bottom:18px;font-size:0.88rem;">
+        <div style="font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;color:#2d6a4f;font-weight:bold;margin-bottom:10px;">🏨 Classic Hotel am Stetteneck — Ortisei</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;">
+          <div><span style="color:#777;font-size:0.75rem;">Expedia Itinerary #</span><br><strong>73406801376057</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Hotel Confirmation #</span><br><strong>1774681869456</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Address</span><br><strong>Via Rezia 14, Ortisei BZ 39046, Italy</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Room</span><br><strong>Classic Double Room · 2 adults</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Check-in</span><br><strong>Tue Jun 2 · 3:00 PM – 9:00 PM</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Check-out</span><br><strong>Sat Jun 6 · by 10:00 AM</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Total Paid</span><br><strong>$1,460.59 · Non-refundable</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Due at Property</span><br><strong>$46.04 + city tax €5/person/night</strong></div>
+        </div>
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid #c8e6c9;font-size:0.8rem;color:#c62828;"><strong>⚠️ Front desk open 8 AM–9 PM only</strong> — no after-hours check-in. If arriving late, call ahead.</div>
+        <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
+          <a href="Ortisei_Stetteneck_Confirmation.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#2d6a4f;color:#fff;text-decoration:none;padding:7px 14px;border-radius:6px;font-size:0.8rem;font-weight:bold;font-family:sans-serif;">📄 Confirmation (Offline)</a>
+          <a href="https://www.expedia.com/trips/73406801376057" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#f60;color:#fff;text-decoration:none;padding:7px 14px;border-radius:6px;font-size:0.8rem;font-weight:bold;font-family:sans-serif;">🌐 Expedia Live</a>
+        </div>
+      </div>
+
+      <!-- HERTZ BOOKING CONFIRMATION -->
+      <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:10px;padding:16px 20px;margin-bottom:18px;font-size:0.88rem;">
+        <div style="font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;color:#e65100;font-weight:bold;margin-bottom:10px;">🚗 Hertz Rental Car Confirmation</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;">
+          <div><span style="color:#777;font-size:0.75rem;">Confirmation #</span><br><strong>L5834530461</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Vehicle</span><br><strong>Jeep Avenger or similar (Compact, Auto, A/C)</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Pickup</span><br><strong>Venice Marco Polo Airport (VCE)</strong><br><span style="font-size:0.78rem;color:#555;">Tue Jun 2 · 10:00 AM · Hours: 8 AM–midnight daily</span></div>
+          <div><span style="color:#777;font-size:0.75rem;">Drop-off</span><br><strong>Lecco — Via Leonardo Da Vinci, 41</strong><br><span style="font-size:0.78rem;color:#555;">Mon Jun 8 · by 3:00 PM · Hours: 9–1 PM &amp; 2–5:30 PM (closed weekends)</span></div>
+          <div><span style="color:#777;font-size:0.75rem;">Total (Prepaid)</span><br><strong>$602.93 USD</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Included</span><br><strong>Unlimited km · Capital One Venture X discount applied</strong></div>
+        </div>
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid #ffe082;font-size:0.8rem;color:#c62828;"><strong>⚠️ Bring:</strong> Driver's License · Credit Card · Passport — all required at pickup</div>
+        <div style="margin-top:10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <a href="Hertz_Reservation_L5834530461.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#FFD700;color:#1a1a1a;text-decoration:none;padding:8px 16px;border-radius:6px;font-size:0.82rem;font-weight:bold;font-family:sans-serif;">📄 Confirmation (Offline)</a>
+          <a href="https://www.hertz.com/rentacar/reservation/confirmationLookup.do?reservationNumber=L5834530461" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#FFD700;color:#1a1a1a;text-decoration:none;padding:8px 16px;border-radius:6px;font-size:0.82rem;font-weight:bold;font-family:sans-serif;">🌐 Hertz Live</a>
+          <span style="font-size:0.78rem;color:#555;font-style:italic;">Show at pickup desk</span>
+        </div>
+      </div>
+
+      <div class="transport-box">
+        <div class="transport-title">🚗 Drive: Venice VCE Airport → Ortisei</div>
+        Vaporetto to Piazzale Roma, then taxi/shuttle to VCE airport. Pick up Hertz rental car. Drive north via A27 motorway, then A22 through the Brenner Pass valley. ~3.5 hours total.
+        <div class="why">💡 Why VCE for pickup: Your hotel is in the city center, not near the airport, so you pick up the car at the airport on departure day — perfect. The A22 through the Adige Valley is a gorgeous alpine highway. Republic Day means the VCE Hertz desk is confirmed open.</div>
+      </div>
+
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot morning"></div>
+          <div class="tl-label morning">Morning — Early Checkout</div>
+          <div class="tl-content">Check out of Alle Guglie. Take the vaporetto to Piazzale Roma, then transfer to VCE airport for car pickup. Aim to be on the road by 10–11 AM to arrive with afternoon daylight.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot afternoon"></div>
+          <div class="tl-label afternoon">Drive — A27 North → A22 through Veneto Alps</div>
+          <div class="tl-content">The drive gets dramatically more beautiful as you enter the mountains. The valley narrows, peaks appear, and you'll start seeing Südtirol (South Tyrol) signs in German. Stop at a roadside Autogrillfor espresso — it's an Italian institution.</div>
+          <div class="tl-why">Ortisei is in the German-speaking part of Italy (Südtirol/Alto Adige). Food, signs, and culture have a strong Austrian-Tyrolean flavor — a fascinating mix you won't see elsewhere in Italy.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot afternoon"></div>
+          <div class="tl-label afternoon">Afternoon — Arrive Ortisei</div>
+          <div class="tl-content">Check into Classic Hotel am Stetteneck. Orient yourself — walk the pedestrian center, spot the cable car stations, buy your first schnapps if that's your thing. The Dolomite peaks surrounding the village are immediately overwhelming.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot evening"></div>
+          <div class="tl-label evening">Evening — First Tyrolean Dinner</div>
+          <div class="tl-content"><strong>Tubladel</strong> — the most highly rated restaurant in Ortisei. Rustic-chic alpine vibe. Order the <strong>Schlutzkrapfen</strong> (spinach-ricotta ravioli, the local specialty). This is your "welcome to the Alps" dinner.</div>
+        </div>
+      </div>
+
+      <div class="food-section">
+        <div class="food-title">🍽️ Today's Food Picks</div>
+        <div class="food-tags">
+          <span class="food-tag"><span class="emoji">🥟</span>Tubladel — Schlutzkrapfen</span>
+          <span class="food-tag"><span class="emoji">🍰</span>Caffè Adler — post-arrival cake + espresso</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY 4 -->
+  <div class="day-card">
+    <div class="day-header">
+      <div class="day-number">Day<strong>4</strong>Wed</div>
+      <div class="day-info">
+        <h3>Alpe di Siusi (AM) + Seceda (PM) 🌄</h3>
+        <div class="location-meta">June 3 · Ortisei · Double Lift Day</div>
+        <span class="hotel-badge">🏨 Classic Hotel am Stetteneck — Ortisei</span>
+      </div>
+    </div>
+    <div class="day-body">
+
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot morning"></div>
+          <div class="tl-label morning">Morning — Alpe di Siusi Meadow Loop</div>
+          <div class="tl-content">Take the Ortisei cable car up to <strong>Alpe di Siusi</strong> — Europe's largest high-altitude alpine meadow. Easy 2–3 hour meadow loop. The Sassolungo and Sciliar peaks frame every step. Great acclimation hike — low elevation gain, big visual reward.</div>
+          <div class="tl-why">Starting with an easy hike on Day 1 is smart. Your legs are adjusting to altitude and trail terrain. The meadow loop rewards you with insane views without punishing your body early.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot morning"></div>
+          <div class="tl-label morning">Late Morning — Hut Lunch</div>
+          <div class="tl-content">Stop at <strong>Rifugio delle Odle (Geisler Alm)</strong> for <strong>Kaiserschmarrn</strong> — shredded sweet pancakes with powdered sugar and jam. A ritual at every Dolomite hut.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot afternoon"></div>
+          <div class="tl-label afternoon">Afternoon — Seceda Ridgeline Walk</div>
+          <div class="tl-content">Come back down to Ortisei, then take the <strong>Seceda gondola</strong> up. Hike the ridgeline walk (3–4 hrs, moderate) with views of the jagged Odle/Geisler peaks — the pointy cathedral-like spires that define the Dolomite aesthetic. Aim for <strong>Baita Sofie</strong> hut for a G&T with an absurd view.</div>
+          <div class="tl-why">Seceda is the iconic Ortisei viewpoint — the one in every Instagram photo with sharp peaks against sky. Doing it in the afternoon means golden light on the peaks.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot evening"></div>
+          <div class="tl-label evening">Evening</div>
+          <div class="tl-content">Easy dinner after two lift zones — try <strong>Mauriz Keller</strong> in the historic cellar for pizza, steaks, and a fun atmosphere. Or grab supplies from <strong>Panificio Costa</strong> bakery for a low-key evening in.</div>
+        </div>
+      </div>
+
+      <div class="food-section">
+        <div class="food-title">🍽️ Today's Food Picks</div>
+        <div class="food-tags">
+          <span class="food-tag"><span class="emoji">🥞</span>Rifugio delle Odle — Kaiserschmarrn</span>
+          <span class="food-tag"><span class="emoji">🍸</span>Baita Sofie — G&T at 8,000 ft</span>
+          <span class="food-tag"><span class="emoji">🍕</span>Mauriz Keller — cellar dinner</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY 5 -->
+  <div class="day-card">
+    <div class="day-header">
+      <div class="day-number">Day<strong>5</strong>Thu</div>
+      <div class="day-info">
+        <h3>Val di Funes — The Postcard Churches 📸</h3>
+        <div class="location-meta">June 4 · Ortisei Day Trip</div>
+        <span class="hotel-badge">🏨 Classic Hotel am Stetteneck — Ortisei</span>
+      </div>
+    </div>
+    <div class="day-body">
+
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot morning"></div>
+          <div class="tl-label morning">Morning — Drive to Val di Funes</div>
+          <div class="tl-content">Short drive (~25 min) to Val di Funes. Walk the village trails around <strong>Santa Maddalena church</strong> — the most photographed church in the Dolomites, with the Odle peaks rising directly behind it. The whole valley is a nature park. Relaxed, easy 2–3 hrs.</div>
+          <div class="tl-why">Val di Funes is the "photogenic + relaxed" day. After a big double-lift day, this gives your legs a break while still delivering world-class scenery. The church-and-peaks composition is genuinely one of the most beautiful sights in Europe.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot afternoon"></div>
+          <div class="tl-label afternoon">Afternoon — Rifugio Lunch + Village Wander</div>
+          <div class="tl-content">Stop at <strong>Rifugio Brogles</strong> for a mountain-hut lunch — speck, dumplings (Canederli), and cake. Then explore the valley floor, pick wildflowers, take photos.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot afternoon"></div>
+          <div class="tl-label afternoon">Late Afternoon — Back to Ortisei</div>
+          <div class="tl-content">Return to Ortisei. Browse the pedestrian shopping street — pick up local schnapps, Loacker wafers, or speck as souvenirs. Maybe an Adler spa session if your hotel offers access.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot evening"></div>
+          <div class="tl-label evening">Evening</div>
+          <div class="tl-content">Gelateria L'Antica for artisanal gelato made with fresh alpine milk — a different tier from city gelato. Dinner at Tubladel again or try somewhere new.</div>
+        </div>
+      </div>
+
+      <div class="food-section">
+        <div class="food-title">🍽️ Today's Food Picks</div>
+        <div class="food-tags">
+          <span class="food-tag"><span class="emoji">🥙</span>Rifugio Brogles — speck & dumplings</span>
+          <span class="food-tag"><span class="emoji">🍦</span>Gelateria L'Antica — alpine milk gelato</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY 6 -->
+  <div class="day-card">
+    <div class="day-header">
+      <div class="day-number">Day<strong>6</strong>Fri</div>
+      <div class="day-info">
+        <h3>Flex Day — Spa, Rest, or Weather Buffer ♨️</h3>
+        <div class="location-meta">June 5 · Ortisei Last Day</div>
+        <span class="hotel-badge">🏨 Classic Hotel am Stetteneck — Ortisei (Last Night)</span>
+      </div>
+    </div>
+    <div class="day-body">
+
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot morning"></div>
+          <div class="tl-label morning">This Day Is Intentionally Open</div>
+          <div class="tl-content">This day is built in as a flex buffer. Options:
+          <br><br><strong>If weather is bad:</strong> Spa day. The Adler Spa in Ortisei is famous — thermal pools, saunas, the works. You're in the Alps, a spa day here is not a consolation prize.
+          <br><br><strong>If weather is great:</strong> Repeat a favorite hike or tackle a new one — Seceda at sunrise, or a longer Alpe di Siusi route you didn't finish.
+          <br><br><strong>If you're tired:</strong> Sleep in, wander town, shop, eat well.
+          </div>
+          <div class="tl-why">Mountain weather is unpredictable. Building a flex day means you don't have to white-knuckle a hike in rain or miss a bucket-list moment. Smart planning, not laziness.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot tip"></div>
+          <div class="tl-label tip">Tonight: Pack + Plan Tomorrow</div>
+          <div class="tl-content">You're driving to Dobbiaco tomorrow (~2.5 hrs). Pack everything. Check your <strong>Tre Cime toll road reservation</strong> for June 7 — confirm the booking at auronzo.info. Verify parking is sorted. This hike requires advance booking.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot tip"></div>
+          <div class="tl-label tip">Also: Loacker World 🍫</div>
+          <div class="tl-content">On the drive toward Dobbiaco tomorrow, stop at the <strong>Loacker wafer factory shop in Heinfels</strong> — stock up on chocolate for the car. Classic road trip move in the Dolomites.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY 7 -->
+  <div class="day-card">
+    <div class="day-header">
+      <div class="day-number">Day<strong>7</strong>Sat</div>
+      <div class="day-info">
+        <h3>Drive to Dobbiaco + Lago di Braies 🏞️</h3>
+        <div class="location-meta">June 6 · Ortisei → Dobbiaco · ~2.5 hrs</div>
+        <span class="hotel-badge">🏨 Hotel Simpaty · Via San Giovanni 4, Carbonin · Check-in from 2:00 PM · Conf: 76257377409</span>
+      </div>
+    </div>
+    <div class="day-body">
+
+      <!-- HOTEL SIMPATY CONFIRMATION -->
+      <div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:10px;padding:16px 20px;margin-bottom:18px;font-size:0.88rem;">
+        <div style="font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;color:#2d6a4f;font-weight:bold;margin-bottom:10px;">🏨 Hotel Simpaty — Dobbiaco / Carbonin</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;">
+          <div><span style="color:#777;font-size:0.75rem;">Confirmation #</span><br><strong>76257377409</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Chase Travel Trip ID</span><br><strong>1015445742</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Address</span><br><strong>Via San Giovanni 4, Carbonin 39034, Italy</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Room</span><br><strong>Large Double Room · 2 adults</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Check-in</span><br><strong>Sat Jun 6 · from 2:00 PM</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Check-out</span><br><strong>Mon Jun 8 · by 10:00 AM</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Total Paid</span><br><strong>$517.20</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Due at Property</span><br><strong>Resort fee $14.77</strong></div>
+        </div>
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid #c8e6c9;font-size:0.8rem;color:#555;">Free parking on-site · Free WiFi · Bring photo ID + credit card · Let them know your arrival time in advance</div>
+        <div style="margin-top:6px;font-size:0.8rem;color:#c62828;"><strong>⚠️ Check-out by 10:00 AM</strong> — you have a long drive to Lecco then train to Varenna on Jun 8, so an early start matters</div>
+        <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
+          <a href="Hotel_Simpaty_Dobbiaco_Confirmation.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#2d6a4f;color:#fff;text-decoration:none;padding:7px 14px;border-radius:6px;font-size:0.8rem;font-weight:bold;font-family:sans-serif;">📄 Confirmation (Offline)</a>
+          <a href="https://www.chasetravel.com" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#117aca;color:#fff;text-decoration:none;padding:7px 14px;border-radius:6px;font-size:0.8rem;font-weight:bold;font-family:sans-serif;">🌐 Chase Travel Live</a>
+        </div>
+      </div>
+
+      <div class="transport-box">
+        <div class="transport-title">🚗 Drive: Ortisei → (Lago di Braies) → Dobbiaco</div>
+        Scenic relocation day. Drive northeast ~2.5 hrs total, with a planned stop at Lago di Braies along the way.
+        <div class="why">💡 Lago di Braies: One of the most stunning alpine lakes in the Dolomites — turquoise water with mountain reflections. It's directly on the route to Dobbiaco. Would be criminal to drive past. Pre-book parking (fills up by 8–9 AM on weekends).</div>
+      </div>
+
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot morning"></div>
+          <div class="tl-label morning">Morning — Early Departure</div>
+          <div class="tl-content">Leave Ortisei by 8–8:30 AM. Lago di Braies parking fills fast on Saturdays. You want to arrive by 9:30 AM at the latest to get parking and beat the tour groups.</div>
+          <div class="tl-why">This is a wildly popular lake. Early arrival is the difference between a peaceful alpine experience and a crowded tourist scrum.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot morning"></div>
+          <div class="tl-label morning">Mid-Morning — Lago di Braies</div>
+          <div class="tl-content">Walk the lakeside loop (30–45 min, flat and easy). Rent a rowboat if available — the classic photo from a wooden boat on the turquoise lake is genuinely worth it. Stop for a coffee at the hotel on the lakeside.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot afternoon"></div>
+          <div class="tl-label afternoon">Afternoon — Continue to Dobbiaco</div>
+          <div class="tl-content">30-min drive onward to Dobbiaco. Check in to Hotel Simpaty. Rest up — tomorrow is your biggest hike of the trip.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot afternoon"></div>
+          <div class="tl-label afternoon">Optional: San Candido Village Stroll</div>
+          <div class="tl-content">10 minutes from Dobbiaco, San Candido (Innichen) has a lovely pedestrian street and a beautiful Romanesque collegiate church. Easy late-afternoon wander.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot evening"></div>
+          <div class="tl-label evening">Dinner — Early and Hearty</div>
+          <div class="tl-content"><strong>Winkelshütte</strong> in Dobbiaco for classic Tyrolean — order the <strong>Canederli</strong> (bread dumplings in broth). Early dinner, early bed. Tre Cime tomorrow.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot tip"></div>
+          <div class="tl-label tip">Tonight: Tre Cime Logistics Check</div>
+          <div class="tl-content">Confirm your Tre Cime toll road reservation at auronzo.info. Pack your hiking gear tonight. You want to leave for the trailhead by 7–8 AM tomorrow.</div>
+        </div>
+      </div>
+
+      <div class="food-section">
+        <div class="food-title">🍽️ Today's Food Picks</div>
+        <div class="food-tags">
+          <span class="food-tag"><span class="emoji">🍲</span>Winkelshütte — Canederli in broth</span>
+          <span class="food-tag"><span class="emoji">🍫</span>Loacker World — stock the car</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY 8 -->
+  <div class="day-card">
+    <div class="day-header">
+      <div class="day-number">Day<strong>8</strong>Sun</div>
+      <div class="day-info">
+        <h3>Tre Cime Loop — The Bucket List Hike ⛰️</h3>
+        <div class="location-meta">June 7 · Dobbiaco Day Trip · Moderate · 4–5 hrs · ~1,300 ft gain</div>
+        <span class="hotel-badge">🏨 Hotel Simpaty — Dobbiaco</span>
+      </div>
+    </div>
+    <div class="day-body">
+
+      <div class="alert-box">
+        <strong>🎫 Toll Road Reservation Required</strong>
+        You must have pre-booked access to the Auronzo toll road (the only car route to the Tre Cime trailhead). Reservation link: auronzo.info. Confirm this is done before today.
+      </div>
+
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot morning"></div>
+          <div class="tl-label morning">Very Early Morning — Leave by 7:30 AM</div>
+          <div class="tl-content">Drive from Dobbiaco to Misurina (~20 min), then up the toll road to Rifugio Auronzo at 7,700 ft. Park at the trailhead. The parking fills and weather rolls in by early afternoon — early start is essential.</div>
+          <div class="tl-why">Mountain weather in the Dolomites typically holds in the morning and deteriorates by 1–3 PM. Getting on trail by 8–8:30 AM puts you at the most exposed sections before any storms build.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot morning"></div>
+          <div class="tl-label morning">Morning — Tre Cime Loop</div>
+          <div class="tl-content">Classic counterclockwise loop around the three iconic spires (Tre Cime di Lavaredo). The trail wraps around all three peaks — each angle reveals a completely different, jaw-dropping view. Plan 4–5 hours at a comfortable pace.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot morning"></div>
+          <div class="tl-label morning">Mid-Loop — Rifugio Locatelli</div>
+          <div class="tl-content">Stop at <strong>Rifugio Locatelli</strong> — the best viewpoint on the loop with the peaks reflected in small ponds behind the hut. Order <strong>Goulash Soup</strong> — the classic hiker's meal. This is the "Castle in the Sky" view that looks like a painting.</div>
+          <div class="tl-why">Rifugio Locatelli is the iconic Instagram viewpoint of the whole trip. Budget 30–45 min here for photos, soup, and taking it all in.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot afternoon"></div>
+          <div class="tl-label afternoon">Optional Add-On — Cadini di Misurina</div>
+          <div class="tl-content">If energy allows, drive down to Lago di Misurina (stunning milky-blue lake visible on the way) and take the short walk to the Cadini di Misurina viewpoint — another stunning spire cluster, totally different from Tre Cime.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot evening"></div>
+          <div class="tl-label evening">Evening — Recovery Dinner</div>
+          <div class="tl-content">Return to Dobbiaco. Easy dinner and early bed. You're driving to Varenna (4.5+ hrs) tomorrow.</div>
+        </div>
+      </div>
+
+      <div class="food-section">
+        <div class="food-title">🍽️ Today's Food Picks</div>
+        <div class="food-tags">
+          <span class="food-tag"><span class="emoji">🍲</span>Rifugio Locatelli — Goulash Soup</span>
+          <span class="food-tag"><span class="emoji">🎒</span>Pack trail snacks + Loacker wafers</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end days-container -->
+
+<!-- ===================== PHASE 3: LAKE COMO ===================== -->
+<div id="phase-3" class="phase">
+  <div class="phase-tag">Phase 3</div>
+  <h2>Lake Como — Slow Down & Breathe</h2>
+</div>
+
+<div class="days-container">
+
+  <!-- DAY 9 -->
+  <div class="day-card">
+    <div class="day-header">
+      <div class="day-number">Day<strong>9</strong>Mon</div>
+      <div class="day-info">
+        <h3>Dobbiaco → Lecco → Varenna 🚂</h3>
+        <div class="location-meta">June 8 · Longest Transit Day · ~4.5 hrs drive + 20 min train</div>
+        <span class="hotel-badge">🏨 Marble House in Varenna (Check-in Day 1 of 3)</span>
+      </div>
+    </div>
+    <div class="day-body">
+
+      <!-- BOOKING CONFIRMATION BOX -->
+      <div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:10px;padding:16px 20px;margin-bottom:18px;font-size:0.88rem;">
+        <div style="font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;color:#2d6a4f;font-weight:bold;margin-bottom:10px;">🏠 Booking Confirmation — Marble House Varenna</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;">
+          <div><span style="color:#777;font-size:0.75rem;">Booking.com Confirmation #</span><br><strong>6833290222</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">PIN (confidential)</span><br><strong>5779</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Address</span><br><strong>Via Venini, 61, 23829 Varenna, Italy</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Host Phone</span><br><strong><a href="tel:+393406219962" style="color:#2d6a4f;">+39 340 621 9962</a></strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Check-in</span><br><strong>Mon June 8 · 3:00 PM – 7:00 PM</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Check-out</span><br><strong>Thu June 11 · 7:00 AM – 10:00 AM</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Room</span><br><strong>One-Bedroom Apartment · 2 adults</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Key Pickup</span><br><strong>Host will meet you there</strong></div>
+        </div>
+        <div style="margin-top:12px;padding-top:10px;border-top:1px solid #c8e6c9;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <a href="Marble_House_Varenna_Booking_Confirmation.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#003580;color:#fff;text-decoration:none;padding:8px 16px;border-radius:6px;font-size:0.82rem;font-weight:bold;font-family:sans-serif;">📄 Confirmation (Offline)</a>
+          <a href="https://secure.booking.com/confirmation.html?bn=6833290222&pincode=5779" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#0071c2;color:#fff;text-decoration:none;padding:8px 16px;border-radius:6px;font-size:0.82rem;font-weight:bold;font-family:sans-serif;">🌐 Booking.com Live</a>
+          <span style="font-size:0.78rem;color:#555;font-style:italic;">Show either to host on arrival</span>
+        </div>
+        <div style="margin-top:10px;font-size:0.8rem;color:#c62828;"><strong>⚠️ Contact host in advance with your arrival time</strong> — call or message +39 340 621 9962. Check-in window is 3–7 PM only.</div>
+        <div style="margin-top:6px;font-size:0.78rem;color:#777;">Cancellation: Free until May 24 · After that: €1,248 penalty · City tax (€3/person/night) paid at property</div>
+      </div>
+
+      <div class="transport-box">
+        <div class="transport-title">🚗 Drive: Dobbiaco → Lecco (Drop Car at Hertz) → Train to Varenna</div>
+        This is the longest travel day. Drive southwest ~4.5 hrs to Lecco. Drop the rental car at the Hertz location in Lecco. Buy a Trenord ticket at Lecco station. Take the 20-minute direct train to Varenna-Esino station.
+        <div class="why">💡 Why drop the car in Lecco: There's no good place to keep a car in Varenna (it's a tiny lakeside village — no parking). Lecco is the closest practical drop point, and Varenna is a 20-min direct train ride away. The train arrives right in the village — perfect. Buy Trenord tickets at the Lecco station machine (cash or card).</div>
+      </div>
+
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot morning"></div>
+          <div class="tl-label morning">Morning — Early Departure from Dobbiaco</div>
+          <div class="tl-content">Leave Dobbiaco by 8 AM. Long drive south through the Veneto and Lombardy regions — you'll pass Trento, Rovereto, and the Lake Garda region before reaching Lecco. Allow a stop for espresso on the way.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot afternoon"></div>
+          <div class="tl-label afternoon">Midday — Arrive Lecco, Drop Car</div>
+          <div class="tl-content">Return the Hertz car. This is the end of the driving chapter of your trip. Walk to Lecco train station (or short taxi). Buy Trenord ticket (€5–8) to Varenna-Esino.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot afternoon"></div>
+          <div class="tl-label afternoon">Afternoon — Arrive Varenna</div>
+          <div class="tl-content">20-minute train through the Como lakeside. Varenna-Esino station drops you right in the village. Walk to Marble House, check in. The contrast from the rugged Dolomites to the silky lake surface is immediate and stunning.</div>
+          <div class="tl-why">Varenna is considered the most beautiful and least touristy of the major Lake Como villages. The main promenade (passeggiata) is one of the most romantic walks in Italy.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot evening"></div>
+          <div class="tl-label evening">Evening — Celebration Dinner</div>
+          <div class="tl-content"><strong>Il Cavatappi</strong> — tiny, upscale, incredibly fresh. This is the best restaurant in Varenna. Homemade pasta and lake fish. The perfect dinner to mark the shift from adventure to relaxation mode. Reserve ahead.</div>
+        </div>
+      </div>
+
+      <div class="food-section">
+        <div class="food-title">🍽️ Today's Food Picks</div>
+        <div class="food-tags">
+          <span class="food-tag"><span class="emoji">🐟</span>Il Cavatappi — homemade pasta + lake fish</span>
+          <span class="food-tag"><span class="emoji">☕</span>Il Caffè Varenna — lakefront morning coffee</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY 10 -->
+  <div class="day-card">
+    <div class="day-header">
+      <div class="day-number">Day<strong>10</strong>Tue</div>
+      <div class="day-info">
+        <h3>Ferry Triangle — Bellagio & Menaggio ⛴️</h3>
+        <div class="location-meta">June 9 · Varenna Day Trip by Ferry</div>
+        <span class="hotel-badge">🏨 Marble House in Varenna</span>
+      </div>
+    </div>
+    <div class="day-body">
+
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot morning"></div>
+          <div class="tl-label morning">Morning — Ferry to Bellagio</div>
+          <div class="tl-content">Take the mid-lake car ferry from Varenna to <strong>Bellagio</strong> (15–30 min). Bellagio is the most famous Como village — lush gardens, steep alleys, grand villas. Walk up the Via Garibaldi to explore, visit Villa Melzi gardens if open.</div>
+          <div class="tl-why">Bellagio is worth seeing, but it's touristy. Going in the morning before the day-tripper boats arrive makes it much more enjoyable.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot morning"></div>
+          <div class="tl-label morning">Late Morning — Lunch in Bellagio</div>
+          <div class="tl-content"><strong>Ristorante Bilacus</strong> for lake fish and seasonal menu — quiet, refined, excellent. Or grab lighter bites at <strong>La Punta</strong> with lake views and aperitivo.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot afternoon"></div>
+          <div class="tl-label afternoon">Afternoon — Ferry to Menaggio</div>
+          <div class="tl-content">Short ferry hop across to <strong>Menaggio</strong> — the least touristed of the three. Walk the lakeside promenade, have a gelato, enjoy the slower pace. Then ferry back to Varenna.</div>
+          <div class="tl-why">The classic "ferry triangle" between Varenna, Bellagio, and Menaggio uses the same ferry ticket. It's the quintessential Lake Como experience — seeing all three villages in one day from the water.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot evening"></div>
+          <div class="tl-label evening">Evening — Passeggiata in Varenna</div>
+          <div class="tl-content">Walk the Varenna promenade at golden hour — hands down one of the most beautiful evening walks in Italy. The light on the mountains and lake is exceptional. Dinner at a lakeside trattoria or aperitivo with views.</div>
+        </div>
+      </div>
+
+      <div class="food-section">
+        <div class="food-title">🍽️ Today's Food Picks</div>
+        <div class="food-tags">
+          <span class="food-tag"><span class="emoji">🐟</span>Ristorante Bilacus — lake fish</span>
+          <span class="food-tag"><span class="emoji">🍹</span>La Punta — aperitivo with views</span>
+          <span class="food-tag"><span class="emoji">🍦</span>Gelateria Lariana — pistachio + hazelnut</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY 11 -->
+  <div class="day-card">
+    <div class="day-header">
+      <div class="day-number">Day<strong>11</strong>Wed</div>
+      <div class="day-info">
+        <h3>Varenna Rest Day — Lake, Spa, Total Ease 🌊</h3>
+        <div class="location-meta">June 10 · Varenna · No Agenda</div>
+        <span class="hotel-badge">🏨 Marble House in Varenna (Last Night)</span>
+      </div>
+    </div>
+    <div class="day-body">
+
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot morning"></div>
+          <div class="tl-label morning">Morning — Slow Start</div>
+          <div class="tl-content">Sleep in. Breakfast at <strong>Il Caffè Varenna</strong> — cappuccino and a pastry watching the lake. No agenda. This day is built for decompression after 10 days of sightseeing and hiking.</div>
+          <div class="tl-why">You've done Venice museums, 4 Dolomite hikes, a long drive day, and a ferry day. Your body and mind need a genuine rest day before the final push to Milan.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot afternoon"></div>
+          <div class="tl-label afternoon">Options — Choose Your Own Adventure</div>
+          <div class="tl-content">
+            <strong>Option A:</strong> Boat rental on the lake — rent a small motorboat and putter around at your own pace. Incredible freedom.
+            <br><br><strong>Option B:</strong> Spa day. Varenna and surrounding hotels often have spa access. Lake Como spa with mountain views = heaven.
+            <br><br><strong>Option C:</strong> Just sit by the water, read a book, drink wine. You're in one of the most beautiful places on Earth — sometimes that's enough.
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot evening"></div>
+          <div class="tl-label evening">Evening — Last Lake Dinner</div>
+          <div class="tl-content">Your last night on the lake. Make it memorable — go back to <strong>Il Cavatappi</strong> if it was incredible, or try somewhere new. Walk the promenade after dinner one more time.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot tip"></div>
+          <div class="tl-label tip">Tonight: Pack for Milan</div>
+          <div class="tl-content">You're taking the train to Milan tomorrow (~1 hr 5 min). Pack everything. Check train times from Varenna-Esino station to Milano Centrale. Have a Plan B time if the first train is full.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end days-container -->
+
+<!-- ===================== PHASE 4: MILAN ===================== -->
+<div id="phase-4" class="phase">
+  <div class="phase-tag">Phase 4</div>
+  <h2>Milan — The Grand Finale</h2>
+</div>
+
+<div class="days-container">
+
+  <!-- DAY 12 -->
+  <div class="day-card">
+    <div class="day-header">
+      <div class="day-number">Day<strong>12</strong>Thu</div>
+      <div class="day-info">
+        <h3>Varenna → Milan — Duomo & Last Night 🏙️</h3>
+        <div class="location-meta">June 11 · Train ~1 hr 5 min</div>
+        <span class="hotel-badge">🏨 ME Milan Il Duca — Milan (Check-in, 1 Night)</span>
+      </div>
+    </div>
+    <div class="day-body">
+
+      <!-- ME MILAN BOOKING CONFIRMATION -->
+      <div style="background:#f3e5f5;border:1px solid #ce93d8;border-radius:10px;padding:16px 20px;margin-bottom:18px;font-size:0.88rem;">
+        <div style="font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;color:#6a1b9a;font-weight:bold;margin-bottom:10px;">🏙️ ME Milan Il Duca — Booking Confirmation</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;">
+          <div><span style="color:#777;font-size:0.75rem;">Booking Reference</span><br><strong>2602612691</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Room</span><br><strong>Superior Me · 1 room · 2 adults</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Address</span><br><strong>Piazza della Repubblica, 13, 20124 Milan</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Hotel Phone</span><br><strong><a href="tel:+390284220108" style="color:#6a1b9a;">+39 02 8422 0108</a></strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Check-in</span><br><strong>Thu June 11 · from 3:00 PM</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Check-out</span><br><strong>Fri June 12 · before 12:00 PM ⚠️</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Total (Paid)</span><br><strong>€501.35 EUR — Non-refundable</strong></div>
+          <div><span style="color:#777;font-size:0.75rem;">Hotel Email</span><br><strong><a href="mailto:me.milan@melia.com" style="color:#6a1b9a;">me.milan@melia.com</a></strong></div>
+        </div>
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid #ce93d8;font-size:0.8rem;color:#555;">Local city tax: €12/person/night — paid at checkout · Non-refundable rate (100% penalty if cancelled)</div>
+        <div style="margin-top:6px;font-size:0.8rem;color:#c62828;"><strong>⚠️ Flight is 12:20 PM — must check out by 8:30 AM to reach MXP in time</strong></div>
+        <div style="margin-top:10px;font-size:0.8rem;color:#4a148c;font-style:italic;">💍 Special request noted: best available room for a newlywed trip!</div>
+        <div style="margin-top:10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <a href="ME_Milan_IlDuca_Confirmation_2602612691.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#6a1b9a;color:#fff;text-decoration:none;padding:8px 16px;border-radius:6px;font-size:0.82rem;font-weight:bold;font-family:sans-serif;">📄 Confirmation (Offline)</a>
+          <a href="https://www.melia.com/en/hotels/italy/milan/me-milan-il-duca/my-booking.htm?folio=2602612691" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#9c27b0;color:#fff;text-decoration:none;padding:8px 16px;border-radius:6px;font-size:0.82rem;font-weight:bold;font-family:sans-serif;">🌐 Meliá Live</a>
+          <span style="font-size:0.78rem;color:#555;font-style:italic;">Show at check-in</span>
+        </div>
+      </div>
+
+      <div class="transport-box">
+        <div class="transport-title">🚂 Train: Varenna-Esino → Milano Centrale · ~1 hr 5 min</div>
+        Walk to Varenna-Esino station (5 min from village). Direct regional train into Milano Centrale. From Centrale, taxi or metro to ME Milan Il Duca hotel.
+        <div class="why">💡 Why ME Milan Il Duca: This is a design hotel in a prime central location — ideal for one night of Milan style before flying home. After 12 days of alpine hotels and boutique guesthouses, a night of urban luxury is a nice way to close the trip.</div>
+      </div>
+
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot morning"></div>
+          <div class="tl-label morning">Morning — Train to Milan</div>
+          <div class="tl-content">Take an AM train to arrive in Milan by midday. Drop bags at the hotel, then hit the city — you have the whole afternoon.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot afternoon"></div>
+          <div class="tl-label afternoon">Afternoon — Duomo Rooftop</div>
+          <div class="tl-content">Walk to the <strong>Duomo di Milano</strong> — Italy's largest cathedral. Buy rooftop access tickets on-site or in advance. Walking on the rooftop among the spires with views over the city is surprisingly thrilling. Plan 1.5 hrs total.</div>
+          <div class="tl-why">The Duomo rooftop is Milan's essential experience. The cathedral exterior is dramatic from street level, but walking on the roof with the marble spires rising around you is genuinely extraordinary.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot afternoon"></div>
+          <div class="tl-label afternoon">Late Afternoon — Shopping & Galleria</div>
+          <div class="tl-content">Walk through the <strong>Galleria Vittorio Emanuele II</strong> — Milan's breathtaking 19th-century shopping arcade. Window shop the luxury brands, have a Campari at one of the café terraces inside. The mosaic floor and glass dome are iconic.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot evening"></div>
+          <div class="tl-label evening">Evening — Final Dinner</div>
+          <div class="tl-content">
+            <strong>Ratanà</strong> (Bib Gourmand) — refined modern Milanese, risotto is legendary. <br><br>OR<br><br>
+            <strong>Trattoria del Nuovo Macello</strong> — the best Cotoletta alla Milanese in the city. Classic, old-school, no fuss. <br><br>
+            After dinner: one last <strong>Pasticceria Marchesi</strong> stop if still open — take a box of pastries for the flight.
+          </div>
+          <div class="tl-why">This is your last dinner in Italy. Make it count — both options are legendary in their category.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot tip"></div>
+          <div class="tl-label tip">⚠️ Tonight: Set TWO Alarms</div>
+          <div class="tl-content">Your flight is at 12:20 PM from MXP. Leave the hotel by 8:30 AM. Take the Malpensa Express train from Milano Centrale to MXP — ~50 min. Aim to be at the airport by 9:30–10 AM. Pack tonight and confirm nothing is left in the room.</div>
+        </div>
+      </div>
+
+      <div class="food-section">
+        <div class="food-title">🍽️ Today's Food Picks</div>
+        <div class="food-tags">
+          <span class="food-tag"><span class="emoji">🍚</span>Ratanà — risotto (Bib Gourmand)</span>
+          <span class="food-tag"><span class="emoji">🥩</span>Trattoria del Nuovo Macello — Cotoletta</span>
+          <span class="food-tag"><span class="emoji">🥐</span>Pasticceria Marchesi — pastries to go</span>
+          <span class="food-tag"><span class="emoji">🍦</span>Gelato Giusto — chef-driven seasonal flavors</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY 13 -->
+  <div class="day-card">
+    <div class="day-header">
+      <div class="day-number">Day<strong>13</strong>Fri</div>
+      <div class="day-info">
+        <h3>Fly Home ✈️</h3>
+        <div class="location-meta">June 12 · MXP 12:20 PM → SFO</div>
+        <span class="hotel-badge">🏨 Check out of ME Milan Il Duca by 8:30 AM</span>
+      </div>
+    </div>
+    <div class="day-body">
+
+      <div class="transport-box">
+        <div class="transport-title">🚂 Malpensa Express: Milano Centrale → MXP Airport · ~50 min</div>
+        Train departs Milano Centrale every 30 min. Take the 8:30 AM or 9:00 AM departure. Ticket: ~€13. The train drops you directly at MXP Terminal 1. Walk, check in, security, gate.
+        <div class="why">💡 Why leave by 8:30 AM: International flight at 12:20 PM. MXP security and lines can be significant, especially for flights back to the US. Arriving at 9:30–10 AM gives you a comfortable 2.5 hrs, with time for one last espresso at the gate.</div>
+      </div>
+
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot morning"></div>
+          <div class="tl-label morning">Morning — Checkout by 8:30 AM</div>
+          <div class="tl-content">Quick espresso in the hotel lobby or grab one at Centrale station. Board the Malpensa Express. Sit back and watch Milan blur into countryside one last time.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot morning"></div>
+          <div class="tl-label morning">At MXP — Arrive by ~9:30 AM</div>
+          <div class="tl-content">Check in, drop bags, clear security. Use the extra time to browse duty-free, eat airport breakfast, or simply exhale. You're done.</div>
+        </div>
+        <!-- RETURN FLIGHT BOX -->
+        <div style="background:#e3f2fd;border:1px solid #90caf9;border-radius:10px;padding:16px 20px;margin:4px 0 12px;">
+          <div style="font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;color:#0d47a1;font-weight:bold;margin-bottom:10px;">✈️ Air Canada — Return Flights · Ref: BVIVZ4</div>
+          <div style="font-size:0.9rem;margin-bottom:8px;">
+            <strong>AC 895</strong> · MXP depart <strong>12:20 PM</strong> → Montreal (YUL) arrive <strong>2:50 PM</strong><br>
+            <span style="font-size:0.78rem;color:#555;">2h 50m layover in Montreal</span><br><br>
+            <strong>AC 759</strong> · YUL depart <strong>5:40 PM</strong> → SFO arrive <strong>9:02 PM</strong>
+          </div>
+          <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
+            <a href="Flight_Itinerary_AirCanada_BVIVZ4.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#1565c0;color:#fff;text-decoration:none;padding:7px 14px;border-radius:6px;font-size:0.8rem;font-weight:bold;font-family:sans-serif;">📄 Itinerary (Offline)</a>
+            <a href="https://www.aircanada.com/us/en/aco/home/book/manage-bookings.html" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#cc0000;color:#fff;text-decoration:none;padding:7px 14px;border-radius:6px;font-size:0.8rem;font-weight:bold;font-family:sans-serif;">🌐 Air Canada Live</a>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot afternoon"></div>
+          <div class="tl-label afternoon">12:20 PM — Wheels Up for Home 🏠</div>
+          <div class="tl-content">AC 895 MXP → YUL, then AC 759 YUL → SFO. Arrive San Francisco at 9:02 PM. Trip complete.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#f9a825"></div> Morning</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#2d6a4f"></div> Afternoon</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#4a148c"></div> Evening</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#0277bd"></div> Tip / Logistics</div>
+  </div>
+
+</div><!-- end days-container -->
+
+
+</div>
+
+<script>
+  const GOOGLE_CLIENT_ID = '708565807163-uu8teuc876ufboujut8vhdo34ro27v8s.apps.googleusercontent.com';
+  const API_BASE = window.location.hostname === 'localhost' ? '' : 'https://dmpickleball.com';
+  const TOKEN_KEY = 'italy_session';
+
+  // Track whether session check and GSI lib are both ready
+  let _sessionDone = false;
+  let _gsiReady    = false;
+
+  // GSI calls this automatically when the library finishes loading
+  window.onGoogleLibraryLoad = function() {
+    _gsiReady = true;
+    if (_sessionDone) renderSignInButton();
+  };
+
+  // On load: verify any stored session first, then show sign-in if needed
+  window.addEventListener('load', async () => {
+    const stored = localStorage.getItem(TOKEN_KEY);
+    if (stored) {
+      const email = await verifySession(stored);
+      if (email) { showSchedule(email); return; }
+      localStorage.removeItem(TOKEN_KEY);
+    }
+    _sessionDone = true;
+    if (_gsiReady) renderSignInButton();
+  });
+
+  function renderSignInButton() {
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleCredential,
+      auto_select: false,
+      cancel_on_tap_outside: true,
+    });
+    google.accounts.id.renderButton(
+      document.getElementById('g-signin-btn'),
+      { theme: 'outline', size: 'large', text: 'signin_with', shape: 'rectangular', width: 300 }
+    );
+  }
+
+  async function handleCredential(response) {
+    setLoading(true);
+    try {
+      // response.credential is an ID token — exchange for access token via tokenClient
+      // Actually GSI callback gives us an ID token, not access token.
+      // We'll verify the ID token on the server-side by calling Google's tokeninfo endpoint.
+      const idToken = response.credential;
+      const res = await fetch(API_BASE + '/api/students?action=italy-auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ googleToken: idToken }),
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'Access denied');
+      localStorage.setItem(TOKEN_KEY, data.token);
+      showSchedule(data.email);
+    } catch (e) {
+      setLoading(false);
+      showError(e.message);
+    }
+  }
+
+  async function verifySession(token) {
+    try {
+      const res = await fetch(API_BASE + '/api/students?action=italy-auth', {
+        headers: { 'x-italy-token': token },
+      });
+      const data = await res.json();
+      return data.ok ? data.email : null;
+    } catch { return null; }
+  }
+
+  function showSchedule(email) {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('signout-bar').style.display = 'block';
+    document.getElementById('signout-email').textContent = email;
+    document.getElementById('schedule-wrap').style.display = 'block';
+  }
+
+  function signOut() {
+    localStorage.removeItem(TOKEN_KEY);
+    location.reload();
+  }
+
+  function setLoading(on) {
+    document.getElementById('auth-loading').style.display = on ? 'block' : 'none';
+    document.getElementById('auth-error').style.display = 'none';
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('auth-error');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+</script>
+</body>
+</html>
