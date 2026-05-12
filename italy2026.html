@@ -1393,7 +1393,17 @@
   const API_BASE = window.location.hostname === 'localhost' ? '' : 'https://dmpickleball.com';
   const TOKEN_KEY = 'italy_session';
 
-  // ── On load: check existing session ──────────────────────────────────────
+  // Track whether session check and GSI lib are both ready
+  let _sessionDone = false;
+  let _gsiReady    = false;
+
+  // GSI calls this automatically when the library finishes loading
+  window.onGoogleLibraryLoad = function() {
+    _gsiReady = true;
+    if (_sessionDone) renderSignInButton();
+  };
+
+  // On load: verify any stored session first, then show sign-in if needed
   window.addEventListener('load', async () => {
     const stored = localStorage.getItem(TOKEN_KEY);
     if (stored) {
@@ -1401,10 +1411,11 @@
       if (email) { showSchedule(email); return; }
       localStorage.removeItem(TOKEN_KEY);
     }
-    initGoogleSignIn();
+    _sessionDone = true;
+    if (_gsiReady) renderSignInButton();
   });
 
-  function initGoogleSignIn() {
+  function renderSignInButton() {
     google.accounts.id.initialize({
       client_id: GOOGLE_CLIENT_ID,
       callback: handleCredential,
