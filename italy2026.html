@@ -1424,7 +1424,7 @@
       // Actually GSI callback gives us an ID token, not access token.
       // We'll verify the ID token on the server-side by calling Google's tokeninfo endpoint.
       const idToken = response.credential;
-      const res = await fetch(API_BASE + '/api/italy-auth', {
+      const res = await fetch(API_BASE + '/api/students?action=italy-auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ googleToken: idToken }),
@@ -1441,7 +1441,7 @@
 
   async function verifySession(token) {
     try {
-      const res = await fetch(API_BASE + '/api/italy-auth', {
+      const res = await fetch(API_BASE + '/api/students?action=italy-auth', {
         headers: { 'x-italy-token': token },
       });
       const data = await res.json();
