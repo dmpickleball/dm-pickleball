@@ -16,17 +16,45 @@
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    background: linear-gradient(135deg, #1a3a2a 0%, #2d6a4f 50%, #1b4332 100%);
     padding: 40px 20px;
+    position: relative;
+    overflow: hidden;
+    background: #0d1f1a;
+  }
+
+  /* Illustrated skyline backdrop */
+  #auth-screen::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      /* Sky gradient */
+      linear-gradient(180deg, #1a2744 0%, #2d4a7a 30%, #c8956c 65%, #e8b87a 80%, #1a3a2a 100%);
+    z-index: 0;
+  }
+
+  /* SVG scene layer */
+  #auth-bg-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+  }
+
+  .auth-card {
+    position: relative;
+    z-index: 2;
   }
   .auth-card {
-    background: #fff;
+    background: rgba(255,255,255,0.97);
+    backdrop-filter: blur(12px);
     border-radius: 16px;
     padding: 48px 40px;
     max-width: 420px;
     width: 100%;
     text-align: center;
-    box-shadow: 0 24px 60px rgba(0,0,0,0.35);
+    box-shadow: 0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.15);
   }
   .auth-flag { font-size: 3.5rem; margin-bottom: 16px; }
   .auth-card h1 {
@@ -423,10 +451,192 @@
 
 <!-- ════════════════════ AUTH SCREEN ════════════════════ -->
 <div id="auth-screen">
+  <!-- Illustrated Italian scene: Venice canal + Dolomites + lake -->
+  <svg id="auth-bg-svg" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#1a2744"/>
+        <stop offset="40%" stop-color="#2d4a7a"/>
+        <stop offset="70%" stop-color="#c8956c"/>
+        <stop offset="88%" stop-color="#e8b87a"/>
+        <stop offset="100%" stop-color="#2d6a4f"/>
+      </linearGradient>
+      <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#1a3a5c" stop-opacity="0.9"/>
+        <stop offset="100%" stop-color="#0d2035" stop-opacity="1"/>
+      </linearGradient>
+      <linearGradient id="mtn1" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#c8d8e8"/>
+        <stop offset="30%" stop-color="#a0b8cc"/>
+        <stop offset="100%" stop-color="#4a7a9b"/>
+      </linearGradient>
+      <linearGradient id="mtn2" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#e8f0f8"/>
+        <stop offset="25%" stop-color="#b0c8d8"/>
+        <stop offset="100%" stop-color="#3a6a8a"/>
+      </linearGradient>
+      <filter id="glow">
+        <feGaussianBlur stdDeviation="3" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+
+    <!-- Sky -->
+    <rect width="1200" height="700" fill="url(#sky)"/>
+
+    <!-- Stars -->
+    <g fill="#fff" opacity="0.7">
+      <circle cx="80" cy="60" r="1.2"/><circle cx="150" cy="30" r="0.8"/>
+      <circle cx="220" cy="80" r="1.5"/><circle cx="310" cy="45" r="1"/>
+      <circle cx="420" cy="25" r="1.2"/><circle cx="500" cy="70" r="0.9"/>
+      <circle cx="600" cy="40" r="1.4"/><circle cx="700" cy="20" r="1"/>
+      <circle cx="800" cy="55" r="1.2"/><circle cx="900" cy="35" r="0.8"/>
+      <circle cx="1000" cy="65" r="1.3"/><circle cx="1100" cy="28" r="1"/>
+      <circle cx="1050" cy="90" r="0.9"/><circle cx="340" cy="110" r="0.7"/>
+      <circle cx="760" cy="85" r="1.1"/>
+    </g>
+
+    <!-- Moon -->
+    <circle cx="950" cy="80" r="28" fill="#f5e6c8" opacity="0.9" filter="url(#glow)"/>
+    <circle cx="962" cy="72" r="22" fill="#2d4a7a" opacity="0.9"/>
+
+    <!-- Far Dolomite peaks (distant, hazy) -->
+    <polygon points="0,320 80,200 160,270 220,180 300,240 380,160 460,230 540,170 620,240 680,190 760,250 820,200 900,260 950,220 1000,270 1050,210 1100,265 1150,230 1200,260 1200,380 0,380" fill="#4a7a9b" opacity="0.35"/>
+
+    <!-- Mid Dolomites (dramatic towers) -->
+    <!-- Tre Cime style towers -->
+    <g opacity="0.75">
+      <!-- Left tower group -->
+      <polygon points="60,380 95,270 115,260 140,270 170,380" fill="url(#mtn1)"/>
+      <polygon points="80,380 100,290 115,282 130,290 150,380" fill="url(#mtn2)"/>
+      <!-- Snow caps -->
+      <polygon points="95,270 105,255 115,260 125,258 140,270 130,278 115,272 100,278" fill="#f0f4f8" opacity="0.9"/>
+
+      <!-- Center peak -->
+      <polygon points="380,380 430,230 460,218 490,228 540,380" fill="url(#mtn1)"/>
+      <polygon points="420,380 445,255 460,240 475,252 510,380" fill="url(#mtn2)"/>
+      <polygon points="430,230 445,215 460,208 475,214 490,228 475,240 460,232 445,238" fill="#eef2f6" opacity="0.9"/>
+
+      <!-- Right tower group -->
+      <polygon points="900,380 950,260 975,248 1000,258 1040,380" fill="url(#mtn1)"/>
+      <polygon points="930,380 958,278 975,265 992,276 1020,380" fill="url(#mtn2)"/>
+      <polygon points="950,260 963,245 975,238 987,244 1000,258 988,268 975,262 962,266" fill="#eef2f6" opacity="0.9"/>
+
+      <!-- Far right -->
+      <polygon points="1060,380 1100,290 1120,280 1140,288 1200,380" fill="url(#mtn1)" opacity="0.8"/>
+    </g>
+
+    <!-- Lake Como silhouette (middle ground) -->
+    <path d="M0,420 Q150,390 300,400 Q450,380 600,395 Q750,385 900,398 Q1050,388 1200,405 L1200,480 Q1050,460 900,468 Q750,455 600,465 Q450,458 300,468 Q150,460 0,472 Z" fill="#1a3a5c" opacity="0.5"/>
+
+    <!-- Water reflection shimmer -->
+    <g opacity="0.3" fill="#7ab8d8">
+      <ellipse cx="200" cy="445" rx="60" ry="4"/>
+      <ellipse cx="600" cy="440" rx="80" ry="3"/>
+      <ellipse cx="980" cy="448" rx="55" ry="3.5"/>
+      <ellipse cx="400" cy="455" rx="35" ry="2"/>
+      <ellipse cx="800" cy="452" rx="45" ry="2.5"/>
+    </g>
+
+    <!-- Venice canal water (foreground) -->
+    <rect x="0" y="550" width="1200" height="150" fill="url(#water)"/>
+    <g opacity="0.2" fill="#4a9cc8">
+      <ellipse cx="100" cy="565" rx="80" ry="5"/>
+      <ellipse cx="350" cy="570" rx="100" ry="4"/>
+      <ellipse cx="650" cy="562" rx="90" ry="5"/>
+      <ellipse cx="950" cy="568" rx="85" ry="4"/>
+      <ellipse cx="1150" cy="560" rx="70" ry="5"/>
+    </g>
+
+    <!-- Venice buildings silhouette (foreground) -->
+    <g fill="#1a2a3a" opacity="0.85">
+      <!-- Left cluster -->
+      <rect x="0" y="470" width="55" height="80"/>
+      <rect x="20" y="455" width="30" height="95"/>
+      <rect x="60" y="480" width="45" height="70"/>
+      <rect x="110" y="465" width="50" height="85"/>
+      <rect x="130" y="450" width="25" height="100"/>
+      <!-- Campanile style tower -->
+      <rect x="170" y="420" width="18" height="130"/>
+      <polygon points="168,420 179,400 190,420" fill="#1a2a3a" opacity="0.85"/>
+      <rect x="175" y="415" width="6" height="8" fill="#c8956c" opacity="0.6"/>
+
+      <rect x="195" y="475" width="60" height="75"/>
+      <rect x="215" y="460" width="35" height="90"/>
+      <rect x="260" y="468" width="55" height="82"/>
+
+      <!-- Domed church (Santa Maria della Salute style) -->
+      <rect x="320" y="490" width="80" height="60"/>
+      <ellipse cx="360" cy="490" rx="42" ry="25" fill="#1a2a3a" opacity="0.85"/>
+      <rect x="352" y="462" width="16" height="28"/>
+      <ellipse cx="360" cy="462" rx="10" ry="8" fill="#1a2a3a" opacity="0.85"/>
+      <rect x="303" y="490" width="15" height="60"/>
+      <rect x="402" y="490" width="15" height="60"/>
+
+      <rect x="410" y="478" width="50" height="72"/>
+      <rect x="465" y="470" width="40" height="80"/>
+      <rect x="510" y="482" width="55" height="68"/>
+      <rect x="525" y="462" width="20" height="88"/>
+
+      <!-- Another campanile -->
+      <rect x="572" y="428" width="16" height="122"/>
+      <polygon points="570,428 580,408 590,428" fill="#1a2a3a" opacity="0.85"/>
+
+      <rect x="595" y="472" width="60" height="78"/>
+      <rect x="660" y="465" width="50" height="85"/>
+      <rect x="715" y="475" width="45" height="75"/>
+
+      <!-- Rialto bridge area -->
+      <rect x="765" y="480" width="70" height="70"/>
+      <path d="M765,480 Q800,455 835,480" fill="#1a2a3a" opacity="0.85"/>
+
+      <rect x="840" y="472" width="55" height="78"/>
+      <rect x="900" y="468" width="50" height="82"/>
+
+      <!-- Right campanile -->
+      <rect x="958" y="432" width="16" height="118"/>
+      <polygon points="956,432 966,412 976,432" fill="#1a2a3a" opacity="0.85"/>
+
+      <rect x="980" y="478" width="60" height="72"/>
+      <rect x="1045" y="470" width="50" height="80"/>
+      <rect x="1100" y="476" width="55" height="74"/>
+      <rect x="1160" y="465" width="45" height="85"/>
+    </g>
+
+    <!-- Gondola silhouettes -->
+    <g fill="#0d1520" opacity="0.8">
+      <!-- Gondola 1 -->
+      <path d="M180,590 Q220,582 260,585 Q270,585 275,590 Q270,596 260,594 Q220,591 180,598 Q175,596 180,590Z"/>
+      <line x1="230" y1="583" x2="235" y2="560" stroke="#0d1520" stroke-width="1.5"/>
+      <polygon points="230,560 238,580 222,580" fill="#0d1520" opacity="0.6"/>
+
+      <!-- Gondola 2 -->
+      <path d="M680,586 Q720,578 760,581 Q770,581 775,586 Q770,592 760,590 Q720,587 680,594 Q675,592 680,586Z"/>
+      <line x1="728" y1="579" x2="733" y2="556" stroke="#0d1520" stroke-width="1.5"/>
+      <polygon points="728,556 736,576 720,576" fill="#0d1520" opacity="0.6"/>
+
+      <!-- Gondola 3 -->
+      <path d="M1000,592 Q1040,584 1080,587 Q1090,587 1095,592 Q1090,598 1080,596 Q1040,593 1000,600 Q995,598 1000,592Z"/>
+      <line x1="1048" y1="585" x2="1053" y2="562" stroke="#0d1520" stroke-width="1.5"/>
+    </g>
+
+    <!-- Moon reflection on water -->
+    <ellipse cx="950" cy="570" rx="15" ry="40" fill="#f5e6c8" opacity="0.12"/>
+
+    <!-- Foreground ground strip -->
+    <rect x="0" y="645" width="1200" height="55" fill="#1a3a2a"/>
+    <!-- Cypress trees -->
+    <g fill="#0d2a1a">
+      <ellipse cx="50" cy="638" rx="8" ry="22"/>
+      <ellipse cx="1150" cy="640" rx="8" ry="20"/>
+      <ellipse cx="300" cy="642" rx="7" ry="18"/>
+      <ellipse cx="900" cy="638" rx="8" ry="22"/>
+    </g>
+  </svg>
   <div class="auth-card">
     <div class="auth-flag">🇮🇹</div>
     <h1>Italy 2026</h1>
-    <p class="auth-subtitle">David &amp; Amanda's Honeymoon</p>
+    <p class="auth-subtitle">Venice · Dolomites · Lake Como · Milan</p>
     <p class="auth-dates">May 30 – June 12, 2026</p>
     <hr class="auth-divider">
     <p class="auth-label">Sign in to view your itinerary</p>
