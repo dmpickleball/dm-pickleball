@@ -16,6 +16,69 @@ function rateLimit(ip, max, windowMs) {
   return true;
 }
 
+// ── Italy 2026 Live Tracker ───────────────────────────────────────────────────
+const ITALY_LIVE_PASSWORD = 'pickleball';
+const ITALY_LIVE_TTL = 14 * 24 * 60 * 60 * 1000; // 14 days
+
+function signLiveToken() {
+  const ts = Date.now();
+  const secret = process.env.ITALY_SESSION_SECRET || process.env.ADMIN_SESSION_SECRET || 'fallback';
+  const sig = createHmac('sha256', secret).update(`live:${ts}`).digest('hex');
+  return Buffer.from(JSON.stringify({ ts, sig })).toString('base64url');
+}
+
+function verifyLiveToken(token) {
+  try {
+    if (!token) return false;
+    const { ts, sig } = JSON.parse(Buffer.from(token, 'base64url').toString());
+    if (Date.now() - ts > ITALY_LIVE_TTL) return false;
+    const secret = process.env.ITALY_SESSION_SECRET || process.env.ADMIN_SESSION_SECRET || 'fallback';
+    const expected = createHmac('sha256', secret).update(`live:${ts}`).digest('hex');
+    return timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'));
+  } catch { return false; }
+}
+
+async function getICloudPhotos() {
+  const token = process.env.ICLOUD_ALBUM_TOKEN;
+  if (!token) return [];
+  try {
+    const base = `https://p01-sharedstreams.icloud.com/${token}/sharedstreams`;
+    const streamRes = await fetch(`${base}/webstream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Origin': 'https://www.icloud.com' },
+      body: JSON.stringify({ streamCtag: null }),
+    });
+    if (!streamRes.ok) return [];
+    const stream = await streamRes.json();
+    // Apple may redirect to a different partition
+    const host = stream['X-Apple-MMe-Host'];
+    const finalBase = host ? `https://${host}/${token}/sharedstreams` : base;
+    const photos = (stream.photos || []).slice(0, 60);
+    if (!photos.length) return [];
+    const guids = photos.map(p => p.photoGuid);
+    const urlRes = await fetch(`${finalBase}/webasseturls`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Origin': 'https://www.icloud.com' },
+      body: JSON.stringify({ photoGuids: guids }),
+    });
+    if (!urlRes.ok) return [];
+    const urlData = await urlRes.json();
+    return photos.map(photo => {
+      const derivatives = photo.derivatives || {};
+      const keys = Object.keys(derivatives).map(Number).filter(k => !isNaN(k)).sort((a, b) => b - a);
+      const best = keys[0]?.toString();
+      if (!best) return null;
+      const d = derivatives[best];
+      const loc = urlData.items?.[d.checksum];
+      if (!loc) return null;
+      return { url: loc.url_location + loc.url_path, caption: photo.caption || '' };
+    }).filter(Boolean);
+  } catch (e) {
+    console.error('iCloud photos error:', e.message);
+    return [];
+  }
+}
+
 // ── Italy 2026 auth ───────────────────────────────────────────────────────────
 const ITALY_ALLOWED_EMAILS = ['davidmokblock@gmail.com', 'amandale91@gmail.com'];
 const ITALY_TOKEN_TTL = 30 * 24 * 60 * 60 * 1000;
@@ -251,6 +314,44 @@ export default async function handler(req, res) {
       console.error('get-admin-token error:', err);
       return res.status(500).json({error:'Token verification failed'});
     }
+  }
+
+  // ── Italy 2026 Live Tracker ──────────────────────────────────────────────────
+  if (action === 'live-login') {
+    const { password } = req.body || {};
+    if (password !== ITALY_LIVE_PASSWORD) return res.status(403).json({ ok: false, error: 'Wrong password' });
+    return res.status(200).json({ ok: true, token: signLiveToken() });
+  }
+
+  if (action === 'live-verify') {
+    const token = req.headers['x-live-token'] || '';
+    return res.status(200).json({ ok: verifyLiveToken(token) });
+  }
+
+  if (action === 'live-update-location') {
+    // Called from italy2026.html on login — requires valid italy session token
+    const italyToken = req.headers['x-italy-token'] || '';
+    if (!verifyItalyToken(italyToken)) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+    const { lat, lng, city } = req.body || {};
+    if (!lat || !lng) return res.status(400).json({ ok: false, error: 'lat/lng required' });
+    const { error } = await supabase.from('italy_location').upsert({ id: 1, lat, lng, city: city || null, updated_at: new Date().toISOString() });
+    if (error) return res.status(500).json({ ok: false, error: error.message });
+    return res.status(200).json({ ok: true });
+  }
+
+  if (action === 'live-get-location') {
+    const token = req.headers['x-live-token'] || '';
+    if (!verifyLiveToken(token)) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+    const { data, error } = await supabase.from('italy_location').select('*').eq('id', 1).single();
+    if (error || !data) return res.status(200).json({ ok: true, lat: null, lng: null });
+    return res.status(200).json({ ok: true, ...data });
+  }
+
+  if (action === 'live-get-photos') {
+    const token = req.headers['x-live-token'] || '';
+    if (!verifyLiveToken(token)) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+    const photos = await getICloudPhotos();
+    return res.status(200).json({ ok: true, photos });
   }
 
   // ── Italy 2026 auth ─────────────────────────────────────────────────────────

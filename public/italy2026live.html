@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Italy 2026 — Live Tracker</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Georgia', serif; background: #0d1f1a; color: #2c2c2c; }
+
+  /* ── PASSWORD SCREEN ── */
+  #pw-screen {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; min-height: 100vh; padding: 40px 20px;
+    position: relative; overflow: hidden;
+  }
+  #pw-screen::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg,#1a2744 0%,#2d4a7a 30%,#c8956c 65%,#e8b87a 80%,#1a3a2a 100%);
+    z-index: 0;
+  }
+  #pw-bg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
+  .pw-card {
+    position: relative; z-index: 2;
+    background: rgba(255,255,255,0.97);
+    border-radius: 16px; padding: 48px 40px; max-width: 420px; width: 100%;
+    text-align: center;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.15);
+  }
+  .pw-flag { font-size: 3rem; margin-bottom: 14px; }
+  .pw-card h1 { font-size: 1.7rem; font-weight: normal; color: #1b4332; margin-bottom: 4px; }
+  .pw-card .pw-sub { font-size: 0.9rem; color: #666; font-style: italic; margin-bottom: 6px; }
+  .pw-card .pw-dates { font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; color: #2d6a4f; margin-bottom: 28px; }
+  .pw-card hr { border: none; border-top: 1px solid #e8e3dd; margin: 0 0 24px; }
+  .pw-label { font-size: 0.8rem; color: #888; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; }
+  .pw-input-wrap { display: flex; gap: 8px; }
+  .pw-input-wrap input {
+    flex: 1; padding: 12px 16px; border: 1.5px solid #ddd; border-radius: 8px;
+    font-size: 1rem; font-family: inherit; outline: none;
+    transition: border-color 0.2s;
+  }
+  .pw-input-wrap input:focus { border-color: #2d6a4f; }
+  .pw-input-wrap button {
+    background: #2d6a4f; color: #fff; border: none; border-radius: 8px;
+    padding: 12px 20px; font-size: 0.9rem; cursor: pointer; font-family: inherit;
+    transition: background 0.2s;
+  }
+  .pw-input-wrap button:hover { background: #1b4332; }
+  #pw-error { margin-top: 14px; color: #c0392b; font-size: 0.88rem; display: none; }
+
+  /* ── TRACKER ── */
+  #tracker { display: none; }
+  .topbar {
+    background: linear-gradient(135deg,#1a3a2a 0%,#2d6a4f 100%);
+    color: #fff; padding: 18px 28px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  }
+  .topbar-left h1 { font-size: 1.4rem; font-weight: normal; }
+  .topbar-left p { font-size: 0.82rem; opacity: 0.75; letter-spacing: 0.08em; margin-top: 2px; }
+  .topbar-right { font-size: 0.78rem; opacity: 0.7; text-align: right; }
+
+  .section { max-width: 1000px; margin: 0 auto; padding: 32px 20px; }
+  .section-title {
+    font-size: 1.15rem; font-weight: normal; color: #1b4332;
+    margin-bottom: 16px; padding-bottom: 10px;
+    border-bottom: 2px solid #d4edda;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* ── MAP ── */
+  #map-wrap { border-radius: 14px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.14); }
+  #map { height: 380px; }
+  .location-bar {
+    background: #fff; padding: 14px 20px;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    border-top: 1px solid #eee;
+  }
+  .loc-dot {
+    width: 10px; height: 10px; border-radius: 50%; background: #2d6a4f;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(45,106,79,0.5); }
+    50% { box-shadow: 0 0 0 8px rgba(45,106,79,0); }
+  }
+  .loc-text { font-size: 0.92rem; color: #333; }
+  .loc-time { font-size: 0.78rem; color: #888; margin-left: auto; }
+
+  /* ── PHOTOS ── */
+  .photo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+  }
+  .photo-item {
+    border-radius: 10px; overflow: hidden;
+    aspect-ratio: 1; background: #e8e3dd;
+    position: relative; cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .photo-item:hover { transform: scale(1.03); box-shadow: 0 8px 24px rgba(0,0,0,0.18); }
+  .photo-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .photo-caption {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,0.6));
+    color: #fff; font-size: 0.75rem; padding: 20px 8px 8px;
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .photo-item:hover .photo-caption { opacity: 1; }
+  .photos-empty {
+    text-align: center; padding: 48px 20px; color: #888;
+    background: #f9f6f2; border-radius: 12px; font-style: italic;
+  }
+  .photos-empty .big { font-size: 2.5rem; margin-bottom: 10px; }
+
+  /* ── LIGHTBOX ── */
+  #lightbox {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92);
+    z-index: 9999; align-items: center; justify-content: center;
+  }
+  #lightbox.open { display: flex; }
+  #lightbox img { max-width: 92vw; max-height: 88vh; border-radius: 8px; object-fit: contain; }
+  #lightbox-close {
+    position: absolute; top: 20px; right: 28px;
+    color: #fff; font-size: 2rem; cursor: pointer; line-height: 1;
+    background: none; border: none;
+  }
+
+  /* ── REFRESH BADGE ── */
+  .refresh-btn {
+    background: none; border: 1px solid #2d6a4f; color: #2d6a4f;
+    border-radius: 20px; padding: 4px 14px; font-size: 0.78rem;
+    cursor: pointer; font-family: inherit; margin-left: auto;
+  }
+  .refresh-btn:hover { background: #2d6a4f; color: #fff; }
+
+  @media (max-width: 600px) {
+    .pw-card { padding: 36px 24px; }
+    .pw-input-wrap { flex-direction: column; }
+    .topbar { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ PASSWORD SCREEN ═══════════════ -->
+<div id="pw-screen">
+  <svg id="pw-bg" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#1a2744"/><stop offset="40%" stop-color="#2d4a7a"/>
+        <stop offset="70%" stop-color="#c8956c"/><stop offset="88%" stop-color="#e8b87a"/>
+        <stop offset="100%" stop-color="#2d6a4f"/>
+      </linearGradient>
+      <linearGradient id="mtn1" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#c8d8e8"/><stop offset="100%" stop-color="#4a7a9b"/>
+      </linearGradient>
+      <linearGradient id="mtn2" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#e8f0f8"/><stop offset="100%" stop-color="#3a6a8a"/>
+      </linearGradient>
+      <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#1a3a5c" stop-opacity="0.9"/>
+        <stop offset="100%" stop-color="#0d2035"/>
+      </linearGradient>
+      <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+    <rect width="1200" height="700" fill="url(#sky)"/>
+    <g fill="#fff" opacity="0.7">
+      <circle cx="80" cy="60" r="1.2"/><circle cx="220" cy="80" r="1.5"/><circle cx="420" cy="25" r="1.2"/>
+      <circle cx="600" cy="40" r="1.4"/><circle cx="800" cy="55" r="1.2"/><circle cx="1000" cy="65" r="1.3"/>
+      <circle cx="340" cy="110" r="0.7"/><circle cx="760" cy="85" r="1.1"/><circle cx="150" cy="30" r="0.8"/>
+    </g>
+    <circle cx="950" cy="80" r="28" fill="#f5e6c8" opacity="0.9" filter="url(#glow)"/>
+    <circle cx="962" cy="72" r="22" fill="#2d4a7a" opacity="0.9"/>
+    <polygon points="0,320 80,200 160,270 220,180 300,240 380,160 460,230 540,170 620,240 680,190 760,250 820,200 900,260 950,220 1000,270 1050,210 1100,265 1200,260 1200,380 0,380" fill="#4a7a9b" opacity="0.35"/>
+    <g opacity="0.75">
+      <polygon points="60,380 95,270 115,260 140,270 170,380" fill="url(#mtn1)"/>
+      <polygon points="80,380 100,290 115,282 130,290 150,380" fill="url(#mtn2)"/>
+      <polygon points="95,270 105,255 115,260 125,258 140,270 130,278 115,272 100,278" fill="#eef2f6" opacity="0.9"/>
+      <polygon points="380,380 430,230 460,218 490,228 540,380" fill="url(#mtn1)"/>
+      <polygon points="420,380 445,255 460,240 475,252 510,380" fill="url(#mtn2)"/>
+      <polygon points="430,230 445,215 460,208 475,214 490,228 475,240 460,232 445,238" fill="#eef2f6" opacity="0.9"/>
+      <polygon points="900,380 950,260 975,248 1000,258 1040,380" fill="url(#mtn1)"/>
+      <polygon points="930,380 958,278 975,265 992,276 1020,380" fill="url(#mtn2)"/>
+      <polygon points="950,260 963,245 975,238 987,244 1000,258 988,268 975,262 962,266" fill="#eef2f6" opacity="0.9"/>
+    </g>
+    <rect x="0" y="550" width="1200" height="150" fill="url(#water)"/>
+    <g fill="#1a2a3a" opacity="0.85">
+      <rect x="20" y="455" width="30" height="95"/><rect x="60" y="480" width="45" height="70"/>
+      <rect x="130" y="450" width="25" height="100"/>
+      <rect x="170" y="420" width="18" height="130"/>
+      <polygon points="168,420 179,400 190,420" fill="#1a2a3a"/>
+      <rect x="215" y="460" width="35" height="90"/><rect x="260" y="468" width="55" height="82"/>
+      <rect x="320" y="490" width="80" height="60"/>
+      <ellipse cx="360" cy="490" rx="42" ry="25" fill="#1a2a3a"/>
+      <rect x="352" y="462" width="16" height="28"/>
+      <rect x="525" y="462" width="20" height="88"/>
+      <rect x="572" y="428" width="16" height="122"/>
+      <polygon points="570,428 580,408 590,428" fill="#1a2a3a"/>
+      <rect x="660" y="465" width="50" height="85"/>
+      <rect x="765" y="480" width="70" height="70"/>
+      <path d="M765,480 Q800,455 835,480" fill="#1a2a3a"/>
+      <rect x="958" y="432" width="16" height="118"/>
+      <polygon points="956,432 966,412 976,432" fill="#1a2a3a"/>
+      <rect x="1045" y="470" width="50" height="80"/><rect x="1100" y="476" width="55" height="74"/>
+    </g>
+    <g fill="#0d1520" opacity="0.8">
+      <path d="M180,590 Q220,582 260,585 Q270,585 275,590 Q270,596 260,594 Q220,591 180,598 Q175,596 180,590Z"/>
+      <line x1="230" y1="583" x2="235" y2="560" stroke="#0d1520" stroke-width="1.5"/>
+      <path d="M680,586 Q720,578 760,581 Q770,581 775,586 Q770,592 760,590 Q720,587 680,594 Q675,592 680,586Z"/>
+      <line x1="728" y1="579" x2="733" y2="556" stroke="#0d1520" stroke-width="1.5"/>
+    </g>
+    <rect x="0" y="645" width="1200" height="55" fill="#1a3a2a"/>
+  </svg>
+
+  <div class="pw-card">
+    <div class="pw-flag">🇮🇹</div>
+    <h1>Italy 2026</h1>
+    <p class="pw-sub">Live Family Tracker</p>
+    <p class="pw-dates">Venice · Dolomites · Lake Como · Milan</p>
+    <hr>
+    <p class="pw-label">Enter password to view</p>
+    <div class="pw-input-wrap">
+      <input type="password" id="pw-input" placeholder="Password" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter')checkPassword()">
+      <button onclick="checkPassword()">View →</button>
+    </div>
+    <div id="pw-error">Wrong password — try again</div>
+  </div>
+</div>
+
+<!-- ═══════════════ TRACKER ═══════════════ -->
+<div id="tracker">
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1>🇮🇹 Italy 2026 — Live Tracker</h1>
+      <p>Venice · Dolomites · Lake Como · Milan · May 30 – June 12</p>
+    </div>
+    <div class="topbar-right" id="last-refresh">Loading…</div>
+  </div>
+
+  <!-- MAP -->
+  <div class="section">
+    <div class="section-title">
+      📍 Current Location
+      <button class="refresh-btn" onclick="refreshAll()">↻ Refresh</button>
+    </div>
+    <div id="map-wrap">
+      <div id="map"></div>
+      <div class="location-bar">
+        <div class="loc-dot"></div>
+        <div class="loc-text" id="loc-text">Fetching location…</div>
+        <div class="loc-time" id="loc-time"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHOTOS -->
+  <div class="section" style="padding-top:0;">
+    <div class="section-title">📸 Trip Photos</div>
+    <div id="photo-grid" class="photo-grid"></div>
+  </div>
+
+  <div style="text-align:center;padding:24px;color:#999;font-size:0.8rem;">
+    Auto-refreshes every 5 minutes · Page updates when David or Amanda check in
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div id="lightbox">
+  <button id="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<script>
+  const API = 'https://dmpickleball.com';
+  const PW_KEY = 'italy_live_token';
+  let map, marker;
+
+  // ── Password ────────────────────────────────────────────────────────────────
+  async function checkPassword() {
+    const pw = document.getElementById('pw-input').value.trim();
+    if (!pw) return;
+    try {
+      const r = await fetch(API + '/api/students?action=live-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pw }),
+      });
+      const d = await r.json();
+      if (!d.ok) throw new Error(d.error || 'Wrong password');
+      localStorage.setItem(PW_KEY, d.token);
+      showTracker();
+    } catch (e) {
+      document.getElementById('pw-error').style.display = 'block';
+      document.getElementById('pw-error').textContent = e.message;
+    }
+  }
+
+  // ── Init ────────────────────────────────────────────────────────────────────
+  window.addEventListener('load', async () => {
+    const token = localStorage.getItem(PW_KEY);
+    if (token) {
+      const r = await fetch(API + '/api/students?action=live-verify', {
+        headers: { 'x-live-token': token }
+      });
+      const d = await r.json().catch(() => ({}));
+      if (d.ok) { showTracker(); return; }
+      localStorage.removeItem(PW_KEY);
+    }
+    document.getElementById('pw-screen').style.display = 'flex';
+  });
+
+  function showTracker() {
+    document.getElementById('pw-screen').style.display = 'none';
+    document.getElementById('tracker').style.display = 'block';
+    initMap();
+    refreshAll();
+    setInterval(refreshAll, 5 * 60 * 1000);
+  }
+
+  // ── Map ─────────────────────────────────────────────────────────────────────
+  function initMap() {
+    map = L.map('map', { zoomControl: true }).setView([45.5, 11.5], 7);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 18,
+    }).addTo(map);
+
+    // Custom green pin
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="background:#2d6a4f;width:16px;height:16px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.4);"></div>`,
+      iconSize: [16, 16],
+      iconAnchor: [8, 8],
+    });
+    marker = L.marker([45.4408, 12.3155], { icon })
+      .addTo(map)
+      .bindPopup('📍 Last known location');
+  }
+
+  // ── Refresh ─────────────────────────────────────────────────────────────────
+  async function refreshAll() {
+    const token = localStorage.getItem(PW_KEY);
+    await Promise.all([loadLocation(token), loadPhotos(token)]);
+    document.getElementById('last-refresh').textContent =
+      'Updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  async function loadLocation(token) {
+    try {
+      const r = await fetch(API + '/api/students?action=live-get-location', {
+        headers: { 'x-live-token': token }
+      });
+      const d = await r.json();
+      if (!d.ok || !d.lat) return;
+      const latlng = [d.lat, d.lng];
+      marker.setLatLng(latlng);
+      map.setView(latlng, 13);
+      document.getElementById('loc-text').textContent = d.city || `${d.lat.toFixed(4)}, ${d.lng.toFixed(4)}`;
+      document.getElementById('loc-time').textContent = d.updated_at
+        ? 'Last seen ' + timeAgo(d.updated_at) : '';
+    } catch (e) {
+      document.getElementById('loc-text').textContent = 'Location unavailable right now';
+    }
+  }
+
+  async function loadPhotos(token) {
+    const grid = document.getElementById('photo-grid');
+    try {
+      const r = await fetch(API + '/api/students?action=live-get-photos', {
+        headers: { 'x-live-token': token }
+      });
+      const d = await r.json();
+      if (!d.ok || !d.photos?.length) {
+        grid.innerHTML = `<div class="photos-empty"><div class="big">📷</div>Photos will appear here once David and Amanda start sharing their album.</div>`;
+        return;
+      }
+      grid.innerHTML = d.photos.map((p, i) => `
+        <div class="photo-item" onclick="openLightbox('${p.url}')">
+          <img src="${p.url}" alt="Italy photo ${i+1}" loading="lazy"
+            onerror="this.parentElement.style.display='none'">
+          ${p.caption ? `<div class="photo-caption">${p.caption}</div>` : ''}
+        </div>`).join('');
+    } catch(e) {
+      grid.innerHTML = `<div class="photos-empty"><div class="big">📷</div>Photos loading…</div>`;
+    }
+  }
+
+  // ── Lightbox ────────────────────────────────────────────────────────────────
+  function openLightbox(url) {
+    document.getElementById('lightbox-img').src = url;
+    document.getElementById('lightbox').classList.add('open');
+  }
+  function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('open');
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+  function timeAgo(iso) {
+    const diff = Date.now() - new Date(iso).getTime();
+    const m = Math.floor(diff / 60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    return `${Math.floor(h/24)}d ago`;
+  }
+</script>
+</body>
+</html>
