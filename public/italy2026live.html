@@ -7,268 +7,314 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Georgia', serif; background: #f4f1ec; color: #2c2c2c; }
+:root {
+  --dark:    #12202e;
+  --green:   #2d6a4f;
+  --cream:   #f7f4ef;
+  --white:   #ffffff;
+  --muted:   #8a8a8a;
+  --border:  #e5e1db;
+  --shadow:  0 2px 16px rgba(0,0,0,0.07);
+  --venice:  #0077b6;
+  --dolomit: #2d6a4f;
+  --trecime: #546e7a;
+  --como:    #00838f;
+  --milan:   #6a1b9a;
+  --flight:  #1a3a5c;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Georgia', serif; background: var(--cream); color: var(--dark); }
 
-  /* ── PASSWORD SCREEN ── */
-  #pw-screen {
-    display: flex; flex-direction: column; align-items: center;
-    justify-content: center; min-height: 100vh; padding: 40px 20px;
-    position: relative; overflow: hidden;
-  }
-  #pw-screen::before {
-    content: ''; position: absolute; inset: 0;
-    background: linear-gradient(180deg,#1a2744 0%,#2d4a7a 30%,#c8956c 65%,#e8b87a 80%,#1a3a2a 100%);
-    z-index: 0;
-  }
-  #pw-bg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
-  .pw-card {
-    position: relative; z-index: 2;
-    background: rgba(255,255,255,0.97);
-    border-radius: 16px; padding: 48px 40px; max-width: 420px; width: 100%;
-    text-align: center;
-    box-shadow: 0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.15);
-  }
-  .pw-flag { font-size: 3rem; margin-bottom: 14px; }
-  .pw-card h1 { font-size: 1.7rem; font-weight: normal; color: #1b4332; margin-bottom: 4px; }
-  .pw-card .pw-sub { font-size: 0.9rem; color: #666; font-style: italic; margin-bottom: 6px; }
-  .pw-card .pw-dates { font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; color: #2d6a4f; margin-bottom: 28px; }
-  .pw-card hr { border: none; border-top: 1px solid #e8e3dd; margin: 0 0 24px; }
-  .pw-label { font-size: 0.8rem; color: #888; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; }
-  .pw-input-wrap { display: flex; gap: 8px; }
-  .pw-input-wrap input {
-    flex: 1; padding: 12px 16px; border: 1.5px solid #ddd; border-radius: 8px;
-    font-size: 1rem; font-family: inherit; outline: none;
-    transition: border-color 0.2s;
-  }
-  .pw-input-wrap input:focus { border-color: #2d6a4f; }
-  .pw-input-wrap button {
-    background: #2d6a4f; color: #fff; border: none; border-radius: 8px;
-    padding: 12px 20px; font-size: 0.9rem; cursor: pointer; font-family: inherit;
-    transition: background 0.2s;
-  }
-  .pw-input-wrap button:hover { background: #1b4332; }
-  #pw-error { margin-top: 14px; color: #c0392b; font-size: 0.88rem; display: none; }
+/* ── PASSWORD SCREEN ───────────────────────────────── */
+#pw-screen {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; min-height: 100vh; padding: 40px 20px;
+  position: relative; overflow: hidden;
+}
+#pw-screen::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg,#1a2744 0%,#2d4a7a 30%,#c8956c 65%,#e8b87a 80%,#1a3a2a 100%);
+  z-index: 0;
+}
+#pw-bg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
+.pw-card {
+  position: relative; z-index: 2;
+  background: rgba(255,255,255,0.97); border-radius: 20px;
+  padding: 52px 44px; max-width: 420px; width: 100%; text-align: center;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.4);
+}
+.pw-eyebrow {
+  font-family: sans-serif; font-size: 0.7rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--green); margin-bottom: 14px;
+}
+.pw-card h1 {
+  font-size: 2rem; font-weight: normal; color: var(--dark);
+  margin-bottom: 4px; letter-spacing: -0.01em;
+}
+.pw-card .pw-sub { font-size: 0.88rem; color: var(--muted); margin-bottom: 28px; }
+.pw-divider { border: none; border-top: 1px solid var(--border); margin: 0 0 26px; }
+.pw-label { font-family: sans-serif; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+.pw-row { display: flex; gap: 8px; }
+.pw-row input {
+  flex: 1; padding: 13px 16px; border: 1.5px solid var(--border);
+  border-radius: 10px; font-size: 0.95rem; outline: none; transition: border-color 0.2s;
+}
+.pw-row input:focus { border-color: var(--green); }
+.pw-row button {
+  background: var(--dark); color: #fff; border: none; border-radius: 10px;
+  padding: 13px 22px; font-size: 0.88rem; cursor: pointer; font-family: sans-serif;
+  letter-spacing: 0.04em; transition: background 0.2s;
+}
+.pw-row button:hover { background: var(--green); }
+#pw-error { margin-top: 12px; color: #c0392b; font-size: 0.84rem; font-family: sans-serif; display: none; }
 
-  /* ── TRACKER ── */
-  #tracker { display: none; }
-  .topbar {
-    background: linear-gradient(135deg, #2d6a4f 0%, #40916c 100%);
-    color: #fff; padding: 20px 32px;
-    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
-    box-shadow: 0 2px 12px rgba(45,106,79,0.25);
-  }
-  .topbar-left h1 { font-size: 1.5rem; font-weight: normal; letter-spacing: 0.01em; }
-  .topbar-left p { font-size: 0.82rem; opacity: 0.8; letter-spacing: 0.1em; margin-top: 3px; }
-  .topbar-right { font-size: 0.78rem; opacity: 0.75; text-align: right; }
+/* ── TRACKER ───────────────────────────────────────── */
+#tracker { display: none; }
 
-  .section { max-width: 1000px; margin: 0 auto; padding: 32px 20px; }
-  .section-title {
-    font-size: 1.1rem; font-weight: normal; color: #1b4332;
-    margin-bottom: 18px; padding-bottom: 10px;
-    border-bottom: 2px solid #c8e6c9;
-    display: flex; align-items: center; gap: 8px;
-    letter-spacing: 0.01em;
-  }
+/* Topbar */
+.topbar {
+  background: var(--dark); color: #fff;
+  padding: 0 32px; height: 58px;
+  display: flex; align-items: center; gap: 0;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+.topbar-logo {
+  font-size: 1rem; font-weight: normal; letter-spacing: 0.02em; flex: 1;
+}
+.topbar-logo span { opacity: 0.45; font-size: 0.8rem; margin-left: 8px; font-family: sans-serif; }
+.topbar-clock {
+  font-family: sans-serif; font-size: 0.78rem;
+  background: rgba(255,255,255,0.08); border-radius: 8px;
+  padding: 7px 14px; letter-spacing: 0.02em;
+  border: 1px solid rgba(255,255,255,0.1);
+  margin-right: 12px;
+}
+.topbar-clock strong { font-size: 1rem; letter-spacing: 0.01em; }
+.topbar-clock .clock-city { opacity: 0.55; font-size: 0.68rem; display: block; margin-top: 1px; }
+.topbar-refresh {
+  background: none; border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.7);
+  border-radius: 8px; padding: 6px 14px; font-size: 0.75rem; cursor: pointer;
+  font-family: sans-serif; letter-spacing: 0.05em; transition: all 0.18s;
+}
+.topbar-refresh:hover { background: rgba(255,255,255,0.1); color: #fff; }
 
-  /* ── MAP ── */
-  #map-wrap { border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.06); }
-  #map { height: 380px; }
-  .location-bar {
-    background: #fff; padding: 15px 22px;
-    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-    border-top: 1px solid #eee;
-  }
-  .loc-dot {
-    width: 10px; height: 10px; border-radius: 50%; background: #2d6a4f;
-    animation: pulse 2s infinite;
-  }
-  @keyframes pulse {
-    0%,100% { box-shadow: 0 0 0 0 rgba(45,106,79,0.5); }
-    50% { box-shadow: 0 0 0 8px rgba(45,106,79,0); }
-  }
-  .loc-text { font-size: 0.92rem; color: #333; }
-  .loc-time { font-size: 0.78rem; color: #888; margin-left: auto; }
+/* ── TIMELINE ──────────────────────────────────────── */
+.timeline-section {
+  background: var(--white); border-bottom: 1px solid var(--border);
+  padding: 36px 40px 28px;
+}
+.tl-header {
+  display: flex; align-items: baseline; gap: 14px; margin-bottom: 32px; flex-wrap: wrap;
+}
+.tl-day {
+  font-size: 2rem; font-weight: normal; color: var(--dark); letter-spacing: -0.02em;
+}
+.tl-phase {
+  font-family: sans-serif; font-size: 0.8rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted);
+}
+.tl-phase strong { color: var(--dark); }
 
-  /* ── PHOTOS ── */
-  .photo-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 14px;
-  }
-  .photo-item {
-    border-radius: 14px; overflow: hidden;
-    aspect-ratio: 1; background: #e8e3dd;
-    position: relative; cursor: pointer;
-    transition: transform 0.22s ease, box-shadow 0.22s ease;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  }
-  .photo-item:hover { transform: scale(1.04); box-shadow: 0 10px 28px rgba(0,0,0,0.2); }
-  .photo-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .photo-caption {
-    position: absolute; bottom: 0; left: 0; right: 0;
-    background: linear-gradient(transparent, rgba(0,0,0,0.6));
-    color: #fff; font-size: 0.75rem; padding: 20px 8px 8px;
-    opacity: 0; transition: opacity 0.2s;
-  }
-  .photo-item:hover .photo-caption { opacity: 1; }
-  .photos-empty {
-    text-align: center; padding: 48px 20px; color: #888;
-    background: #fff; border-radius: 16px; font-style: italic; border: 2px dashed #d4c9bc;
-  }
-  .photos-empty .big { font-size: 2.5rem; margin-bottom: 10px; }
+/* The track */
+.tl-track-wrap {
+  position: relative;
+  padding-bottom: 52px; /* space for labels below */
+}
+.tl-line {
+  position: absolute; top: 10px; left: 0; right: 0; height: 2px;
+  background: var(--border); border-radius: 2px;
+}
+.tl-line-fill {
+  position: absolute; top: 0; left: 0; height: 100%;
+  background: linear-gradient(90deg, var(--dark), var(--green));
+  border-radius: 2px; transition: width 0.6s ease;
+}
+/* Station dots */
+.tl-stations {
+  position: relative; display: flex; justify-content: space-between;
+}
+.tl-station {
+  display: flex; flex-direction: column; align-items: center;
+  position: relative; flex: 1;
+}
+.tl-station:first-child { align-items: flex-start; }
+.tl-station:last-child { align-items: flex-end; }
+.tl-dot-wrap {
+  position: relative; display: flex; justify-content: center; align-items: center;
+  width: 22px; height: 22px; z-index: 2;
+}
+.tl-dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  border: 2px solid var(--border); background: var(--white);
+  transition: all 0.3s;
+}
+.tl-dot.past { background: var(--dark); border-color: var(--dark); }
+.tl-dot.active {
+  background: var(--white); border: 3px solid var(--green);
+  width: 18px; height: 18px;
+  box-shadow: 0 0 0 4px rgba(45,106,79,0.15), 0 0 0 8px rgba(45,106,79,0.06);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%,100% { box-shadow: 0 0 0 4px rgba(45,106,79,0.15), 0 0 0 8px rgba(45,106,79,0.06); }
+  50% { box-shadow: 0 0 0 6px rgba(45,106,79,0.2), 0 0 0 12px rgba(45,106,79,0.04); }
+}
+/* Indicator above active dot */
+.tl-you-are-here {
+  position: absolute; bottom: calc(100% + 8px);
+  background: var(--green); color: #fff;
+  font-family: sans-serif; font-size: 0.6rem; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 4px 9px; border-radius: 4px; white-space: nowrap;
+  display: none;
+}
+.tl-you-are-here::after {
+  content: ''; position: absolute; top: 100%; left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent; border-top-color: var(--green);
+}
+.tl-dot.active ~ .tl-you-are-here, .tl-dot-wrap:has(.tl-dot.active) .tl-you-are-here {
+  display: block;
+}
+.tl-city {
+  margin-top: 18px; font-family: sans-serif; font-size: 0.72rem;
+  font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--muted); text-align: center;
+  transition: color 0.3s;
+}
+.tl-station.active .tl-city { color: var(--dark); }
+.tl-station.past .tl-city { color: var(--dark); opacity: 0.6; }
+.tl-dates {
+  margin-top: 4px; font-family: sans-serif; font-size: 0.64rem;
+  color: var(--muted); text-align: center; white-space: nowrap;
+}
+/* Hide labels on small stations */
+@media (max-width: 700px) {
+  .tl-city { font-size: 0.6rem; letter-spacing: 0.02em; }
+  .tl-dates { display: none; }
+  .timeline-section { padding: 28px 20px 20px; }
+}
 
-  /* ── LIGHTBOX ── */
-  #lightbox {
-    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92);
-    z-index: 9999; align-items: center; justify-content: center;
-  }
-  #lightbox.open { display: flex; }
-  #lightbox img { max-width: 92vw; max-height: 88vh; border-radius: 8px; object-fit: contain; }
-  #lightbox-close {
-    position: absolute; top: 20px; right: 28px;
-    color: #fff; font-size: 2rem; cursor: pointer; line-height: 1;
-    background: none; border: none;
-  }
+/* ── CONTENT GRID ──────────────────────────────────── */
+.content-grid {
+  max-width: 1040px; margin: 0 auto; padding: 36px 24px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+}
+@media (max-width: 800px) {
+  .content-grid { grid-template-columns: 1fr; }
+}
 
-  /* ── REFRESH BADGE ── */
-  .refresh-btn {
-    background: #f0f8f4; border: 1.5px solid #2d6a4f; color: #2d6a4f;
-    border-radius: 20px; padding: 5px 16px; font-size: 0.78rem;
-    cursor: pointer; font-family: sans-serif; margin-left: auto;
-    transition: all 0.18s;
-  }
-  .refresh-btn:hover { background: #2d6a4f; color: #fff; }
+/* Cards */
+.card {
+  background: var(--white); border-radius: 18px;
+  box-shadow: var(--shadow); overflow: hidden;
+}
+.card-header {
+  padding: 20px 24px 0; display: flex; align-items: center;
+  justify-content: space-between;
+}
+.card-title {
+  font-family: sans-serif; font-size: 0.7rem; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
+}
 
-  @media (max-width: 600px) {
-    .pw-card { padding: 36px 24px; }
-    .pw-input-wrap { flex-direction: column; }
-    .topbar { flex-direction: column; align-items: flex-start; }
-  }
+/* Map card — full width */
+.card.map-card { grid-column: 1 / -1; }
+#map { height: 380px; }
+.loc-bar {
+  padding: 16px 24px; display: flex; align-items: center; gap: 12px;
+  border-top: 1px solid var(--border);
+}
+.loc-pulse {
+  width: 10px; height: 10px; border-radius: 50%; background: var(--green);
+  flex-shrink: 0; animation: locpulse 2.5s infinite;
+}
+@keyframes locpulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(45,106,79,0.45); }
+  50% { box-shadow: 0 0 0 7px rgba(45,106,79,0); }
+}
+.loc-city { font-size: 0.95rem; color: var(--dark); }
+.loc-updated { font-family: sans-serif; font-size: 0.73rem; color: var(--muted); margin-left: auto; }
 
-  /* ── TRIP PROGRESS ─────────────────────────────────────────────────── */
-  .trip-progress {
-    background: #fff;
-    padding: 28px 32px 24px;
-    border-bottom: 1px solid #e8e3dd;
-    box-shadow: 0 1px 0 rgba(0,0,0,0.04);
-  }
-  .tp-top {
-    display: flex; align-items: center; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;
-  }
-  .tp-day-pill {
-    background: linear-gradient(135deg, #2d6a4f, #40916c);
-    color: #fff; padding: 6px 18px;
-    border-radius: 20px; font-size: 0.82rem; font-family: sans-serif;
-    letter-spacing: 0.07em; font-weight: 700;
-    box-shadow: 0 2px 8px rgba(45,106,79,0.3);
-  }
-  .tp-phase-label {
-    font-size: 0.88rem; color: #888; font-family: sans-serif;
-  }
-  .tp-phase-label span { color: #2d6a4f; font-weight: 700; }
+/* Photos card */
+.card.photos-card { grid-column: 1 / -1; }
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 3px;
+  padding: 3px;
+}
+.photo-item {
+  aspect-ratio: 1; overflow: hidden; position: relative; cursor: pointer;
+  background: var(--border);
+}
+.photo-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.35s ease; display: block; }
+.photo-item:hover img { transform: scale(1.06); }
+.photo-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 50%);
+  opacity: 0; transition: opacity 0.3s;
+}
+.photo-item:hover .photo-overlay { opacity: 1; }
+.photo-caption {
+  position: absolute; bottom: 10px; left: 12px; right: 12px;
+  color: #fff; font-family: sans-serif; font-size: 0.72rem; opacity: 0;
+  transition: opacity 0.3s;
+}
+.photo-item:hover .photo-caption { opacity: 1; }
+.photos-empty {
+  text-align: center; padding: 60px 20px; color: var(--muted);
+  font-family: sans-serif; font-size: 0.88rem;
+}
+.photos-empty .big {
+  font-size: 1.5rem; font-weight: 700; color: var(--border);
+  letter-spacing: 0.05em; margin-bottom: 10px; display: block;
+  font-family: sans-serif;
+}
 
-  /* Outer wrapper — reserves space for indicator above and dates below */
-  .tp-outer { position: relative; padding-top: 64px; padding-bottom: 28px; }
+/* Flight strip */
+.flight-strip {
+  background: var(--dark); color: rgba(255,255,255,0.7);
+  padding: 16px 40px; display: flex; align-items: center;
+  gap: 0; flex-wrap: wrap;
+  font-family: sans-serif; font-size: 0.78rem;
+}
+.flight-item { flex: 1; min-width: 200px; padding: 8px 20px; }
+.flight-item:not(:last-child) { border-right: 1px solid rgba(255,255,255,0.1); }
+.flight-label {
+  font-size: 0.6rem; letter-spacing: 0.14em; text-transform: uppercase;
+  color: rgba(255,255,255,0.35); margin-bottom: 5px;
+}
+.flight-detail { color: rgba(255,255,255,0.85); line-height: 1.55; }
+.flight-ref { color: rgba(255,255,255,0.35); font-size: 0.68rem; margin-top: 3px; }
 
-  /* The bar */
-  .tp-bar {
-    display: flex; height: 68px; border-radius: 16px; overflow: hidden;
-    box-shadow: 0 6px 24px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.1);
-  }
-  .tp-seg {
-    position: relative; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; overflow: hidden;
-    flex-shrink: 0; transition: filter 0.4s;
-  }
-  .tp-seg.past   { filter: brightness(0.55) saturate(0.5); }
-  .tp-seg.active { filter: brightness(1.1) saturate(1.1); box-shadow: inset 0 0 0 2.5px rgba(255,255,255,0.35); }
-  .tp-seg.future { filter: brightness(0.8) saturate(0.75); }
+/* Footer */
+.footer {
+  text-align: center; padding: 20px; font-family: sans-serif;
+  font-size: 0.73rem; color: var(--muted);
+  border-top: 1px solid var(--border);
+}
 
-  .tp-seg-emoji { font-size: 1.25rem; line-height: 1; pointer-events: none; }
-  .tp-seg-name  {
-    font-size: 0.64rem; font-family: sans-serif; font-weight: 700;
-    color: rgba(255,255,255,0.95); letter-spacing: 0.04em; margin-top: 3px;
-    text-align: center; white-space: nowrap; padding: 0 5px;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
-  }
-  /* Hide name when segment is narrow */
-  .tp-seg.narrow .tp-seg-name { display: none; }
-  .tp-seg.narrow .tp-seg-emoji { font-size: 1rem; }
-
-  /* Segment palette */
-  .seg-fly1      { background: linear-gradient(160deg,#1c3d5a 0%,#2980b9 100%); }
-  .seg-venice    { background: linear-gradient(160deg,#1565c0 0%,#4fc3f7 100%); }
-  .seg-dolomites { background: linear-gradient(160deg,#2e7d32 0%,#81c784 100%); }
-  .seg-trecime   { background: linear-gradient(160deg,#546e7a 0%,#b0bec5 100%); }
-  .seg-como      { background: linear-gradient(160deg,#00838f 0%,#4dd0e1 100%); }
-  .seg-milan     { background: linear-gradient(160deg,#6a1b9a 0%,#ce93d8 100%); }
-  .seg-fly2      { background: linear-gradient(160deg,#1565c0 0%,#64b5f6 100%); }
-
-  /* Subtle texture overlays */
-  .seg-venice::after, .seg-como::after {
-    content: ''; position: absolute; inset: 0;
-    background: repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(255,255,255,0.04) 8px, rgba(255,255,255,0.04) 9px);
-  }
-  .seg-dolomites::after, .seg-trecime::after {
-    content: ''; position: absolute; inset: 0;
-    background: repeating-linear-gradient(135deg, transparent, transparent 6px, rgba(255,255,255,0.03) 6px, rgba(255,255,255,0.03) 7px);
-  }
-
-  /* ── Indicator ── */
-  .tp-indicator {
-    position: absolute; top: 0; transform: translateX(-50%);
-    display: flex; flex-direction: column; align-items: center;
-    z-index: 10; pointer-events: none;
-    transition: left 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  .tp-card {
-    background: #fff; border-radius: 12px;
-    padding: 7px 12px 6px; text-align: center;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.2), 0 0 0 2px rgba(255,255,255,0.9);
-  }
-  .tp-card-icon { font-size: 1.4rem; line-height: 1; }
-  .tp-card-text {
-    font-size: 0.6rem; font-family: sans-serif; font-weight: 800;
-    color: #2d6a4f; letter-spacing: 0.06em; margin-top: 2px;
-    white-space: nowrap;
-  }
-  .tp-needle {
-    width: 2px; height: 14px;
-    background: linear-gradient(to bottom, rgba(45,106,79,0.6), rgba(45,106,79,0));
-  }
-  .tp-bead {
-    width: 9px; height: 9px; border-radius: 50%; background: #2d6a4f;
-    box-shadow: 0 0 0 3px rgba(45,106,79,0.25), 0 0 10px rgba(45,106,79,0.4);
-  }
-
-  /* ── Date ticks ── */
-  .tp-ticks {
-    position: absolute; bottom: 0; left: 0; right: 0;
-    pointer-events: none;
-  }
-  .tp-tick {
-    position: absolute; transform: translateX(-50%);
-    display: flex; flex-direction: column; align-items: center; gap: 3px;
-  }
-  .tp-tick-line { width: 1px; height: 6px; background: #ccc; }
-  .tp-tick-label {
-    font-size: 0.58rem; color: #aaa; font-family: sans-serif;
-    white-space: nowrap;
-  }
-
-  /* Before/after trip states */
-  .tp-before-msg, .tp-after-msg {
-    text-align: center; padding: 10px;
-    font-size: 0.82rem; color: rgba(255,255,255,0.5); font-family: sans-serif;
-    font-style: italic;
-  }
-
+/* Lightbox */
+#lightbox {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.93); z-index: 9999;
+  align-items: center; justify-content: center;
+}
+#lightbox.open { display: flex; }
+#lightbox img { max-width: 92vw; max-height: 90vh; object-fit: contain; border-radius: 4px; }
+#lb-close {
+  position: absolute; top: 20px; right: 24px; font-size: 1.8rem;
+  color: rgba(255,255,255,0.6); background: none; border: none; cursor: pointer;
+  font-family: sans-serif; line-height: 1; transition: color 0.2s;
+}
+#lb-close:hover { color: #fff; }
 </style>
 </head>
 <body>
 
-<!-- ═══════════════ PASSWORD SCREEN ═══════════════ -->
+<!-- ══════════ PASSWORD SCREEN ══════════ -->
 <div id="pw-screen">
   <svg id="pw-bg" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
     <defs>
@@ -337,336 +383,316 @@
     </g>
     <rect x="0" y="645" width="1200" height="55" fill="#1a3a2a"/>
   </svg>
-
   <div class="pw-card">
-    <div class="pw-flag">🇮🇹</div>
+    <p class="pw-eyebrow">May 30 – June 12, 2026</p>
     <h1>Italy 2026</h1>
-    <p class="pw-sub">Live Family Tracker</p>
-    <p class="pw-dates">Venice · Dolomites · Lake Como · Milan</p>
-    <hr>
+    <p class="pw-sub">Live family tracker — Venice, Dolomites, Lake Como &amp; Milan</p>
+    <hr class="pw-divider">
     <p class="pw-label">Enter password to view</p>
-    <div class="pw-input-wrap">
-      <input type="password" id="pw-input" placeholder="Password" autocomplete="current-password"
+    <div class="pw-row">
+      <input type="password" id="pw-input" placeholder="Password"
         onkeydown="if(event.key==='Enter')checkPassword()">
-      <button onclick="checkPassword()">View →</button>
+      <button onclick="checkPassword()">Enter</button>
     </div>
-    <div id="pw-error">Wrong password — try again</div>
+    <div id="pw-error">Incorrect password — try again</div>
   </div>
 </div>
 
-<!-- ═══════════════ TRACKER ═══════════════ -->
+<!-- ══════════ TRACKER ══════════ -->
 <div id="tracker">
-  <!-- topbar start --><div class="topbar">
-    <div class="topbar-left">
-      <h1>🇮🇹 Italy 2026 — Live Tracker</h1>
-      <p>Venice · Dolomites · Lake Como · Milan · May 30 – June 12</p>
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-logo">Italy 2026 <span>Live Tracker</span></div>
+    <div class="topbar-clock">
+      <strong id="clock-time">--:--</strong>
+      <span class="clock-city" id="clock-city">Italy Time</span>
     </div>
-    <div class="topbar-right" id="last-refresh">Loading…</div>
+    <button class="topbar-refresh" onclick="refreshAll()">Refresh</button>
   </div>
 
-  <!-- ═══ TRIP PROGRESS BAR ═══ -->
-  <div class="trip-progress">
-    <div class="tp-top">
-      <div class="tp-day-pill" id="tp-day-pill">Loading…</div>
-      <div class="tp-phase-label">Currently: <span id="tp-phase-span">—</span></div>
+  <!-- Timeline -->
+  <div class="timeline-section">
+    <div class="tl-header">
+      <div class="tl-day" id="tl-day-label">—</div>
+      <div class="tl-phase">Currently: <strong id="tl-phase-label">—</strong></div>
     </div>
-    <div class="tp-outer">
-      <!-- Floating indicator -->
-      <div class="tp-indicator" id="tp-indicator">
-        <div class="tp-card">
-          <div class="tp-card-icon">👫</div>
-          <div class="tp-card-text" id="tp-card-text">—</div>
-        </div>
-        <div class="tp-needle"></div>
-        <div class="tp-bead"></div>
-      </div>
-      <!-- Segments (widths set by JS) -->
-      <div class="tp-bar" id="tp-bar">
-        <div class="tp-seg seg-fly1"      id="seg-fly1">      <span class="tp-seg-emoji">✈️</span><span class="tp-seg-name">Departing</span></div>
-        <div class="tp-seg seg-venice"    id="seg-venice">    <span class="tp-seg-emoji">🚤</span><span class="tp-seg-name">Venice</span></div>
-        <div class="tp-seg seg-dolomites" id="seg-dolomites"> <span class="tp-seg-emoji">⛰️</span><span class="tp-seg-name">Ortisei</span></div>
-        <div class="tp-seg seg-trecime"   id="seg-trecime">   <span class="tp-seg-emoji">🏔️</span><span class="tp-seg-name">Tre Cime</span></div>
-        <div class="tp-seg seg-como"      id="seg-como">      <span class="tp-seg-emoji">🌊</span><span class="tp-seg-name">Lake Como</span></div>
-        <div class="tp-seg seg-milan"     id="seg-milan">     <span class="tp-seg-emoji">🏙️</span><span class="tp-seg-name">Milan</span></div>
-        <div class="tp-seg seg-fly2"      id="seg-fly2">      <span class="tp-seg-emoji">✈️</span><span class="tp-seg-name">Home</span></div>
-      </div>
-      <!-- Date ticks -->
-      <div class="tp-ticks" id="tp-ticks"></div>
-    </div>
-  </div>
-
-
-  <!-- MAP -->
-  <div class="section">
-    <div class="section-title">
-      📍 Current Location
-      <button class="refresh-btn" onclick="refreshAll()">↻ Refresh</button>
-    </div>
-    <div id="map-wrap">
-      <div id="map"></div>
-      <div class="location-bar">
-        <div class="loc-dot"></div>
-        <div class="loc-text" id="loc-text">Fetching location…</div>
-        <div class="loc-time" id="loc-time"></div>
+    <div class="tl-track-wrap">
+      <div class="tl-line"><div class="tl-line-fill" id="tl-fill"></div></div>
+      <div class="tl-stations" id="tl-stations">
+        <!-- Populated by JS -->
       </div>
     </div>
   </div>
 
-  <!-- PHOTOS -->
-  <div class="section" style="padding-top:0;">
-    <div class="section-title">📸 Trip Photos</div>
-    <div id="photo-grid" class="photo-grid"></div>
+  <!-- Content grid -->
+  <div class="content-grid">
+
+    <!-- Map -->
+    <div class="card map-card">
+      <div class="card-header" style="padding-bottom:0;">
+        <div class="card-title">Current Location</div>
+      </div>
+      <div id="map" style="margin-top:16px;"></div>
+      <div class="loc-bar">
+        <div class="loc-pulse"></div>
+        <div class="loc-city" id="loc-city">Fetching location…</div>
+        <div class="loc-updated" id="loc-updated"></div>
+      </div>
+    </div>
+
+    <!-- Photos -->
+    <div class="card photos-card">
+      <div class="card-header" style="padding-bottom:16px;">
+        <div class="card-title">Trip Photos</div>
+      </div>
+      <div id="photo-grid" class="photo-grid"></div>
+    </div>
+
   </div>
 
-  <div style="text-align:center;padding:24px;color:#999;font-size:0.8rem;">
-    🔄 Auto-refreshes every 5 minutes &nbsp;·&nbsp; 📍 Updates when David & Amanda log into their itinerary
+  <!-- Flight strip -->
+  <div class="flight-strip">
+    <div class="flight-item">
+      <div class="flight-label">Outbound</div>
+      <div class="flight-detail">AC756 · SFO 8:05 AM → YUL<br>AC818 · YUL 7:30 PM → VCE 9:10 AM (May 31)</div>
+    </div>
+    <div class="flight-item">
+      <div class="flight-label">Return</div>
+      <div class="flight-detail">AC895 · MXP 12:20 PM → YUL<br>AC759 · YUL 5:40 PM → SFO 9:02 PM (Jun 12)</div>
+    </div>
+    <div class="flight-item">
+      <div class="flight-label">Booking Reference</div>
+      <div class="flight-detail" style="font-size:1.1rem;letter-spacing:0.1em;">BVIVZ4</div>
+      <div class="flight-ref">Air Canada</div>
+    </div>
   </div>
+
+  <div class="footer">Refreshes every 5 minutes &nbsp;·&nbsp; Updates when David &amp; Amanda log into their itinerary</div>
 </div>
 
-<!-- LIGHTBOX -->
+<!-- Lightbox -->
 <div id="lightbox">
-  <button id="lightbox-close" onclick="closeLightbox()">✕</button>
-  <img id="lightbox-img" src="" alt="">
+  <button id="lb-close" onclick="closeLB()">&#x2715;</button>
+  <img id="lb-img" src="" alt="">
 </div>
 
 <script>
-  const API = 'https://dmpickleball.com';
-  const PW_KEY = 'italy_live_token';
-  let map, marker;
+const API = 'https://dmpickleball.com';
+const PW_KEY = 'italy_live_token';
+let map, marker;
 
-  // ── Password ────────────────────────────────────────────────────────────────
-  async function checkPassword() {
-    const pw = document.getElementById('pw-input').value.trim();
-    if (!pw) return;
-    try {
-      const r = await fetch(API + '/api/students?action=live-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: pw }),
-      });
-      const d = await r.json();
-      if (!d.ok) throw new Error(d.error || 'Wrong password');
-      localStorage.setItem(PW_KEY, d.token);
-      showTracker();
-    } catch (e) {
-      document.getElementById('pw-error').style.display = 'block';
-      document.getElementById('pw-error').textContent = e.message;
-    }
+// ── Phases (same as before) ──────────────────────────────────────────────────
+const PHASES = [
+  { id:'fly1',  city:'Departing',  detail:'SFO → Venice',
+     start: new Date('2026-05-30T00:00:00-07:00').getTime(),
+     end:   new Date('2026-05-31T09:10:00+02:00').getTime(),
+     tz: 'America/Los_Angeles', tzLabel:'SFO Time' },
+  { id:'venice', city:'Venice',    detail:'Cannaregio, Venice',
+     start: new Date('2026-05-31T09:10:00+02:00').getTime(),
+     end:   new Date('2026-06-02T11:00:00+02:00').getTime(),
+     tz: 'Europe/Rome', tzLabel:'Venice' },
+  { id:'dolomit',city:'Ortisei',   detail:'Val Gardena, Dolomites',
+     start: new Date('2026-06-02T11:00:00+02:00').getTime(),
+     end:   new Date('2026-06-06T10:00:00+02:00').getTime(),
+     tz: 'Europe/Rome', tzLabel:'Ortisei' },
+  { id:'trecime',city:'Tre Cime',  detail:'Dobbiaco / Carbonin',
+     start: new Date('2026-06-06T10:00:00+02:00').getTime(),
+     end:   new Date('2026-06-08T10:00:00+02:00').getTime(),
+     tz: 'Europe/Rome', tzLabel:'Dobbiaco' },
+  { id:'como',   city:'Lake Como', detail:'Varenna, Lake Como',
+     start: new Date('2026-06-08T10:00:00+02:00').getTime(),
+     end:   new Date('2026-06-11T12:00:00+02:00').getTime(),
+     tz: 'Europe/Rome', tzLabel:'Varenna' },
+  { id:'milan',  city:'Milan',     detail:'ME Milan Il Duca',
+     start: new Date('2026-06-11T12:00:00+02:00').getTime(),
+     end:   new Date('2026-06-12T08:30:00+02:00').getTime(),
+     tz: 'Europe/Rome', tzLabel:'Milan' },
+  { id:'fly2',  city:'Flying Home',detail:'MXP → SFO',
+     start: new Date('2026-06-12T08:30:00+02:00').getTime(),
+     end:   new Date('2026-06-12T21:02:00-07:00').getTime(),
+     tz: 'America/Los_Angeles', tzLabel:'SFO Time' },
+];
+const DATES = ['May 30','May 31','Jun 2','Jun 6','Jun 8','Jun 11','Jun 12','Jun 12'];
+const TRIP_START = PHASES[0].start;
+const TRIP_END   = PHASES[PHASES.length-1].end;
+
+// ── Password ─────────────────────────────────────────────────────────────────
+async function checkPassword() {
+  const pw = document.getElementById('pw-input').value.trim();
+  if (!pw) return;
+  try {
+    const r = await fetch(API + '/api/students?action=live-login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ password: pw }),
+    });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'Wrong password');
+    localStorage.setItem(PW_KEY, d.token);
+    showTracker();
+  } catch(e) {
+    const el = document.getElementById('pw-error');
+    el.textContent = e.message; el.style.display = 'block';
   }
+}
 
-  // ── Init ────────────────────────────────────────────────────────────────────
-  window.addEventListener('load', async () => {
-    const token = localStorage.getItem(PW_KEY);
-    if (token) {
-      const r = await fetch(API + '/api/students?action=live-verify', {
-        headers: { 'x-live-token': token }
-      });
-      const d = await r.json().catch(() => ({}));
-      if (d.ok) { showTracker(); return; }
-      localStorage.removeItem(PW_KEY);
+window.addEventListener('load', async () => {
+  const token = localStorage.getItem(PW_KEY);
+  if (token) {
+    const r = await fetch(API + '/api/students?action=live-verify', {headers:{'x-live-token':token}});
+    const d = await r.json().catch(()=>({}));
+    if (d.ok) { showTracker(); return; }
+    localStorage.removeItem(PW_KEY);
+  }
+});
+
+function showTracker() {
+  document.getElementById('pw-screen').style.display = 'none';
+  document.getElementById('tracker').style.display = 'block';
+  initMap(); buildTimeline(); updateTimeline();
+  refreshAll(); updateClock();
+  setInterval(updateTimeline, 60000);
+  setInterval(updateClock, 10000);
+  setInterval(refreshAll, 5*60*1000);
+}
+
+// ── Clock ────────────────────────────────────────────────────────────────────
+function currentPhase() {
+  const now = Date.now();
+  for (const ph of PHASES) { if (now >= ph.start && now < ph.end) return ph; }
+  return now < TRIP_START ? PHASES[0] : PHASES[PHASES.length-1];
+}
+
+function updateClock() {
+  const ph  = currentPhase();
+  const now = new Date();
+  const time = now.toLocaleTimeString('en-US', {
+    timeZone: ph.tz, hour:'2-digit', minute:'2-digit', hour12:true
+  });
+  document.getElementById('clock-time').textContent = time;
+  document.getElementById('clock-city').textContent = ph.tzLabel;
+}
+
+// ── Timeline ─────────────────────────────────────────────────────────────────
+function buildTimeline() {
+  const wrap = document.getElementById('tl-stations');
+  wrap.innerHTML = '';
+  const total = TRIP_END - TRIP_START;
+  PHASES.forEach((ph, i) => {
+    const pct = (ph.start - TRIP_START) / total * 100;
+    const div = document.createElement('div');
+    div.className = 'tl-station'; div.id = 'st-' + ph.id;
+    div.style.cssText = `position:absolute;left:${pct}%;transform:translateX(-50%);align-items:center;`;
+    div.innerHTML = `
+      <div class="tl-dot-wrap">
+        <div class="tl-dot" id="dot-${ph.id}"></div>
+        <div class="tl-you-are-here" id="yah-${ph.id}">You are here</div>
+      </div>
+      <div class="tl-city">${ph.city}</div>
+      <div class="tl-dates">${DATES[i]}</div>`;
+    wrap.appendChild(div);
+  });
+  // Make wrap relatively positioned with enough height
+  wrap.style.cssText = 'position:relative;height:80px;';
+}
+
+function updateTimeline() {
+  const now   = Date.now();
+  const total = TRIP_END - TRIP_START;
+  const pct   = Math.max(0, Math.min((now - TRIP_START) / total * 100, 100));
+  const ph    = currentPhase();
+  const dayN  = Math.max(1, Math.min(Math.ceil((now - TRIP_START) / 86400000), 14));
+
+  document.getElementById('tl-fill').style.width = pct + '%';
+
+  PHASES.forEach(p => {
+    const dot = document.getElementById('dot-' + p.id);
+    const yah = document.getElementById('yah-' + p.id);
+    const st  = document.getElementById('st-'  + p.id);
+    if (!dot) return;
+    dot.classList.remove('past','active');
+    if (yah) yah.style.display = 'none';
+    st.classList.remove('past','active');
+    if (p.id === ph.id) {
+      dot.classList.add('active');
+      if (yah) yah.style.display = 'block';
+      st.classList.add('active');
+    } else if (p.end <= now) {
+      dot.classList.add('past');
+      st.classList.add('past');
     }
-    document.getElementById('pw-screen').style.display = 'flex';
   });
 
-  function showTracker() {
-    document.getElementById('pw-screen').style.display = 'none';
-    document.getElementById('tracker').style.display = 'block';
-    initMap();
-    refreshAll();
-    updateProgressBar();
-    setInterval(refreshAll, 5 * 60 * 1000);
-    setInterval(updateProgressBar, 60 * 1000);
+  const label = now < TRIP_START ? 'Trip starts May 30'
+              : now > TRIP_END   ? 'Trip complete'
+              : `Day ${dayN} of 14`;
+  document.getElementById('tl-day-label').textContent = label;
+  document.getElementById('tl-phase-label').textContent = ph.city + ' — ' + ph.detail;
+}
+
+// ── Map ──────────────────────────────────────────────────────────────────────
+function initMap() {
+  map = L.map('map', {zoomControl:true}).setView([45.5, 11.5], 7);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution:'© OpenStreetMap', maxZoom:18
+  }).addTo(map);
+  const icon = L.divIcon({
+    className:'',
+    html:`<div style="width:14px;height:14px;border-radius:50%;background:#2d6a4f;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.35);"></div>`,
+    iconSize:[14,14], iconAnchor:[7,7]
+  });
+  marker = L.marker([45.4408,12.3155], {icon}).addTo(map).bindPopup('Last known location');
+}
+
+// ── Refresh ──────────────────────────────────────────────────────────────────
+async function refreshAll() {
+  const token = localStorage.getItem(PW_KEY);
+  await Promise.all([loadLocation(token), loadPhotos(token)]);
+}
+
+async function loadLocation(token) {
+  try {
+    const r = await fetch(API+'/api/students?action=live-get-location', {headers:{'x-live-token':token}});
+    const d = await r.json();
+    if (!d.ok || !d.lat) return;
+    marker.setLatLng([d.lat, d.lng]);
+    map.setView([d.lat, d.lng], 13);
+    document.getElementById('loc-city').textContent = d.city || `${d.lat.toFixed(4)}, ${d.lng.toFixed(4)}`;
+    document.getElementById('loc-updated').textContent = d.updated_at ? timeAgo(d.updated_at) : '';
+  } catch {
+    document.getElementById('loc-city').textContent = 'Location unavailable';
   }
+}
 
-  // ── Map ─────────────────────────────────────────────────────────────────────
-  function initMap() {
-    map = L.map('map', { zoomControl: true }).setView([45.5, 11.5], 7);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
-      maxZoom: 18,
-    }).addTo(map);
-
-    // Custom green pin
-    const icon = L.divIcon({
-      className: '',
-      html: `<div style="background:#2d6a4f;width:16px;height:16px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.4);"></div>`,
-      iconSize: [16, 16],
-      iconAnchor: [8, 8],
-    });
-    marker = L.marker([45.4408, 12.3155], { icon })
-      .addTo(map)
-      .bindPopup('📍 Last known location');
-  }
-
-  // ── Refresh ─────────────────────────────────────────────────────────────────
-  async function refreshAll() {
-    const token = localStorage.getItem(PW_KEY);
-    await Promise.all([loadLocation(token), loadPhotos(token)]);
-    document.getElementById('last-refresh').textContent =
-      'Updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }
-
-  async function loadLocation(token) {
-    try {
-      const r = await fetch(API + '/api/students?action=live-get-location', {
-        headers: { 'x-live-token': token }
-      });
-      const d = await r.json();
-      if (!d.ok || !d.lat) return;
-      const latlng = [d.lat, d.lng];
-      marker.setLatLng(latlng);
-      map.setView(latlng, 13);
-      document.getElementById('loc-text').textContent = d.city || `${d.lat.toFixed(4)}, ${d.lng.toFixed(4)}`;
-      document.getElementById('loc-time').textContent = d.updated_at
-        ? 'Last seen ' + timeAgo(d.updated_at) : '';
-    } catch (e) {
-      document.getElementById('loc-text').textContent = 'Location unavailable right now';
+async function loadPhotos(token) {
+  const grid = document.getElementById('photo-grid');
+  try {
+    const r = await fetch(API+'/api/students?action=live-get-photos', {headers:{'x-live-token':token}});
+    const d = await r.json();
+    if (!d.ok || !d.photos?.length) {
+      grid.innerHTML = `<div class="photos-empty"><span class="big">NO PHOTOS YET</span>Photos will appear here once David and Amanda start sharing their album.</div>`;
+      return;
     }
+    grid.innerHTML = d.photos.map((p,i) => `
+      <div class="photo-item" onclick="openLB('${p.url}')">
+        <img src="${p.url}" alt="Photo ${i+1}" loading="lazy" onerror="this.parentElement.style.display='none'">
+        <div class="photo-overlay"></div>
+        ${p.caption ? `<div class="photo-caption">${p.caption}</div>` : ''}
+      </div>`).join('');
+  } catch {
+    grid.innerHTML = `<div class="photos-empty"><span class="big">LOADING</span>Fetching photos…</div>`;
   }
+}
 
-  async function loadPhotos(token) {
-    const grid = document.getElementById('photo-grid');
-    try {
-      const r = await fetch(API + '/api/students?action=live-get-photos', {
-        headers: { 'x-live-token': token }
-      });
-      const d = await r.json();
-      if (!d.ok || !d.photos?.length) {
-        grid.innerHTML = `<div class="photos-empty"><div class="big">📷</div>Photos will appear here once David and Amanda start sharing their album.</div>`;
-        return;
-      }
-      grid.innerHTML = d.photos.map((p, i) => `
-        <div class="photo-item" onclick="openLightbox('${p.url}')">
-          <img src="${p.url}" alt="Italy photo ${i+1}" loading="lazy"
-            onerror="this.parentElement.style.display='none'">
-          ${p.caption ? `<div class="photo-caption">${p.caption}</div>` : ''}
-        </div>`).join('');
-    } catch(e) {
-      grid.innerHTML = `<div class="photos-empty"><div class="big">📷</div>Photos loading…</div>`;
-    }
-  }
-
-  // ── Lightbox ────────────────────────────────────────────────────────────────
-  function openLightbox(url) {
-    document.getElementById('lightbox-img').src = url;
-    document.getElementById('lightbox').classList.add('open');
-  }
-  function closeLightbox() {
-    document.getElementById('lightbox').classList.remove('open');
-  }
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
-
-  // ── Helpers ─────────────────────────────────────────────────────────────────
-  function timeAgo(iso) {
-    const diff = Date.now() - new Date(iso).getTime();
-    const m = Math.floor(diff / 60000);
-    if (m < 1) return 'just now';
-    if (m < 60) return `${m}m ago`;
-    const h = Math.floor(m / 60);
-    if (h < 24) return `${h}h ago`;
-    return `${Math.floor(h/24)}d ago`;
-  }
-
-  // ── Trip Progress Bar ────────────────────────────────────────────────────────
-  const PHASES = [
-    { id:'fly1',      name:'Departing',    detail:'SFO → Venice',    emoji:'✈️',
-      start: new Date('2026-05-30T00:00:00-07:00').getTime(),
-      end:   new Date('2026-05-31T09:10:00+02:00').getTime() },
-    { id:'venice',    name:'Venice',       detail:'Cannaregio',       emoji:'🚤',
-      start: new Date('2026-05-31T09:10:00+02:00').getTime(),
-      end:   new Date('2026-06-02T11:00:00+02:00').getTime() },
-    { id:'dolomites', name:'Ortisei',      detail:'Dolomites',        emoji:'⛰️',
-      start: new Date('2026-06-02T11:00:00+02:00').getTime(),
-      end:   new Date('2026-06-06T10:00:00+02:00').getTime() },
-    { id:'trecime',   name:'Tre Cime',     detail:'Dobbiaco',         emoji:'🏔️',
-      start: new Date('2026-06-06T10:00:00+02:00').getTime(),
-      end:   new Date('2026-06-08T10:00:00+02:00').getTime() },
-    { id:'como',      name:'Lake Como',    detail:'Varenna',          emoji:'🌊',
-      start: new Date('2026-06-08T10:00:00+02:00').getTime(),
-      end:   new Date('2026-06-11T12:00:00+02:00').getTime() },
-    { id:'milan',     name:'Milan',        detail:'ME Hotel',         emoji:'🏙️',
-      start: new Date('2026-06-11T12:00:00+02:00').getTime(),
-      end:   new Date('2026-06-12T08:30:00+02:00').getTime() },
-    { id:'fly2',      name:'Flying Home',  detail:'MXP → SFO',       emoji:'✈️',
-      start: new Date('2026-06-12T08:30:00+02:00').getTime(),
-      end:   new Date('2026-06-12T21:02:00-07:00').getTime() },
-  ];
-
-  const TRIP_START = PHASES[0].start;
-  const TRIP_END   = PHASES[PHASES.length - 1].end;
-  const TRIP_DAYS  = 14;
-
-  function updateProgressBar() {
-    const now        = Date.now();
-    const totalMs    = TRIP_END - TRIP_START;
-    const elapsed    = Math.max(0, Math.min(now - TRIP_START, totalMs));
-    const pct        = elapsed / totalMs * 100;
-    const dayNum     = Math.ceil((now - TRIP_START) / 86400000);
-    const clampedDay = Math.max(1, Math.min(dayNum, TRIP_DAYS));
-
-    // Set segment widths
-    PHASES.forEach(ph => {
-      const el  = document.getElementById('seg-' + ph.id);
-      if (!el) return;
-      const w   = (ph.end - ph.start) / totalMs * 100;
-      el.style.width = w + '%';
-      el.classList.toggle('narrow', w < 8);
-    });
-
-    // Determine current phase
-    let currentPhase = PHASES[0];
-    for (const ph of PHASES) {
-      if (now >= ph.start && now < ph.end) { currentPhase = ph; break; }
-      if (now >= ph.end) currentPhase = ph;
-    }
-
-    // Colour segments: past / active / future
-    PHASES.forEach(ph => {
-      const el = document.getElementById('seg-' + ph.id);
-      if (!el) return;
-      el.classList.remove('past','active','future');
-      if (ph.id === currentPhase.id)   el.classList.add('active');
-      else if (ph.end <= now)          el.classList.add('past');
-      else                             el.classList.add('future');
-    });
-
-    // Move indicator
-    const indicator = document.getElementById('tp-indicator');
-    if (now < TRIP_START) {
-      indicator.style.left = '0%';
-    } else if (now > TRIP_END) {
-      indicator.style.left = '100%';
-    } else {
-      indicator.style.left = pct + '%';
-    }
-
-    // Update labels
-    const dayLabel = now < TRIP_START ? 'Trip starts May 30'
-                   : now > TRIP_END   ? 'Trip complete 🎉'
-                   : `Day ${clampedDay} of ${TRIP_DAYS}`;
-    document.getElementById('tp-day-pill').textContent = dayLabel;
-    document.getElementById('tp-phase-span').textContent = currentPhase.emoji + ' ' + currentPhase.name + ' — ' + currentPhase.detail;
-    document.getElementById('tp-card-text').textContent  = 'Day ' + clampedDay;
-
-    // Date ticks
-    const ticks = document.getElementById('tp-ticks');
-    if (!ticks.children.length) {
-      PHASES.forEach(ph => {
-        const leftPct = (ph.start - TRIP_START) / totalMs * 100;
-        const d       = new Date(ph.start);
-        const label   = (d.getMonth() === 4 ? 'May ' : 'Jun ') + d.getUTCDate();
-        ticks.innerHTML += `<div class="tp-tick" style="left:${leftPct}%">
-          <div class="tp-tick-line"></div><div class="tp-tick-label">${label}</div></div>`;
-      });
-      // End tick
-      const endD = new Date(TRIP_END);
-      ticks.innerHTML += `<div class="tp-tick" style="left:100%">
-        <div class="tp-tick-line"></div><div class="tp-tick-label">Jun ${endD.getDate()}</div></div>`;
-    }
-  }
-
-  // Progress bar updates every minute
-
+function openLB(url) { document.getElementById('lb-img').src=url; document.getElementById('lightbox').classList.add('open'); }
+function closeLB()    { document.getElementById('lightbox').classList.remove('open'); }
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeLB(); });
+function timeAgo(iso) {
+  const m = Math.floor((Date.now()-new Date(iso).getTime())/60000);
+  if (m<1) return 'just now'; if (m<60) return m+'m ago';
+  const h=Math.floor(m/60); if(h<24) return h+'h ago';
+  return Math.floor(h/24)+'d ago';
+}
 </script>
 </body>
 </html>

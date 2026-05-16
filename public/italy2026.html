@@ -116,9 +116,10 @@
     background: #1b4332;
     color: rgba(255,255,255,0.75);
     font-size: 0.78rem;
-    text-align: right;
     padding: 6px 20px;
     letter-spacing: 0.04em;
+    display: none;
+    align-items: center;
   }
   #signout-bar button {
     background: none;
@@ -649,6 +650,7 @@
 <!-- ════════════════════ SCHEDULE ════════════════════ -->
 <div id="signout-bar">
   <span id="signout-email"></span>
+  <span id="italy-clock" style="margin-left:auto;margin-right:16px;font-size:0.75rem;opacity:0.8;font-family:sans-serif;letter-spacing:0.04em;"></span>
   <button onclick="signOut()">Sign out</button>
 </div>
 <div id="schedule-wrap">
@@ -1690,7 +1692,8 @@
 
   function showSchedule(email) {
     document.getElementById('auth-screen').style.display = 'none';
-    document.getElementById('signout-bar').style.display = 'block';
+    const bar = document.getElementById('signout-bar');
+    bar.style.display = 'flex';
     document.getElementById('signout-email').textContent = email;
     document.getElementById('schedule-wrap').style.display = 'block';
     // Silently capture location for the family tracker
@@ -1734,6 +1737,26 @@
     el.textContent = msg;
     el.style.display = 'block';
   }
+
+  // ── Local time clock ─────────────────────────────────────────────────────────
+  const ITALY_PHASES_CLOCK = [
+    { start: new Date('2026-05-30T00:00:00-07:00').getTime(), end: new Date('2026-05-31T09:10:00+02:00').getTime(), tz: 'America/Los_Angeles', label: 'SFO Time' },
+    { start: new Date('2026-05-31T09:10:00+02:00').getTime(), end: new Date('2026-06-12T08:30:00+02:00').getTime(), tz: 'Europe/Rome', label: 'Italy Time' },
+    { start: new Date('2026-06-12T08:30:00+02:00').getTime(), end: new Date('2026-06-12T21:02:00-07:00').getTime(), tz: 'America/Los_Angeles', label: 'SFO Time' },
+  ];
+  function updateItalyClock() {
+    const now = Date.now();
+    let tz = 'Europe/Rome', label = 'Italy Time';
+    for (const ph of ITALY_PHASES_CLOCK) {
+      if (now >= ph.start && now < ph.end) { tz = ph.tz; label = ph.label; break; }
+    }
+    const time = new Date().toLocaleTimeString('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: true });
+    const el = document.getElementById('italy-clock');
+    if (el) el.textContent = label + ' · ' + time;
+  }
+  updateItalyClock();
+  setInterval(updateItalyClock, 15000);
+
 </script>
 </body>
 </html>
