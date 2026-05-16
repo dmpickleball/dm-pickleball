@@ -141,6 +141,121 @@
     .pw-input-wrap { flex-direction: column; }
     .topbar { flex-direction: column; align-items: flex-start; }
   }
+
+  /* ── TRIP PROGRESS ─────────────────────────────────────────────────── */
+  .trip-progress {
+    background: #0f1923;
+    padding: 24px 28px 22px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .tp-top {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 22px; flex-wrap: wrap;
+  }
+  .tp-day-pill {
+    background: #2d6a4f; color: #fff; padding: 5px 16px;
+    border-radius: 20px; font-size: 0.8rem; font-family: sans-serif;
+    letter-spacing: 0.07em; font-weight: 600;
+  }
+  .tp-phase-label {
+    font-size: 0.85rem; color: rgba(255,255,255,0.55); font-family: sans-serif;
+  }
+  .tp-phase-label span { color: rgba(255,255,255,0.85); font-weight: 600; }
+
+  /* Outer wrapper — reserves space for indicator above and dates below */
+  .tp-outer { position: relative; padding-top: 64px; padding-bottom: 28px; }
+
+  /* The bar */
+  .tp-bar {
+    display: flex; height: 60px; border-radius: 14px; overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
+  .tp-seg {
+    position: relative; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; overflow: hidden;
+    flex-shrink: 0; transition: filter 0.4s;
+  }
+  .tp-seg.past   { filter: brightness(0.5) saturate(0.6); }
+  .tp-seg.active { filter: brightness(1.15); }
+  .tp-seg.future { filter: brightness(0.7) saturate(0.7); }
+
+  .tp-seg-emoji { font-size: 1.25rem; line-height: 1; pointer-events: none; }
+  .tp-seg-name  {
+    font-size: 0.6rem; font-family: sans-serif; font-weight: 700;
+    color: rgba(255,255,255,0.9); letter-spacing: 0.05em; margin-top: 3px;
+    text-align: center; white-space: nowrap; padding: 0 4px;
+  }
+  /* Hide name when segment is narrow */
+  .tp-seg.narrow .tp-seg-name { display: none; }
+  .tp-seg.narrow .tp-seg-emoji { font-size: 1rem; }
+
+  /* Segment palette */
+  .seg-fly1      { background: linear-gradient(160deg,#0d1b2e 0%,#1a3a5c 100%); }
+  .seg-venice    { background: linear-gradient(160deg,#1055a0 0%,#29b6f6 100%); }
+  .seg-dolomites { background: linear-gradient(160deg,#1b5e20 0%,#66bb6a 100%); }
+  .seg-trecime   { background: linear-gradient(160deg,#37474f 0%,#90a4ae 100%); }
+  .seg-como      { background: linear-gradient(160deg,#006064 0%,#4dd0e1 100%); }
+  .seg-milan     { background: linear-gradient(160deg,#4a148c 0%,#ba68c8 100%); }
+  .seg-fly2      { background: linear-gradient(160deg,#1a2744 0%,#42a5f5 100%); }
+
+  /* Subtle texture overlays */
+  .seg-venice::after, .seg-como::after {
+    content: ''; position: absolute; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(255,255,255,0.04) 8px, rgba(255,255,255,0.04) 9px);
+  }
+  .seg-dolomites::after, .seg-trecime::after {
+    content: ''; position: absolute; inset: 0;
+    background: repeating-linear-gradient(135deg, transparent, transparent 6px, rgba(255,255,255,0.03) 6px, rgba(255,255,255,0.03) 7px);
+  }
+
+  /* ── Indicator ── */
+  .tp-indicator {
+    position: absolute; top: 0; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center;
+    z-index: 10; pointer-events: none;
+    transition: left 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .tp-card {
+    background: #fff; border-radius: 10px;
+    padding: 6px 10px 5px; text-align: center;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.45), 0 0 0 1.5px rgba(255,255,255,0.15);
+  }
+  .tp-card-icon { font-size: 1.35rem; line-height: 1; }
+  .tp-card-text {
+    font-size: 0.58rem; font-family: sans-serif; font-weight: 800;
+    color: #1b4332; letter-spacing: 0.06em; margin-top: 2px;
+    white-space: nowrap;
+  }
+  .tp-needle {
+    width: 2px; height: 14px;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.8), rgba(255,255,255,0));
+  }
+  .tp-bead {
+    width: 9px; height: 9px; border-radius: 50%; background: #fff;
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.25), 0 0 14px rgba(255,255,255,0.5);
+  }
+
+  /* ── Date ticks ── */
+  .tp-ticks {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    pointer-events: none;
+  }
+  .tp-tick {
+    position: absolute; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+  }
+  .tp-tick-line { width: 1px; height: 6px; background: rgba(255,255,255,0.25); }
+  .tp-tick-label {
+    font-size: 0.58rem; color: rgba(255,255,255,0.4); font-family: sans-serif;
+    white-space: nowrap;
+  }
+
+  /* Before/after trip states */
+  .tp-before-msg, .tp-after-msg {
+    text-align: center; padding: 10px;
+    font-size: 0.82rem; color: rgba(255,255,255,0.5); font-family: sans-serif;
+    font-style: italic;
+  }
+
 </style>
 </head>
 <body>
@@ -233,13 +348,45 @@
 
 <!-- ═══════════════ TRACKER ═══════════════ -->
 <div id="tracker">
-  <div class="topbar">
+  <!-- topbar start --><div class="topbar">
     <div class="topbar-left">
       <h1>🇮🇹 Italy 2026 — Live Tracker</h1>
       <p>Venice · Dolomites · Lake Como · Milan · May 30 – June 12</p>
     </div>
     <div class="topbar-right" id="last-refresh">Loading…</div>
   </div>
+
+  <!-- ═══ TRIP PROGRESS BAR ═══ -->
+  <div class="trip-progress">
+    <div class="tp-top">
+      <div class="tp-day-pill" id="tp-day-pill">Loading…</div>
+      <div class="tp-phase-label">Currently: <span id="tp-phase-span">—</span></div>
+    </div>
+    <div class="tp-outer">
+      <!-- Floating indicator -->
+      <div class="tp-indicator" id="tp-indicator">
+        <div class="tp-card">
+          <div class="tp-card-icon">👫</div>
+          <div class="tp-card-text" id="tp-card-text">—</div>
+        </div>
+        <div class="tp-needle"></div>
+        <div class="tp-bead"></div>
+      </div>
+      <!-- Segments (widths set by JS) -->
+      <div class="tp-bar" id="tp-bar">
+        <div class="tp-seg seg-fly1"      id="seg-fly1">      <span class="tp-seg-emoji">✈️</span><span class="tp-seg-name">Departing</span></div>
+        <div class="tp-seg seg-venice"    id="seg-venice">    <span class="tp-seg-emoji">🚤</span><span class="tp-seg-name">Venice</span></div>
+        <div class="tp-seg seg-dolomites" id="seg-dolomites"> <span class="tp-seg-emoji">⛰️</span><span class="tp-seg-name">Ortisei</span></div>
+        <div class="tp-seg seg-trecime"   id="seg-trecime">   <span class="tp-seg-emoji">🏔️</span><span class="tp-seg-name">Tre Cime</span></div>
+        <div class="tp-seg seg-como"      id="seg-como">      <span class="tp-seg-emoji">🌊</span><span class="tp-seg-name">Lake Como</span></div>
+        <div class="tp-seg seg-milan"     id="seg-milan">     <span class="tp-seg-emoji">🏙️</span><span class="tp-seg-name">Milan</span></div>
+        <div class="tp-seg seg-fly2"      id="seg-fly2">      <span class="tp-seg-emoji">✈️</span><span class="tp-seg-name">Home</span></div>
+      </div>
+      <!-- Date ticks -->
+      <div class="tp-ticks" id="tp-ticks"></div>
+    </div>
+  </div>
+
 
   <!-- MAP -->
   <div class="section">
@@ -318,7 +465,9 @@
     document.getElementById('tracker').style.display = 'block';
     initMap();
     refreshAll();
+    updateProgressBar();
     setInterval(refreshAll, 5 * 60 * 1000);
+    setInterval(updateProgressBar, 60 * 1000);
   }
 
   // ── Map ─────────────────────────────────────────────────────────────────────
@@ -409,6 +558,107 @@
     if (h < 24) return `${h}h ago`;
     return `${Math.floor(h/24)}d ago`;
   }
+
+  // ── Trip Progress Bar ────────────────────────────────────────────────────────
+  const PHASES = [
+    { id:'fly1',      name:'Departing',    detail:'SFO → Venice',    emoji:'✈️',
+      start: new Date('2026-05-30T00:00:00-07:00').getTime(),
+      end:   new Date('2026-05-31T09:10:00+02:00').getTime() },
+    { id:'venice',    name:'Venice',       detail:'Cannaregio',       emoji:'🚤',
+      start: new Date('2026-05-31T09:10:00+02:00').getTime(),
+      end:   new Date('2026-06-02T11:00:00+02:00').getTime() },
+    { id:'dolomites', name:'Ortisei',      detail:'Dolomites',        emoji:'⛰️',
+      start: new Date('2026-06-02T11:00:00+02:00').getTime(),
+      end:   new Date('2026-06-06T10:00:00+02:00').getTime() },
+    { id:'trecime',   name:'Tre Cime',     detail:'Dobbiaco',         emoji:'🏔️',
+      start: new Date('2026-06-06T10:00:00+02:00').getTime(),
+      end:   new Date('2026-06-08T10:00:00+02:00').getTime() },
+    { id:'como',      name:'Lake Como',    detail:'Varenna',          emoji:'🌊',
+      start: new Date('2026-06-08T10:00:00+02:00').getTime(),
+      end:   new Date('2026-06-11T12:00:00+02:00').getTime() },
+    { id:'milan',     name:'Milan',        detail:'ME Hotel',         emoji:'🏙️',
+      start: new Date('2026-06-11T12:00:00+02:00').getTime(),
+      end:   new Date('2026-06-12T08:30:00+02:00').getTime() },
+    { id:'fly2',      name:'Flying Home',  detail:'MXP → SFO',       emoji:'✈️',
+      start: new Date('2026-06-12T08:30:00+02:00').getTime(),
+      end:   new Date('2026-06-12T21:02:00-07:00').getTime() },
+  ];
+
+  const TRIP_START = PHASES[0].start;
+  const TRIP_END   = PHASES[PHASES.length - 1].end;
+  const TRIP_DAYS  = 14;
+
+  function updateProgressBar() {
+    const now        = Date.now();
+    const totalMs    = TRIP_END - TRIP_START;
+    const elapsed    = Math.max(0, Math.min(now - TRIP_START, totalMs));
+    const pct        = elapsed / totalMs * 100;
+    const dayNum     = Math.ceil((now - TRIP_START) / 86400000);
+    const clampedDay = Math.max(1, Math.min(dayNum, TRIP_DAYS));
+
+    // Set segment widths
+    PHASES.forEach(ph => {
+      const el  = document.getElementById('seg-' + ph.id);
+      if (!el) return;
+      const w   = (ph.end - ph.start) / totalMs * 100;
+      el.style.width = w + '%';
+      el.classList.toggle('narrow', w < 8);
+    });
+
+    // Determine current phase
+    let currentPhase = PHASES[0];
+    for (const ph of PHASES) {
+      if (now >= ph.start && now < ph.end) { currentPhase = ph; break; }
+      if (now >= ph.end) currentPhase = ph;
+    }
+
+    // Colour segments: past / active / future
+    PHASES.forEach(ph => {
+      const el = document.getElementById('seg-' + ph.id);
+      if (!el) return;
+      el.classList.remove('past','active','future');
+      if (ph.id === currentPhase.id)   el.classList.add('active');
+      else if (ph.end <= now)          el.classList.add('past');
+      else                             el.classList.add('future');
+    });
+
+    // Move indicator
+    const indicator = document.getElementById('tp-indicator');
+    if (now < TRIP_START) {
+      indicator.style.left = '0%';
+    } else if (now > TRIP_END) {
+      indicator.style.left = '100%';
+    } else {
+      indicator.style.left = pct + '%';
+    }
+
+    // Update labels
+    const dayLabel = now < TRIP_START ? 'Trip starts May 30'
+                   : now > TRIP_END   ? 'Trip complete 🎉'
+                   : `Day ${clampedDay} of ${TRIP_DAYS}`;
+    document.getElementById('tp-day-pill').textContent = dayLabel;
+    document.getElementById('tp-phase-span').textContent = currentPhase.emoji + ' ' + currentPhase.name + ' — ' + currentPhase.detail;
+    document.getElementById('tp-card-text').textContent  = 'Day ' + clampedDay;
+
+    // Date ticks
+    const ticks = document.getElementById('tp-ticks');
+    if (!ticks.children.length) {
+      PHASES.forEach(ph => {
+        const leftPct = (ph.start - TRIP_START) / totalMs * 100;
+        const d       = new Date(ph.start);
+        const label   = (d.getMonth() === 4 ? 'May ' : 'Jun ') + d.getUTCDate();
+        ticks.innerHTML += `<div class="tp-tick" style="left:${leftPct}%">
+          <div class="tp-tick-line"></div><div class="tp-tick-label">${label}</div></div>`;
+      });
+      // End tick
+      const endD = new Date(TRIP_END);
+      ticks.innerHTML += `<div class="tp-tick" style="left:100%">
+        <div class="tp-tick-line"></div><div class="tp-tick-label">Jun ${endD.getDate()}</div></div>`;
+    }
+  }
+
+  // Progress bar updates every minute
+
 </script>
 </body>
 </html>
