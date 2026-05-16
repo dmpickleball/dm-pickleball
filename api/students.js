@@ -42,36 +42,48 @@ async function getICloudPhotos() {
   const token = process.env.ICLOUD_ALBUM_TOKEN;
   if (!token) return [];
   try {
-    const base = `https://p01-sharedstreams.icloud.com/${token}/sharedstreams`;
+    const headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Origin': 'https://www.icloud.com',
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15',
+    };
+    // Step 1: Apple returns 330 with the real partition host in the body
+    const redirect = await fetch(`https://p01-sharedstreams.icloud.com/${token}/sharedstreams/webstream`, {
+      method: 'POST', headers, body: JSON.stringify({ streamCtag: null }),
+    });
+    const redirectData = await redirect.json();
+    const host = redirectData['X-Apple-MMe-Host'] || 'p01-sharedstreams.icloud.com';
+    const base = `https://${host}/${token}/sharedstreams`;
+
+    // Step 2: real webstream call on the correct partition
     const streamRes = await fetch(`${base}/webstream`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Origin': 'https://www.icloud.com' },
-      body: JSON.stringify({ streamCtag: null }),
+      method: 'POST', headers, body: JSON.stringify({ streamCtag: null }),
     });
     if (!streamRes.ok) return [];
     const stream = await streamRes.json();
-    // Apple may redirect to a different partition
-    const host = stream['X-Apple-MMe-Host'];
-    const finalBase = host ? `https://${host}/${token}/sharedstreams` : base;
     const photos = (stream.photos || []).slice(0, 60);
     if (!photos.length) return [];
+
+    // Step 3: get expiring CDN URLs for each photo
     const guids = photos.map(p => p.photoGuid);
-    const urlRes = await fetch(`${finalBase}/webasseturls`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Origin': 'https://www.icloud.com' },
-      body: JSON.stringify({ photoGuids: guids }),
+    const urlRes = await fetch(`${base}/webasseturls`, {
+      method: 'POST', headers, body: JSON.stringify({ photoGuids: guids }),
     });
     if (!urlRes.ok) return [];
     const urlData = await urlRes.json();
+
     return photos.map(photo => {
       const derivatives = photo.derivatives || {};
+      // Pick the largest derivative (highest resolution)
       const keys = Object.keys(derivatives).map(Number).filter(k => !isNaN(k)).sort((a, b) => b - a);
       const best = keys[0]?.toString();
       if (!best) return null;
       const d = derivatives[best];
       const loc = urlData.items?.[d.checksum];
       if (!loc) return null;
-      return { url: loc.url_location + loc.url_path, caption: photo.caption || '' };
+      // url_location is just the hostname — prepend https://
+      return { url: `https://${loc.url_location}${loc.url_path}`, caption: photo.caption || '' };
     }).filter(Boolean);
   } catch (e) {
     console.error('iCloud photos error:', e.message);
