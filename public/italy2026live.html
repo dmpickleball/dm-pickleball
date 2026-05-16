@@ -8,7 +8,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Georgia', serif; background: #0d1f1a; color: #2c2c2c; }
+  body { font-family: 'Georgia', serif; background: #f4f1ec; color: #2c2c2c; }
 
   /* ── PASSWORD SCREEN ── */
   #pw-screen {
@@ -53,27 +53,29 @@
   /* ── TRACKER ── */
   #tracker { display: none; }
   .topbar {
-    background: linear-gradient(135deg,#1a3a2a 0%,#2d6a4f 100%);
-    color: #fff; padding: 18px 28px;
+    background: linear-gradient(135deg, #2d6a4f 0%, #40916c 100%);
+    color: #fff; padding: 20px 32px;
     display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+    box-shadow: 0 2px 12px rgba(45,106,79,0.25);
   }
-  .topbar-left h1 { font-size: 1.4rem; font-weight: normal; }
-  .topbar-left p { font-size: 0.82rem; opacity: 0.75; letter-spacing: 0.08em; margin-top: 2px; }
-  .topbar-right { font-size: 0.78rem; opacity: 0.7; text-align: right; }
+  .topbar-left h1 { font-size: 1.5rem; font-weight: normal; letter-spacing: 0.01em; }
+  .topbar-left p { font-size: 0.82rem; opacity: 0.8; letter-spacing: 0.1em; margin-top: 3px; }
+  .topbar-right { font-size: 0.78rem; opacity: 0.75; text-align: right; }
 
   .section { max-width: 1000px; margin: 0 auto; padding: 32px 20px; }
   .section-title {
-    font-size: 1.15rem; font-weight: normal; color: #1b4332;
-    margin-bottom: 16px; padding-bottom: 10px;
-    border-bottom: 2px solid #d4edda;
+    font-size: 1.1rem; font-weight: normal; color: #1b4332;
+    margin-bottom: 18px; padding-bottom: 10px;
+    border-bottom: 2px solid #c8e6c9;
     display: flex; align-items: center; gap: 8px;
+    letter-spacing: 0.01em;
   }
 
   /* ── MAP ── */
-  #map-wrap { border-radius: 14px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.14); }
+  #map-wrap { border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.06); }
   #map { height: 380px; }
   .location-bar {
-    background: #fff; padding: 14px 20px;
+    background: #fff; padding: 15px 22px;
     display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
     border-top: 1px solid #eee;
   }
@@ -91,16 +93,17 @@
   /* ── PHOTOS ── */
   .photo-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
   }
   .photo-item {
-    border-radius: 10px; overflow: hidden;
+    border-radius: 14px; overflow: hidden;
     aspect-ratio: 1; background: #e8e3dd;
     position: relative; cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   }
-  .photo-item:hover { transform: scale(1.03); box-shadow: 0 8px 24px rgba(0,0,0,0.18); }
+  .photo-item:hover { transform: scale(1.04); box-shadow: 0 10px 28px rgba(0,0,0,0.2); }
   .photo-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .photo-caption {
     position: absolute; bottom: 0; left: 0; right: 0;
@@ -111,7 +114,7 @@
   .photo-item:hover .photo-caption { opacity: 1; }
   .photos-empty {
     text-align: center; padding: 48px 20px; color: #888;
-    background: #f9f6f2; border-radius: 12px; font-style: italic;
+    background: #fff; border-radius: 16px; font-style: italic; border: 2px dashed #d4c9bc;
   }
   .photos-empty .big { font-size: 2.5rem; margin-bottom: 10px; }
 
@@ -130,9 +133,10 @@
 
   /* ── REFRESH BADGE ── */
   .refresh-btn {
-    background: none; border: 1px solid #2d6a4f; color: #2d6a4f;
-    border-radius: 20px; padding: 4px 14px; font-size: 0.78rem;
-    cursor: pointer; font-family: inherit; margin-left: auto;
+    background: #f0f8f4; border: 1.5px solid #2d6a4f; color: #2d6a4f;
+    border-radius: 20px; padding: 5px 16px; font-size: 0.78rem;
+    cursor: pointer; font-family: sans-serif; margin-left: auto;
+    transition: all 0.18s;
   }
   .refresh-btn:hover { background: #2d6a4f; color: #fff; }
 
@@ -144,58 +148,62 @@
 
   /* ── TRIP PROGRESS ─────────────────────────────────────────────────── */
   .trip-progress {
-    background: #0f1923;
-    padding: 24px 28px 22px;
-    border-bottom: 1px solid rgba(255,255,255,0.07);
+    background: #fff;
+    padding: 28px 32px 24px;
+    border-bottom: 1px solid #e8e3dd;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.04);
   }
   .tp-top {
-    display: flex; align-items: center; gap: 12px; margin-bottom: 22px; flex-wrap: wrap;
+    display: flex; align-items: center; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;
   }
   .tp-day-pill {
-    background: #2d6a4f; color: #fff; padding: 5px 16px;
-    border-radius: 20px; font-size: 0.8rem; font-family: sans-serif;
-    letter-spacing: 0.07em; font-weight: 600;
+    background: linear-gradient(135deg, #2d6a4f, #40916c);
+    color: #fff; padding: 6px 18px;
+    border-radius: 20px; font-size: 0.82rem; font-family: sans-serif;
+    letter-spacing: 0.07em; font-weight: 700;
+    box-shadow: 0 2px 8px rgba(45,106,79,0.3);
   }
   .tp-phase-label {
-    font-size: 0.85rem; color: rgba(255,255,255,0.55); font-family: sans-serif;
+    font-size: 0.88rem; color: #888; font-family: sans-serif;
   }
-  .tp-phase-label span { color: rgba(255,255,255,0.85); font-weight: 600; }
+  .tp-phase-label span { color: #2d6a4f; font-weight: 700; }
 
   /* Outer wrapper — reserves space for indicator above and dates below */
   .tp-outer { position: relative; padding-top: 64px; padding-bottom: 28px; }
 
   /* The bar */
   .tp-bar {
-    display: flex; height: 60px; border-radius: 14px; overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    display: flex; height: 68px; border-radius: 16px; overflow: hidden;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.1);
   }
   .tp-seg {
     position: relative; display: flex; flex-direction: column;
     align-items: center; justify-content: center; overflow: hidden;
     flex-shrink: 0; transition: filter 0.4s;
   }
-  .tp-seg.past   { filter: brightness(0.5) saturate(0.6); }
-  .tp-seg.active { filter: brightness(1.15); }
-  .tp-seg.future { filter: brightness(0.7) saturate(0.7); }
+  .tp-seg.past   { filter: brightness(0.55) saturate(0.5); }
+  .tp-seg.active { filter: brightness(1.1) saturate(1.1); box-shadow: inset 0 0 0 2.5px rgba(255,255,255,0.35); }
+  .tp-seg.future { filter: brightness(0.8) saturate(0.75); }
 
   .tp-seg-emoji { font-size: 1.25rem; line-height: 1; pointer-events: none; }
   .tp-seg-name  {
-    font-size: 0.6rem; font-family: sans-serif; font-weight: 700;
-    color: rgba(255,255,255,0.9); letter-spacing: 0.05em; margin-top: 3px;
-    text-align: center; white-space: nowrap; padding: 0 4px;
+    font-size: 0.64rem; font-family: sans-serif; font-weight: 700;
+    color: rgba(255,255,255,0.95); letter-spacing: 0.04em; margin-top: 3px;
+    text-align: center; white-space: nowrap; padding: 0 5px;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
   }
   /* Hide name when segment is narrow */
   .tp-seg.narrow .tp-seg-name { display: none; }
   .tp-seg.narrow .tp-seg-emoji { font-size: 1rem; }
 
   /* Segment palette */
-  .seg-fly1      { background: linear-gradient(160deg,#0d1b2e 0%,#1a3a5c 100%); }
-  .seg-venice    { background: linear-gradient(160deg,#1055a0 0%,#29b6f6 100%); }
-  .seg-dolomites { background: linear-gradient(160deg,#1b5e20 0%,#66bb6a 100%); }
-  .seg-trecime   { background: linear-gradient(160deg,#37474f 0%,#90a4ae 100%); }
-  .seg-como      { background: linear-gradient(160deg,#006064 0%,#4dd0e1 100%); }
-  .seg-milan     { background: linear-gradient(160deg,#4a148c 0%,#ba68c8 100%); }
-  .seg-fly2      { background: linear-gradient(160deg,#1a2744 0%,#42a5f5 100%); }
+  .seg-fly1      { background: linear-gradient(160deg,#1c3d5a 0%,#2980b9 100%); }
+  .seg-venice    { background: linear-gradient(160deg,#1565c0 0%,#4fc3f7 100%); }
+  .seg-dolomites { background: linear-gradient(160deg,#2e7d32 0%,#81c784 100%); }
+  .seg-trecime   { background: linear-gradient(160deg,#546e7a 0%,#b0bec5 100%); }
+  .seg-como      { background: linear-gradient(160deg,#00838f 0%,#4dd0e1 100%); }
+  .seg-milan     { background: linear-gradient(160deg,#6a1b9a 0%,#ce93d8 100%); }
+  .seg-fly2      { background: linear-gradient(160deg,#1565c0 0%,#64b5f6 100%); }
 
   /* Subtle texture overlays */
   .seg-venice::after, .seg-como::after {
@@ -215,23 +223,23 @@
     transition: left 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
   .tp-card {
-    background: #fff; border-radius: 10px;
-    padding: 6px 10px 5px; text-align: center;
-    box-shadow: 0 4px 18px rgba(0,0,0,0.45), 0 0 0 1.5px rgba(255,255,255,0.15);
+    background: #fff; border-radius: 12px;
+    padding: 7px 12px 6px; text-align: center;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2), 0 0 0 2px rgba(255,255,255,0.9);
   }
-  .tp-card-icon { font-size: 1.35rem; line-height: 1; }
+  .tp-card-icon { font-size: 1.4rem; line-height: 1; }
   .tp-card-text {
-    font-size: 0.58rem; font-family: sans-serif; font-weight: 800;
-    color: #1b4332; letter-spacing: 0.06em; margin-top: 2px;
+    font-size: 0.6rem; font-family: sans-serif; font-weight: 800;
+    color: #2d6a4f; letter-spacing: 0.06em; margin-top: 2px;
     white-space: nowrap;
   }
   .tp-needle {
     width: 2px; height: 14px;
-    background: linear-gradient(to bottom, rgba(255,255,255,0.8), rgba(255,255,255,0));
+    background: linear-gradient(to bottom, rgba(45,106,79,0.6), rgba(45,106,79,0));
   }
   .tp-bead {
-    width: 9px; height: 9px; border-radius: 50%; background: #fff;
-    box-shadow: 0 0 0 3px rgba(255,255,255,0.25), 0 0 14px rgba(255,255,255,0.5);
+    width: 9px; height: 9px; border-radius: 50%; background: #2d6a4f;
+    box-shadow: 0 0 0 3px rgba(45,106,79,0.25), 0 0 10px rgba(45,106,79,0.4);
   }
 
   /* ── Date ticks ── */
@@ -243,9 +251,9 @@
     position: absolute; transform: translateX(-50%);
     display: flex; flex-direction: column; align-items: center; gap: 3px;
   }
-  .tp-tick-line { width: 1px; height: 6px; background: rgba(255,255,255,0.25); }
+  .tp-tick-line { width: 1px; height: 6px; background: #ccc; }
   .tp-tick-label {
-    font-size: 0.58rem; color: rgba(255,255,255,0.4); font-family: sans-serif;
+    font-size: 0.58rem; color: #aaa; font-family: sans-serif;
     white-space: nowrap;
   }
 
@@ -411,7 +419,7 @@
   </div>
 
   <div style="text-align:center;padding:24px;color:#999;font-size:0.8rem;">
-    Auto-refreshes every 5 minutes · Page updates when David or Amanda check in
+    🔄 Auto-refreshes every 5 minutes &nbsp;·&nbsp; 📍 Updates when David & Amanda log into their itinerary
   </div>
 </div>
 
