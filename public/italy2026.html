@@ -113,25 +113,43 @@
   #schedule-wrap { display: none; }
   #signout-bar {
     display: none;
+    position: sticky; top: 0; z-index: 100;
     background: #1b4332;
-    color: rgba(255,255,255,0.75);
-    font-size: 0.78rem;
-    padding: 6px 20px;
-    letter-spacing: 0.04em;
-    display: none;
+    color: rgba(255,255,255,0.85);
+    height: 54px;
+    padding: 0 28px;
     align-items: center;
+    gap: 14px;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.25);
   }
-  #signout-bar button {
-    background: none;
-    border: 1px solid rgba(255,255,255,0.4);
-    color: rgba(255,255,255,0.9);
-    padding: 3px 12px;
-    border-radius: 12px;
-    cursor: pointer;
-    margin-left: 10px;
-    font-size: 0.75rem;
+  .sb-brand { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .sb-flag  { font-size: 1.15rem; flex-shrink: 0; }
+  .sb-title { font-size: 0.92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sb-title small {
+    font-family: sans-serif; font-size: 0.58rem; opacity: 0.38;
+    letter-spacing: 0.1em; text-transform: uppercase; margin-left: 8px;
   }
-  #signout-bar button:hover { background: rgba(255,255,255,0.1); }
+  .sb-clock {
+    font-family: sans-serif; font-size: 0.72rem;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 9px; padding: 6px 15px;
+    line-height: 1.3; text-align: right; white-space: nowrap; flex-shrink: 0;
+  }
+  .sb-clock-time  { font-size: 0.9rem; display: block; letter-spacing: 0.02em; }
+  .sb-clock-label { font-size: 0.56rem; opacity: 0.42; display: block; text-transform: uppercase; letter-spacing: 0.1em; }
+  .sb-btn {
+    background: none; border: 1px solid rgba(255,255,255,0.18);
+    color: rgba(255,255,255,0.6); border-radius: 8px;
+    padding: 7px 15px; font-size: 0.68rem; cursor: pointer;
+    font-family: sans-serif; letter-spacing: 0.06em; text-transform: uppercase;
+    transition: all 0.18s; white-space: nowrap; flex-shrink: 0;
+  }
+  .sb-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  @media (max-width: 540px) {
+    #signout-bar { padding: 0 16px; gap: 10px; height: 50px; }
+    .sb-title small { display: none; }
+  }
 
   /* ── EMBEDDED SCHEDULE CSS ── */
   
@@ -649,9 +667,15 @@
 
 <!-- ════════════════════ SCHEDULE ════════════════════ -->
 <div id="signout-bar">
-  <span id="signout-email"></span>
-  <span id="italy-clock" style="margin-left:auto;margin-right:16px;font-size:0.75rem;opacity:0.8;font-family:sans-serif;letter-spacing:0.04em;"></span>
-  <button onclick="signOut()">Sign out</button>
+  <div class="sb-brand">
+    <span class="sb-flag">🇮🇹</span>
+    <span class="sb-title">Italy 2026 <small>Private Itinerary</small></span>
+  </div>
+  <div class="sb-clock">
+    <span class="sb-clock-time" id="sb-clock-time">--:--</span>
+    <span class="sb-clock-label" id="sb-clock-label">Local Time</span>
+  </div>
+  <button class="sb-btn" onclick="signOut()">Sign out</button>
 </div>
 <div id="schedule-wrap">
 
@@ -1751,8 +1775,10 @@
       if (now >= ph.start && now < ph.end) { tz = ph.tz; label = ph.label; break; }
     }
     const time = new Date().toLocaleTimeString('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: true });
-    const el = document.getElementById('italy-clock');
-    if (el) el.textContent = label + ' · ' + time;
+    const timeEl  = document.getElementById('sb-clock-time');
+    const labelEl = document.getElementById('sb-clock-label');
+    if (timeEl)  timeEl.textContent  = time;
+    if (labelEl) labelEl.textContent = label;
   }
   updateItalyClock();
   setInterval(updateItalyClock, 15000);

@@ -142,7 +142,7 @@ body { font-family: 'Georgia', serif; background: var(--cream); color: var(--dar
 .tl-track-wrap {
   position: relative;
   padding-top: 38px;
-  padding-bottom: 50px;
+  padding-bottom: 120px;
 }
 .tl-rail {
   position: absolute; top: 47px; left: 0; right: 0;
@@ -153,7 +153,7 @@ body { font-family: 'Georgia', serif; background: var(--cream); color: var(--dar
   background: linear-gradient(90deg, var(--dark) 0%, var(--accent) 100%);
   border-radius: 2px; transition: width 0.8s ease;
 }
-.tl-stations { position: relative; height: 96px; }
+.tl-stations { position: relative; height: 158px; }
 .tl-station {
   position: absolute;
   display: flex; flex-direction: column; align-items: center;
@@ -216,9 +216,7 @@ body { font-family: 'Georgia', serif; background: var(--cream); color: var(--dar
 /* ── MOBILE vertical ── */
 .tl-mob { display: none; }
 .mob-rows { display: flex; flex-direction: column; }
-.tl-row {
-  display: flex; align-items: stretch;
-}
+.tl-row { display: flex; align-items: stretch; }
 .tl-row-dot-col {
   display: flex; flex-direction: column; align-items: center;
   width: 28px; flex-shrink: 0;
@@ -240,15 +238,17 @@ body { font-family: 'Georgia', serif; background: var(--cream); color: var(--dar
   background: var(--border); margin-top: 5px;
 }
 .tl-row.past .tl-row-connector { background: rgba(18,32,46,0.22); }
-.tl-row-info {
+/* Row body wraps text + thumbnail */
+.tl-row-body {
   flex: 1; padding: 0 0 22px 12px;
+  display: flex; align-items: flex-start; gap: 12px;
 }
-.tl-row:last-child .tl-row-info { padding-bottom: 0; }
+.tl-row:last-child .tl-row-body { padding-bottom: 0; }
+.tl-row-info { flex: 1; }
 .tl-row-city {
   font-family: sans-serif; font-size: 0.74rem; font-weight: 700;
   letter-spacing: 0.07em; text-transform: uppercase;
-  color: var(--muted); margin-bottom: 2px; transition: color 0.3s;
-  line-height: 1;
+  color: var(--muted); margin-bottom: 2px; transition: color 0.3s; line-height: 1;
 }
 .tl-row.active .tl-row-city { color: var(--dark); }
 .tl-row.past   .tl-row-city { color: var(--dark); opacity: 0.55; }
@@ -263,6 +263,22 @@ body { font-family: 'Georgia', serif; background: var(--cream); color: var(--dar
   letter-spacing: 0.09em; text-transform: uppercase;
   padding: 3px 10px; width: fit-content;
 }
+/* City illustration thumbnail */
+.tl-row-thumb {
+  width: 76px; height: 56px; flex-shrink: 0;
+  border-radius: 10px; overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.13);
+}
+.tl-row-thumb svg { width: 76px; height: 56px; display: block; }
+.tl-row.past .tl-row-thumb { opacity: 0.5; filter: grayscale(20%); }
+/* Desktop thumbnail */
+.tl-thumb {
+  margin-top: 10px; width: 68px; height: 50px;
+  border-radius: 8px; overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.12);
+}
+.tl-thumb svg { width: 68px; height: 50px; display: block; }
+.tl-station.past .tl-thumb { opacity: 0.45; filter: grayscale(20%); }
 
 /* ── Breakpoints ── */
 @media (max-width: 640px) {
@@ -609,6 +625,126 @@ const API    = 'https://dmpickleball.com';
 const PW_KEY = 'italy_live_token';
 let map, marker;
 
+// ── City illustrations ───────────────────────────────────────────────────────
+const ICONS = {
+  fly1: `<svg viewBox="0 0 76 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="76" height="56" rx="10" fill="#dbeaf4"/>
+  <ellipse cx="20" cy="14" rx="12" ry="7" fill="white" opacity="0.8"/>
+  <ellipse cx="56" cy="18" rx="9" ry="6" fill="white" opacity="0.65"/>
+  <path d="M12 30 Q30 24 54 29 L56 31 Q30 36 12 33 Z" fill="#1b4332"/>
+  <path d="M26 30 Q33 21 45 25 L43 30 Z" fill="#1b4332"/>
+  <path d="M26 31 Q33 40 45 36 L43 31 Z" fill="#2d6a4f"/>
+  <path d="M54 29 Q61 30 56 31 Z" fill="#1b4332"/>
+  <path d="M12 30 Q6 27 10 23 L14 28 Z" fill="#1b4332"/>
+  <rect x="0" y="44" width="76" height="12" rx="6" fill="#c8b88a"/>
+  <rect x="8" y="48" width="14" height="2" rx="1" fill="white" opacity="0.5"/>
+  <rect x="31" y="48" width="14" height="2" rx="1" fill="white" opacity="0.5"/>
+  <rect x="54" y="48" width="14" height="2" rx="1" fill="white" opacity="0.5"/>
+</svg>`,
+  venice: `<svg viewBox="0 0 76 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="76" height="56" rx="10" fill="#d4eaf6"/>
+  <rect x="2" y="16" width="15" height="24" fill="#c49060"/>
+  <rect x="5" y="20" width="9" height="13" rx="4.5" fill="#7ab0c8"/>
+  <rect x="25" y="6" width="11" height="34" fill="#d4804e"/>
+  <polygon points="25,6 30.5,1 36,6" fill="#b86030"/>
+  <rect x="28" y="13" width="5" height="8" rx="2.5" fill="#7ab0c8"/>
+  <rect x="46" y="14" width="26" height="26" fill="#c49060"/>
+  <rect x="50" y="18" width="7" height="11" rx="3.5" fill="#7ab0c8"/>
+  <rect x="60" y="18" width="7" height="11" rx="3.5" fill="#7ab0c8"/>
+  <rect x="0" y="38" width="76" height="18" rx="4" fill="#3a7a9b"/>
+  <path d="M0 40 Q9.5 38 19 40 Q28.5 42 38 40 Q47.5 38 57 40 Q66.5 42 76 40" stroke="rgba(255,255,255,0.28)" stroke-width="1.2"/>
+  <path d="M8 44 Q20 40 33 44 L29 49 Q18 50 12 49 Z" fill="#0a1a14"/>
+  <line x1="22" y1="40" x2="19" y2="35" stroke="#0a1a14" stroke-width="1.5"/>
+  <circle cx="19" cy="34" r="1.5" fill="#0a1a14"/>
+</svg>`,
+  dolomit: `<svg viewBox="0 0 76 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="76" height="56" rx="10" fill="#dce8f0"/>
+  <polygon points="0,38 15,20 30,32 46,16 62,26 76,22 76,38" fill="#8aacba" opacity="0.38"/>
+  <polygon points="4,46 18,11 32,46" fill="#5a7a66"/>
+  <polygon points="18,11 13,20 23,20" fill="#eef4f8"/>
+  <polygon points="23,46 39,5 55,46" fill="#6a8a76"/>
+  <polygon points="39,5 33,15 45,15" fill="#eef4f8"/>
+  <polygon points="49,46 63,17 76,44 76,46" fill="#5a7a66"/>
+  <polygon points="63,17 59,24 67,24" fill="#eef4f8" opacity="0.9"/>
+  <polygon points="6,46 9,39 12,46" fill="#2a4a34"/>
+  <polygon points="12,46 15,40 18,46" fill="#2a4a34"/>
+  <polygon points="59,46 62,40 65,46" fill="#2a4a34"/>
+  <polygon points="65,46 68,39 71,46" fill="#2a4a34"/>
+  <rect x="0" y="45" width="76" height="11" rx="4" fill="#a0ba98"/>
+</svg>`,
+  trecime: `<svg viewBox="0 0 76 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="76" height="56" rx="10" fill="#d6e8f4"/>
+  <ellipse cx="13" cy="10" rx="10" ry="6" fill="white" opacity="0.55"/>
+  <ellipse cx="64" cy="14" rx="8" ry="5" fill="white" opacity="0.45"/>
+  <polygon points="0,40 18,26 36,36 54,28 76,32 76,40" fill="#7a9aaa" opacity="0.3"/>
+  <rect x="10" y="22" width="13" height="24" rx="1" fill="#7a8a80"/>
+  <rect x="11" y="19" width="11" height="6" rx="1" fill="#8a9a90"/>
+  <rect x="11" y="19" width="11" height="3" fill="#eef4f8"/>
+  <rect x="32" y="13" width="14" height="33" rx="1" fill="#8a9a88"/>
+  <rect x="33" y="10" width="12" height="6" rx="1" fill="#9aaa98"/>
+  <rect x="33" y="10" width="12" height="3" fill="#eef4f8"/>
+  <rect x="54" y="20" width="13" height="26" rx="1" fill="#7a8a80"/>
+  <rect x="55" y="17" width="11" height="6" rx="1" fill="#8a9a90"/>
+  <rect x="55" y="17" width="11" height="3" fill="#eef4f8"/>
+  <path d="M0 44 Q13 41 23 43 Q32 45 39 41 Q47 45 62 43 Q70 41 76 43 L76 56 L0 56 Z" fill="#9aaa98"/>
+</svg>`,
+  como: `<svg viewBox="0 0 76 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="76" height="56" rx="10" fill="#dce8f4"/>
+  <polygon points="0,32 15,10 30,26 44,8 60,20 76,14 76,32" fill="#5a7a66"/>
+  <polygon points="15,10 11,17 19,17" fill="#eef4f8"/>
+  <polygon points="44,8 40,15 48,15" fill="#eef4f8"/>
+  <ellipse cx="13" cy="36" rx="13" ry="9" fill="#4a6a52"/>
+  <ellipse cx="9" cy="32" rx="3" ry="9" fill="#2a4a32"/>
+  <ellipse cx="17" cy="34" rx="2.5" ry="7" fill="#2a4a32"/>
+  <rect x="25" y="27" width="19" height="14" fill="#e8d4ae"/>
+  <polygon points="23,27 34.5,21 46,27" fill="#c84040"/>
+  <rect x="31" y="30" width="7" height="9" fill="#7ab0c8"/>
+  <ellipse cx="52" cy="32" rx="2.5" ry="8" fill="#2a4a32"/>
+  <ellipse cx="60" cy="33" rx="2" ry="7" fill="#2a4a32"/>
+  <rect x="0" y="40" width="76" height="16" rx="6" fill="#4472a0"/>
+  <path d="M0 42 Q19 40 38 42 Q57 44 76 42" stroke="rgba(255,255,255,0.2)" stroke-width="1.2"/>
+  <rect x="25" y="40" width="19" height="3" fill="rgba(232,212,174,0.22)"/>
+</svg>`,
+  milan: `<svg viewBox="0 0 76 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="76" height="56" rx="10" fill="#e4e8f2"/>
+  <rect x="7" y="32" width="62" height="16" fill="#d0c8b8"/>
+  <rect x="13" y="34" width="7" height="12" rx="3.5" fill="#8898b8" opacity="0.78"/>
+  <rect x="23" y="34" width="7" height="12" rx="3.5" fill="#8898b8" opacity="0.78"/>
+  <rect x="35" y="34" width="7" height="12" rx="3.5" fill="#8898b8" opacity="0.78"/>
+  <rect x="47" y="34" width="7" height="12" rx="3.5" fill="#8898b8" opacity="0.78"/>
+  <rect x="57" y="34" width="7" height="12" rx="3.5" fill="#8898b8" opacity="0.78"/>
+  <rect x="11" y="23" width="54" height="12" fill="#dcd0be"/>
+  <circle cx="38" cy="28" r="6" fill="none" stroke="#8898b8" stroke-width="1.4" opacity="0.75"/>
+  <circle cx="38" cy="28" r="2" fill="#8898b8" opacity="0.45"/>
+  <rect x="33" y="7" width="10" height="18" fill="#c8bfae"/>
+  <polygon points="33,7 38,1 43,7" fill="#b8afa0"/>
+  <rect x="21" y="13" width="7" height="14" fill="#cec5b4"/>
+  <polygon points="21,13 24.5,9 28,13" fill="#beb5a4"/>
+  <rect x="10" y="17" width="5" height="10" fill="#d4cbb8"/>
+  <polygon points="10,17 12.5,13 15,17" fill="#c4bba8"/>
+  <rect x="48" y="13" width="7" height="14" fill="#cec5b4"/>
+  <polygon points="48,13 51.5,9 55,13" fill="#beb5a4"/>
+  <rect x="61" y="17" width="5" height="10" fill="#d4cbb8"/>
+  <polygon points="61,17 63.5,13 66,17" fill="#c4bba8"/>
+  <rect x="0" y="47" width="76" height="9" rx="4" fill="#c8bfaa"/>
+</svg>`,
+  fly2: `<svg viewBox="0 0 76 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="76" height="56" rx="10" fill="#f0dcc4"/>
+  <rect width="76" height="28" rx="6" fill="#e0986a" opacity="0.45"/>
+  <ellipse cx="56" cy="15" rx="10" ry="7" fill="white" opacity="0.65"/>
+  <ellipse cx="20" cy="20" rx="8" ry="5" fill="white" opacity="0.55"/>
+  <path d="M64 30 Q46 24 22 29 L20 31 Q46 36 64 33 Z" fill="#1b4332"/>
+  <path d="M50 30 Q43 21 31 25 L33 30 Z" fill="#1b4332"/>
+  <path d="M50 31 Q43 40 31 36 L33 31 Z" fill="#2d6a4f"/>
+  <path d="M22 29 Q15 30 20 31 Z" fill="#1b4332"/>
+  <path d="M64 30 Q70 27 66 23 L62 28 Z" fill="#1b4332"/>
+  <rect x="0" y="40" width="76" height="16" rx="6" fill="#8a9a68"/>
+  <rect x="50" y="31" width="14" height="11" fill="#c8a870"/>
+  <polygon points="48,31 57,25 66,31" fill="#b89860"/>
+  <rect x="54" y="36" width="5" height="6" fill="#7ab0c8"/>
+</svg>`,
+};
+
 // ── Trip phases ──────────────────────────────────────────────────────────────
 const PHASES = [
   { id:'fly1',   city:'Departing',   detail:'SFO → Venice · May 30',
@@ -733,11 +869,12 @@ function buildTimeline() {
     el.style.left = pct + '%';
     el.innerHTML = `
       <div class="tl-dot-wrap">
-        <div class="tl-dot"  id="dot-${ph.id}"></div>
-        <div class="tl-yah"  id="yah-${ph.id}">You are here</div>
+        <div class="tl-dot" id="dot-${ph.id}"></div>
+        <div class="tl-yah" id="yah-${ph.id}">You are here</div>
       </div>
       <div class="tl-city">${ph.city}</div>
-      <div class="tl-dates">${DATES[i]}</div>`;
+      <div class="tl-dates">${DATES[i]}</div>
+      <div class="tl-thumb">${ICONS[ph.id] || ''}</div>`;
     dWrap.appendChild(el);
   });
 
@@ -753,10 +890,13 @@ function buildTimeline() {
         <div class="tl-row-dot" id="mdot-${ph.id}"></div>
         ${i < PHASES.length - 1 ? '<div class="tl-row-connector"></div>' : ''}
       </div>
-      <div class="tl-row-info">
-        <div class="tl-row-city">${ph.city}</div>
-        <div class="tl-row-detail">${ph.detail}</div>
-        <div class="tl-row-badge" id="mbadge-${ph.id}">You are here</div>
+      <div class="tl-row-body">
+        <div class="tl-row-info">
+          <div class="tl-row-city">${ph.city}</div>
+          <div class="tl-row-detail">${ph.detail}</div>
+          <div class="tl-row-badge" id="mbadge-${ph.id}">You are here</div>
+        </div>
+        <div class="tl-row-thumb">${ICONS[ph.id] || ''}</div>
       </div>`;
     mWrap.appendChild(el);
   });
