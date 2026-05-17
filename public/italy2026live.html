@@ -4,8 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Italy 2026 — Live Tracker</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAplgT01JK_CZAPbcyVyn8muBnY-Z4KeRY"></script>
 <style>
 :root {
   --dark:   #12202e;
@@ -807,17 +806,31 @@ function updateTimeline() {
 
 // ── Map ───────────────────────────────────────────────────────────────────────
 function initMap() {
-  map = L.map('map', { zoomControl: true }).setView([45.5, 11.5], 7);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap', maxZoom: 18
-  }).addTo(map);
-  const icon = L.divIcon({
-    className: '',
-    html: `<div style="width:14px;height:14px;border-radius:50%;background:#2d6a4f;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.35);"></div>`,
-    iconSize: [14,14], iconAnchor: [7,7]
+  const startPos = { lat: 45.4408, lng: 12.3155 }; // Venice default
+  map = new google.maps.Map(document.getElementById('map'), {
+    center: startPos,
+    zoom: 7,
+    mapTypeControl: false,
+    streetViewControl: false,
+    fullscreenControl: false,
+    styles: [
+      { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+      { featureType: 'transit', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+    ],
   });
-  marker = L.marker([45.4408, 12.3155], { icon }).addTo(map)
-             .bindPopup('Last known location');
+  marker = new google.maps.Marker({
+    position: startPos,
+    map,
+    title: 'Last known location',
+    icon: {
+      path: google.maps.SymbolPath.CIRCLE,
+      scale: 9,
+      fillColor: '#2d6a4f',
+      fillOpacity: 1,
+      strokeColor: '#ffffff',
+      strokeWeight: 3,
+    },
+  });
 }
 
 // ── Data ──────────────────────────────────────────────────────────────────────
@@ -833,8 +846,10 @@ async function loadLocation(token) {
     });
     const d = await r.json();
     if (!d.ok || !d.lat) return;
-    marker.setLatLng([d.lat, d.lng]);
-    map.setView([d.lat, d.lng], 13);
+    const pos = { lat: d.lat, lng: d.lng };
+    marker.setPosition(pos);
+    map.setCenter(pos);
+    map.setZoom(13);
     document.getElementById('loc-city').textContent    = d.city || `${d.lat.toFixed(4)}, ${d.lng.toFixed(4)}`;
     document.getElementById('loc-updated').textContent = d.updated_at ? 'Updated ' + timeAgo(d.updated_at) : '';
   } catch {
