@@ -8,305 +8,419 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 :root {
-  --dark:    #12202e;
-  --green:   #2d6a4f;
-  --cream:   #f7f4ef;
-  --white:   #ffffff;
-  --muted:   #8a8a8a;
-  --border:  #e5e1db;
-  --shadow:  0 2px 16px rgba(0,0,0,0.07);
-  --venice:  #0077b6;
-  --dolomit: #2d6a4f;
-  --trecime: #546e7a;
-  --como:    #00838f;
-  --milan:   #6a1b9a;
-  --flight:  #1a3a5c;
+  --dark:   #12202e;
+  --green:  #2d6a4f;
+  --accent: #3a7d5e;
+  --cream:  #f5f2ed;
+  --white:  #ffffff;
+  --muted:  #8a8a8a;
+  --border: #e4dfd7;
+  --shadow: 0 2px 16px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.04);
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Georgia', serif; background: var(--cream); color: var(--dark); }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; scroll-behavior: smooth; }
+body { font-family: 'Georgia', serif; background: var(--cream); color: var(--dark); -webkit-font-smoothing: antialiased; }
 
-/* ── PASSWORD SCREEN ───────────────────────────────── */
+/* ═══════════════════════════════════════════
+   PASSWORD SCREEN
+════════════════════════════════════════════ */
 #pw-screen {
   display: flex; flex-direction: column; align-items: center;
-  justify-content: center; min-height: 100vh; padding: 40px 20px;
+  justify-content: center; min-height: 100vh; padding: 24px 16px;
   position: relative; overflow: hidden;
 }
-#pw-screen::before {
-  content: ''; position: absolute; inset: 0;
-  background: linear-gradient(180deg,#1a2744 0%,#2d4a7a 30%,#c8956c 65%,#e8b87a 80%,#1a3a2a 100%);
-  z-index: 0;
-}
-#pw-bg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
+#pw-bg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
 .pw-card {
   position: relative; z-index: 2;
-  background: rgba(255,255,255,0.97); border-radius: 20px;
-  padding: 52px 44px; max-width: 420px; width: 100%; text-align: center;
-  box-shadow: 0 32px 80px rgba(0,0,0,0.4);
+  background: rgba(255,255,255,0.97); border-radius: 22px;
+  padding: 48px 44px; max-width: 400px; width: 100%; text-align: center;
+  box-shadow: 0 40px 100px rgba(0,0,0,0.45);
 }
 .pw-eyebrow {
-  font-family: sans-serif; font-size: 0.7rem; letter-spacing: 0.18em;
+  font-family: sans-serif; font-size: 0.65rem; letter-spacing: 0.22em;
   text-transform: uppercase; color: var(--green); margin-bottom: 14px;
 }
 .pw-card h1 {
-  font-size: 2rem; font-weight: normal; color: var(--dark);
-  margin-bottom: 4px; letter-spacing: -0.01em;
+  font-size: 2.1rem; font-weight: normal; color: var(--dark);
+  margin-bottom: 8px; letter-spacing: -0.02em;
 }
-.pw-card .pw-sub { font-size: 0.88rem; color: var(--muted); margin-bottom: 28px; }
+.pw-card p { font-size: 0.88rem; color: var(--muted); margin-bottom: 30px; line-height: 1.6; }
 .pw-divider { border: none; border-top: 1px solid var(--border); margin: 0 0 26px; }
-.pw-label { font-family: sans-serif; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+.pw-label {
+  font-family: sans-serif; font-size: 0.65rem; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 10px; text-align: left;
+}
 .pw-row { display: flex; gap: 8px; }
 .pw-row input {
   flex: 1; padding: 13px 16px; border: 1.5px solid var(--border);
-  border-radius: 10px; font-size: 0.95rem; outline: none; transition: border-color 0.2s;
+  border-radius: 11px; font-size: 0.95rem; outline: none;
+  transition: border-color 0.18s; font-family: sans-serif;
 }
 .pw-row input:focus { border-color: var(--green); }
 .pw-row button {
-  background: var(--dark); color: #fff; border: none; border-radius: 10px;
-  padding: 13px 22px; font-size: 0.88rem; cursor: pointer; font-family: sans-serif;
-  letter-spacing: 0.04em; transition: background 0.2s;
+  background: var(--dark); color: #fff; border: none; border-radius: 11px;
+  padding: 13px 22px; font-size: 0.85rem; cursor: pointer;
+  font-family: sans-serif; letter-spacing: 0.04em; transition: background 0.18s;
+  white-space: nowrap;
 }
 .pw-row button:hover { background: var(--green); }
-#pw-error { margin-top: 12px; color: #c0392b; font-size: 0.84rem; font-family: sans-serif; display: none; }
+#pw-error {
+  margin-top: 12px; color: #b91c1c; font-size: 0.82rem;
+  font-family: sans-serif; display: none;
+}
+@media (max-width: 480px) {
+  .pw-card { padding: 36px 24px; }
+  .pw-row { flex-direction: column; }
+}
 
-/* ── TRACKER ───────────────────────────────────────── */
-#tracker { display: none; }
+/* ═══════════════════════════════════════════
+   TRACKER SHELL
+════════════════════════════════════════════ */
+#tracker { display: none; min-height: 100vh; }
 
-/* Topbar */
+/* ─── Topbar ─── */
 .topbar {
   background: var(--dark); color: #fff;
   padding: 0 32px; height: 58px;
-  display: flex; align-items: center; gap: 0;
-  position: sticky; top: 0; z-index: 100;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  display: flex; align-items: center; gap: 16px;
+  position: sticky; top: 0; z-index: 200;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.3);
 }
-.topbar-logo {
-  font-size: 1rem; font-weight: normal; letter-spacing: 0.02em; flex: 1;
+.topbar-flag { font-size: 1.15rem; }
+.topbar-title {
+  font-size: 0.97rem; font-weight: normal; letter-spacing: 0.01em;
+  white-space: nowrap; flex: 1;
 }
-.topbar-logo span { opacity: 0.45; font-size: 0.8rem; margin-left: 8px; font-family: sans-serif; }
+.topbar-title small {
+  font-family: sans-serif; font-size: 0.62rem; opacity: 0.38;
+  letter-spacing: 0.1em; text-transform: uppercase; margin-left: 10px;
+}
 .topbar-clock {
-  font-family: sans-serif; font-size: 0.78rem;
-  background: rgba(255,255,255,0.08); border-radius: 8px;
-  padding: 7px 14px; letter-spacing: 0.02em;
+  font-family: sans-serif; font-size: 0.73rem;
+  background: rgba(255,255,255,0.07);
   border: 1px solid rgba(255,255,255,0.1);
-  margin-right: 12px;
+  border-radius: 9px; padding: 7px 15px; line-height: 1.3;
+  white-space: nowrap; text-align: right;
 }
-.topbar-clock strong { font-size: 1rem; letter-spacing: 0.01em; }
-.topbar-clock .clock-city { opacity: 0.55; font-size: 0.68rem; display: block; margin-top: 1px; }
-.topbar-refresh {
-  background: none; border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.7);
-  border-radius: 8px; padding: 6px 14px; font-size: 0.75rem; cursor: pointer;
-  font-family: sans-serif; letter-spacing: 0.05em; transition: all 0.18s;
+.clock-time { font-size: 0.95rem; display: block; letter-spacing: 0.03em; }
+.clock-city { font-size: 0.58rem; opacity: 0.42; display: block; text-transform: uppercase; letter-spacing: 0.1em; }
+.topbar-btn {
+  background: none; border: 1px solid rgba(255,255,255,0.16);
+  color: rgba(255,255,255,0.6); border-radius: 8px;
+  padding: 7px 15px; font-size: 0.7rem; cursor: pointer;
+  font-family: sans-serif; letter-spacing: 0.06em; transition: all 0.18s;
+  white-space: nowrap; text-transform: uppercase;
 }
-.topbar-refresh:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.topbar-btn:hover { background: rgba(255,255,255,0.09); color: #fff; }
+@media (max-width: 540px) {
+  .topbar { padding: 0 16px; gap: 10px; height: 52px; }
+  .topbar-title small, .topbar-btn { display: none; }
+  .topbar-flag { display: none; }
+}
 
-/* ── TIMELINE ──────────────────────────────────────── */
-.timeline-section {
-  background: var(--white); border-bottom: 1px solid var(--border);
-  padding: 36px 40px 28px;
+/* ═══════════════════════════════════════════
+   TIMELINE SECTION
+════════════════════════════════════════════ */
+.tl-section {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  padding: 36px 48px 32px;
 }
-.tl-header {
-  display: flex; align-items: baseline; gap: 14px; margin-bottom: 32px; flex-wrap: wrap;
-}
+
+.tl-header { margin-bottom: 32px; }
 .tl-day {
-  font-size: 2rem; font-weight: normal; color: var(--dark); letter-spacing: -0.02em;
+  font-size: 1.75rem; font-weight: normal;
+  color: var(--dark); letter-spacing: -0.02em; margin-bottom: 5px;
 }
-.tl-phase {
-  font-family: sans-serif; font-size: 0.8rem; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--muted);
+.tl-where {
+  font-family: sans-serif; font-size: 0.78rem;
+  color: var(--muted); letter-spacing: 0.02em;
 }
-.tl-phase strong { color: var(--dark); }
+.tl-where strong { color: var(--dark); font-weight: 600; }
 
-/* The track */
+/* ── DESKTOP horizontal ── */
+.tl-desk { display: block; }
 .tl-track-wrap {
   position: relative;
-  padding-bottom: 52px; /* space for labels below */
+  padding-top: 38px;
+  padding-bottom: 50px;
 }
-.tl-line {
-  position: absolute; top: 10px; left: 0; right: 0; height: 2px;
-  background: var(--border); border-radius: 2px;
+.tl-rail {
+  position: absolute; top: 47px; left: 0; right: 0;
+  height: 2px; background: var(--border); border-radius: 2px;
 }
-.tl-line-fill {
+.tl-rail-fill {
   position: absolute; top: 0; left: 0; height: 100%;
-  background: linear-gradient(90deg, var(--dark), var(--green));
-  border-radius: 2px; transition: width 0.6s ease;
+  background: linear-gradient(90deg, var(--dark) 0%, var(--accent) 100%);
+  border-radius: 2px; transition: width 0.8s ease;
 }
-/* Station dots */
-.tl-stations {
-  position: relative; display: flex; justify-content: space-between;
-}
+.tl-stations { position: relative; height: 96px; }
 .tl-station {
+  position: absolute;
   display: flex; flex-direction: column; align-items: center;
-  position: relative; flex: 1;
+  transform: translateX(-50%);
 }
-.tl-station:first-child { align-items: flex-start; }
-.tl-station:last-child { align-items: flex-end; }
 .tl-dot-wrap {
-  position: relative; display: flex; justify-content: center; align-items: center;
-  width: 22px; height: 22px; z-index: 2;
+  position: relative; width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center; z-index: 2;
 }
 .tl-dot {
-  width: 12px; height: 12px; border-radius: 50%;
-  border: 2px solid var(--border); background: var(--white);
-  transition: all 0.3s;
+  width: 11px; height: 11px; border-radius: 50%;
+  background: var(--white); border: 2px solid var(--border);
+  transition: all 0.35s;
 }
-.tl-dot.past { background: var(--dark); border-color: var(--dark); }
+.tl-dot.past  { background: var(--dark); border-color: var(--dark); }
 .tl-dot.active {
-  background: var(--white); border: 3px solid var(--green);
-  width: 18px; height: 18px;
-  box-shadow: 0 0 0 4px rgba(45,106,79,0.15), 0 0 0 8px rgba(45,106,79,0.06);
-  animation: pulse 2s infinite;
+  width: 19px; height: 19px;
+  background: var(--white); border: 3px solid var(--accent);
+  box-shadow: 0 0 0 5px rgba(45,106,79,0.13), 0 0 0 11px rgba(45,106,79,0.05);
+  animation: dotpulse 2.4s infinite;
 }
-@keyframes pulse {
-  0%,100% { box-shadow: 0 0 0 4px rgba(45,106,79,0.15), 0 0 0 8px rgba(45,106,79,0.06); }
-  50% { box-shadow: 0 0 0 6px rgba(45,106,79,0.2), 0 0 0 12px rgba(45,106,79,0.04); }
+@keyframes dotpulse {
+  0%,100% { box-shadow: 0 0 0 5px rgba(45,106,79,0.13), 0 0 0 11px rgba(45,106,79,0.05); }
+  50%      { box-shadow: 0 0 0 9px rgba(45,106,79,0.15), 0 0 0 16px rgba(45,106,79,0.04); }
 }
-/* Indicator above active dot */
-.tl-you-are-here {
-  position: absolute; bottom: calc(100% + 8px);
-  background: var(--green); color: #fff;
-  font-family: sans-serif; font-size: 0.6rem; font-weight: 700;
-  letter-spacing: 0.08em; text-transform: uppercase;
-  padding: 4px 9px; border-radius: 4px; white-space: nowrap;
-  display: none;
+.tl-yah {
+  position: absolute; bottom: calc(100% + 7px);
+  background: var(--accent); color: #fff; border-radius: 5px;
+  font-family: sans-serif; font-size: 0.54rem; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 3px 8px; white-space: nowrap; display: none;
 }
-.tl-you-are-here::after {
+.tl-yah::after {
   content: ''; position: absolute; top: 100%; left: 50%;
   transform: translateX(-50%);
-  border: 4px solid transparent; border-top-color: var(--green);
-}
-.tl-dot.active ~ .tl-you-are-here, .tl-dot-wrap:has(.tl-dot.active) .tl-you-are-here {
-  display: block;
+  border: 4px solid transparent; border-top-color: var(--accent);
 }
 .tl-city {
-  margin-top: 18px; font-family: sans-serif; font-size: 0.72rem;
-  font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
-  color: var(--muted); text-align: center;
-  transition: color 0.3s;
+  margin-top: 18px;
+  font-family: sans-serif; font-size: 0.62rem; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--muted); text-align: center; transition: color 0.3s;
+  white-space: nowrap;
 }
 .tl-station.active .tl-city { color: var(--dark); }
-.tl-station.past .tl-city { color: var(--dark); opacity: 0.6; }
+.tl-station.past   .tl-city { color: var(--dark); opacity: 0.5; }
 .tl-dates {
-  margin-top: 4px; font-family: sans-serif; font-size: 0.64rem;
+  margin-top: 3px;
+  font-family: sans-serif; font-size: 0.58rem;
   color: var(--muted); text-align: center; white-space: nowrap;
 }
-/* Hide labels on small stations */
-@media (max-width: 700px) {
-  .tl-city { font-size: 0.6rem; letter-spacing: 0.02em; }
-  .tl-dates { display: none; }
-  .timeline-section { padding: 28px 20px 20px; }
+
+/* Tablet adjustment */
+@media (max-width: 900px) and (min-width: 641px) {
+  .tl-section { padding: 28px 28px 24px; }
+  .tl-city  { font-size: 0.56rem; letter-spacing: 0.05em; }
+  .tl-dates { font-size: 0.52rem; }
 }
 
-/* ── CONTENT GRID ──────────────────────────────────── */
-.content-grid {
-  max-width: 1040px; margin: 0 auto; padding: 36px 24px;
-  display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+/* ── MOBILE vertical ── */
+.tl-mob { display: none; }
+.mob-rows { display: flex; flex-direction: column; }
+.tl-row {
+  display: flex; align-items: stretch;
 }
-@media (max-width: 800px) {
-  .content-grid { grid-template-columns: 1fr; }
+.tl-row-dot-col {
+  display: flex; flex-direction: column; align-items: center;
+  width: 28px; flex-shrink: 0;
+}
+.tl-row-dot {
+  width: 11px; height: 11px; border-radius: 50%; margin-top: 3px;
+  background: var(--white); border: 2px solid var(--border);
+  flex-shrink: 0; transition: all 0.3s;
+}
+.tl-row-dot.past   { background: var(--dark); border-color: var(--dark); }
+.tl-row-dot.active {
+  width: 16px; height: 16px; margin-top: 1px; margin-left: -2.5px;
+  background: var(--white); border: 3px solid var(--accent);
+  box-shadow: 0 0 0 4px rgba(45,106,79,0.13);
+  animation: dotpulse 2.4s infinite;
+}
+.tl-row-connector {
+  width: 2px; flex: 1; min-height: 8px;
+  background: var(--border); margin-top: 5px;
+}
+.tl-row.past .tl-row-connector { background: rgba(18,32,46,0.22); }
+.tl-row-info {
+  flex: 1; padding: 0 0 22px 12px;
+}
+.tl-row:last-child .tl-row-info { padding-bottom: 0; }
+.tl-row-city {
+  font-family: sans-serif; font-size: 0.74rem; font-weight: 700;
+  letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 2px; transition: color 0.3s;
+  line-height: 1;
+}
+.tl-row.active .tl-row-city { color: var(--dark); }
+.tl-row.past   .tl-row-city { color: var(--dark); opacity: 0.55; }
+.tl-row-detail {
+  font-family: sans-serif; font-size: 0.7rem;
+  color: var(--muted); line-height: 1.45;
+}
+.tl-row-badge {
+  display: none; margin-top: 7px;
+  background: var(--accent); color: #fff; border-radius: 5px;
+  font-family: sans-serif; font-size: 0.58rem; font-weight: 700;
+  letter-spacing: 0.09em; text-transform: uppercase;
+  padding: 3px 10px; width: fit-content;
 }
 
-/* Cards */
+/* ── Breakpoints ── */
+@media (max-width: 640px) {
+  .tl-desk { display: none; }
+  .tl-mob  { display: block; }
+  .tl-section { padding: 22px 20px 18px; }
+  .tl-day { font-size: 1.35rem; }
+  .tl-header { margin-bottom: 22px; }
+}
+@media (min-width: 641px) {
+  .tl-mob { display: none; }
+}
+
+/* ═══════════════════════════════════════════
+   MAIN CONTENT GRID
+════════════════════════════════════════════ */
+.content {
+  max-width: 1080px; margin: 0 auto;
+  padding: 32px 28px 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+@media (max-width: 780px) {
+  .content { grid-template-columns: 1fr; padding: 20px 16px 0; gap: 16px; }
+}
+
+/* ─── Card ─── */
 .card {
-  background: var(--white); border-radius: 18px;
+  background: var(--white); border-radius: 16px;
   box-shadow: var(--shadow); overflow: hidden;
 }
-.card-header {
-  padding: 20px 24px 0; display: flex; align-items: center;
-  justify-content: space-between;
-}
-.card-title {
-  font-family: sans-serif; font-size: 0.7rem; font-weight: 700;
-  letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
+.card-label {
+  padding: 18px 22px 0;
+  font-family: sans-serif; font-size: 0.62rem; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
 }
 
-/* Map card — full width */
-.card.map-card { grid-column: 1 / -1; }
-#map { height: 380px; }
+/* ─── Map ─── */
+#map { height: 320px; margin-top: 14px; }
 .loc-bar {
-  padding: 16px 24px; display: flex; align-items: center; gap: 12px;
+  padding: 13px 22px;
+  display: flex; align-items: center; gap: 10px;
   border-top: 1px solid var(--border);
 }
 .loc-pulse {
-  width: 10px; height: 10px; border-radius: 50%; background: var(--green);
-  flex-shrink: 0; animation: locpulse 2.5s infinite;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent); flex-shrink: 0;
+  animation: locpulse 2.5s infinite;
 }
 @keyframes locpulse {
   0%,100% { box-shadow: 0 0 0 0 rgba(45,106,79,0.45); }
-  50% { box-shadow: 0 0 0 7px rgba(45,106,79,0); }
+  50%      { box-shadow: 0 0 0 7px rgba(45,106,79,0); }
 }
-.loc-city { font-size: 0.95rem; color: var(--dark); }
-.loc-updated { font-family: sans-serif; font-size: 0.73rem; color: var(--muted); margin-left: auto; }
+.loc-text { flex: 1; }
+.loc-city { font-size: 0.9rem; display: block; }
+.loc-updated { font-family: sans-serif; font-size: 0.65rem; color: var(--muted); display: block; margin-top: 1px; }
+@media (max-width: 640px) { #map { height: 260px; } }
 
-/* Photos card */
-.card.photos-card { grid-column: 1 / -1; }
+/* ─── Photos ─── */
 .photo-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 3px;
-  padding: 3px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px; padding: 14px 3px 3px;
+}
+@media (max-width: 460px) {
+  .photo-grid { grid-template-columns: repeat(2, 1fr); }
 }
 .photo-item {
-  aspect-ratio: 1; overflow: hidden; position: relative; cursor: pointer;
-  background: var(--border);
+  aspect-ratio: 1; overflow: hidden; position: relative;
+  cursor: pointer; background: var(--border);
 }
-.photo-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.35s ease; display: block; }
+.photo-item img {
+  width: 100%; height: 100%; object-fit: cover;
+  display: block; transition: transform 0.35s ease;
+}
 .photo-item:hover img { transform: scale(1.06); }
 .photo-overlay {
   position: absolute; inset: 0;
-  background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 50%);
-  opacity: 0; transition: opacity 0.3s;
+  background: linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 55%);
+  opacity: 0; transition: opacity 0.25s;
 }
 .photo-item:hover .photo-overlay { opacity: 1; }
-.photo-caption {
-  position: absolute; bottom: 10px; left: 12px; right: 12px;
-  color: #fff; font-family: sans-serif; font-size: 0.72rem; opacity: 0;
-  transition: opacity 0.3s;
+.photo-cap {
+  position: absolute; bottom: 8px; left: 10px; right: 10px;
+  color: #fff; font-family: sans-serif; font-size: 0.66rem;
+  opacity: 0; transition: opacity 0.25s;
 }
-.photo-item:hover .photo-caption { opacity: 1; }
+.photo-item:hover .photo-cap { opacity: 1; }
 .photos-empty {
-  text-align: center; padding: 60px 20px; color: var(--muted);
-  font-family: sans-serif; font-size: 0.88rem;
+  padding: 52px 20px; text-align: center; grid-column: 1 / -1;
+  font-family: sans-serif; font-size: 0.84rem; color: var(--muted); line-height: 1.6;
 }
-.photos-empty .big {
-  font-size: 1.5rem; font-weight: 700; color: var(--border);
-  letter-spacing: 0.05em; margin-bottom: 10px; display: block;
-  font-family: sans-serif;
+.photos-empty-eyebrow {
+  display: block; font-size: 0.6rem; letter-spacing: 0.2em;
+  text-transform: uppercase; color: #ccc; font-weight: 700;
+  margin-bottom: 10px;
 }
 
-/* Flight strip */
+/* ═══════════════════════════════════════════
+   FLIGHT STRIP
+════════════════════════════════════════════ */
 .flight-strip {
-  background: var(--dark); color: rgba(255,255,255,0.7);
-  padding: 16px 40px; display: flex; align-items: center;
-  gap: 0; flex-wrap: wrap;
-  font-family: sans-serif; font-size: 0.78rem;
+  max-width: 1080px; margin: 28px auto 0;
+  background: var(--dark); border-radius: 16px;
+  overflow: hidden;
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
 }
-.flight-item { flex: 1; min-width: 200px; padding: 8px 20px; }
-.flight-item:not(:last-child) { border-right: 1px solid rgba(255,255,255,0.1); }
-.flight-label {
-  font-size: 0.6rem; letter-spacing: 0.14em; text-transform: uppercase;
-  color: rgba(255,255,255,0.35); margin-bottom: 5px;
+@media (max-width: 780px) {
+  .flight-strip { margin: 16px 16px 0; grid-template-columns: 1fr; border-radius: 14px; }
 }
-.flight-detail { color: rgba(255,255,255,0.85); line-height: 1.55; }
-.flight-ref { color: rgba(255,255,255,0.35); font-size: 0.68rem; margin-top: 3px; }
+.fi {
+  padding: 24px 28px;
+  border-right: 1px solid rgba(255,255,255,0.06);
+}
+.fi:last-child { border-right: none; }
+@media (max-width: 780px) {
+  .fi { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.07); padding: 18px 22px; }
+  .fi:last-child { border-bottom: none; }
+}
+.fi-label {
+  font-family: sans-serif; font-size: 0.58rem; letter-spacing: 0.18em;
+  text-transform: uppercase; color: rgba(255,255,255,0.28); margin-bottom: 8px;
+}
+.fi-detail {
+  font-family: sans-serif; font-size: 0.8rem;
+  color: rgba(255,255,255,0.78); line-height: 1.7;
+}
+.fi-ref {
+  margin-top: 6px; font-family: sans-serif;
+  font-size: 1.15rem; font-weight: 700; letter-spacing: 0.14em;
+  color: rgba(255,255,255,0.92);
+}
 
-/* Footer */
+/* ═══════════════════════════════════════════
+   FOOTER
+════════════════════════════════════════════ */
 .footer {
-  text-align: center; padding: 20px; font-family: sans-serif;
-  font-size: 0.73rem; color: var(--muted);
-  border-top: 1px solid var(--border);
+  text-align: center; padding: 20px 20px 32px;
+  font-family: sans-serif; font-size: 0.68rem; color: #aaa;
+  margin-top: 28px;
 }
 
-/* Lightbox */
+/* ═══════════════════════════════════════════
+   LIGHTBOX
+════════════════════════════════════════════ */
 #lightbox {
   display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,0.93); z-index: 9999;
+  background: rgba(0,0,0,0.94); z-index: 9999;
   align-items: center; justify-content: center;
 }
 #lightbox.open { display: flex; }
-#lightbox img { max-width: 92vw; max-height: 90vh; object-fit: contain; border-radius: 4px; }
+#lightbox img { max-width: 92vw; max-height: 90vh; object-fit: contain; border-radius: 6px; }
 #lb-close {
-  position: absolute; top: 20px; right: 24px; font-size: 1.8rem;
-  color: rgba(255,255,255,0.6); background: none; border: none; cursor: pointer;
+  position: absolute; top: 18px; right: 22px;
+  font-size: 1.6rem; color: rgba(255,255,255,0.5);
+  background: none; border: none; cursor: pointer;
   font-family: sans-serif; line-height: 1; transition: color 0.2s;
 }
 #lb-close:hover { color: #fff; }
@@ -314,13 +428,13 @@ body { font-family: 'Georgia', serif; background: var(--cream); color: var(--dar
 </head>
 <body>
 
-<!-- ══════════ PASSWORD SCREEN ══════════ -->
+<!-- ══ PASSWORD ══════════════════════════════════════════════════════════ -->
 <div id="pw-screen">
   <svg id="pw-bg" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#1a2744"/><stop offset="40%" stop-color="#2d4a7a"/>
-        <stop offset="70%" stop-color="#c8956c"/><stop offset="88%" stop-color="#e8b87a"/>
+        <stop offset="0%" stop-color="#1a2744"/><stop offset="38%" stop-color="#2d4a7a"/>
+        <stop offset="68%" stop-color="#c8956c"/><stop offset="86%" stop-color="#e8b87a"/>
         <stop offset="100%" stop-color="#2d6a4f"/>
       </linearGradient>
       <linearGradient id="mtn1" x1="0" y1="0" x2="0" y2="1">
@@ -336,14 +450,14 @@ body { font-family: 'Georgia', serif; background: var(--cream); color: var(--dar
       <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
     </defs>
     <rect width="1200" height="700" fill="url(#sky)"/>
-    <g fill="#fff" opacity="0.7">
+    <g fill="#fff" opacity="0.65">
       <circle cx="80" cy="60" r="1.2"/><circle cx="220" cy="80" r="1.5"/><circle cx="420" cy="25" r="1.2"/>
       <circle cx="600" cy="40" r="1.4"/><circle cx="800" cy="55" r="1.2"/><circle cx="1000" cy="65" r="1.3"/>
       <circle cx="340" cy="110" r="0.7"/><circle cx="760" cy="85" r="1.1"/><circle cx="150" cy="30" r="0.8"/>
     </g>
     <circle cx="950" cy="80" r="28" fill="#f5e6c8" opacity="0.9" filter="url(#glow)"/>
     <circle cx="962" cy="72" r="22" fill="#2d4a7a" opacity="0.9"/>
-    <polygon points="0,320 80,200 160,270 220,180 300,240 380,160 460,230 540,170 620,240 680,190 760,250 820,200 900,260 950,220 1000,270 1050,210 1100,265 1200,260 1200,380 0,380" fill="#4a7a9b" opacity="0.35"/>
+    <polygon points="0,320 80,200 160,270 220,180 300,240 380,160 460,230 540,170 620,240 680,190 760,250 820,200 900,260 950,220 1000,270 1050,210 1100,265 1200,260 1200,380 0,380" fill="#4a7a9b" opacity="0.3"/>
     <g opacity="0.75">
       <polygon points="60,380 95,270 115,260 140,270 170,380" fill="url(#mtn1)"/>
       <polygon points="80,380 100,290 115,282 130,290 150,380" fill="url(#mtn2)"/>
@@ -386,89 +500,103 @@ body { font-family: 'Georgia', serif; background: var(--cream); color: var(--dar
   <div class="pw-card">
     <p class="pw-eyebrow">May 30 – June 12, 2026</p>
     <h1>Italy 2026</h1>
-    <p class="pw-sub">Live family tracker — Venice, Dolomites, Lake Como &amp; Milan</p>
+    <p>Live family tracker &mdash; Venice, Dolomites,<br>Lake Como &amp; Milan</p>
     <hr class="pw-divider">
-    <p class="pw-label">Enter password to view</p>
+    <p class="pw-label">Password</p>
     <div class="pw-row">
-      <input type="password" id="pw-input" placeholder="Password"
+      <input type="password" id="pw-input" placeholder="Enter password"
         onkeydown="if(event.key==='Enter')checkPassword()">
-      <button onclick="checkPassword()">Enter</button>
+      <button onclick="checkPassword()">View</button>
     </div>
-    <div id="pw-error">Incorrect password — try again</div>
+    <div id="pw-error">Incorrect &mdash; try again</div>
   </div>
 </div>
 
-<!-- ══════════ TRACKER ══════════ -->
+<!-- ══ TRACKER ════════════════════════════════════════════════════════════ -->
 <div id="tracker">
 
   <!-- Topbar -->
   <div class="topbar">
-    <div class="topbar-logo">Italy 2026 <span>Live Tracker</span></div>
+    <span class="topbar-flag">🇮🇹</span>
+    <div class="topbar-title">Italy 2026 <small>Live Tracker</small></div>
     <div class="topbar-clock">
-      <strong id="clock-time">--:--</strong>
-      <span class="clock-city" id="clock-city">Italy Time</span>
+      <span class="clock-time" id="clock-time">--:--</span>
+      <span class="clock-city" id="clock-city">Local Time</span>
     </div>
-    <button class="topbar-refresh" onclick="refreshAll()">Refresh</button>
+    <button class="topbar-btn" onclick="refreshAll()">Refresh</button>
   </div>
 
   <!-- Timeline -->
-  <div class="timeline-section">
+  <div class="tl-section">
     <div class="tl-header">
-      <div class="tl-day" id="tl-day-label">—</div>
-      <div class="tl-phase">Currently: <strong id="tl-phase-label">—</strong></div>
+      <div class="tl-day" id="tl-day">—</div>
+      <div class="tl-where">Currently: <strong id="tl-phase">—</strong></div>
     </div>
-    <div class="tl-track-wrap">
-      <div class="tl-line"><div class="tl-line-fill" id="tl-fill"></div></div>
-      <div class="tl-stations" id="tl-stations">
-        <!-- Populated by JS -->
+
+    <!-- Desktop horizontal -->
+    <div class="tl-desk">
+      <div class="tl-track-wrap">
+        <div class="tl-rail"><div class="tl-rail-fill" id="tl-fill"></div></div>
+        <div class="tl-stations" id="tl-stations-desk"></div>
       </div>
+    </div>
+
+    <!-- Mobile vertical -->
+    <div class="tl-mob">
+      <div class="mob-rows" id="tl-stations-mob"></div>
     </div>
   </div>
 
-  <!-- Content grid -->
-  <div class="content-grid">
+  <!-- Map + Photos -->
+  <div class="content">
 
-    <!-- Map -->
-    <div class="card map-card">
-      <div class="card-header" style="padding-bottom:0;">
-        <div class="card-title">Current Location</div>
-      </div>
-      <div id="map" style="margin-top:16px;"></div>
+    <div class="card">
+      <div class="card-label">Current Location</div>
+      <div id="map"></div>
       <div class="loc-bar">
         <div class="loc-pulse"></div>
-        <div class="loc-city" id="loc-city">Fetching location…</div>
-        <div class="loc-updated" id="loc-updated"></div>
+        <div class="loc-text">
+          <span class="loc-city" id="loc-city">Fetching location&hellip;</span>
+          <span class="loc-updated" id="loc-updated"></span>
+        </div>
       </div>
     </div>
 
-    <!-- Photos -->
-    <div class="card photos-card">
-      <div class="card-header" style="padding-bottom:16px;">
-        <div class="card-title">Trip Photos</div>
+    <div class="card">
+      <div class="card-label">Trip Photos</div>
+      <div id="photo-grid" class="photo-grid">
+        <div class="photos-empty">
+          <span class="photos-empty-eyebrow">No photos yet</span>
+          Photos will appear here once David &amp; Amanda start sharing their album.
+        </div>
       </div>
-      <div id="photo-grid" class="photo-grid"></div>
     </div>
 
   </div>
 
   <!-- Flight strip -->
   <div class="flight-strip">
-    <div class="flight-item">
-      <div class="flight-label">Outbound</div>
-      <div class="flight-detail">AC756 · SFO 8:05 AM → YUL<br>AC818 · YUL 7:30 PM → VCE 9:10 AM (May 31)</div>
+    <div class="fi">
+      <div class="fi-label">Outbound</div>
+      <div class="fi-detail">
+        AC756 &nbsp;SFO 8:05 AM &rarr; YUL<br>
+        AC818 &nbsp;YUL 7:30 PM &rarr; VCE 9:10 AM (May&nbsp;31)
+      </div>
     </div>
-    <div class="flight-item">
-      <div class="flight-label">Return</div>
-      <div class="flight-detail">AC895 · MXP 12:20 PM → YUL<br>AC759 · YUL 5:40 PM → SFO 9:02 PM (Jun 12)</div>
+    <div class="fi">
+      <div class="fi-label">Return</div>
+      <div class="fi-detail">
+        AC895 &nbsp;MXP 12:20 PM &rarr; YUL<br>
+        AC759 &nbsp;YUL 5:40 PM &rarr; SFO 9:02 PM (Jun&nbsp;12)
+      </div>
     </div>
-    <div class="flight-item">
-      <div class="flight-label">Booking Reference</div>
-      <div class="flight-detail" style="font-size:1.1rem;letter-spacing:0.1em;">BVIVZ4</div>
-      <div class="flight-ref">Air Canada</div>
+    <div class="fi">
+      <div class="fi-label">Air Canada &middot; Booking Ref</div>
+      <div class="fi-ref">BVIVZ4</div>
     </div>
   </div>
 
-  <div class="footer">Refreshes every 5 minutes &nbsp;·&nbsp; Updates when David &amp; Amanda log into their itinerary</div>
+  <div class="footer">Refreshes every 5 minutes &nbsp;&middot;&nbsp; Location updates when David &amp; Amanda log into their itinerary</div>
 </div>
 
 <!-- Lightbox -->
@@ -478,46 +606,46 @@ body { font-family: 'Georgia', serif; background: var(--cream); color: var(--dar
 </div>
 
 <script>
-const API = 'https://dmpickleball.com';
+const API    = 'https://dmpickleball.com';
 const PW_KEY = 'italy_live_token';
 let map, marker;
 
-// ── Phases (same as before) ──────────────────────────────────────────────────
+// ── Trip phases ──────────────────────────────────────────────────────────────
 const PHASES = [
-  { id:'fly1',  city:'Departing',  detail:'SFO → Venice',
-     start: new Date('2026-05-30T00:00:00-07:00').getTime(),
-     end:   new Date('2026-05-31T09:10:00+02:00').getTime(),
-     tz: 'America/Los_Angeles', tzLabel:'SFO Time' },
-  { id:'venice', city:'Venice',    detail:'Cannaregio, Venice',
-     start: new Date('2026-05-31T09:10:00+02:00').getTime(),
-     end:   new Date('2026-06-02T11:00:00+02:00').getTime(),
-     tz: 'Europe/Rome', tzLabel:'Venice' },
-  { id:'dolomit',city:'Ortisei',   detail:'Val Gardena, Dolomites',
-     start: new Date('2026-06-02T11:00:00+02:00').getTime(),
-     end:   new Date('2026-06-06T10:00:00+02:00').getTime(),
-     tz: 'Europe/Rome', tzLabel:'Ortisei' },
-  { id:'trecime',city:'Tre Cime',  detail:'Dobbiaco / Carbonin',
-     start: new Date('2026-06-06T10:00:00+02:00').getTime(),
-     end:   new Date('2026-06-08T10:00:00+02:00').getTime(),
-     tz: 'Europe/Rome', tzLabel:'Dobbiaco' },
-  { id:'como',   city:'Lake Como', detail:'Varenna, Lake Como',
-     start: new Date('2026-06-08T10:00:00+02:00').getTime(),
-     end:   new Date('2026-06-11T12:00:00+02:00').getTime(),
-     tz: 'Europe/Rome', tzLabel:'Varenna' },
-  { id:'milan',  city:'Milan',     detail:'ME Milan Il Duca',
-     start: new Date('2026-06-11T12:00:00+02:00').getTime(),
-     end:   new Date('2026-06-12T08:30:00+02:00').getTime(),
-     tz: 'Europe/Rome', tzLabel:'Milan' },
-  { id:'fly2',  city:'Flying Home',detail:'MXP → SFO',
-     start: new Date('2026-06-12T08:30:00+02:00').getTime(),
-     end:   new Date('2026-06-12T21:02:00-07:00').getTime(),
-     tz: 'America/Los_Angeles', tzLabel:'SFO Time' },
+  { id:'fly1',   city:'Departing',   detail:'SFO → Venice · May 30',
+    start: new Date('2026-05-30T00:00:00-07:00').getTime(),
+    end:   new Date('2026-05-31T09:10:00+02:00').getTime(),
+    tz:'America/Los_Angeles', tzLabel:'SFO Time' },
+  { id:'venice', city:'Venice',      detail:'Cannaregio, Venice · May 31–Jun 2',
+    start: new Date('2026-05-31T09:10:00+02:00').getTime(),
+    end:   new Date('2026-06-02T11:00:00+02:00').getTime(),
+    tz:'Europe/Rome', tzLabel:'Venice' },
+  { id:'dolomit',city:'Ortisei',     detail:'Val Gardena, Dolomites · Jun 2–6',
+    start: new Date('2026-06-02T11:00:00+02:00').getTime(),
+    end:   new Date('2026-06-06T10:00:00+02:00').getTime(),
+    tz:'Europe/Rome', tzLabel:'Ortisei' },
+  { id:'trecime',city:'Tre Cime',    detail:'Dobbiaco / Carbonin · Jun 6–8',
+    start: new Date('2026-06-06T10:00:00+02:00').getTime(),
+    end:   new Date('2026-06-08T10:00:00+02:00').getTime(),
+    tz:'Europe/Rome', tzLabel:'Dobbiaco' },
+  { id:'como',   city:'Lake Como',   detail:'Varenna, Lake Como · Jun 8–11',
+    start: new Date('2026-06-08T10:00:00+02:00').getTime(),
+    end:   new Date('2026-06-11T12:00:00+02:00').getTime(),
+    tz:'Europe/Rome', tzLabel:'Varenna' },
+  { id:'milan',  city:'Milan',       detail:'ME Milan Il Duca · Jun 11–12',
+    start: new Date('2026-06-11T12:00:00+02:00').getTime(),
+    end:   new Date('2026-06-12T08:30:00+02:00').getTime(),
+    tz:'Europe/Rome', tzLabel:'Milan' },
+  { id:'fly2',   city:'Flying Home', detail:'MXP → SFO · Jun 12',
+    start: new Date('2026-06-12T08:30:00+02:00').getTime(),
+    end:   new Date('2026-06-12T21:02:00-07:00').getTime(),
+    tz:'America/Los_Angeles', tzLabel:'SFO Time' },
 ];
-const DATES = ['May 30','May 31','Jun 2','Jun 6','Jun 8','Jun 11','Jun 12','Jun 12'];
+const DATES      = ['May 30','May 31','Jun 2','Jun 6','Jun 8','Jun 11','Jun 12','Jun 12'];
 const TRIP_START = PHASES[0].start;
 const TRIP_END   = PHASES[PHASES.length-1].end;
 
-// ── Password ─────────────────────────────────────────────────────────────────
+// ── Password / auth ──────────────────────────────────────────────────────────
 async function checkPassword() {
   const pw = document.getElementById('pw-input').value.trim();
   if (!pw) return;
@@ -539,35 +667,53 @@ async function checkPassword() {
 window.addEventListener('load', async () => {
   const token = localStorage.getItem(PW_KEY);
   if (token) {
-    const r = await fetch(API + '/api/students?action=live-verify', {headers:{'x-live-token':token}});
-    const d = await r.json().catch(()=>({}));
-    if (d.ok) { showTracker(); return; }
+    try {
+      const r = await fetch(API + '/api/students?action=live-verify', {
+        headers: { 'x-live-token': token }
+      });
+      const d = await r.json();
+      if (d.ok) { showTracker(); return; }
+    } catch {}
     localStorage.removeItem(PW_KEY);
   }
 });
 
 function showTracker() {
   document.getElementById('pw-screen').style.display = 'none';
-  document.getElementById('tracker').style.display = 'block';
-  initMap(); buildTimeline(); updateTimeline();
-  refreshAll(); updateClock();
+  document.getElementById('tracker').style.display   = 'block';
+  initMap();
+  buildTimeline();
+  updateTimeline();
+  updateClock();
+  refreshAll();
   setInterval(updateTimeline, 60000);
   setInterval(updateClock, 10000);
-  setInterval(refreshAll, 5*60*1000);
+  setInterval(refreshAll, 5 * 60 * 1000);
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function currentPhase() {
+  const now = Date.now();
+  for (const ph of PHASES) {
+    if (now >= ph.start && now < ph.end) return ph;
+  }
+  return now < TRIP_START ? PHASES[0] : PHASES[PHASES.length - 1];
+}
+
+function timeAgo(iso) {
+  const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (m < 1)  return 'just now';
+  if (m < 60) return m + 'm ago';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + 'h ago';
+  return Math.floor(h / 24) + 'd ago';
 }
 
 // ── Clock ────────────────────────────────────────────────────────────────────
-function currentPhase() {
-  const now = Date.now();
-  for (const ph of PHASES) { if (now >= ph.start && now < ph.end) return ph; }
-  return now < TRIP_START ? PHASES[0] : PHASES[PHASES.length-1];
-}
-
 function updateClock() {
-  const ph  = currentPhase();
-  const now = new Date();
-  const time = now.toLocaleTimeString('en-US', {
-    timeZone: ph.tz, hour:'2-digit', minute:'2-digit', hour12:true
+  const ph   = currentPhase();
+  const time = new Date().toLocaleTimeString('en-US', {
+    timeZone: ph.tz, hour: '2-digit', minute: '2-digit', hour12: true
   });
   document.getElementById('clock-time').textContent = time;
   document.getElementById('clock-city').textContent = ph.tzLabel;
@@ -575,25 +721,46 @@ function updateClock() {
 
 // ── Timeline ─────────────────────────────────────────────────────────────────
 function buildTimeline() {
-  const wrap = document.getElementById('tl-stations');
-  wrap.innerHTML = '';
   const total = TRIP_END - TRIP_START;
+
+  // Desktop
+  const dWrap = document.getElementById('tl-stations-desk');
+  dWrap.innerHTML = '';
   PHASES.forEach((ph, i) => {
-    const pct = (ph.start - TRIP_START) / total * 100;
-    const div = document.createElement('div');
-    div.className = 'tl-station'; div.id = 'st-' + ph.id;
-    div.style.cssText = `position:absolute;left:${pct}%;transform:translateX(-50%);align-items:center;`;
-    div.innerHTML = `
+    const pct = ((ph.start - TRIP_START) / total * 100).toFixed(2);
+    const el  = document.createElement('div');
+    el.className = 'tl-station';
+    el.id        = 'st-' + ph.id;
+    el.style.left = pct + '%';
+    el.innerHTML = `
       <div class="tl-dot-wrap">
-        <div class="tl-dot" id="dot-${ph.id}"></div>
-        <div class="tl-you-are-here" id="yah-${ph.id}">You are here</div>
+        <div class="tl-dot"  id="dot-${ph.id}"></div>
+        <div class="tl-yah"  id="yah-${ph.id}">You are here</div>
       </div>
       <div class="tl-city">${ph.city}</div>
       <div class="tl-dates">${DATES[i]}</div>`;
-    wrap.appendChild(div);
+    dWrap.appendChild(el);
   });
-  // Make wrap relatively positioned with enough height
-  wrap.style.cssText = 'position:relative;height:80px;';
+
+  // Mobile
+  const mWrap = document.getElementById('tl-stations-mob');
+  mWrap.innerHTML = '';
+  PHASES.forEach((ph, i) => {
+    const el = document.createElement('div');
+    el.className = 'tl-row';
+    el.id        = 'mst-' + ph.id;
+    el.innerHTML = `
+      <div class="tl-row-dot-col">
+        <div class="tl-row-dot" id="mdot-${ph.id}"></div>
+        ${i < PHASES.length - 1 ? '<div class="tl-row-connector"></div>' : ''}
+      </div>
+      <div class="tl-row-info">
+        <div class="tl-row-city">${ph.city}</div>
+        <div class="tl-row-detail">${ph.detail}</div>
+        <div class="tl-row-badge" id="mbadge-${ph.id}">You are here</div>
+      </div>`;
+    mWrap.appendChild(el);
+  });
 }
 
 function updateTimeline() {
@@ -603,48 +770,57 @@ function updateTimeline() {
   const ph    = currentPhase();
   const dayN  = Math.max(1, Math.min(Math.ceil((now - TRIP_START) / 86400000), 14));
 
-  document.getElementById('tl-fill').style.width = pct + '%';
+  const fillEl = document.getElementById('tl-fill');
+  if (fillEl) fillEl.style.width = pct + '%';
 
   PHASES.forEach(p => {
+    const isPast   = p.end <= now;
+    const isActive = p.id === ph.id;
+
+    // Desktop
     const dot = document.getElementById('dot-' + p.id);
     const yah = document.getElementById('yah-' + p.id);
     const st  = document.getElementById('st-'  + p.id);
-    if (!dot) return;
-    dot.classList.remove('past','active');
-    if (yah) yah.style.display = 'none';
-    st.classList.remove('past','active');
-    if (p.id === ph.id) {
-      dot.classList.add('active');
-      if (yah) yah.style.display = 'block';
-      st.classList.add('active');
-    } else if (p.end <= now) {
-      dot.classList.add('past');
-      st.classList.add('past');
+    if (dot) {
+      dot.className = 'tl-dot' + (isActive ? ' active' : isPast ? ' past' : '');
+      if (yah) yah.style.display = isActive ? 'block' : 'none';
+      if (st)  st.className = 'tl-station' + (isActive ? ' active' : isPast ? ' past' : '');
+    }
+
+    // Mobile
+    const mdot   = document.getElementById('mdot-'   + p.id);
+    const mbadge = document.getElementById('mbadge-' + p.id);
+    const mrow   = document.getElementById('mst-'    + p.id);
+    if (mdot) {
+      mdot.className = 'tl-row-dot' + (isActive ? ' active' : isPast ? ' past' : '');
+      if (mbadge) mbadge.style.display = isActive ? 'inline-block' : 'none';
+      if (mrow)   mrow.className = 'tl-row' + (isActive ? ' active' : isPast ? ' past' : '');
     }
   });
 
   const label = now < TRIP_START ? 'Trip starts May 30'
-              : now > TRIP_END   ? 'Trip complete'
+              : now > TRIP_END   ? 'Trip complete — welcome home!'
               : `Day ${dayN} of 14`;
-  document.getElementById('tl-day-label').textContent = label;
-  document.getElementById('tl-phase-label').textContent = ph.city + ' — ' + ph.detail;
+  document.getElementById('tl-day').textContent   = label;
+  document.getElementById('tl-phase').textContent = ph.city + ' — ' + ph.detail.split(' · ')[0];
 }
 
-// ── Map ──────────────────────────────────────────────────────────────────────
+// ── Map ───────────────────────────────────────────────────────────────────────
 function initMap() {
-  map = L.map('map', {zoomControl:true}).setView([45.5, 11.5], 7);
+  map = L.map('map', { zoomControl: true }).setView([45.5, 11.5], 7);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution:'© OpenStreetMap', maxZoom:18
+    attribution: '© OpenStreetMap', maxZoom: 18
   }).addTo(map);
   const icon = L.divIcon({
-    className:'',
-    html:`<div style="width:14px;height:14px;border-radius:50%;background:#2d6a4f;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.35);"></div>`,
-    iconSize:[14,14], iconAnchor:[7,7]
+    className: '',
+    html: `<div style="width:14px;height:14px;border-radius:50%;background:#2d6a4f;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.35);"></div>`,
+    iconSize: [14,14], iconAnchor: [7,7]
   });
-  marker = L.marker([45.4408,12.3155], {icon}).addTo(map).bindPopup('Last known location');
+  marker = L.marker([45.4408, 12.3155], { icon }).addTo(map)
+             .bindPopup('Last known location');
 }
 
-// ── Refresh ──────────────────────────────────────────────────────────────────
+// ── Data ──────────────────────────────────────────────────────────────────────
 async function refreshAll() {
   const token = localStorage.getItem(PW_KEY);
   await Promise.all([loadLocation(token), loadPhotos(token)]);
@@ -652,13 +828,15 @@ async function refreshAll() {
 
 async function loadLocation(token) {
   try {
-    const r = await fetch(API+'/api/students?action=live-get-location', {headers:{'x-live-token':token}});
+    const r = await fetch(API + '/api/students?action=live-get-location', {
+      headers: { 'x-live-token': token }
+    });
     const d = await r.json();
     if (!d.ok || !d.lat) return;
     marker.setLatLng([d.lat, d.lng]);
     map.setView([d.lat, d.lng], 13);
-    document.getElementById('loc-city').textContent = d.city || `${d.lat.toFixed(4)}, ${d.lng.toFixed(4)}`;
-    document.getElementById('loc-updated').textContent = d.updated_at ? timeAgo(d.updated_at) : '';
+    document.getElementById('loc-city').textContent    = d.city || `${d.lat.toFixed(4)}, ${d.lng.toFixed(4)}`;
+    document.getElementById('loc-updated').textContent = d.updated_at ? 'Updated ' + timeAgo(d.updated_at) : '';
   } catch {
     document.getElementById('loc-city').textContent = 'Location unavailable';
   }
@@ -667,32 +845,43 @@ async function loadLocation(token) {
 async function loadPhotos(token) {
   const grid = document.getElementById('photo-grid');
   try {
-    const r = await fetch(API+'/api/students?action=live-get-photos', {headers:{'x-live-token':token}});
+    const r = await fetch(API + '/api/students?action=live-get-photos', {
+      headers: { 'x-live-token': token }
+    });
     const d = await r.json();
     if (!d.ok || !d.photos?.length) {
-      grid.innerHTML = `<div class="photos-empty"><span class="big">NO PHOTOS YET</span>Photos will appear here once David and Amanda start sharing their album.</div>`;
+      grid.innerHTML = `
+        <div class="photos-empty">
+          <span class="photos-empty-eyebrow">No photos yet</span>
+          Photos will appear here once David &amp; Amanda start sharing their album.
+        </div>`;
       return;
     }
-    grid.innerHTML = d.photos.map((p,i) => `
+    grid.innerHTML = d.photos.map((p, i) => `
       <div class="photo-item" onclick="openLB('${p.url}')">
-        <img src="${p.url}" alt="Photo ${i+1}" loading="lazy" onerror="this.parentElement.style.display='none'">
+        <img src="${p.url}" alt="Photo ${i+1}" loading="lazy"
+             onerror="this.parentElement.style.display='none'">
         <div class="photo-overlay"></div>
-        ${p.caption ? `<div class="photo-caption">${p.caption}</div>` : ''}
+        ${p.caption ? `<div class="photo-cap">${p.caption}</div>` : ''}
       </div>`).join('');
   } catch {
-    grid.innerHTML = `<div class="photos-empty"><span class="big">LOADING</span>Fetching photos…</div>`;
+    grid.innerHTML = `
+      <div class="photos-empty">
+        <span class="photos-empty-eyebrow">Loading</span>
+        Fetching photos&hellip;
+      </div>`;
   }
 }
 
-function openLB(url) { document.getElementById('lb-img').src=url; document.getElementById('lightbox').classList.add('open'); }
-function closeLB()    { document.getElementById('lightbox').classList.remove('open'); }
-document.addEventListener('keydown', e => { if(e.key==='Escape') closeLB(); });
-function timeAgo(iso) {
-  const m = Math.floor((Date.now()-new Date(iso).getTime())/60000);
-  if (m<1) return 'just now'; if (m<60) return m+'m ago';
-  const h=Math.floor(m/60); if(h<24) return h+'h ago';
-  return Math.floor(h/24)+'d ago';
+// ── Lightbox ──────────────────────────────────────────────────────────────────
+function openLB(url) {
+  document.getElementById('lb-img').src = url;
+  document.getElementById('lightbox').classList.add('open');
 }
+function closeLB() {
+  document.getElementById('lightbox').classList.remove('open');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLB(); });
 </script>
 </body>
 </html>
