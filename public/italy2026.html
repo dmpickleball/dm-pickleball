@@ -6,538 +6,290 @@
 <title>Italy 2026 — Travel Schedule</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Georgia', serif; background: #f5f0eb; color: #2c2c2c; }
+:root {
+  --dark:   #12202e;
+  --green:  #2d6a4f;
+  --accent: #3a7d5e;
+  --cream:  #f5f2ed;
+  --white:  #ffffff;
+  --muted:  #8a8a8a;
+  --border: #e4dfd7;
+  --shadow: 0 2px 16px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.04);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; scroll-behavior: smooth; }
+body { font-family: 'Georgia', serif; background: var(--cream); color: var(--dark); -webkit-font-smoothing: antialiased; line-height: 1.7; }
 
-  /* ── AUTH SCREEN ── */
-  #auth-screen {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    padding: 40px 20px;
-    position: relative;
-    overflow: hidden;
-    background: #0d1f1a;
-  }
+/* ── AUTH SCREEN ── */
+#auth-screen {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; min-height: 100vh; padding: 40px 20px;
+  position: relative; overflow: hidden; background: #0d1f1a;
+}
+#auth-screen::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, #1a2744 0%, #2d4a7a 30%, #c8956c 65%, #e8b87a 80%, #1a3a2a 100%);
+  z-index: 0;
+}
+#auth-bg-svg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
+.auth-card {
+  position: relative; z-index: 2;
+  background: rgba(255,255,255,0.97); backdrop-filter: blur(12px);
+  border-radius: 22px; padding: 48px 40px; max-width: 420px; width: 100%;
+  text-align: center; box-shadow: 0 40px 100px rgba(0,0,0,0.45);
+}
+.auth-flag { font-size: 3rem; margin-bottom: 14px; }
+.auth-card h1 { font-size: 1.9rem; font-weight: normal; color: var(--green); margin-bottom: 6px; }
+.auth-card .auth-subtitle { font-size: 0.95rem; color: #666; font-style: italic; margin-bottom: 8px; }
+.auth-card .auth-dates { font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--green); margin-bottom: 32px; font-family: sans-serif; }
+.auth-divider { border: none; border-top: 1px solid #e8e3dd; margin: 0 0 28px; }
+.auth-label { font-size: 0.75rem; color: #888; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 16px; font-family: sans-serif; }
+#g-signin-btn { display: flex; justify-content: center; }
+#auth-error { margin-top: 18px; padding: 12px 16px; background: #fff3f3; border: 1px solid #f5c6cb; border-radius: 8px; color: #721c24; font-size: 0.88rem; display: none; font-family: sans-serif; }
+#auth-loading { margin-top: 18px; color: var(--green); font-size: 0.9rem; display: none; font-family: sans-serif; }
 
-  /* Illustrated skyline backdrop */
-  #auth-screen::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background:
-      /* Sky gradient */
-      linear-gradient(180deg, #1a2744 0%, #2d4a7a 30%, #c8956c 65%, #e8b87a 80%, #1a3a2a 100%);
-    z-index: 0;
-  }
+/* ═══════════════════════════════════════════
+   TOPBAR / SIGNOUT-BAR
+════════════════════════════════════════════ */
+#schedule-wrap { display: none; }
+#signout-bar {
+  display: none; position: sticky; top: 0; z-index: 200;
+  background: var(--dark); color: #fff;
+  padding: 0 32px; height: 58px;
+  align-items: center; gap: 14px;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+}
+.topbar-flag { font-size: 1.15rem; }
+.topbar-title { font-size: 0.97rem; font-weight: normal; letter-spacing: 0.01em; white-space: nowrap; flex: 1; }
+.topbar-title small { font-family: sans-serif; font-size: 0.62rem; opacity: 0.38; letter-spacing: 0.1em; text-transform: uppercase; margin-left: 10px; }
+.topbar-clock {
+  font-family: sans-serif; font-size: 0.73rem;
+  background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 9px; padding: 7px 15px; line-height: 1.3; white-space: nowrap; text-align: right;
+}
+.clock-time { font-size: 0.95rem; display: block; letter-spacing: 0.03em; }
+.clock-city { font-size: 0.58rem; opacity: 0.42; display: block; text-transform: uppercase; letter-spacing: 0.1em; }
+.topbar-day {
+  font-family: sans-serif; font-size: 0.73rem;
+  background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 9px; padding: 7px 15px; line-height: 1.3; white-space: nowrap; text-align: center; flex-shrink: 0;
+}
+.day-label { font-size: 0.58rem; opacity: 0.42; display: block; text-transform: uppercase; letter-spacing: 0.1em; }
+.day-value { font-size: 0.88rem; display: block; letter-spacing: 0.01em; font-weight: 600; }
+.topbar-btn {
+  background: none; border: 1px solid rgba(255,255,255,0.16); color: rgba(255,255,255,0.6);
+  border-radius: 8px; padding: 7px 15px; font-size: 0.7rem; cursor: pointer;
+  font-family: sans-serif; letter-spacing: 0.06em; transition: all 0.18s;
+  white-space: nowrap; text-transform: uppercase; flex-shrink: 0;
+}
+.topbar-btn:hover { background: rgba(255,255,255,0.09); color: #fff; }
+.topbar-comments {
+  background: none; border: 1px solid rgba(255,255,255,0.16); color: rgba(255,255,255,0.6);
+  border-radius: 8px; width: 34px; height: 34px; cursor: pointer; font-size: 1rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.18s; flex-shrink: 0; position: relative;
+}
+.topbar-comments:hover { background: rgba(255,255,255,0.09); color: #fff; }
+.topbar-comments-badge {
+  position: absolute; top: -5px; right: -5px;
+  background: var(--accent); color: #fff; border-radius: 50%;
+  font-family: sans-serif; font-size: 0.52rem; font-weight: 700;
+  width: 16px; height: 16px; display: none; align-items: center; justify-content: center;
+}
+@media (max-width: 540px) {
+  #signout-bar { padding: 0 16px; gap: 10px; height: 52px; }
+  .topbar-title small { display: none; }
+}
+@media (max-width: 700px) { .topbar-day { display: none; } }
 
-  /* SVG scene layer */
-  #auth-bg-svg {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1;
-  }
+/* ═══════════════════════════════════════════
+   MODERN DARK TOGGLE (pill slider)
+════════════════════════════════════════════ */
+.dark-toggle { background: none; border: none; cursor: pointer; padding: 0; flex-shrink: 0; }
+.dt-track {
+  display: flex; align-items: center;
+  width: 52px; height: 28px; border-radius: 14px;
+  background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.2);
+  position: relative; transition: background 0.3s;
+}
+.dt-thumb {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: rgba(255,255,255,0.95);
+  position: absolute; left: 3px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.65rem; line-height: 1;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+}
+.dt-moon { position: absolute; left: 6px; font-size: 0.6rem; opacity: 0.4; transition: opacity 0.3s; pointer-events: none; }
+.dt-sun  { position: absolute; right: 5px; font-size: 0.6rem; opacity: 0.4; transition: opacity 0.3s; pointer-events: none; }
+body.dark .dt-thumb { transform: translateX(24px); }
+body.dark .dt-moon { opacity: 0.9; }
+body:not(.dark) .dt-sun { opacity: 0.9; }
 
-  .auth-card {
-    position: relative;
-    z-index: 2;
-  }
-  .auth-card {
-    background: rgba(255,255,255,0.97);
-    backdrop-filter: blur(12px);
-    border-radius: 16px;
-    padding: 48px 40px;
-    max-width: 420px;
-    width: 100%;
-    text-align: center;
-    box-shadow: 0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.15);
-  }
-  .auth-flag { font-size: 3.5rem; margin-bottom: 16px; }
-  .auth-card h1 {
-    font-size: 1.7rem;
-    font-weight: normal;
-    color: #1b4332;
-    margin-bottom: 6px;
-  }
-  .auth-card .auth-subtitle {
-    font-size: 0.95rem;
-    color: #666;
-    font-style: italic;
-    margin-bottom: 8px;
-  }
-  .auth-card .auth-dates {
-    font-size: 0.8rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: #2d6a4f;
-    margin-bottom: 32px;
-  }
-  .auth-divider {
-    border: none;
-    border-top: 1px solid #e8e3dd;
-    margin: 0 0 28px;
-  }
-  .auth-label {
-    font-size: 0.82rem;
-    color: #888;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    margin-bottom: 16px;
-  }
-  #g-signin-btn {
-    display: flex;
-    justify-content: center;
-  }
-  #auth-error {
-    margin-top: 18px;
-    padding: 12px 16px;
-    background: #fff3f3;
-    border: 1px solid #f5c6cb;
-    border-radius: 8px;
-    color: #721c24;
-    font-size: 0.88rem;
-    display: none;
-  }
-  #auth-loading {
-    margin-top: 18px;
-    color: #2d6a4f;
-    font-size: 0.9rem;
-    display: none;
-  }
+/* ═══════════════════════════════════════════
+   TIMELINE SECTION
+════════════════════════════════════════════ */
+.tl-section { background: var(--white); border-bottom: 1px solid var(--border); padding: 36px 48px 32px; }
+.tl-header { margin-bottom: 32px; }
+.tl-day { font-size: 1.75rem; font-weight: normal; color: var(--dark); letter-spacing: -0.02em; margin-bottom: 5px; }
+.tl-where { font-family: sans-serif; font-size: 0.78rem; color: var(--muted); letter-spacing: 0.02em; }
+.tl-where strong { color: var(--dark); font-weight: 600; }
+.tl-desk { display: block; }
+.tl-track-wrap { position: relative; padding-top: 38px; padding-bottom: 20px; }
+.tl-rail { position: absolute; top: 47px; left: 0; right: 0; height: 2px; background: rgba(255,255,255,0.22); border-radius: 2px; }
+.tl-rail-fill { position: absolute; top: 0; left: 0; height: 100%; background: linear-gradient(90deg, var(--dark) 0%, var(--accent) 100%); border-radius: 2px; transition: width 0.8s ease; }
+.tl-stations { position: relative; height: 120px; z-index: 2; }
+.tl-station { position: absolute; display: flex; flex-direction: column; align-items: center; transform: translateX(-50%); }
+.tl-dot-wrap { position: relative; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; z-index: 2; }
+.tl-dot { width: 11px; height: 11px; border-radius: 50%; background: rgba(255,255,255,0.9); border: 2px solid rgba(255,255,255,0.6); transition: all 0.35s; animation: none; }
+.tl-dot.past  { background: var(--dark); border-color: var(--dark); }
+.tl-dot.active { width: 19px; height: 19px; background: var(--white); border: 3px solid var(--accent); box-shadow: 0 0 0 5px rgba(45,106,79,0.13), 0 0 0 11px rgba(45,106,79,0.05); animation: dotpulse 2.4s infinite; }
+@keyframes dotpulse {
+  0%,100% { box-shadow: 0 0 0 5px rgba(45,106,79,0.13), 0 0 0 11px rgba(45,106,79,0.05); }
+  50%      { box-shadow: 0 0 0 9px rgba(45,106,79,0.15), 0 0 0 16px rgba(45,106,79,0.04); }
+}
+.tl-yah { position: absolute; bottom: calc(100% + 7px); background: var(--accent); color: #fff; border-radius: 5px; font-family: sans-serif; font-size: 0.54rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 8px; white-space: nowrap; display: none; }
+.tl-yah::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 4px solid transparent; border-top-color: var(--accent); }
+.tl-city { margin-top: 10px; font-family: sans-serif; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.9); text-align: center; transition: color 0.3s; white-space: nowrap; text-shadow: 0 1px 6px rgba(0,0,0,0.9); }
+.tl-station.active .tl-city { color: #fff; }
+.tl-station.past   .tl-city { color: rgba(255,255,255,0.5); }
+.tl-dates { margin-top: 3px; font-family: sans-serif; font-size: 0.58rem; color: rgba(255,255,255,0.55); text-align: center; white-space: nowrap; text-shadow: 0 1px 4px rgba(0,0,0,0.9); }
+@media (max-width: 900px) and (min-width: 641px) {
+  .tl-section { padding: 28px 28px 24px; }
+  .tl-city  { font-size: 0.56rem; letter-spacing: 0.05em; }
+  .tl-dates { font-size: 0.52rem; }
+}
+.tl-mob { display: none; }
+.mob-rows { display: flex; flex-direction: column; }
+.tl-row { display: flex; align-items: stretch; position: relative; background-size: cover; background-position: center center; overflow: hidden; }
+.tl-row::before { content: ''; position: absolute; inset: 0; background: rgba(6,12,22,0.60); pointer-events: none; z-index: 0; transition: background 0.4s; }
+.tl-row.active::before { background: rgba(6,12,22,0.35); }
+.tl-row.past   { filter: grayscale(25%); }
+.tl-row.past::before   { background: rgba(6,12,22,0.72); }
+.tl-row-dot-col { display: flex; flex-direction: column; align-items: center; width: 28px; flex-shrink: 0; position: relative; z-index: 1; }
+.tl-row-dot { width: 11px; height: 11px; border-radius: 50%; margin-top: 3px; background: rgba(255,255,255,0.85) !important; border: 2px solid rgba(255,255,255,0.5) !important; flex-shrink: 0; transition: all 0.3s; }
+.tl-row-dot.past   { background: var(--dark) !important; border-color: var(--dark) !important; }
+.tl-row-dot.active { width: 16px; height: 16px; margin-top: 1px; margin-left: -2.5px; background: var(--white) !important; border: 3px solid var(--accent) !important; box-shadow: 0 0 0 4px rgba(45,106,79,0.13); animation: dotpulse 2.4s infinite; }
+.tl-row-connector { width: 2px; flex: 1; min-height: 8px; background: rgba(255,255,255,0.22) !important; margin-top: 5px; }
+.tl-row-body { flex: 1; padding: 0 0 22px 12px; display: flex; align-items: flex-start; gap: 12px; position: relative; z-index: 1; }
+.tl-row:last-child .tl-row-body { padding-bottom: 0; }
+.tl-row-info { flex: 1; }
+.tl-row-city { font-family: sans-serif; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: rgba(255,255,255,0.92) !important; margin-bottom: 2px; transition: color 0.3s; line-height: 1; text-shadow: 0 1px 5px rgba(0,0,0,0.8); }
+.tl-row-detail { font-family: sans-serif; font-size: 0.7rem; color: rgba(255,255,255,0.58) !important; line-height: 1.45; text-shadow: 0 1px 4px rgba(0,0,0,0.7); }
+.tl-row-badge { display: none; margin-top: 7px; background: var(--accent); color: #fff; border-radius: 5px; font-family: sans-serif; font-size: 0.58rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; padding: 3px 10px; width: fit-content; }
+.tl-photo-row { position: absolute; top: 60px; bottom: 0; left: 0; right: 0; border-radius: 12px; overflow: hidden; display: flex; z-index: 1; }
+.tl-photo-seg { height: 100%; flex-shrink: 0; background-size: cover; background-position: center center; position: relative; border-right: 1px solid rgba(255,255,255,0.07); transition: filter 0.4s; }
+.tl-photo-seg:last-child { border-right: none; }
+.tl-photo-seg::after { content: ''; position: absolute; inset: 0; background: rgba(6,12,22,0.54); transition: background 0.4s; }
+.tl-photo-seg.active::after { background: rgba(6,12,22,0.28); }
+.tl-photo-seg.past          { filter: grayscale(35%); }
+.tl-photo-seg.past::after   { background: rgba(6,12,22,0.68); }
+@media (max-width: 640px) {
+  .tl-desk { display: none; }
+  .tl-mob  { display: block; }
+  .tl-section { padding: 22px 20px 18px; }
+  .tl-day { font-size: 1.35rem; }
+  .tl-header { margin-bottom: 22px; }
+}
+@media (min-width: 641px) { .tl-mob { display: none; } }
 
-  /* ── SCHEDULE (hidden until authed) ── */
-  #schedule-wrap { display: none; }
-  #signout-bar {
-    display: none;
-    position: sticky; top: 0; z-index: 100;
-    background: #1b4332;
-    color: rgba(255,255,255,0.85);
-    height: 54px;
-    padding: 0 28px;
-    align-items: center;
-    gap: 14px;
-    box-shadow: 0 2px 20px rgba(0,0,0,0.25);
-  }
-  .sb-brand { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0; }
-  .sb-flag  { font-size: 1.15rem; flex-shrink: 0; }
-  .sb-title { font-size: 0.92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .sb-title small {
-    font-family: sans-serif; font-size: 0.58rem; opacity: 0.38;
-    letter-spacing: 0.1em; text-transform: uppercase; margin-left: 8px;
-  }
-  .sb-clock {
-    font-family: sans-serif; font-size: 0.72rem;
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 9px; padding: 6px 15px;
-    line-height: 1.3; text-align: right; white-space: nowrap; flex-shrink: 0;
-  }
-  .sb-clock-time  { font-size: 0.9rem; display: block; letter-spacing: 0.02em; }
-  .sb-clock-label { font-size: 0.56rem; opacity: 0.42; display: block; text-transform: uppercase; letter-spacing: 0.1em; }
-  .sb-btn {
-    background: none; border: 1px solid rgba(255,255,255,0.18);
-    color: rgba(255,255,255,0.6); border-radius: 8px;
-    padding: 7px 15px; font-size: 0.68rem; cursor: pointer;
-    font-family: sans-serif; letter-spacing: 0.06em; text-transform: uppercase;
-    transition: all 0.18s; white-space: nowrap; flex-shrink: 0;
-  }
-  .sb-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
-  @media (max-width: 540px) {
-    #signout-bar { padding: 0 16px; gap: 10px; height: 50px; }
-    .sb-title small { display: none; }
-  }
+/* ═══════════════════════════════════════════
+   DAY CARDS & CONTENT
+════════════════════════════════════════════ */
+.phase { text-align: center; padding: 36px 24px 8px; }
+.phase-tag { display: inline-block; background: var(--green); color: #fff; font-size: 0.75rem; letter-spacing: 0.16em; text-transform: uppercase; padding: 5px 18px; border-radius: 20px; margin-bottom: 10px; font-family: sans-serif; }
+.phase h2 { font-size: 1.7rem; font-weight: normal; color: var(--dark); }
+.days-container { max-width: 860px; margin: 0 auto; padding: 16px 20px 48px; }
+.day-card { background: var(--white); border-radius: 14px; margin-bottom: 22px; box-shadow: var(--shadow); overflow: hidden; border: 1px solid var(--border); }
+.day-header { display: flex; align-items: stretch; background: var(--cream); border-bottom: 1px solid var(--border); }
+.day-number { background: var(--dark); color: #fff; min-width: 70px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 18px 14px; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; font-family: sans-serif; }
+.day-number strong { font-size: 2rem; display: block; line-height: 1; margin: 4px 0; }
+.day-info { padding: 14px 20px; flex: 1; }
+.day-info h3 { font-size: 1.3rem; color: var(--dark); font-weight: normal; }
+.day-info .location-meta { font-size: 0.82rem; color: var(--muted); margin-top: 3px; letter-spacing: 0.04em; font-family: sans-serif; }
+.hotel-badge { display: inline-block; background: rgba(45,106,79,0.1); color: var(--green); font-size: 0.75rem; padding: 2px 10px; border-radius: 10px; margin-top: 6px; font-style: italic; font-family: sans-serif; }
+.day-body { padding: 20px 24px; }
+.transport-box { background: #fff8e1; border-left: 4px solid #f9a825; border-radius: 0 8px 8px 0; padding: 12px 16px; margin-bottom: 18px; font-size: 0.9rem; font-family: sans-serif; }
+.transport-box .transport-title { font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: #e65100; font-weight: bold; margin-bottom: 4px; }
+.transport-box .why { font-size: 0.82rem; color: #795548; margin-top: 6px; font-style: italic; }
+/* Day-body itinerary timeline (different from the trip timeline) */
+.day-body .timeline { position: relative; padding-left: 28px; }
+.day-body .timeline::before { content: ''; position: absolute; left: 8px; top: 6px; bottom: 6px; width: 2px; background: var(--border); }
+.tl-item { position: relative; margin-bottom: 16px; }
+.day-body .tl-dot { position: absolute; left: -24px; top: 5px; width: 14px; height: 14px; border-radius: 50%; background: var(--green); border: 2px solid var(--white); box-shadow: 0 0 0 2px var(--green); animation: none; }
+.day-body .tl-dot.morning   { background: #f9a825; box-shadow: 0 0 0 2px #f9a825; }
+.day-body .tl-dot.afternoon { background: var(--green); box-shadow: 0 0 0 2px var(--green); }
+.day-body .tl-dot.evening   { background: #4a148c; box-shadow: 0 0 0 2px #4a148c; }
+.day-body .tl-dot.tip       { background: #0277bd; box-shadow: 0 0 0 2px #0277bd; }
+.tl-label { font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; font-weight: bold; margin-bottom: 2px; font-family: sans-serif; }
+.day-body .tl-label { color: var(--muted) !important; text-shadow: none !important; }
+.day-body .tl-label.morning   { color: #e65100 !important; }
+.day-body .tl-label.afternoon { color: var(--green) !important; }
+.day-body .tl-label.evening   { color: #4a148c !important; }
+.day-body .tl-label.tip       { color: #0277bd !important; }
+.tl-content { font-size: 0.93rem; color: var(--dark); line-height: 1.55; text-shadow: none !important; }
+.tl-why { font-size: 0.82rem; color: var(--muted); font-style: italic; margin-top: 3px; }
+.food-section { margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--border); }
+.food-title { font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; font-family: sans-serif; }
+.food-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.food-tag { background: var(--cream); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 0.8rem; color: var(--dark); font-family: sans-serif; }
+.food-tag .emoji { margin-right: 4px; }
+.alert-box { background: #fce4ec; border-left: 4px solid #e91e63; border-radius: 0 8px 8px 0; padding: 10px 14px; margin-top: 14px; font-size: 0.85rem; color: #880e4f; font-family: sans-serif; }
+.alert-box strong { display: block; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 3px; }
+.section-divider { text-align: center; padding: 8px 24px; color: var(--muted); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; font-family: sans-serif; }
+.legend { max-width: 860px; margin: 0 auto 48px; padding: 0 20px; display: flex; flex-wrap: wrap; gap: 16px; font-size: 0.8rem; color: var(--muted); font-family: sans-serif; }
+.legend-item { display: flex; align-items: center; gap: 7px; }
+.legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+@media (max-width: 600px) {
+  .day-body { padding: 16px; }
+}
 
-  /* ── EMBEDDED SCHEDULE CSS ── */
-  
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+/* ═══════════════════════════════════════════
+   COMMENTS MANAGEMENT
+════════════════════════════════════════════ */
+.priv-comments-section { max-width: 860px; margin: 40px auto 0; padding: 0 24px 60px; }
+.priv-comments-header { font-family: sans-serif; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin-bottom: 18px; padding-top: 32px; border-top: 1px solid var(--border); }
+.priv-comment-card { background: var(--white); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; margin-bottom: 14px; box-shadow: var(--shadow); }
+.pcc-meta { display: flex; align-items: center; gap: 10px; font-family: sans-serif; font-size: 0.7rem; color: var(--muted); margin-bottom: 6px; }
+.pcc-name { font-weight: 700; color: var(--dark); font-size: 0.8rem; }
+.pcc-msg { font-size: 0.92rem; color: var(--dark); line-height: 1.55; margin-bottom: 14px; }
+.pcc-existing-reply { background: rgba(45,106,79,0.07); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 10px 14px; margin-bottom: 12px; }
+.pcc-reply-label { font-family: sans-serif; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 3px; }
+.pcc-reply-row { display: flex; gap: 8px; align-items: flex-end; }
+.pcc-reply-input { flex: 1; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 9px; font-size: 0.88rem; font-family: sans-serif; resize: none; outline: none; color: var(--dark); background: var(--white); transition: border-color 0.18s; }
+.pcc-reply-input:focus { border-color: var(--accent); }
+.pcc-reply-btn { background: var(--green); color: #fff; border: none; border-radius: 9px; padding: 10px 18px; font-size: 0.8rem; cursor: pointer; font-family: sans-serif; letter-spacing: 0.04em; white-space: nowrap; transition: background 0.18s; }
+.pcc-reply-btn:hover { background: var(--accent); }
+.pcc-status { font-family: sans-serif; font-size: 0.75rem; color: var(--muted); margin-top: 5px; }
+.pcc-top-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.pcc-delete-btn { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 0.75rem; font-family: sans-serif; padding: 2px 6px; border-radius: 5px; transition: all 0.18s; flex-shrink: 0; margin-top: 2px; }
+.pcc-delete-btn:hover { background: #fdecea; color: #c62828; }
+.pcc-reply-label-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pcc-reply-label-row span { font-size: 0.75rem; color: var(--muted); font-family: sans-serif; }
+.pcc-delete-reply-btn { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 0.72rem; font-family: sans-serif; padding: 2px 6px; border-radius: 5px; transition: all 0.18s; flex-shrink: 0; }
+.pcc-delete-reply-btn:hover { background: #fdecea; color: #c62828; }
+.priv-comments-empty { font-family: sans-serif; font-size: 0.84rem; color: var(--muted); text-align: center; padding: 32px 0; }
 
-  body {
-    font-family: 'Georgia', serif;
-    background: #f5f0eb;
-    color: #2c2c2c;
-    line-height: 1.7;
-  }
-
-  /* HERO */
-  .hero {
-    background: linear-gradient(135deg, #1a3a2a 0%, #2d6a4f 50%, #1b4332 100%);
-    color: #fff;
-    padding: 56px 32px 48px;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-  }
-  .hero::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-  }
-  .hero h1 {
-    font-size: 2.8rem;
-    font-weight: normal;
-    letter-spacing: 0.04em;
-    margin-bottom: 8px;
-    position: relative;
-  }
-  .hero .dates {
-    font-size: 1.1rem;
-    opacity: 0.8;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    position: relative;
-  }
-  .hero .subtitle {
-    margin-top: 18px;
-    font-size: 1rem;
-    opacity: 0.7;
-    font-style: italic;
-    position: relative;
-  }
-
-  /* SUMMARY BAR */
-  .summary-bar {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 0;
-    background: #2d6a4f;
-    border-top: 1px solid rgba(255,255,255,0.15);
-  }
-  .summary-item {
-    padding: 14px 28px;
-    color: rgba(255,255,255,0.9);
-    font-size: 0.88rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    border-right: 1px solid rgba(255,255,255,0.15);
-    text-align: center;
-  }
-  .summary-item:last-child { border-right: none; }
-  .summary-item strong { display: block; font-size: 1.3rem; color: #fff; letter-spacing: 0; text-transform: none; margin-bottom: 2px; }
-
-  /* PHASE HEADERS */
-  .phase {
-    text-align: center;
-    padding: 36px 24px 8px;
-  }
-  .phase-tag {
-    display: inline-block;
-    background: #2d6a4f;
-    color: #fff;
-    font-size: 0.75rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    padding: 5px 18px;
-    border-radius: 20px;
-    margin-bottom: 10px;
-  }
-  .phase h2 {
-    font-size: 1.7rem;
-    font-weight: normal;
-    color: #1b4332;
-  }
-
-  /* DAY CARDS */
-  .days-container {
-    max-width: 860px;
-    margin: 0 auto;
-    padding: 16px 20px 48px;
-  }
-
-  .day-card {
-    background: #fff;
-    border-radius: 14px;
-    margin-bottom: 22px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
-    overflow: hidden;
-    border: 1px solid #e8e2da;
-  }
-
-  .day-header {
-    display: flex;
-    align-items: stretch;
-    background: #f9f6f1;
-    border-bottom: 1px solid #e8e2da;
-  }
-  .day-number {
-    background: #1b4332;
-    color: #fff;
-    min-width: 70px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 18px 14px;
-    font-size: 0.7rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-  }
-  .day-number strong {
-    font-size: 2rem;
-    display: block;
-    line-height: 1;
-    margin: 4px 0;
-  }
-  .day-info {
-    padding: 14px 20px;
-    flex: 1;
-  }
-  .day-info h3 {
-    font-size: 1.3rem;
-    color: #1b4332;
-    font-weight: normal;
-  }
-  .day-info .location-meta {
-    font-size: 0.82rem;
-    color: #888;
-    margin-top: 3px;
-    letter-spacing: 0.04em;
-  }
-  .hotel-badge {
-    display: inline-block;
-    background: #e8f5e9;
-    color: #2d6a4f;
-    font-size: 0.75rem;
-    padding: 2px 10px;
-    border-radius: 10px;
-    margin-top: 6px;
-    font-style: italic;
-  }
-
-  .day-body {
-    padding: 20px 24px;
-  }
-
-  /* TRANSPORT ALERT */
-  .transport-box {
-    background: #fff8e1;
-    border-left: 4px solid #f9a825;
-    border-radius: 0 8px 8px 0;
-    padding: 12px 16px;
-    margin-bottom: 18px;
-    font-size: 0.9rem;
-  }
-  .transport-box .transport-title {
-    font-size: 0.72rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: #e65100;
-    font-weight: bold;
-    margin-bottom: 4px;
-  }
-  .transport-box .why {
-    font-size: 0.82rem;
-    color: #795548;
-    margin-top: 6px;
-    font-style: italic;
-  }
-
-  /* TIMELINE */
-  .timeline {
-    position: relative;
-    padding-left: 28px;
-  }
-  .timeline::before {
-    content: '';
-    position: absolute;
-    left: 8px; top: 6px; bottom: 6px;
-    width: 2px;
-    background: #e0d8cc;
-  }
-  .tl-item {
-    position: relative;
-    margin-bottom: 16px;
-  }
-  .tl-dot {
-    position: absolute;
-    left: -24px;
-    top: 5px;
-    width: 14px; height: 14px;
-    border-radius: 50%;
-    background: #2d6a4f;
-    border: 2px solid #fff;
-    box-shadow: 0 0 0 2px #2d6a4f;
-  }
-  .tl-dot.morning { background: #f9a825; box-shadow: 0 0 0 2px #f9a825; }
-  .tl-dot.afternoon { background: #2d6a4f; box-shadow: 0 0 0 2px #2d6a4f; }
-  .tl-dot.evening { background: #4a148c; box-shadow: 0 0 0 2px #4a148c; }
-  .tl-dot.tip { background: #0277bd; box-shadow: 0 0 0 2px #0277bd; }
-
-  .tl-label {
-    font-size: 0.68rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    font-weight: bold;
-    margin-bottom: 2px;
-  }
-  .tl-label.morning { color: #e65100; }
-  .tl-label.afternoon { color: #2d6a4f; }
-  .tl-label.evening { color: #4a148c; }
-  .tl-label.tip { color: #0277bd; }
-
-  .tl-content {
-    font-size: 0.93rem;
-    color: #3c3c3c;
-  }
-  .tl-why {
-    font-size: 0.82rem;
-    color: #777;
-    font-style: italic;
-    margin-top: 3px;
-  }
-
-  /* FOOD TAGS */
-  .food-section {
-    margin-top: 16px;
-    padding-top: 14px;
-    border-top: 1px dashed #e0d8cc;
-  }
-  .food-title {
-    font-size: 0.7rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: #888;
-    margin-bottom: 8px;
-  }
-  .food-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .food-tag {
-    background: #f3ede4;
-    border: 1px solid #ddd5c8;
-    border-radius: 20px;
-    padding: 4px 12px;
-    font-size: 0.8rem;
-    color: #5c4a2a;
-  }
-  .food-tag .emoji { margin-right: 4px; }
-
-  /* ALERT BOX */
-  .alert-box {
-    background: #fce4ec;
-    border-left: 4px solid #e91e63;
-    border-radius: 0 8px 8px 0;
-    padding: 10px 14px;
-    margin-top: 14px;
-    font-size: 0.85rem;
-    color: #880e4f;
-  }
-  .alert-box strong { display: block; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 3px; }
-
-  /* DIVIDERS */
-  .section-divider {
-    text-align: center;
-    padding: 8px 24px;
-    color: #aaa;
-    font-size: 0.75rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-  }
-
-  /* FOOTER LEGEND */
-  .legend {
-    max-width: 860px;
-    margin: 0 auto 48px;
-    padding: 0 20px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-    font-size: 0.8rem;
-    color: #666;
-  }
-  .legend-item { display: flex; align-items: center; gap: 7px; }
-  .legend-dot {
-    width: 12px; height: 12px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  @media (max-width: 600px) {
-    .hero h1 { font-size: 1.9rem; }
-    .summary-item { padding: 10px 16px; }
-    .day-body { padding: 16px; }
-  }
-
-
-  /* ── Comments management ── */
-  .priv-comments-section {
-    max-width: 860px; margin: 40px auto 0; padding: 0 24px 60px;
-  }
-  .priv-comments-header {
-    font-family: sans-serif; font-size: 0.62rem; font-weight: 700;
-    letter-spacing: 0.16em; text-transform: uppercase; color: #546e7a;
-    margin-bottom: 18px; padding-top: 32px;
-    border-top: 1px solid #e8edf0;
-  }
-  .priv-comment-card {
-    background: #fff; border: 1px solid #e8edf0; border-radius: 14px;
-    padding: 18px 20px; margin-bottom: 14px;
-    box-shadow: 0 1px 6px rgba(0,0,0,0.05);
-  }
-  .pcc-meta {
-    display: flex; align-items: center; gap: 10px;
-    font-family: sans-serif; font-size: 0.7rem; color: #78909c;
-    margin-bottom: 6px;
-  }
-  .pcc-name { font-weight: 700; color: #2d3748; font-size: 0.8rem; }
-  .pcc-msg { font-size: 0.92rem; color: #2d3748; line-height: 1.55; margin-bottom: 14px; }
-  .pcc-existing-reply {
-    background: #f0f7f4; border-left: 3px solid #2d6a4f;
-    border-radius: 0 8px 8px 0; padding: 10px 14px; margin-bottom: 12px;
-  }
-  .pcc-reply-label {
-    font-family: sans-serif; font-size: 0.6rem; font-weight: 700;
-    letter-spacing: 0.12em; text-transform: uppercase; color: #2d6a4f; margin-bottom: 3px;
-  }
-  .pcc-reply-row { display: flex; gap: 8px; align-items: flex-end; }
-  .pcc-reply-input {
-    flex: 1; padding: 10px 14px; border: 1.5px solid #d0dde8;
-    border-radius: 9px; font-size: 0.88rem; font-family: sans-serif;
-    resize: none; outline: none; color: #2d3748;
-    transition: border-color 0.18s;
-  }
-  .pcc-reply-input:focus { border-color: #2d6a4f; }
-  .pcc-reply-btn {
-    background: #2d6a4f; color: #fff; border: none; border-radius: 9px;
-    padding: 10px 18px; font-size: 0.8rem; cursor: pointer;
-    font-family: sans-serif; letter-spacing: 0.04em; white-space: nowrap;
-    transition: background 0.18s;
-  }
-  .pcc-reply-btn:hover { background: #1e4d38; }
-  .pcc-status { font-family: sans-serif; font-size: 0.75rem; color: #546e7a; margin-top: 5px; }
-  .pcc-top-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-  .pcc-delete-btn {
-    background: none; border: none; cursor: pointer;
-    color: #b0bec5; font-size: 0.75rem; font-family: sans-serif;
-    padding: 2px 6px; border-radius: 5px; transition: all 0.18s;
-    flex-shrink: 0; margin-top: 2px;
-  }
-  .pcc-delete-btn:hover { background: #fdecea; color: #c62828; }
-  .pcc-reply-label-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-  .pcc-reply-label-row span { font-size: 0.75rem; color: #546e7a; font-family: sans-serif; }
-  .pcc-delete-reply-btn {
-    background: none; border: none; cursor: pointer;
-    color: #b0bec5; font-size: 0.72rem; font-family: sans-serif;
-    padding: 2px 6px; border-radius: 5px; transition: all 0.18s; flex-shrink: 0;
-  }
-  .pcc-delete-reply-btn:hover { background: #fdecea; color: #c62828; }
-  .sb-comments-link {
-    font-family: sans-serif; font-size: 0.72rem; color: rgba(255,255,255,0.55);
-    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 7px; padding: 5px 12px; text-decoration: none;
-    transition: all 0.18s; cursor: pointer; white-space: nowrap;
-  }
-  .sb-comments-link:hover { color: #fff; background: rgba(255,255,255,0.12); }
-  .priv-comments-empty {
-    font-family: sans-serif; font-size: 0.84rem; color: #90a4ae;
-    text-align: center; padding: 32px 0;
-  }
+/* ═══════════════════════════════════════════
+   DARK MODE
+════════════════════════════════════════════ */
+body.dark {
+  --dark:   #e4e0da;
+  --cream:  #141820;
+  --white:  #1c2230;
+  --muted:  #6a8090;
+  --border: #263040;
+  --shadow: 0 2px 16px rgba(0,0,0,0.4), 0 1px 4px rgba(0,0,0,0.3);
+}
+body.dark #signout-bar   { background: #0a1018; }
+body.dark .tl-section    { background: #182030; border-bottom-color: #222e3e; }
+body.dark .day-card      { background: #1c2230; }
+body.dark .day-header    { background: #182030; }
+body.dark .transport-box { background: #1e1a0a; }
+body.dark .alert-box     { background: #2a0a14; color: #f48fb1; }
+body.dark .pcc-existing-reply { background: rgba(45,106,79,0.12); }
+body.dark .pcc-reply-input    { background: #141820; }
 </style>
 </head>
 <body>
@@ -740,45 +492,58 @@
 </div>
 
 <!-- ════════════════════ SCHEDULE ════════════════════ -->
+<!-- Topbar -->
 <div id="signout-bar">
-  <div class="sb-brand">
-    <span class="sb-flag">🇮🇹</span>
-    <span class="sb-title">Italy 2026 <small>Private Itinerary</small></span>
+  <span class="topbar-flag">🇮🇹</span>
+  <div class="topbar-title">Italy 2026 <small>Private Itinerary</small></div>
+  <div class="topbar-clock">
+    <span class="clock-time" id="sb-clock-time">--:--</span>
+    <span class="clock-city" id="sb-clock-label">Local Time</span>
   </div>
-  <div class="sb-clock">
-    <span class="sb-clock-time" id="sb-clock-time">--:--</span>
-    <span class="sb-clock-label" id="sb-clock-label">Local Time</span>
+  <div class="topbar-day">
+    <span class="day-label" id="priv-cd-label">Countdown</span>
+    <span class="day-value" id="priv-cd-value">—</span>
   </div>
-  <button class="sb-comments-link" onclick="document.getElementById('priv-comments-section').scrollIntoView({behavior:'smooth'})">💬 Comments</button>
-      <button class="sb-btn" onclick="signOut()">Sign out</button>
+  <button class="topbar-comments" onclick="document.getElementById('priv-comments-section').scrollIntoView({behavior:'smooth'})" title="Jump to comments">
+    💬<span class="topbar-comments-badge" id="priv-comment-badge"></span>
+  </button>
+  <button class="dark-toggle" id="dark-toggle" onclick="toggleDark()" title="Toggle dark mode">
+    <span class="dt-track">
+      <span class="dt-moon">🌙</span>
+      <span class="dt-thumb"></span>
+      <span class="dt-sun">☀️</span>
+    </span>
+  </button>
+  <button class="topbar-btn" onclick="signOut()">Sign out</button>
 </div>
+
+<!-- Timeline (shown after login) -->
+<div class="tl-section" id="priv-tl-section">
+  <div class="tl-header">
+    <div class="tl-day" id="priv-tl-day">—</div>
+    <div class="tl-where">Currently: <strong id="priv-tl-phase">—</strong></div>
+  </div>
+  <div class="tl-desk">
+    <div class="tl-track-wrap">
+      <div class="tl-rail"><div class="tl-rail-fill" id="priv-tl-fill"></div></div>
+      <div class="tl-stations" id="priv-tl-stations-desk"></div>
+    </div>
+  </div>
+  <div class="tl-mob">
+    <div class="mob-rows" id="priv-tl-stations-mob"></div>
+  </div>
+</div>
+
 <div id="schedule-wrap">
 
-
-<!-- HERO -->
-<div class="hero">
-  <h1>🇮🇹 Italy 2026</h1>
-  <div class="dates">May 31 – June 12 · 13 Days</div>
-  <div class="subtitle">Venice → Dolomites → Lake Como → Milan</div>
-</div>
-
-<div class="summary-bar">
-  <div class="summary-item"><strong>2</strong> Nights Venice</div>
-  <div class="summary-item"><strong>4</strong> Nights Ortisei</div>
-  <div class="summary-item"><strong>2</strong> Nights Dobbiaco</div>
-  <div class="summary-item"><strong>3</strong> Nights Varenna</div>
-  <div class="summary-item"><strong>1</strong> Night Milan</div>
-  <div class="summary-item"><strong>$6,520</strong> Spent</div>
-</div>
-
-<!-- NAV BAR -->
-<div style="background:#1b4332;display:flex;justify-content:center;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,0.1);position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.3);">
-  <a href="#phase-0" style="color:rgba(255,255,255,0.8);text-decoration:none;padding:13px 18px;font-size:0.78rem;letter-spacing:0.07em;font-family:sans-serif;border-right:1px solid rgba(255,255,255,0.12);" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.color='rgba(255,255,255,0.8)';this.style.background='transparent'">✈️ Departure</a>
-  <a href="#phase-1" style="color:rgba(255,255,255,0.8);text-decoration:none;padding:13px 18px;font-size:0.78rem;letter-spacing:0.07em;font-family:sans-serif;border-right:1px solid rgba(255,255,255,0.12);" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.color='rgba(255,255,255,0.8)';this.style.background='transparent'">🚤 Venice</a>
-  <a href="#phase-2" style="color:rgba(255,255,255,0.8);text-decoration:none;padding:13px 18px;font-size:0.78rem;letter-spacing:0.07em;font-family:sans-serif;border-right:1px solid rgba(255,255,255,0.12);" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.color='rgba(255,255,255,0.8)';this.style.background='transparent'">⛰️ Dolomites</a>
-  <a href="#phase-3" style="color:rgba(255,255,255,0.8);text-decoration:none;padding:13px 18px;font-size:0.78rem;letter-spacing:0.07em;font-family:sans-serif;border-right:1px solid rgba(255,255,255,0.12);" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.color='rgba(255,255,255,0.8)';this.style.background='transparent'">🌊 Lake Como</a>
-  <a href="#phase-4" style="color:rgba(255,255,255,0.8);text-decoration:none;padding:13px 18px;font-size:0.78rem;letter-spacing:0.07em;font-family:sans-serif;" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.color='rgba(255,255,255,0.8)';this.style.background='transparent'">🏙️ Milan</a>
-  <a href="#phase-5" style="color:rgba(255,255,255,0.8);text-decoration:none;padding:13px 18px;font-size:0.78rem;letter-spacing:0.07em;font-family:sans-serif;" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.color='rgba(255,255,255,0.8)';this.style.background='transparent'">🏠 Home</a>
+<!-- Section nav -->
+<div style="background:var(--dark);display:flex;justify-content:center;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,0.08);">
+  <a href="#phase-0" style="color:rgba(255,255,255,0.65);text-decoration:none;padding:12px 16px;font-size:0.75rem;letter-spacing:0.07em;font-family:sans-serif;border-right:1px solid rgba(255,255,255,0.08);transition:all 0.18s;" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.07)'" onmouseout="this.style.color='rgba(255,255,255,0.65)';this.style.background='transparent'">✈️ Departure</a>
+  <a href="#phase-1" style="color:rgba(255,255,255,0.65);text-decoration:none;padding:12px 16px;font-size:0.75rem;letter-spacing:0.07em;font-family:sans-serif;border-right:1px solid rgba(255,255,255,0.08);transition:all 0.18s;" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.07)'" onmouseout="this.style.color='rgba(255,255,255,0.65)';this.style.background='transparent'">🚤 Venice</a>
+  <a href="#phase-2" style="color:rgba(255,255,255,0.65);text-decoration:none;padding:12px 16px;font-size:0.75rem;letter-spacing:0.07em;font-family:sans-serif;border-right:1px solid rgba(255,255,255,0.08);transition:all 0.18s;" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.07)'" onmouseout="this.style.color='rgba(255,255,255,0.65)';this.style.background='transparent'">⛰️ Dolomites</a>
+  <a href="#phase-3" style="color:rgba(255,255,255,0.65);text-decoration:none;padding:12px 16px;font-size:0.75rem;letter-spacing:0.07em;font-family:sans-serif;border-right:1px solid rgba(255,255,255,0.08);transition:all 0.18s;" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.07)'" onmouseout="this.style.color='rgba(255,255,255,0.65)';this.style.background='transparent'">🌊 Lake Como</a>
+  <a href="#phase-4" style="color:rgba(255,255,255,0.65);text-decoration:none;padding:12px 16px;font-size:0.75rem;letter-spacing:0.07em;font-family:sans-serif;border-right:1px solid rgba(255,255,255,0.08);transition:all 0.18s;" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.07)'" onmouseout="this.style.color='rgba(255,255,255,0.65)';this.style.background='transparent'">🏙️ Milan</a>
+  <a href="#phase-5" style="color:rgba(255,255,255,0.65);text-decoration:none;padding:12px 16px;font-size:0.75rem;letter-spacing:0.07em;font-family:sans-serif;transition:all 0.18s;" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.07)'" onmouseout="this.style.color='rgba(255,255,255,0.65)';this.style.background='transparent'">🏠 Home</a>
 </div>
 
 <!-- ===================== PHASE 0: DEPARTURE ===================== -->
@@ -1801,6 +1566,12 @@
     const bar = document.getElementById('signout-bar');
     bar.style.display = 'flex';
     document.getElementById('schedule-wrap').style.display = 'block';
+    buildPrivTimeline();
+    updatePrivTimeline();
+    updatePrivCountdown();
+    updateItalyClock();
+    setInterval(updatePrivTimeline, 60000);
+    setInterval(updatePrivCountdown, 30000);
     loadPrivComments();
     // Silently capture location for the family tracker
     captureLocation();
@@ -1844,26 +1615,214 @@
     el.style.display = 'block';
   }
 
-  // ── Local time clock ─────────────────────────────────────────────────────────
-  const ITALY_PHASES_CLOCK = [
-    { start: new Date('2026-05-30T00:00:00-07:00').getTime(), end: new Date('2026-05-31T09:10:00+02:00').getTime(), tz: 'America/Los_Angeles', label: 'SFO Time' },
-    { start: new Date('2026-05-31T09:10:00+02:00').getTime(), end: new Date('2026-06-12T08:30:00+02:00').getTime(), tz: 'Europe/Rome', label: 'Italy Time' },
-    { start: new Date('2026-06-12T08:30:00+02:00').getTime(), end: new Date('2026-06-12T21:02:00-07:00').getTime(), tz: 'America/Los_Angeles', label: 'SFO Time' },
-  ];
-  function updateItalyClock() {
-    const now = Date.now();
-    let tz = 'Europe/Rome', label = 'Italy Time';
-    for (const ph of ITALY_PHASES_CLOCK) {
-      if (now >= ph.start && now < ph.end) { tz = ph.tz; label = ph.label; break; }
+  // ── Dark mode ─────────────────────────────────────────────────────────────────
+  function initDarkMode() {
+    if (localStorage.getItem('italy_dark') !== '0') {
+      document.body.classList.add('dark');
     }
-    const time = new Date().toLocaleTimeString('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: true });
+  }
+  function toggleDark() {
+    const isDark = document.body.classList.toggle('dark');
+    localStorage.setItem('italy_dark', isDark ? '1' : '0');
+  }
+  initDarkMode();
+
+  // ── Trip phases (same as live site) ─────────────────────────────────────────
+  const PRIV_PHOTOS = {
+    fly1:    'https://images.unsplash.com/photo-1666065918527-af0abf4ab7cf?fm=jpg&q=80&w=900&auto=format&fit=crop',
+    venice:  'https://images.unsplash.com/photo-1756524304310-313b3db123bc?fm=jpg&q=80&w=900&auto=format&fit=crop',
+    dolomit: 'https://images.unsplash.com/photo-1726855500757-658894d298eb?fm=jpg&q=80&w=900&auto=format&fit=crop',
+    trecime: 'https://images.unsplash.com/photo-1651578852608-0200168d48f6?fm=jpg&q=80&w=900&auto=format&fit=crop',
+    como:    'https://images.unsplash.com/photo-1745012913072-437b2aa00107?fm=jpg&q=80&w=900&auto=format&fit=crop',
+    milan:   'https://images.unsplash.com/photo-1566662961381-8ff13ac24766?fm=jpg&q=80&w=900&auto=format&fit=crop',
+    fly2:    'https://images.unsplash.com/photo-1751412038684-2eeca53b06b6?fm=jpg&q=80&w=900&auto=format&fit=crop',
+  };
+  const PRIV_PHASES = [
+    { id:'fly1',   city:'Departing',   detail:'SFO → Venice · May 30',
+      start: new Date('2026-05-30T00:00:00-07:00').getTime(),
+      end:   new Date('2026-05-31T09:10:00+02:00').getTime(),
+      tz:'America/Los_Angeles', tzLabel:'SFO Time' },
+    { id:'venice', city:'Venice',      detail:'Cannaregio, Venice · May 31–Jun 2',
+      start: new Date('2026-05-31T09:10:00+02:00').getTime(),
+      end:   new Date('2026-06-02T11:00:00+02:00').getTime(),
+      tz:'Europe/Rome', tzLabel:'Venice' },
+    { id:'dolomit',city:'Ortisei',     detail:'Val Gardena, Dolomites · Jun 2–6',
+      start: new Date('2026-06-02T11:00:00+02:00').getTime(),
+      end:   new Date('2026-06-06T10:00:00+02:00').getTime(),
+      tz:'Europe/Rome', tzLabel:'Ortisei' },
+    { id:'trecime',city:'Tre Cime',    detail:'Dobbiaco / Carbonin · Jun 6–8',
+      start: new Date('2026-06-06T10:00:00+02:00').getTime(),
+      end:   new Date('2026-06-08T10:00:00+02:00').getTime(),
+      tz:'Europe/Rome', tzLabel:'Dobbiaco' },
+    { id:'como',   city:'Lake Como',   detail:'Varenna, Lake Como · Jun 8–11',
+      start: new Date('2026-06-08T10:00:00+02:00').getTime(),
+      end:   new Date('2026-06-11T12:00:00+02:00').getTime(),
+      tz:'Europe/Rome', tzLabel:'Varenna' },
+    { id:'milan',  city:'Milan',       detail:'ME Milan Il Duca · Jun 11–12',
+      start: new Date('2026-06-11T12:00:00+02:00').getTime(),
+      end:   new Date('2026-06-12T08:30:00+02:00').getTime(),
+      tz:'Europe/Rome', tzLabel:'Milan' },
+    { id:'fly2',   city:'Flying Home', detail:'MXP → SFO · Jun 12',
+      start: new Date('2026-06-12T08:30:00+02:00').getTime(),
+      end:   new Date('2026-06-12T21:02:00-07:00').getTime(),
+      tz:'America/Los_Angeles', tzLabel:'SFO Time' },
+  ];
+  const PRIV_DATES     = ['May 30','May 31','Jun 2','Jun 6','Jun 8','Jun 11','Jun 12','Jun 12'];
+  const PRIV_TRIP_START = PRIV_PHASES[0].start;
+  const PRIV_TRIP_END   = PRIV_PHASES[PRIV_PHASES.length-1].end;
+
+  function privCurrentPhase() {
+    const now = Date.now();
+    for (const ph of PRIV_PHASES) { if (now >= ph.start && now < ph.end) return ph; }
+    return now < PRIV_TRIP_START ? PRIV_PHASES[0] : PRIV_PHASES[PRIV_PHASES.length - 1];
+  }
+
+  // ── Local time clock ─────────────────────────────────────────────────────────
+  function updateItalyClock() {
+    const ph = privCurrentPhase();
+    const time = new Date().toLocaleTimeString('en-US', { timeZone: ph.tz, hour: '2-digit', minute: '2-digit', hour12: true });
     const timeEl  = document.getElementById('sb-clock-time');
     const labelEl = document.getElementById('sb-clock-label');
     if (timeEl)  timeEl.textContent  = time;
-    if (labelEl) labelEl.textContent = label;
+    if (labelEl) labelEl.textContent = ph.tzLabel;
   }
-  updateItalyClock();
   setInterval(updateItalyClock, 15000);
+
+  // ── Countdown / day badge ────────────────────────────────────────────────────
+  function updatePrivCountdown() {
+    const now = Date.now();
+    const lbl = document.getElementById('priv-cd-label');
+    const val = document.getElementById('priv-cd-value');
+    if (!lbl || !val) return;
+    if (now < PRIV_TRIP_START) {
+      const diff = PRIV_TRIP_START - now;
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      lbl.textContent = 'Departs in';
+      val.textContent = d > 0 ? `${d}d ${h}h` : `${h}h`;
+    } else if (now > PRIV_TRIP_END) {
+      lbl.textContent = 'Trip'; val.textContent = 'Complete ✓';
+    } else {
+      const dayN = Math.max(1, Math.min(Math.ceil((now - PRIV_TRIP_START) / 86400000), 14));
+      lbl.textContent = 'Day of trip';
+      val.textContent = `${dayN} of 14`;
+    }
+  }
+
+  // ── Trip timeline ────────────────────────────────────────────────────────────
+  function buildPrivTimeline() {
+    const total = PRIV_TRIP_END - PRIV_TRIP_START;
+
+    // Desktop
+    const dWrap = document.getElementById('priv-tl-stations-desk');
+    if (!dWrap) return;
+    dWrap.innerHTML = '';
+    const existingRow = document.getElementById('priv-tl-photo-row');
+    if (existingRow) existingRow.remove();
+    const photoRow = document.createElement('div');
+    photoRow.className = 'tl-photo-row';
+    photoRow.id = 'priv-tl-photo-row';
+    PRIV_PHASES.forEach((ph, i) => {
+      const nextStart = i < PRIV_PHASES.length - 1 ? PRIV_PHASES[i+1].start : PRIV_TRIP_END;
+      const w = ((nextStart - ph.start) / total * 100).toFixed(3);
+      const seg = document.createElement('div');
+      seg.className = 'tl-photo-seg';
+      seg.id = 'ppseg-' + ph.id;
+      seg.style.width = w + '%';
+      seg.style.backgroundImage = 'url(' + PRIV_PHOTOS[ph.id] + ')';
+      photoRow.appendChild(seg);
+    });
+    dWrap.parentElement.insertBefore(photoRow, dWrap.parentElement.firstChild);
+
+    PRIV_PHASES.forEach((ph, i) => {
+      const pct = ((ph.start - PRIV_TRIP_START) / total * 100).toFixed(2);
+      const el  = document.createElement('div');
+      el.className = 'tl-station';
+      el.id = 'pst-' + ph.id;
+      el.style.left = pct + '%';
+      el.innerHTML = `
+        <div class="tl-dot-wrap">
+          <div class="tl-dot" id="pdot-${ph.id}"></div>
+          <div class="tl-yah" id="pyah-${ph.id}">You are here</div>
+        </div>
+        <div class="tl-city">${ph.city}</div>
+        <div class="tl-dates">${PRIV_DATES[i]}</div>`;
+      dWrap.appendChild(el);
+    });
+
+    // Mobile
+    const mWrap = document.getElementById('priv-tl-stations-mob');
+    if (!mWrap) return;
+    mWrap.innerHTML = '';
+    const MOB_H = 520;
+    PRIV_PHASES.forEach((ph, i) => {
+      const nextStart = i < PRIV_PHASES.length - 1 ? PRIV_PHASES[i+1].start : PRIV_TRIP_END;
+      const rowH = Math.max(72, Math.round((nextStart - ph.start) / total * MOB_H));
+      const el = document.createElement('div');
+      el.className = 'tl-row';
+      el.id = 'pmst-' + ph.id;
+      el.style.backgroundImage = 'url(' + PRIV_PHOTOS[ph.id] + ')';
+      el.style.minHeight = rowH + 'px';
+      el.innerHTML = `
+        <div class="tl-row-dot-col">
+          <div class="tl-row-dot" id="pmdot-${ph.id}"></div>
+          ${i < PRIV_PHASES.length - 1 ? '<div class="tl-row-connector"></div>' : ''}
+        </div>
+        <div class="tl-row-body">
+          <div class="tl-row-info">
+            <div class="tl-row-city">${ph.city}</div>
+            <div class="tl-row-detail">${ph.detail}</div>
+            <div class="tl-row-badge" id="pmbadge-${ph.id}">You are here</div>
+          </div>
+        </div>`;
+      mWrap.appendChild(el);
+    });
+  }
+
+  function updatePrivTimeline() {
+    const now   = Date.now();
+    const total = PRIV_TRIP_END - PRIV_TRIP_START;
+    const pct   = Math.max(0, Math.min((now - PRIV_TRIP_START) / total * 100, 100));
+    const ph    = privCurrentPhase();
+    const dayN  = Math.max(1, Math.min(Math.ceil((now - PRIV_TRIP_START) / 86400000), 14));
+
+    const fillEl = document.getElementById('priv-tl-fill');
+    if (fillEl) fillEl.style.width = pct + '%';
+
+    PRIV_PHASES.forEach(p => {
+      const isPast   = p.end <= now;
+      const isActive = p.id === ph.id;
+
+      const pseg = document.getElementById('ppseg-' + p.id);
+      if (pseg) pseg.className = 'tl-photo-seg' + (isActive ? ' active' : isPast ? ' past' : '');
+
+      const dot = document.getElementById('pdot-' + p.id);
+      const yah = document.getElementById('pyah-' + p.id);
+      const st  = document.getElementById('pst-'  + p.id);
+      if (dot) {
+        dot.className = 'tl-dot' + (isActive ? ' active' : isPast ? ' past' : '');
+        if (yah) yah.style.display = isActive ? 'block' : 'none';
+        if (st)  st.className = 'tl-station' + (isActive ? ' active' : isPast ? ' past' : '');
+      }
+
+      const mdot   = document.getElementById('pmdot-'   + p.id);
+      const mbadge = document.getElementById('pmbadge-' + p.id);
+      const mrow   = document.getElementById('pmst-'    + p.id);
+      if (mdot) {
+        mdot.className = 'tl-row-dot' + (isActive ? ' active' : isPast ? ' past' : '');
+        if (mbadge) mbadge.style.display = isActive ? 'inline-block' : 'none';
+        if (mrow)   mrow.className = 'tl-row' + (isActive ? ' active' : isPast ? ' past' : '');
+      }
+    });
+
+    const label = now < PRIV_TRIP_START ? 'Trip starts May 30'
+                : now > PRIV_TRIP_END   ? 'Trip complete — welcome home!'
+                : `Day ${dayN} of 14`;
+    const dayEl   = document.getElementById('priv-tl-day');
+    const phaseEl = document.getElementById('priv-tl-phase');
+    if (dayEl)   dayEl.textContent   = label;
+    if (phaseEl) phaseEl.textContent = ph.city + ' — ' + ph.detail.split(' · ')[0];
+  }
 
 
   // ── Comment management ─────────────────────────────────────────────────────
@@ -1875,8 +1834,12 @@
       const d = await r.json();
       if (!d.ok || !d.comments.length) {
         list.innerHTML = '<div class="priv-comments-empty">No visitor comments yet.</div>';
+        const badge = document.getElementById('priv-comment-badge');
+        if (badge) badge.style.display = 'none';
         return;
       }
+      const badge = document.getElementById('priv-comment-badge');
+      if (badge) { badge.textContent = d.comments.length; badge.style.display = 'flex'; }
       list.innerHTML = d.comments.map(c => `
         <div class="priv-comment-card" id="pcc-${c.id}">
           <div class="pcc-top-row">

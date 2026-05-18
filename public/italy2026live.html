@@ -484,15 +484,27 @@ body.dark .loc-bar       { border-top-color: #263040; }
 .day-label { font-size: 0.58rem; opacity: 0.42; display: block; text-transform: uppercase; letter-spacing: 0.1em; }
 .day-value { font-size: 0.88rem; display: block; letter-spacing: 0.01em; font-weight: 600; }
 @media (max-width: 700px) { .topbar-day { display: none; } }
-.dark-toggle {
-  background: none; border: 1px solid rgba(255,255,255,0.16);
-  color: rgba(255,255,255,0.6); border-radius: 8px;
-  width: 36px; height: 34px; cursor: pointer;
-  font-size: 1rem; transition: all 0.18s;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
+.dark-toggle { background: none; border: none; cursor: pointer; padding: 0; flex-shrink: 0; }
+.dt-track {
+  display: flex; align-items: center;
+  width: 52px; height: 28px; border-radius: 14px;
+  background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.2);
+  position: relative; transition: background 0.3s;
 }
-.dark-toggle:hover { background: rgba(255,255,255,0.09); color: #fff; }
+.dt-thumb {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: rgba(255,255,255,0.95);
+  position: absolute; left: 3px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.65rem; line-height: 1;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+}
+.dt-moon { position: absolute; left: 6px; font-size: 0.6rem; opacity: 0.4; transition: opacity 0.3s; pointer-events: none; }
+.dt-sun  { position: absolute; right: 5px; font-size: 0.6rem; opacity: 0.4; transition: opacity 0.3s; pointer-events: none; }
+body.dark .dt-thumb { transform: translateX(24px); }
+body.dark .dt-moon { opacity: 0.9; }
+body:not(.dark) .dt-sun { opacity: 0.9; }
 .topbar-comments {
   background: none; border: 1px solid rgba(255,255,255,0.16);
   color: rgba(255,255,255,0.6); border-radius: 8px;
@@ -705,7 +717,13 @@ body.dark .cc-reply { background: rgba(45,106,79,0.12); }
   <button class="topbar-comments" onclick="scrollToComments()" title="Jump to comments">
     💬<span class="topbar-comments-badge" id="comment-badge"></span>
   </button>
-  <button class="dark-toggle" id="dark-toggle" onclick="toggleDark()" title="Toggle dark mode">🌙</button>
+  <button class="dark-toggle" id="dark-toggle" onclick="toggleDark()" title="Toggle dark mode">
+    <span class="dt-track">
+      <span class="dt-moon">🌙</span>
+      <span class="dt-thumb"></span>
+      <span class="dt-sun">☀️</span>
+    </span>
+  </button>
   </div>
 
   <!-- Timeline -->
@@ -905,6 +923,13 @@ function showTracker() {
   setInterval(updateTimeline, 60000);
   setInterval(updateClock, 10000);
   setInterval(refreshAll, 5 * 60 * 1000);
+  // If David/Amanda are logged in on their private site, hide the visitor form
+  if (localStorage.getItem('italy_session')) {
+    const form = document.querySelector('.comment-form');
+    if (form) {
+      form.innerHTML = '<div style="font-family:sans-serif;font-size:0.82rem;color:var(--muted);padding:10px 0;font-style:italic;">Viewing as a traveler — reply to comments in your <a href="/italy2026.html" style="color:var(--accent);">private itinerary</a>.</div>';
+    }
+  }
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -1239,14 +1264,10 @@ function initDarkMode() {
   // Default dark unless user has explicitly switched to light
   if (localStorage.getItem('italy_dark') !== '0') {
     document.body.classList.add('dark');
-    const btn = document.getElementById('dark-toggle');
-    if (btn) btn.textContent = '☀️';
   }
 }
 function toggleDark() {
   const isDark = document.body.classList.toggle('dark');
-  const btn = document.getElementById('dark-toggle');
-  if (btn) btn.textContent = isDark ? '☀️' : '🌙';
   localStorage.setItem('italy_dark', isDark ? '1' : '0');
 }
 
