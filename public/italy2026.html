@@ -464,6 +464,57 @@
     .day-body { padding: 16px; }
   }
 
+
+  /* ── Comments management ── */
+  .priv-comments-section {
+    max-width: 860px; margin: 40px auto 0; padding: 0 24px 60px;
+  }
+  .priv-comments-header {
+    font-family: sans-serif; font-size: 0.62rem; font-weight: 700;
+    letter-spacing: 0.16em; text-transform: uppercase; color: #546e7a;
+    margin-bottom: 18px; padding-top: 32px;
+    border-top: 1px solid #e8edf0;
+  }
+  .priv-comment-card {
+    background: #fff; border: 1px solid #e8edf0; border-radius: 14px;
+    padding: 18px 20px; margin-bottom: 14px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+  }
+  .pcc-meta {
+    display: flex; align-items: center; gap: 10px;
+    font-family: sans-serif; font-size: 0.7rem; color: #78909c;
+    margin-bottom: 6px;
+  }
+  .pcc-name { font-weight: 700; color: #2d3748; font-size: 0.8rem; }
+  .pcc-msg { font-size: 0.92rem; color: #2d3748; line-height: 1.55; margin-bottom: 14px; }
+  .pcc-existing-reply {
+    background: #f0f7f4; border-left: 3px solid #2d6a4f;
+    border-radius: 0 8px 8px 0; padding: 10px 14px; margin-bottom: 12px;
+  }
+  .pcc-reply-label {
+    font-family: sans-serif; font-size: 0.6rem; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase; color: #2d6a4f; margin-bottom: 3px;
+  }
+  .pcc-reply-row { display: flex; gap: 8px; align-items: flex-end; }
+  .pcc-reply-input {
+    flex: 1; padding: 10px 14px; border: 1.5px solid #d0dde8;
+    border-radius: 9px; font-size: 0.88rem; font-family: sans-serif;
+    resize: none; outline: none; color: #2d3748;
+    transition: border-color 0.18s;
+  }
+  .pcc-reply-input:focus { border-color: #2d6a4f; }
+  .pcc-reply-btn {
+    background: #2d6a4f; color: #fff; border: none; border-radius: 9px;
+    padding: 10px 18px; font-size: 0.8rem; cursor: pointer;
+    font-family: sans-serif; letter-spacing: 0.04em; white-space: nowrap;
+    transition: background 0.18s;
+  }
+  .pcc-reply-btn:hover { background: #1e4d38; }
+  .pcc-status { font-family: sans-serif; font-size: 0.75rem; color: #546e7a; margin-top: 5px; }
+  .priv-comments-empty {
+    font-family: sans-serif; font-size: 0.84rem; color: #90a4ae;
+    text-align: center; padding: 32px 0;
+  }
 </style>
 </head>
 <body>
@@ -717,7 +768,7 @@
   <!-- DAY 0 -->
   <div class="day-card">
     <div class="day-header">
-      <div class="day-number" style="background:#555;">Day<strong>0</strong>Sat</div>
+      <div class="day-number" style="background:#555;">Day<strong>1</strong>Sat</div>
       <div class="day-info">
         <h3>Depart Home → SFO ✈️</h3>
         <div class="location-meta">May 30 · Departure Day · SFO → Venice (VCE)</div>
@@ -785,7 +836,7 @@
   <!-- DAY 1 -->
   <div class="day-card">
     <div class="day-header">
-      <div class="day-number">Day<strong>1</strong>Sun</div>
+      <div class="day-number">Day<strong>2</strong>Sun</div>
       <div class="day-info">
         <h3>Arrive in Venice 🛬</h3>
         <div class="location-meta">May 31 · Venice Arrivals Day</div>
@@ -861,7 +912,7 @@
   <!-- DAY 2 -->
   <div class="day-card">
     <div class="day-header">
-      <div class="day-number">Day<strong>2</strong>Mon</div>
+      <div class="day-number">Day<strong>3</strong>Mon</div>
       <div class="day-info">
         <h3>St. Mark's & The Palaces 🏛️</h3>
         <div class="location-meta">June 1 · Venice Full Day · Republic Day Holiday</div>
@@ -930,7 +981,7 @@
   <!-- DAY 3 -->
   <div class="day-card">
     <div class="day-header">
-      <div class="day-number">Day<strong>3</strong>Tue</div>
+      <div class="day-number">Day<strong>4</strong>Tue</div>
       <div class="day-info">
         <h3>Drive to Ortisei — Enter the Alps 🏔️</h3>
         <div class="location-meta">June 2 · Venice → Ortisei · ~3.5 hrs</div>
@@ -1021,7 +1072,7 @@
   <!-- DAY 4 -->
   <div class="day-card">
     <div class="day-header">
-      <div class="day-number">Day<strong>4</strong>Wed</div>
+      <div class="day-number">Day<strong>5</strong>Wed</div>
       <div class="day-info">
         <h3>Alpe di Siusi (AM) + Seceda (PM) 🌄</h3>
         <div class="location-meta">June 3 · Ortisei · Double Lift Day</div>
@@ -1069,7 +1120,7 @@
   <!-- DAY 5 -->
   <div class="day-card">
     <div class="day-header">
-      <div class="day-number">Day<strong>5</strong>Thu</div>
+      <div class="day-number">Day<strong>6</strong>Thu</div>
       <div class="day-info">
         <h3>Val di Funes — The Postcard Churches 📸</h3>
         <div class="location-meta">June 4 · Ortisei Day Trip</div>
@@ -1115,7 +1166,7 @@
   <!-- DAY 6 -->
   <div class="day-card">
     <div class="day-header">
-      <div class="day-number">Day<strong>6</strong>Fri</div>
+      <div class="day-number">Day<strong>7</strong>Fri</div>
       <div class="day-info">
         <h3>Flex Day — Spa, Rest, or Weather Buffer ♨️</h3>
         <div class="location-meta">June 5 · Ortisei Last Day</div>
@@ -1152,7 +1203,7 @@
   <!-- DAY 7 -->
   <div class="day-card">
     <div class="day-header">
-      <div class="day-number">Day<strong>7</strong>Sat</div>
+      <div class="day-number">Day<strong>8</strong>Sat</div>
       <div class="day-info">
         <h3>Drive to Dobbiaco + Lago di Braies 🏞️</h3>
         <div class="location-meta">June 6 · Ortisei → Dobbiaco · ~2.5 hrs</div>
@@ -1235,7 +1286,7 @@
   <!-- DAY 8 -->
   <div class="day-card">
     <div class="day-header">
-      <div class="day-number">Day<strong>8</strong>Sun</div>
+      <div class="day-number">Day<strong>9</strong>Sun</div>
       <div class="day-info">
         <h3>Tre Cime Loop — The Bucket List Hike ⛰️</h3>
         <div class="location-meta">June 7 · Dobbiaco Day Trip · Moderate · 4–5 hrs · ~1,300 ft gain</div>
@@ -1302,7 +1353,7 @@
   <!-- DAY 9 -->
   <div class="day-card">
     <div class="day-header">
-      <div class="day-number">Day<strong>9</strong>Mon</div>
+      <div class="day-number">Day<strong>10</strong>Mon</div>
       <div class="day-info">
         <h3>Dobbiaco → Lecco → Varenna 🚂</h3>
         <div class="location-meta">June 8 · Longest Transit Day · ~4.5 hrs drive + 20 min train</div>
@@ -1376,7 +1427,7 @@
   <!-- DAY 10 -->
   <div class="day-card">
     <div class="day-header">
-      <div class="day-number">Day<strong>10</strong>Tue</div>
+      <div class="day-number">Day<strong>11</strong>Tue</div>
       <div class="day-info">
         <h3>Ferry Triangle — Bellagio & Menaggio ⛴️</h3>
         <div class="location-meta">June 9 · Varenna Day Trip by Ferry</div>
@@ -1424,7 +1475,7 @@
   <!-- DAY 11 -->
   <div class="day-card">
     <div class="day-header">
-      <div class="day-number">Day<strong>11</strong>Wed</div>
+      <div class="day-number">Day<strong>12</strong>Wed</div>
       <div class="day-info">
         <h3>Varenna Rest Day — Lake, Spa, Total Ease 🌊</h3>
         <div class="location-meta">June 10 · Varenna · No Agenda</div>
@@ -1476,7 +1527,7 @@
   <!-- DAY 12 -->
   <div class="day-card">
     <div class="day-header">
-      <div class="day-number">Day<strong>12</strong>Thu</div>
+      <div class="day-number">Day<strong>13</strong>Thu</div>
       <div class="day-info">
         <h3>Varenna → Milan — Duomo & Last Night 🏙️</h3>
         <div class="location-meta">June 11 · Train ~1 hr 5 min</div>
@@ -1564,7 +1615,7 @@
   <!-- DAY 13 -->
   <div class="day-card">
     <div class="day-header">
-      <div class="day-number">Day<strong>13</strong>Fri</div>
+      <div class="day-number">Day<strong>14</strong>Fri</div>
       <div class="day-info">
         <h3>Fly Home ✈️</h3>
         <div class="location-meta">June 12 · MXP 12:20 PM → SFO</div>
@@ -1639,6 +1690,13 @@
 
 </div><!-- end days-container -->
 
+
+
+    <!-- Comments Management -->
+    <div class="priv-comments-section" id="priv-comments-section">
+      <div class="priv-comments-header">Visitor Comments</div>
+      <div id="priv-comment-list"><div class="priv-comments-empty">Loading comments…</div></div>
+    </div>
 
 </div>
 
@@ -1719,6 +1777,7 @@
     const bar = document.getElementById('signout-bar');
     bar.style.display = 'flex';
     document.getElementById('schedule-wrap').style.display = 'block';
+    loadPrivComments();
     // Silently capture location for the family tracker
     captureLocation();
   }
@@ -1782,6 +1841,70 @@
   updateItalyClock();
   setInterval(updateItalyClock, 15000);
 
+
+  // ── Comment management ─────────────────────────────────────────────────────
+  async function loadPrivComments() {
+    const list = document.getElementById('priv-comment-list');
+    if (!list) return;
+    try {
+      const r = await fetch(API_BASE + '/api/students?action=live-get-comments');
+      const d = await r.json();
+      if (!d.ok || !d.comments.length) {
+        list.innerHTML = '<div class="priv-comments-empty">No visitor comments yet.</div>';
+        return;
+      }
+      list.innerHTML = d.comments.map(c => `
+        <div class="priv-comment-card" id="pcc-${c.id}">
+          <div class="pcc-meta">
+            <span class="pcc-name">${pEsc(c.name)}</span>
+            <span>${pFmt(c.created_at)}</span>
+          </div>
+          <div class="pcc-msg">${pEsc(c.message)}</div>
+          ${c.reply ? `
+          <div class="pcc-existing-reply">
+            <div class="pcc-reply-label">Your reply · ${pFmt(c.reply_at)}</div>
+            <div style="font-size:0.88rem;color:#2d3748;">${pEsc(c.reply)}</div>
+          </div>` : ''}
+          <div class="pcc-reply-row">
+            <textarea class="pcc-reply-input" id="preply-${c.id}" rows="2"
+              placeholder="${c.reply ? 'Update reply…' : 'Write a reply…'}">${c.reply ? pEsc(c.reply) : ''}</textarea>
+            <button class="pcc-reply-btn" onclick="submitReply('${c.id}')">
+              ${c.reply ? 'Update' : 'Reply'}
+            </button>
+          </div>
+          <div class="pcc-status" id="pstatus-${c.id}"></div>
+        </div>`).join('');
+    } catch(e) {
+      if (list) list.innerHTML = '<div class="priv-comments-empty">Could not load comments.</div>';
+    }
+  }
+
+  async function submitReply(commentId) {
+    const token = localStorage.getItem(TOKEN_KEY);
+    const reply = document.getElementById('preply-' + commentId)?.value.trim();
+    const status = document.getElementById('pstatus-' + commentId);
+    if (!reply) { if (status) status.textContent = 'Reply cannot be empty.'; return; }
+    if (status) status.textContent = 'Saving…';
+    try {
+      const r = await fetch(API_BASE + '/api/students?action=live-reply-comment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-italy-token': token },
+        body: JSON.stringify({ comment_id: commentId, reply }),
+      });
+      const d = await r.json();
+      if (!d.ok) { if (status) status.textContent = d.error || 'Error saving reply.'; return; }
+      if (status) status.textContent = '✓ Reply posted!';
+      setTimeout(() => loadPrivComments(), 800);
+    } catch { if (status) status.textContent = 'Network error.'; }
+  }
+
+  function pEsc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function pFmt(iso) {
+    if (!iso) return '';
+    return new Date(iso).toLocaleDateString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+  }
 </script>
 </body>
 </html>

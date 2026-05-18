@@ -409,6 +409,51 @@ export default async function handler(req, res) {
     }
   }
 
+
+  // ── Italy 2026 Comments ─────────────────────────────────────────────────────
+  if (action === 'live-get-comments') {
+    const { data, error } = await supabase
+      .from('italy_comments')
+      .select('id, name, message, created_at, reply, reply_at')
+      .order('created_at', { ascending: true });
+    if (error) return res.status(500).json({ ok: false, error: error.message });
+    return res.status(200).json({ ok: true, comments: data || [] });
+  }
+
+  if (action === 'live-submit-comment') {
+    if (req.method !== 'POST') return res.status(405).end();
+    const { name, message } = req.body || {};
+    if (!name?.trim() || !message?.trim())
+      return res.status(400).json({ ok: false, error: 'Name and message are required' });
+    if (message.length > 800) return res.status(400).json({ ok: false, error: 'Message too long' });
+    const ip = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '';
+    if (!rateLimit(ip + ':comment', 5, 10 * 60 * 1000))
+      return res.status(429).json({ ok: false, error: 'Too many comments — please wait a few minutes' });
+    const { data, error } = await supabase
+      .from('italy_comments')
+      .insert({ name: name.trim().slice(0, 60), message: message.trim().slice(0, 800) })
+      .select().single();
+    if (error) return res.status(500).json({ ok: false, error: error.message });
+    return res.status(200).json({ ok: true, comment: data });
+  }
+
+  if (action === 'live-reply-comment') {
+    if (req.method !== 'POST') return res.status(405).end();
+    const token = req.headers['x-italy-token'] || '';
+    const email = verifyItalyToken(token);
+    if (!email) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+    const { comment_id, reply } = req.body || {};
+    if (!comment_id || !reply?.trim())
+      return res.status(400).json({ ok: false, error: 'comment_id and reply required' });
+    const { data, error } = await supabase
+      .from('italy_comments')
+      .update({ reply: reply.trim().slice(0, 800), reply_at: new Date().toISOString() })
+      .eq('id', comment_id)
+      .select().single();
+    if (error) return res.status(500).json({ ok: false, error: error.message });
+    return res.status(200).json({ ok: true, comment: data });
+  }
+
   // GET all approved active students
   if (req.method === 'GET' && action === 'list') {
     const adminEmail = requireAdmin(req, res); if (!adminEmail) return;
