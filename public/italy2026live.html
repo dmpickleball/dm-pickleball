@@ -756,6 +756,20 @@ body.dark .cc-reply { background: rgba(45,106,79,0.12); }
 
   </div>
 
+  <!-- Comments -->
+  <div class="comments-wrap" id="comments-section">
+    <div class="comments-header">Leave a note for David &amp; Amanda 💬</div>
+    <div class="comment-form">
+      <div class="cf-row">
+        <input class="cf-name" id="cf-name" type="text" placeholder="Your name" maxlength="60">
+        <textarea class="cf-msg" id="cf-msg" placeholder="Say hi, share a memory, ask a question…" rows="2" maxlength="800"></textarea>
+        <button class="cf-submit" onclick="submitComment()">Post</button>
+      </div>
+      <div class="cf-status" id="cf-status"></div>
+    </div>
+    <div class="comment-list" id="comment-list"></div>
+  </div>
+
   <!-- Flight strip -->
   <div class="flight-strip">
     <div class="fi">
@@ -776,21 +790,6 @@ body.dark .cc-reply { background: rgba(45,106,79,0.12); }
       <div class="fi-label">Air Canada &middot; Booking Ref</div>
       <div class="fi-ref">BVIVZ4</div>
     </div>
-  </div>
-
-
-  <!-- Comments -->
-  <div class="comments-wrap" id="comments-section">
-    <div class="comments-header">Leave a note for David &amp; Amanda 💬</div>
-    <div class="comment-form">
-      <div class="cf-row">
-        <input class="cf-name" id="cf-name" type="text" placeholder="Your name" maxlength="60">
-        <textarea class="cf-msg" id="cf-msg" placeholder="Say hi, share a memory, ask a question…" rows="2" maxlength="800"></textarea>
-        <button class="cf-submit" onclick="submitComment()">Post</button>
-      </div>
-      <div class="cf-status" id="cf-status"></div>
-    </div>
-    <div class="comment-list" id="comment-list"></div>
   </div>
 
   <div class="footer">Refreshes every 5 minutes &nbsp;&middot;&nbsp; Location updates when David &amp; Amanda log into their itinerary</div>

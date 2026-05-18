@@ -519,6 +519,14 @@
     flex-shrink: 0; margin-top: 2px;
   }
   .pcc-delete-btn:hover { background: #fdecea; color: #c62828; }
+  .pcc-reply-label-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .pcc-reply-label-row span { font-size: 0.75rem; color: #546e7a; font-family: sans-serif; }
+  .pcc-delete-reply-btn {
+    background: none; border: none; cursor: pointer;
+    color: #b0bec5; font-size: 0.72rem; font-family: sans-serif;
+    padding: 2px 6px; border-radius: 5px; transition: all 0.18s; flex-shrink: 0;
+  }
+  .pcc-delete-reply-btn:hover { background: #fdecea; color: #c62828; }
   .sb-comments-link {
     font-family: sans-serif; font-size: 0.72rem; color: rgba(255,255,255,0.55);
     background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
@@ -1881,7 +1889,10 @@
           <div class="pcc-msg">${pEsc(c.message)}</div>
           ${c.reply ? `
           <div class="pcc-existing-reply">
-            <div class="pcc-reply-label">${pEsc(c.reply_by || 'You')} replied · ${pFmt(c.reply_at)}</div>
+            <div class="pcc-reply-label-row">
+              <span>${pEsc(c.reply_by || 'You')} replied · ${pFmt(c.reply_at)}</span>
+              <button class="pcc-delete-reply-btn" onclick="deleteReply('${c.id}')" title="Delete reply">Delete reply</button>
+            </div>
             <div style="font-size:0.88rem;color:#2d3748;">${pEsc(c.reply)}</div>
           </div>` : ''}
           <div class="pcc-reply-row">
@@ -1934,6 +1945,22 @@
         setTimeout(() => { card.remove(); }, 320);
       }
     } catch(e) { alert('Could not delete — try again.'); }
+  }
+
+  async function deleteReply(commentId) {
+    if (!confirm('Delete this reply? The visitor\'s comment will remain.')) return;
+    const token = localStorage.getItem(TOKEN_KEY);
+    const status = document.getElementById('pstatus-' + commentId);
+    try {
+      const r = await fetch(API_BASE + '/api/students?action=live-delete-reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-italy-token': token },
+        body: JSON.stringify({ comment_id: commentId }),
+      });
+      const d = await r.json();
+      if (d.ok) { setTimeout(() => loadPrivComments(), 400); }
+      else if (status) status.textContent = d.error || 'Error deleting reply.';
+    } catch(e) { alert('Could not delete reply — try again.'); }
   }
 
   function pEsc(s) {

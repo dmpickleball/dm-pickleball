@@ -469,6 +469,20 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true });
   }
 
+  if (action === 'live-delete-reply') {
+    if (req.method !== 'POST') return res.status(405).end();
+    const token = req.headers['x-italy-token'] || '';
+    const email = verifyItalyToken(token);
+    if (!email) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+    const { comment_id } = req.body || {};
+    if (!comment_id) return res.status(400).json({ ok: false, error: 'comment_id required' });
+    const { error } = await supabase.from('italy_comments')
+      .update({ reply: null, reply_at: null, reply_by: null })
+      .eq('id', comment_id);
+    if (error) return res.status(500).json({ ok: false, error: error.message });
+    return res.status(200).json({ ok: true });
+  }
+
   // GET all approved active students
   if (req.method === 'GET' && action === 'list') {
     const adminEmail = requireAdmin(req, res); if (!adminEmail) return;
