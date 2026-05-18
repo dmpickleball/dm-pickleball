@@ -493,6 +493,21 @@ body.dark .loc-bar       { border-top-color: #263040; }
   flex-shrink: 0;
 }
 .dark-toggle:hover { background: rgba(255,255,255,0.09); color: #fff; }
+.topbar-comments {
+  background: none; border: 1px solid rgba(255,255,255,0.16);
+  color: rgba(255,255,255,0.6); border-radius: 8px;
+  width: 34px; height: 34px; cursor: pointer; font-size: 1rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.18s; flex-shrink: 0; position: relative;
+}
+.topbar-comments:hover { background: rgba(255,255,255,0.09); color: #fff; }
+.topbar-comments-badge {
+  position: absolute; top: -5px; right: -5px;
+  background: var(--accent); color: #fff; border-radius: 50%;
+  font-family: sans-serif; font-size: 0.52rem; font-weight: 700;
+  width: 16px; height: 16px; display: none;
+  align-items: center; justify-content: center;
+}
 
 /* ═══════════════════════════════════════════
    LIGHTBOX
@@ -687,6 +702,9 @@ body.dark .cc-reply { background: rgba(45,106,79,0.12); }
       <span class="day-value" id="cd-value">—</span>
     </div>
     <button class="topbar-btn" onclick="refreshAll()">Refresh</button>
+  <button class="topbar-comments" onclick="scrollToComments()" title="Jump to comments">
+    💬<span class="topbar-comments-badge" id="comment-badge"></span>
+  </button>
   <button class="dark-toggle" id="dark-toggle" onclick="toggleDark()" title="Toggle dark mode">🌙</button>
   </div>
 
@@ -762,7 +780,7 @@ body.dark .cc-reply { background: rgba(45,106,79,0.12); }
 
 
   <!-- Comments -->
-  <div class="comments-wrap">
+  <div class="comments-wrap" id="comments-section">
     <div class="comments-header">Leave a note for David &amp; Amanda 💬</div>
     <div class="comment-form">
       <div class="cf-row">
@@ -1157,6 +1175,13 @@ async function loadComments() {
       list.innerHTML = '<div style="font-family:sans-serif;font-size:0.82rem;color:var(--muted);padding:8px 0;">Be the first to leave a note!</div>';
       return;
     }
+    // Update topbar badge
+    const badge = document.getElementById('comment-badge');
+    if (badge) {
+      const count = d.comments.length;
+      badge.textContent = count;
+      badge.style.display = count > 0 ? 'flex' : 'none';
+    }
     list.innerHTML = d.comments.map(c => `
       <div class="comment-card">
         <div class="cc-meta">
@@ -1166,7 +1191,7 @@ async function loadComments() {
         <div class="cc-msg">${esc(c.message)}</div>
         ${c.reply ? `
         <div class="cc-reply">
-          <div class="cc-reply-label">David &amp; Amanda replied</div>
+          <div class="cc-reply-label">${esc(c.reply_by || 'David & Amanda')} replied</div>
           <div class="cc-reply-msg">${esc(c.reply)}</div>
         </div>` : ''}
       </div>`).join('');
@@ -1196,6 +1221,10 @@ async function submitComment() {
     setTimeout(() => { status.textContent = ''; }, 4000);
     loadComments();
   } catch { status.textContent = 'Network error — please try again.'; }
+}
+
+function scrollToComments() {
+  document.querySelector('.comments-wrap')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function esc(s) {

@@ -414,7 +414,7 @@ export default async function handler(req, res) {
   if (action === 'live-get-comments') {
     const { data, error } = await supabase
       .from('italy_comments')
-      .select('id, name, message, created_at, reply, reply_at')
+      .select('id, name, message, created_at, reply, reply_at, reply_by')
       .order('created_at', { ascending: true });
     if (error) return res.status(500).json({ ok: false, error: error.message });
     return res.status(200).json({ ok: true, comments: data || [] });
@@ -445,13 +445,28 @@ export default async function handler(req, res) {
     const { comment_id, reply } = req.body || {};
     if (!comment_id || !reply?.trim())
       return res.status(400).json({ ok: false, error: 'comment_id and reply required' });
+  const ITALY_NAMES = { 'davidmokblock@gmail.com': 'David', 'amandale91@gmail.com': 'Amanda' };
+    const replyBy = ITALY_NAMES[email] || 'David & Amanda';
     const { data, error } = await supabase
       .from('italy_comments')
-      .update({ reply: reply.trim().slice(0, 800), reply_at: new Date().toISOString() })
+      .update({ reply: reply.trim().slice(0, 800), reply_at: new Date().toISOString(), reply_by: replyBy })
       .eq('id', comment_id)
       .select().single();
     if (error) return res.status(500).json({ ok: false, error: error.message });
     return res.status(200).json({ ok: true, comment: data });
+  }
+
+
+  if (action === 'live-delete-comment') {
+    if (req.method !== 'POST') return res.status(405).end();
+    const token = req.headers['x-italy-token'] || '';
+    const email = verifyItalyToken(token);
+    if (!email) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+    const { comment_id } = req.body || {};
+    if (!comment_id) return res.status(400).json({ ok: false, error: 'comment_id required' });
+    const { error } = await supabase.from('italy_comments').delete().eq('id', comment_id);
+    if (error) return res.status(500).json({ ok: false, error: error.message });
+    return res.status(200).json({ ok: true });
   }
 
   // GET all approved active students

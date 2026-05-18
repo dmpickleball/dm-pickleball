@@ -511,6 +511,21 @@
   }
   .pcc-reply-btn:hover { background: #1e4d38; }
   .pcc-status { font-family: sans-serif; font-size: 0.75rem; color: #546e7a; margin-top: 5px; }
+  .pcc-top-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .pcc-delete-btn {
+    background: none; border: none; cursor: pointer;
+    color: #b0bec5; font-size: 0.75rem; font-family: sans-serif;
+    padding: 2px 6px; border-radius: 5px; transition: all 0.18s;
+    flex-shrink: 0; margin-top: 2px;
+  }
+  .pcc-delete-btn:hover { background: #fdecea; color: #c62828; }
+  .sb-comments-link {
+    font-family: sans-serif; font-size: 0.72rem; color: rgba(255,255,255,0.55);
+    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 7px; padding: 5px 12px; text-decoration: none;
+    transition: all 0.18s; cursor: pointer; white-space: nowrap;
+  }
+  .sb-comments-link:hover { color: #fff; background: rgba(255,255,255,0.12); }
   .priv-comments-empty {
     font-family: sans-serif; font-size: 0.84rem; color: #90a4ae;
     text-align: center; padding: 32px 0;
@@ -726,7 +741,8 @@
     <span class="sb-clock-time" id="sb-clock-time">--:--</span>
     <span class="sb-clock-label" id="sb-clock-label">Local Time</span>
   </div>
-  <button class="sb-btn" onclick="signOut()">Sign out</button>
+  <button class="sb-comments-link" onclick="document.getElementById('priv-comments-section').scrollIntoView({behavior:'smooth'})">💬 Comments</button>
+      <button class="sb-btn" onclick="signOut()">Sign out</button>
 </div>
 <div id="schedule-wrap">
 
@@ -1855,14 +1871,17 @@
       }
       list.innerHTML = d.comments.map(c => `
         <div class="priv-comment-card" id="pcc-${c.id}">
-          <div class="pcc-meta">
-            <span class="pcc-name">${pEsc(c.name)}</span>
-            <span>${pFmt(c.created_at)}</span>
+          <div class="pcc-top-row">
+            <div class="pcc-meta">
+              <span class="pcc-name">${pEsc(c.name)}</span>
+              <span>${pFmt(c.created_at)}</span>
+            </div>
+            <button class="pcc-delete-btn" onclick="deleteComment('${c.id}')" title="Delete comment">Delete</button>
           </div>
           <div class="pcc-msg">${pEsc(c.message)}</div>
           ${c.reply ? `
           <div class="pcc-existing-reply">
-            <div class="pcc-reply-label">Your reply · ${pFmt(c.reply_at)}</div>
+            <div class="pcc-reply-label">${pEsc(c.reply_by || 'You')} replied · ${pFmt(c.reply_at)}</div>
             <div style="font-size:0.88rem;color:#2d3748;">${pEsc(c.reply)}</div>
           </div>` : ''}
           <div class="pcc-reply-row">
@@ -1896,6 +1915,25 @@
       if (status) status.textContent = '✓ Reply posted!';
       setTimeout(() => loadPrivComments(), 800);
     } catch { if (status) status.textContent = 'Network error.'; }
+  }
+
+  async function deleteComment(commentId) {
+    if (!confirm('Delete this comment?')) return;
+    const token = localStorage.getItem(TOKEN_KEY);
+    const card = document.getElementById('pcc-' + commentId);
+    try {
+      const r = await fetch(API_BASE + '/api/students?action=live-delete-comment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-italy-token': token },
+        body: JSON.stringify({ comment_id: commentId }),
+      });
+      const d = await r.json();
+      if (d.ok && card) {
+        card.style.transition = 'opacity 0.3s';
+        card.style.opacity = '0';
+        setTimeout(() => { card.remove(); }, 320);
+      }
+    } catch(e) { alert('Could not delete — try again.'); }
   }
 
   function pEsc(s) {
