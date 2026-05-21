@@ -19,65 +19,52 @@ function parseUSAPAHtml(html) {
   return Object.values(entries).filter(e => e.brand && e.model);
 }
 
-// ── Live paddle search against USAPA (per-query, cached 30 min) ──────────────
-const _searchCache = new Map(); // key → { results, at }
-const SEARCH_TTL = 30 * 60 * 1000;
+// ── Full USAPA catalog (fetched in parallel, cached 4h in process memory) ────
+let _catalog = null;
+let _catalogAt = 0;
+const CATALOG_TTL = 4 * 60 * 60 * 1000;
 
-async function searchPaddles(q) {
-  if (!q || q.trim().length < 2) return [];
-  const key = q.trim().toLowerCase();
-  const cached = _searchCache.get(key);
-  if (cached && Date.now() - cached.at < SEARCH_TTL) return cached.results;
+async function fetchFullCatalog() {
+  if (_catalog && Date.now() - _catalogAt < CATALOG_TTL) return _catalog;
 
-  const qEnc = encodeURIComponent(q.trim());
+  // USAPA lists ~25 paddles per page. Estimated 5200 total → ~208 pages.
+  // Fetch ~40 pages evenly spread across the full list to sample all brands.
+  // All requests fire in parallel; a shared AbortController kills stragglers at 7.5s.
+  const PAGE_COUNT = 208;
+  const SAMPLE_STEP = 5; // every 5th page → 42 pages → ~1050 paddles
+  const pages = Array.from({ length: Math.ceil(PAGE_COUNT / SAMPLE_STEP) }, (_, i) => 1 + i * SAMPLE_STEP);
 
-  // Try several USAPA query-param formats; accept whichever returns < full list
-  const attempts = [
-    `https://equipment.usapickleball.org/paddle-list/?brand-search=${qEnc}`,
-    `https://equipment.usapickleball.org/paddle-list/?search=${qEnc}`,
-    `https://equipment.usapickleball.org/paddle-list/?s=${qEnc}`,
-    `https://equipment.usapickleball.org/paddle-list/?q=${qEnc}`,
-  ];
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), 7500);
 
-  for (const url of attempts) {
-    try {
-      const r = await fetch(url, {
-        headers: { 'User-Agent': UA },
-        signal: AbortSignal.timeout(6000),
-      });
-      if (!r.ok) continue;
-      const html = await r.text();
-      // "Displaying X - Y of Z" tells us if filtering worked
-      const totalMatch = html.match(/Displaying\s+[\d,]+\s*[-–]\s*[\d,]+\s+of\s+([\d,]+)/i);
-      const total = parseInt((totalMatch?.[1] || '0').replace(/,/g, ''));
-      if (total > 0 && total < 4000) {
-        // Server-side filtering worked — parse this page's results
-        const results = parseUSAPAHtml(html);
-        _searchCache.set(key, { results, at: Date.now() });
-        return results;
+  const settled = await Promise.allSettled(
+    pages.map(pn => {
+      const url = pn === 1
+        ? 'https://equipment.usapickleball.org/paddle-list/'
+        : `https://equipment.usapickleball.org/paddle-list/?pagenum=${pn}`;
+      return fetch(url, { headers: { 'User-Agent': UA }, signal: ac.signal })
+        .then(r => r.ok ? r.text() : null)
+        .catch(() => null);
+    })
+  );
+  clearTimeout(timer);
+
+  const seen = {};
+  for (const r of settled) {
+    if (r.status === 'fulfilled' && r.value) {
+      for (const e of parseUSAPAHtml(r.value)) {
+        const key = `${e.brand.toLowerCase()}|||${e.model.toLowerCase()}`;
+        if (!seen[key]) seen[key] = e;
       }
-    } catch { /* try next */ }
+    }
   }
 
-  // Fallback: fetch page 1 and filter client-side (only ~25 results, but better than nothing)
-  try {
-    const r = await fetch('https://equipment.usapickleball.org/paddle-list/', {
-      headers: { 'User-Agent': UA },
-      signal: AbortSignal.timeout(6000),
-    });
-    if (r.ok) {
-      const html = await r.text();
-      const all = parseUSAPAHtml(html);
-      const qLow = key;
-      const results = all.filter(e =>
-        e.brand.toLowerCase().includes(qLow) || e.model.toLowerCase().includes(qLow)
-      );
-      _searchCache.set(key, { results, at: Date.now() });
-      return results;
-    }
-  } catch { /* give up */ }
+  const catalog = Object.values(seen).sort(
+    (a, b) => a.brand.localeCompare(b.brand) || a.model.localeCompare(b.model)
+  );
 
-  return [];
+  if (catalog.length > 0) { _catalog = catalog; _catalogAt = Date.now(); }
+  return _catalog || [];
 }
 
 // ── Admin auth (same pattern as students.js) ──────────────────────────────────
@@ -148,10 +135,21 @@ async function handlePaddleLab(req, res) {
   const { action, id } = req.query;
 
   if (req.method === 'GET') {
-    // Live paddle search for autocomplete
+    // Full catalog for localStorage caching on the frontend
+    if (action === 'paddle-catalog') {
+      const catalog = await fetchFullCatalog();
+      return res.status(200).json({ catalog });
+    }
+
+    // Live filter on the cached catalog (fallback when localStorage is cold)
     if (action === 'paddle-search') {
       const { q = '' } = req.query;
-      const results = await searchPaddles(q);
+      const catalog = await fetchFullCatalog();
+      if (!q.trim()) return res.status(200).json({ results: [] });
+      const qLow = q.toLowerCase();
+      const results = catalog
+        .filter(e => e.brand.toLowerCase().includes(qLow) || e.model.toLowerCase().includes(qLow))
+        .slice(0, 20);
       return res.status(200).json({ results });
     }
 

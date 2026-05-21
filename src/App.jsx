@@ -5218,31 +5218,45 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
 }
 
 // ─── PADDLE SEARCH FIELD ─────────────────────────────────────────────────────
-// Single "Search paddle" field → live USAPA search → auto-fills brand + model
+// Loads full USAPA catalog once → caches in localStorage 24h → instant local filter as you type
+const CAT_LS_KEY = "dm_paddle_cat_v3";
+const CAT_LS_TTL = 24 * 60 * 60 * 1000;
+
 function PaddleSearchField({onSelect,disabled}){
   const[q,setQ]=useState("");
-  const[results,setResults]=useState([]);
-  const[searching,setSearching]=useState(false);
+  const[catalog,setCatalog]=useState(null); // [{brand,model},...]
+  const[loading,setLoading]=useState(false);
   const[open,setOpen]=useState(false);
   const[hi,setHi]=useState(0);
-  const timerRef=React.useRef(null);
 
-  function doSearch(val){
-    clearTimeout(timerRef.current);
-    if(!val||val.trim().length<2){setResults([]);setOpen(false);setSearching(false);return;}
-    setSearching(true);
-    timerRef.current=setTimeout(async()=>{
-      try{
-        const r=await adminFetch(`/api/gear?resource=paddle-lab&action=paddle-search&q=${encodeURIComponent(val.trim())}`);
-        const d=await r.json();
-        const res=(d.results||[]).slice(0,20);
-        setResults(res);
-        setOpen(res.length>0);
-        setHi(0);
-      }catch{setResults([]);}
-      finally{setSearching(false);}
-    },350);
-  }
+  // Load full catalog once on mount (localStorage → backend)
+  useEffect(()=>{
+    try{
+      const stored=JSON.parse(localStorage.getItem(CAT_LS_KEY)||"null");
+      if(stored&&Array.isArray(stored.data)&&stored.data.length>0&&Date.now()-stored.at<CAT_LS_TTL){
+        setCatalog(stored.data);return;
+      }
+    }catch{}
+    setLoading(true);
+    adminFetch("/api/gear?resource=paddle-lab&action=paddle-catalog")
+      .then(r=>r.json())
+      .then(d=>{
+        if(d.catalog&&d.catalog.length>0){
+          setCatalog(d.catalog);
+          try{localStorage.setItem(CAT_LS_KEY,JSON.stringify({data:d.catalog,at:Date.now()}));}catch{}
+        }
+      })
+      .catch(()=>{})
+      .finally(()=>setLoading(false));
+  },[]);
+
+  // Instant local filter — no backend call per keystroke
+  const results=q.trim().length<1?[]:(catalog||[]).filter(e=>{
+    const ql=q.toLowerCase();
+    return e.brand.toLowerCase().includes(ql)||e.model.toLowerCase().includes(ql);
+  }).slice(0,24);
+
+  const show=open&&results.length>0;
 
   function pick(entry){
     onSelect(entry);
@@ -5253,34 +5267,36 @@ function PaddleSearchField({onSelect,disabled}){
   return(
     <div style={{position:"relative"}}>
       <div style={{position:"relative"}}>
-        <input value={q} onChange={e=>{setQ(e.target.value);doSearch(e.target.value);}}
-          onFocus={()=>{if(results.length>0)setOpen(true);}}
+        <input value={q}
+          onChange={e=>{setQ(e.target.value);setOpen(true);setHi(0);}}
+          onFocus={()=>{setOpen(true);setHi(0);}}
           onBlur={()=>setTimeout(()=>setOpen(false),180)}
           onKeyDown={e=>{
-            if(!open)return;
+            if(!show)return;
             if(e.key==="ArrowDown"){setHi(h=>Math.min(h+1,results.length-1));e.preventDefault();}
             else if(e.key==="ArrowUp"){setHi(h=>Math.max(h-1,0));e.preventDefault();}
             else if(e.key==="Enter"&&results[hi]){pick(results[hi]);e.preventDefault();}
-            else if(e.key==="Escape"){setOpen(false);}
+            else if(e.key==="Escape")setOpen(false);
           }}
-          placeholder="Search paddle (e.g. Aireo Cyclone)" disabled={disabled}
+          placeholder={loading?"Loading paddles…":catalog?`Search ${catalog.length} paddles (e.g. Joola Scorpius)`:"Search paddle"}
+          disabled={disabled}
           style={{width:"100%",padding:"9px 36px 9px 12px",border:"1.5px solid #d1d5db",borderRadius:8,fontSize:"0.9rem",boxSizing:"border-box",outline:"none"}}
           autoComplete="off" autoCorrect="off" spellCheck="false"/>
-        <span style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",color:"#9ca3af",fontSize:"0.78rem",pointerEvents:"none"}}>
-          {searching?"⟳":"🔍"}
+        <span style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",color:"#9ca3af",fontSize:"0.8rem",pointerEvents:"none"}}>
+          {loading?"⟳":"🔍"}
         </span>
       </div>
-      {open&&results.length>0&&(
-        <div style={{position:"absolute",top:"calc(100% + 2px)",left:0,right:0,background:"white",border:"1.5px solid #d1d5db",borderRadius:8,boxShadow:"0 8px 28px rgba(0,0,0,0.13)",zIndex:2000,maxHeight:260,overflowY:"auto"}}>
+      {show&&(
+        <div style={{position:"absolute",top:"calc(100% + 2px)",left:0,right:0,background:"white",border:"1.5px solid #d1d5db",borderRadius:8,boxShadow:"0 8px 28px rgba(0,0,0,0.13)",zIndex:2000,maxHeight:280,overflowY:"auto"}}>
           {results.map((r,i)=>(
             <div key={`${r.brand}|||${r.model}`} onMouseDown={e=>{e.preventDefault();pick(r);}}
               style={{padding:"9px 14px",cursor:"pointer",fontSize:"0.88rem",background:i===hi?G:"white",color:i===hi?"white":"#111827",borderBottom:"1px solid #f3f4f6",transition:"background 0.1s"}}>
               <span style={{fontWeight:600}}>{r.brand}</span>
-              <span style={{opacity:0.75}}> — {r.model}</span>
+              <span style={{opacity:0.7}}> — {r.model}</span>
             </div>
           ))}
-          <div style={{padding:"6px 14px",fontSize:"0.75rem",color:"#9ca3af",borderTop:"1px solid #f3f4f6"}}>
-            USAPA approved list · select to fill Brand &amp; Model below
+          <div style={{padding:"6px 14px",fontSize:"0.74rem",color:"#9ca3af",borderTop:"1px solid #f3f4f6"}}>
+            USAPA approved · select to fill Brand &amp; Model below
           </div>
         </div>
       )}
