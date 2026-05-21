@@ -24,9 +24,14 @@ CREATE TABLE IF NOT EXISTS paddle_measurements (
   twist_weight    NUMERIC(6,2),              -- SW1 units (~5–8)
   balance_point   NUMERIC(6,1),              -- mm from butt end
 
+  -- Paddle dimensions (used by optimizer for accurate physics calculations)
+  length_mm       NUMERIC(5,1),              -- total paddle length, mm (e.g. 420)
+  width_mm        NUMERIC(5,1),              -- paddle face width, mm (e.g. 215)
+  thickness_mm    NUMERIC(4,1),              -- core thickness, mm (e.g. 16)
+
   -- Physical specs
   grip_size       TEXT NOT NULL DEFAULT '',  -- e.g. "4 1/8", "small"
-  handle_length   NUMERIC(5,1),              -- mm
+  handle_length   NUMERIC(5,1),              -- mm (e.g. 130)
 
   -- Free-form notes
   notes           TEXT NOT NULL DEFAULT '',

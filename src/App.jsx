@@ -5219,7 +5219,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
 
 // ─── PADDLE LAB TAB ──────────────────────────────────────────────────────────
 function PaddleLabTab(){
-  const EMPTY_FORM={brand:"",model:"",colorway:"",phase:"before",mod_type:"",mod_notes:"",static_weight:"",swing_weight:"",twist_weight:"",balance_point:"",grip_size:"",handle_length:"",notes:"",measured_date:new Date().toISOString().slice(0,10)};
+  const EMPTY_FORM={brand:"",model:"",colorway:"",phase:"before",mod_type:"",mod_notes:"",static_weight:"",swing_weight:"",twist_weight:"",balance_point:"",length_mm:"",width_mm:"",thickness_mm:"",grip_size:"",handle_length:"",notes:"",measured_date:new Date().toISOString().slice(0,10)};
   const[measurements,setMeasurements]=useState([]);
   const[loading,setLoading]=useState(true);
   const[showForm,setShowForm]=useState(false);
@@ -5240,6 +5240,7 @@ function PaddleLabTab(){
   const[filterPhase,setFilterPhase]=useState("");
   const[filterFrom,setFilterFrom]=useState("");
   const[filterTo,setFilterTo]=useState("");
+  const[optimizePaddle,setOptimizePaddle]=useState(null);
 
   const load=()=>{
     setLoading(true);
@@ -5274,7 +5275,7 @@ function PaddleLabTab(){
   const openNew=()=>{setEditId(null);setForm(EMPTY_FORM);setDupWarning(null);setExactDup(false);setPsResult(null);setPsError("");setSaveError("");setShowForm(true);};
   const openEdit=(m)=>{
     setEditId(m.id);
-    setForm({brand:m.brand||"",model:m.model||"",colorway:m.colorway||"",phase:m.phase||"before",mod_type:m.mod_type||"",mod_notes:m.mod_notes||"",static_weight:m.static_weight??'',swing_weight:m.swing_weight??'',twist_weight:m.twist_weight??'',balance_point:m.balance_point??'',grip_size:m.grip_size||"",handle_length:m.handle_length??'',notes:m.notes||"",measured_date:m.measured_date||new Date().toISOString().slice(0,10)});
+    setForm({brand:m.brand||"",model:m.model||"",colorway:m.colorway||"",phase:m.phase||"before",mod_type:m.mod_type||"",mod_notes:m.mod_notes||"",static_weight:m.static_weight??'',swing_weight:m.swing_weight??'',twist_weight:m.twist_weight??'',balance_point:m.balance_point??'',length_mm:m.length_mm??'',width_mm:m.width_mm??'',thickness_mm:m.thickness_mm??'',grip_size:m.grip_size||"",handle_length:m.handle_length??'',notes:m.notes||"",measured_date:m.measured_date||new Date().toISOString().slice(0,10)});
     setDupWarning(null);setExactDup(false);setPsResult(null);setPsError("");setSaveError("");setShowForm(true);
   };
   const closeForm=()=>{setShowForm(false);setEditId(null);setDupWarning(null);setExactDup(false);setPsResult(null);};
@@ -5422,7 +5423,8 @@ function PaddleLabTab(){
                   <td style={S.td}>{m.grip_size||<span style={{color:"#d1d5db"}}>—</span>}</td>
                   <td style={{...S.td,whiteSpace:"nowrap",color:"#6b7280",fontSize:"0.82rem"}}>{m.measured_date||"—"}</td>
                   <td style={S.td}>
-                    <div style={{display:"flex",gap:6}}>
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                      <button onClick={()=>setOptimizePaddle(m)} style={{...S.btn,padding:"5px 12px",background:"#f0fdf4",color:"#059669",fontSize:"0.78rem",border:"1px solid #bbf7d0"}}>⚖️ Optimize</button>
                       <button onClick={()=>openEdit(m)} style={{...S.btn,padding:"5px 12px",background:"#f3f4f6",color:"#374151",fontSize:"0.78rem"}}>Edit</button>
                       <button onClick={()=>setDeleteConfirm(m.id)} style={{...S.btn,padding:"5px 12px",background:"#fee2e2",color:"#dc2626",fontSize:"0.78rem"}}>Del</button>
                     </div>
@@ -5448,6 +5450,9 @@ function PaddleLabTab(){
           </div>
         </div>
       )}
+
+      {/* ── Paddle Optimizer modal ── */}
+      {optimizePaddle&&<PaddleOptimizer m={optimizePaddle} onClose={()=>setOptimizePaddle(null)}/>}
 
       {/* ── Add / Edit modal ── */}
       {showForm&&(
@@ -5543,6 +5548,23 @@ function PaddleLabTab(){
               </div>
             </div>
 
+            {/* ── Paddle dimensions (used by optimizer) ── */}
+            <div style={{fontWeight:700,fontSize:"0.78rem",color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.5px",margin:"4px 0 10px"}}>Paddle Dimensions <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none",letterSpacing:0}}>(for optimizer physics)</span></div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:12}}>
+              <div>
+                <label style={S.label}>Total length (mm)</label>
+                <input type="number" step="0.5" value={form.length_mm} onChange={e=>setF("length_mm",e.target.value)} placeholder="e.g. 420" style={S.input}/>
+              </div>
+              <div>
+                <label style={S.label}>Width (mm)</label>
+                <input type="number" step="0.5" value={form.width_mm} onChange={e=>setF("width_mm",e.target.value)} placeholder="e.g. 215" style={S.input}/>
+              </div>
+              <div>
+                <label style={S.label}>Thickness (mm)</label>
+                <input type="number" step="0.5" value={form.thickness_mm} onChange={e=>setF("thickness_mm",e.target.value)} placeholder="e.g. 16" style={S.input}/>
+              </div>
+            </div>
+
             <div style={{marginBottom:12}}>
               <label style={S.label}>Date measured</label>
               <input type="date" value={form.measured_date} onChange={e=>setF("measured_date",e.target.value)} style={{...S.input,maxWidth:200}}/>
@@ -5589,6 +5611,328 @@ function PaddleLabTab(){
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── PADDLE OPTIMIZER ────────────────────────────────────────────────────────
+// Physics engine: Brifidi SW1 units derived from moment of inertia.
+// Pivot estimated at the butt end (0mm). Empirically tuned constant K=45700.
+// ΔSW per gram at position P = P² / K
+// ΔTW per gram at position P with lateral offset d = d² / 7000
+// ΔBP = (P - BP_current) × added_g / (static_g + added_g)  [exact]
+//
+// Paddle positions depend on actual dimensions; defaults: 420mm length, 215mm width, 130mm handle.
+
+function PaddleOptimizer({m,onClose}){
+  const K_SW=45700; // Brifidi swing-weight scaling constant
+  const K_TW=7000;  // Brifidi twist-weight scaling constant
+
+  // Derive paddle geometry
+  const totalLen  = parseFloat(m.length_mm)    || 420;
+  const faceWidth = parseFloat(m.width_mm)     || 215;
+  const handleLen = parseFloat(m.handle_length)|| 130;
+  const faceLen   = totalLen - handleLen;
+
+  // Named lead-tape positions (mm from butt end)
+  const POSITIONS = {
+    tip:    { mm: totalLen - 15,             dMm: 0,                label:'12 o\'clock (tip)',   color:'#dc2626', desc:'Max SW gain, most head-heavy' },
+    sides:  { mm: handleLen + faceLen*0.55,  dMm: faceWidth/2-10,   label:'3 & 9 o\'clock',      color:'#2563eb', desc:'Best for twist weight & stability' },
+    throat: { mm: handleLen + 25,            dMm: 0,                label:'Throat (just above handle)', color:'#d97706', desc:'Moderate SW, neutral feel' },
+    handle: { mm: handleLen*0.3,             dMm: 0,                label:'Handle (under grip)', color:'#6b7280', desc:'Adds mass, barely moves SW' },
+  };
+
+  const swPerG = (posKey)=>{
+    const p=POSITIONS[posKey]; return (p.mm*p.mm)/K_SW;
+  };
+  const twPerG = (posKey)=>{
+    const p=POSITIONS[posKey]; return (2*(p.dMm/2)*(p.dMm/2))/K_TW; // split 0.5g each side
+  };
+  const bpDeltaPerG = (posKey, currentBP, currentMass)=>{
+    const p=POSITIONS[posKey];
+    return (p.mm - currentBP)/(currentMass + 1); // for 1g increment
+  };
+
+  // User-controlled sliders
+  const[targetSW,setTargetSW]=useState(121);    // default to middle of 120-122 range
+  const[feelPct,setFeelPct]=useState(50);        // 0=balanced, 100=head-heavy
+
+  // feelPct → weight distribution ratios (tip, sides, throat, handle)
+  const distribution=(feel)=>{
+    // 0 = balanced: 0% tip, 60% sides, 40% throat, 0% handle
+    // 50 = mixed:   40% tip, 50% sides, 10% throat, 0% handle
+    // 100 = max head: 85% tip, 15% sides, 0% throat, 0% handle
+    const t  = feel/100;
+    const tipR    = 0.85*t*t;
+    const sidesR  = 0.60*(1-t) + 0.15*t;
+    const throatR = Math.max(0, 0.40*(1-t) - 0.10*t*(1-t));
+    const handleR = 0;
+    const total=tipR+sidesR+throatR+handleR||1;
+    return {tip:tipR/total, sides:sidesR/total, throat:throatR/total, handle:handleR/total};
+  };
+
+  const dist=distribution(feelPct);
+
+  // Effective SW gain per gram at the current feel distribution
+  const effectiveSWperG=
+    dist.tip    * swPerG('tip')    +
+    dist.sides  * swPerG('sides')  +
+    dist.throat * swPerG('throat') +
+    dist.handle * swPerG('handle');
+
+  const currentSW    = parseFloat(m.swing_weight)   || 0;
+  const currentTW    = parseFloat(m.twist_weight)   || 0;
+  const currentSt    = parseFloat(m.static_weight)  || 0;
+  const currentBP    = parseFloat(m.balance_point)  || (totalLen*0.52);
+  const swGap        = targetSW - currentSW;
+  const gramsNeeded  = effectiveSWperG>0 ? Math.max(0, swGap/effectiveSWperG) : 0;
+
+  // Predicted results after adding gramsNeeded
+  const g=gramsNeeded;
+  const g_tip    = g*dist.tip;
+  const g_sides  = g*dist.sides;
+  const g_throat = g*dist.throat;
+  const g_handle = g*dist.handle;
+
+  const predSW  = currentSW  + g*effectiveSWperG;
+  const predTW  = currentTW  + g_tip*twPerG('tip') + g_sides*twPerG('sides') + g_throat*twPerG('throat') + g_handle*twPerG('handle');
+  const predSt  = currentSt  + g;
+  const addedMoment = g_tip*POSITIONS.tip.mm + g_sides*POSITIONS.sides.mm + g_throat*POSITIONS.throat.mm + g_handle*POSITIONS.handle.mm;
+  const predBP  = currentSt>0 ? (currentSt*currentBP + addedMoment)/(currentSt+g) : currentBP;
+
+  // Suitability score: how efficiently can we reach target SW?
+  // Scale: 0-100. High = minor mod, great fit. Low = large mod needed.
+  const modDepth = Math.min(g/10, 1); // normalize: 10g = "heavy" mod
+  const suitability = Math.round((1-modDepth*0.7)*100);
+  const suitabilityLabel = suitability>=85?"Excellent":suitability>=70?"Good":suitability>=55?"Moderate":"Heavy mod needed";
+  const suitabilityColor = suitability>=85?"#059669":suitability>=70?"#1a3c34":suitability>=55?"#d97706":"#dc2626";
+
+  // TW benefit: does this paddle benefit from side weight?
+  const twBenefitScore = currentTW<6.0 ? "High" : currentTW<6.8 ? "Medium" : "Low";
+  const twBenefitColor = currentTW<6.0 ? "#2563eb" : currentTW<6.8 ? "#d97706" : "#6b7280";
+  const twBenefitText  = currentTW<6.0
+    ? "Low TW — this paddle will feel significantly more stable with 3/9 weight."
+    : currentTW<6.8
+    ? "Moderate TW — a small side-weight boost adds comfort without overdoing it."
+    : "High TW already — stability is solid. Focus weight at 12 o'clock for pure SW.";
+
+  // Already at or above target
+  const alreadyThere = swGap<=0;
+  const overTarget   = swGap<-2;
+
+  const fmt=(v,d=1)=>v!=null&&v!==''?parseFloat(v).toFixed(d):'—';
+  const fmtG=(v)=>v<0.05?'<0.1g':v.toFixed(1)+'g';
+
+  const S2={
+    card:{background:"white",border:"1.5px solid #e5e7eb",borderRadius:12,padding:"20px"},
+    label:{fontSize:"0.72rem",fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:4,display:"block"},
+    statBox:(color)=>({background:color+"0f",border:`1.5px solid ${color}30`,borderRadius:10,padding:"12px 14px",textAlign:"center"}),
+    badge:(color)=>({background:color+"18",color,borderRadius:50,padding:"3px 10px",fontSize:"0.73rem",fontWeight:700,display:"inline-block"}),
+    slider:{width:"100%",accentColor:G,cursor:"pointer"},
+  };
+
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"flex-start",justifyContent:"center",zIndex:9995,overflowY:"auto",padding:"32px 16px"}}>
+      <div style={{background:"#f9fafb",borderRadius:20,padding:"28px",maxWidth:700,width:"100%",boxShadow:"0 24px 80px rgba(0,0,0,0.3)"}}>
+
+        {/* ── Header ── */}
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:20}}>
+          <div>
+            <div style={{fontWeight:900,fontSize:"1.2rem",color:"#1a1a1a"}}>⚖️ Paddle Optimizer</div>
+            <div style={{fontSize:"0.85rem",color:"#6b7280",marginTop:2}}>
+              {m.brand} {m.model}{m.colorway?` · ${m.colorway}`:''} · <span style={S2.badge(m.phase==='after'?'#059669':'#1a3c34')}>{m.phase==='after'?'After Mod':'Before Mod'}</span>
+            </div>
+          </div>
+          <button onClick={onClose} style={{background:"none",border:"none",fontSize:"1.5rem",cursor:"pointer",color:"#9ca3af",lineHeight:1,padding:"0 4px"}}>✕</button>
+        </div>
+
+        {/* ── Current readings ── */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:20}}>
+          {[
+            ['Swing Wt',fmt(m.swing_weight),'',G],
+            ['Twist Wt',fmt(m.twist_weight),'','#7c3aed'],
+            ['Static',fmt(m.static_weight,1),'g','#374151'],
+            ['Balance',fmt(m.balance_point,1),'mm','#6b7280'],
+          ].map(([label,val,unit,color])=>(
+            <div key={label} style={S2.statBox(color)}>
+              <div style={{...S2.label,marginBottom:2}}>{label}</div>
+              <div style={{fontWeight:900,fontSize:"1.4rem",color,fontFamily:"monospace"}}>{val}<span style={{fontSize:"0.7rem",fontWeight:400}}>{unit}</span></div>
+              <div style={{fontSize:"0.7rem",color:"#9ca3af"}}>current</div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Paddle dimensions used ── */}
+        <div style={{fontSize:"0.75rem",color:"#9ca3af",marginBottom:20,background:"white",borderRadius:8,padding:"8px 12px",border:"1px solid #e5e7eb"}}>
+          📐 Physics using: <b>{totalLen}mm</b> length · <b>{faceWidth}mm</b> width · <b>{handleLen}mm</b> handle · tip at <b>{(totalLen-15).toFixed(0)}mm</b> · 3/9 at <b>{(handleLen+faceLen*0.55).toFixed(0)}mm</b>
+          {(!m.length_mm||!m.width_mm)&&<span style={{color:"#d97706"}}> ⚠️ Some dimensions not set — using defaults. Edit this entry to add exact specs.</span>}
+        </div>
+
+        {/* ── Suitability & TW analysis ── */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
+          <div style={{...S2.card}}>
+            <div style={{fontSize:"0.72rem",fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:8}}>Mod Suitability</div>
+            <div style={{fontWeight:900,fontSize:"1.6rem",color:suitabilityColor}}>{suitability}<span style={{fontSize:"0.8rem",fontWeight:400}}>/100</span></div>
+            <div style={{fontSize:"0.8rem",color:suitabilityColor,fontWeight:700,marginBottom:4}}>{suitabilityLabel}</div>
+            <div style={{fontSize:"0.75rem",color:"#6b7280"}}>{g<1?`Only ${fmtG(g)} needed — minimal change required.`:g<3?`${fmtG(g)} gets you there — light modification.`:g<5?`${fmtG(g)} needed — moderate mod.`:`${fmtG(g)} needed — significant rework.`}</div>
+          </div>
+          <div style={{...S2.card}}>
+            <div style={{fontSize:"0.72rem",fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:8}}>TW / Stability Benefit</div>
+            <div style={{fontWeight:900,fontSize:"1.6rem",color:twBenefitColor}}>{twBenefitScore}</div>
+            <div style={{fontSize:"0.75rem",color:"#6b7280",lineHeight:1.4}}>{twBenefitText}</div>
+          </div>
+        </div>
+
+        {/* ── Target SW slider ── */}
+        <div style={{...S2.card,marginBottom:12}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+            <div>
+              <div style={{fontWeight:700,fontSize:"0.95rem",color:"#1a1a1a"}}>Target Swing Weight</div>
+              <div style={{fontSize:"0.78rem",color:"#6b7280"}}>Your sweet spot: 120–122</div>
+            </div>
+            <div style={{fontWeight:900,fontSize:"2rem",color:G,fontFamily:"monospace",lineHeight:1}}>{targetSW}</div>
+          </div>
+          <input type="range" min={90} max={130} step={0.5} value={targetSW} onChange={e=>setTargetSW(parseFloat(e.target.value))} style={S2.slider}/>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:"0.68rem",color:"#9ca3af",marginTop:4}}>
+            <span>90 — Control</span><span style={{color:G,fontWeight:700}}>◆ 120–122 your zone</span><span>130 — Power</span>
+          </div>
+          {alreadyThere&&(
+            <div style={{background:overTarget?"#fee2e2":"#fef9c3",borderRadius:8,padding:"8px 12px",marginTop:12,fontSize:"0.82rem",fontWeight:600,color:overTarget?"#dc2626":"#92400e"}}>
+              {overTarget?`⚠️ Current SW (${fmt(m.swing_weight)}) already exceeds target by ${Math.abs(swGap).toFixed(1)} units. Try removing weight or select a higher target.`:`✅ Current SW (${fmt(m.swing_weight)}) already meets your target!`}
+            </div>
+          )}
+        </div>
+
+        {/* ── Feel slider ── */}
+        <div style={{...S2.card,marginBottom:20}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+            <div>
+              <div style={{fontWeight:700,fontSize:"0.95rem",color:"#1a1a1a"}}>Head Feel</div>
+              <div style={{fontSize:"0.78rem",color:"#6b7280"}}>Controls tip vs. side weight distribution</div>
+            </div>
+            <div style={{fontWeight:700,fontSize:"0.88rem",color:feelPct<30?"#2563eb":feelPct<70?"#1a3c34":"#dc2626"}}>
+              {feelPct<20?"Very balanced":feelPct<40?"Slightly head-light":feelPct<60?"Neutral mix":feelPct<80?"Slightly head-heavy":"Very head-heavy"}
+            </div>
+          </div>
+          <input type="range" min={0} max={100} step={1} value={feelPct} onChange={e=>setFeelPct(parseInt(e.target.value))} style={{...S2.slider,accentColor:feelPct<50?"#2563eb":"#dc2626"}}/>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:"0.68rem",color:"#9ca3af",marginTop:4}}>
+            <span>← Balanced (3/9 & throat)</span><span>Head-heavy (12 o'clock) →</span>
+          </div>
+          {/* Distribution breakdown */}
+          <div style={{display:"flex",gap:6,marginTop:12,flexWrap:"wrap"}}>
+            {[['tip','12 o\'clock',dist.tip,'#dc2626'],['sides','3 & 9',dist.sides,'#2563eb'],['throat','Throat',dist.throat,'#d97706']].map(([k,lbl,pct,col])=>(
+              pct>0.01&&<div key={k} style={{display:"flex",alignItems:"center",gap:4,fontSize:"0.75rem"}}>
+                <div style={{width:8,height:8,borderRadius:"50%",background:col}}/>
+                <span style={{color:"#374151"}}>{lbl}: <b>{(pct*100).toFixed(0)}%</b></span>
+                {g>0&&<span style={{color:"#9ca3af"}}>({fmtG(g*pct)})</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Before / After comparison ── */}
+        {!alreadyThere&&g>0&&(
+          <div style={{...S2.card,marginBottom:20}}>
+            <div style={{fontWeight:700,fontSize:"0.95rem",color:"#1a1a1a",marginBottom:14}}>
+              Predicted Result — Add <span style={{color:G}}>{fmtG(g)}</span> of lead tape
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",gap:12,alignItems:"center"}}>
+              {/* Before column */}
+              <div>
+                <div style={{fontSize:"0.72rem",fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:10}}>Before</div>
+                {[
+                  ['Swing Wt', fmt(m.swing_weight), G],
+                  ['Twist Wt', fmt(m.twist_weight), '#7c3aed'],
+                  ['Static',   fmt(m.static_weight,1)+'g', '#374151'],
+                  ['Balance',  fmt(m.balance_point,1)+'mm', '#6b7280'],
+                ].map(([label,val,color])=>(
+                  <div key={label} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid #f3f4f6"}}>
+                    <span style={{fontSize:"0.8rem",color:"#6b7280"}}>{label}</span>
+                    <span style={{fontWeight:700,fontSize:"0.88rem",color,fontFamily:"monospace"}}>{val}</span>
+                  </div>
+                ))}
+              </div>
+              {/* Arrow */}
+              <div style={{fontSize:"1.5rem",color:"#9ca3af",textAlign:"center"}}>→</div>
+              {/* After column */}
+              <div>
+                <div style={{fontSize:"0.72rem",fontWeight:700,color:"#059669",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:10}}>After (+{fmtG(g)})</div>
+                {[
+                  ['Swing Wt', predSW.toFixed(1), swGap,    G],
+                  ['Twist Wt', predTW.toFixed(2), predTW-currentTW, '#7c3aed'],
+                  ['Static',   predSt.toFixed(1)+'g', g,    '#374151'],
+                  ['Balance',  predBP.toFixed(1)+'mm', predBP-currentBP, '#6b7280'],
+                ].map(([label,val,delta,color])=>(
+                  <div key={label} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid #f3f4f6",gap:6}}>
+                    <span style={{fontSize:"0.8rem",color:"#6b7280"}}>{label}</span>
+                    <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                      <span style={{fontWeight:800,fontSize:"0.88rem",color,fontFamily:"monospace"}}>{val}</span>
+                      <span style={{fontSize:"0.7rem",color:delta>=0?"#059669":"#dc2626",fontWeight:600,fontFamily:"monospace"}}>
+                        {delta>=0?'+':''}{typeof delta==='number'?delta.toFixed(1):''}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Placement recipe */}
+            <div style={{marginTop:16,background:"#f0fdf4",borderRadius:10,padding:"12px 14px",border:"1px solid #bbf7d0"}}>
+              <div style={{fontWeight:700,fontSize:"0.82rem",color:"#059669",marginBottom:8}}>📋 Lead Tape Recipe</div>
+              {[
+                ['12 o\'clock (tip)', g_tip,  '#dc2626'],
+                ['3 & 9 o\'clock',   g_sides, '#2563eb'],
+                ['Throat',           g_throat,'#d97706'],
+              ].filter(([,v])=>v>0.05).map(([label,v,color])=>(
+                <div key={label} style={{display:"flex",justifyContent:"space-between",fontSize:"0.82rem",padding:"4px 0"}}>
+                  <span style={{color:"#374151"}}>Lead tape at <b>{label}</b></span>
+                  <span style={{fontWeight:800,color,fontFamily:"monospace"}}>{fmtG(v)}</span>
+                </div>
+              ))}
+              <div style={{marginTop:8,paddingTop:8,borderTop:"1px solid #bbf7d0",display:"flex",justifyContent:"space-between",fontSize:"0.82rem",fontWeight:700}}>
+                <span style={{color:"#065f46"}}>Total added</span>
+                <span style={{color:G,fontFamily:"monospace"}}>{fmtG(g)}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── All positions comparison table ── */}
+        <div style={{...S2.card,marginBottom:20}}>
+          <div style={{fontWeight:700,fontSize:"0.88rem",color:"#1a1a1a",marginBottom:12}}>Position Comparison — 1g each location</div>
+          <div style={{overflowX:"auto"}}>
+            <table style={{width:"100%",borderCollapse:"collapse",fontSize:"0.8rem"}}>
+              <thead>
+                <tr style={{background:"#f9fafb"}}>
+                  {['Position','SW/gram','TW/gram','ΔBalance/gram','Best for'].map(h=>(
+                    <th key={h} style={{padding:"8px 12px",textAlign:"left",fontWeight:700,fontSize:"0.7rem",color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.4px",borderBottom:"2px solid #e5e7eb",whiteSpace:"nowrap"}}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(POSITIONS).map(([key,pos],i)=>{
+                  const sw1=swPerG(key);
+                  const tw1=twPerG(key);
+                  const bp1=currentBP>0&&currentSt>0?(pos.mm-currentBP)/(currentSt+1):0;
+                  return(
+                    <tr key={key} style={{background:i%2===0?"white":"#fafafa"}}>
+                      <td style={{padding:"9px 12px",fontWeight:700,color:pos.color,whiteSpace:"nowrap"}}>{pos.label}</td>
+                      <td style={{padding:"9px 12px",fontFamily:"monospace",fontWeight:700,color:G}}>+{sw1.toFixed(2)}</td>
+                      <td style={{padding:"9px 12px",fontFamily:"monospace",color:"#7c3aed"}}>+{tw1.toFixed(3)}</td>
+                      <td style={{padding:"9px 12px",fontFamily:"monospace",color:"#6b7280"}}>{bp1>=0?'+':''}{bp1.toFixed(1)}mm</td>
+                      <td style={{padding:"9px 12px",color:"#6b7280",fontSize:"0.75rem"}}>{pos.desc}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style={{textAlign:"right"}}>
+          <button onClick={onClose} style={{padding:"10px 28px",borderRadius:50,background:G,color:"white",border:"none",fontWeight:700,fontSize:"0.9rem",cursor:"pointer"}}>Done</button>
+        </div>
+      </div>
     </div>
   );
 }

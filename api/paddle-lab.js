@@ -145,6 +145,7 @@ export default async function handler(req, res) {
       brand, model, colorway = '',
       phase = 'before', mod_type = '', mod_notes = '',
       static_weight, swing_weight, twist_weight, balance_point,
+      length_mm, width_mm, thickness_mm,
       grip_size = '', handle_length,
       notes = '', measured_date,
     } = req.body;
@@ -158,12 +159,15 @@ export default async function handler(req, res) {
       phase,
       mod_type: mod_type.trim(),
       mod_notes: mod_notes.trim(),
-      static_weight:  static_weight  != null ? parseFloat(static_weight)  : null,
-      swing_weight:   swing_weight   != null ? parseFloat(swing_weight)   : null,
-      twist_weight:   twist_weight   != null ? parseFloat(twist_weight)   : null,
-      balance_point:  balance_point  != null ? parseFloat(balance_point)  : null,
+      static_weight:  static_weight  != null && static_weight  !== '' ? parseFloat(static_weight)  : null,
+      swing_weight:   swing_weight   != null && swing_weight   !== '' ? parseFloat(swing_weight)   : null,
+      twist_weight:   twist_weight   != null && twist_weight   !== '' ? parseFloat(twist_weight)   : null,
+      balance_point:  balance_point  != null && balance_point  !== '' ? parseFloat(balance_point)  : null,
+      length_mm:      length_mm      != null && length_mm      !== '' ? parseFloat(length_mm)      : null,
+      width_mm:       width_mm       != null && width_mm       !== '' ? parseFloat(width_mm)       : null,
+      thickness_mm:   thickness_mm   != null && thickness_mm   !== '' ? parseFloat(thickness_mm)   : null,
       grip_size: grip_size.trim(),
-      handle_length:  handle_length  != null ? parseFloat(handle_length)  : null,
+      handle_length:  handle_length  != null && handle_length  !== '' ? parseFloat(handle_length)  : null,
       notes: notes.trim(),
       measured_date: measured_date || new Date().toISOString().slice(0, 10),
     };
@@ -191,6 +195,7 @@ export default async function handler(req, res) {
     const allowed = [
       'brand','model','colorway','phase','mod_type','mod_notes',
       'static_weight','swing_weight','twist_weight','balance_point',
+      'length_mm','width_mm','thickness_mm',
       'grip_size','handle_length','notes','measured_date',
     ];
     const updates = {};
