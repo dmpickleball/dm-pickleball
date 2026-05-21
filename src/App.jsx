@@ -5250,7 +5250,7 @@ function PaddleLabTab(){
     if(filterPhase)params.set("phase",filterPhase);
     if(filterFrom)params.set("date_from",filterFrom);
     if(filterTo)params.set("date_after",filterTo);
-    adminFetch("/api/paddle-lab?"+params.toString())
+    adminFetch("/api/gear?resource=paddle-lab&"+params.toString())
       .then(r=>r.json()).then(d=>setMeasurements(d.measurements||[])).catch(()=>{}).finally(()=>setLoading(false));
   };
   useEffect(()=>{load();},[]);// eslint-disable-line
@@ -5259,7 +5259,7 @@ function PaddleLabTab(){
   const checkDup=async(brand,model,colorway,phase,mod_type)=>{
     if(!brand||!model)return;
     const params=new URLSearchParams({action:"check",brand,model,colorway:colorway||"",phase:phase||"before",mod_type:mod_type||""});
-    const r=await adminFetch("/api/paddle-lab?"+params.toString()).then(x=>x.json()).catch(()=>({existing:[],exactDuplicate:false}));
+    const r=await adminFetch("/api/gear?resource=paddle-lab&"+params.toString()).then(x=>x.json()).catch(()=>({existing:[],exactDuplicate:false}));
     setDupWarning(r.existing&&r.existing.length>0?r.existing:null);
     setExactDup(!!r.exactDuplicate);
   };
@@ -5267,7 +5267,7 @@ function PaddleLabTab(){
   const lookupPS=async()=>{
     if(!form.brand||!form.model)return;
     setPsLoading(true);setPsError("");setPsResult(null);
-    const r=await adminFetch(`/api/paddle-lab?action=lookup-ps&brand=${encodeURIComponent(form.brand)}&model=${encodeURIComponent(form.model)}`).then(x=>x.json()).catch(()=>({result:null}));
+    const r=await adminFetch(`/api/gear?resource=paddle-lab&action=lookup-ps&brand=${encodeURIComponent(form.brand)}&model=${encodeURIComponent(form.model)}`).then(x=>x.json()).catch(()=>({result:null}));
     if(r.result){setPsResult(r.result);}else{setPsError("No match found on PickleballStudio — try checking manually.");}
     setPsLoading(false);
   };
@@ -5295,7 +5295,7 @@ function PaddleLabTab(){
     if(exactDup&&!editId){setSaveError("An identical record already exists. Edit the existing entry instead.");return;}
     setSaving(true);setSaveError("");
     const method=editId?"PATCH":"POST";
-    const url=editId?`/api/paddle-lab?id=${editId}`:"/api/paddle-lab";
+    const url=editId?`/api/gear?resource=paddle-lab&id=${editId}`:"/api/gear?resource=paddle-lab";
     const r=await adminFetch(url,{method,body:JSON.stringify(form)}).catch(()=>null);
     if(!r){setSaveError("Network error.");setSaving(false);return;}
     const d=await r.json();
@@ -5306,7 +5306,7 @@ function PaddleLabTab(){
   const del=async()=>{
     if(!deleteConfirm)return;
     setDeleting(true);
-    await adminFetch(`/api/paddle-lab?id=${deleteConfirm}`,{method:"DELETE"}).catch(()=>{});
+    await adminFetch(`/api/gear?resource=paddle-lab&id=${deleteConfirm}`,{method:"DELETE"}).catch(()=>{});
     setDeleteConfirm(null);setDeleting(false);load();
   };
 
