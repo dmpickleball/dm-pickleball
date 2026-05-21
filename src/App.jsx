@@ -5217,6 +5217,43 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
   );
 }
 
+// ─── AUTOCOMPLETE INPUT ──────────────────────────────────────────────────────
+function AutocompleteInput({value,onChange,onSelect,suggestions=[],placeholder,loading,style,disabled}){
+  const[open,setOpen]=useState(false);
+  const[hi,setHi]=useState(0);
+  const filtered=suggestions.filter(s=>!value||s.toLowerCase().includes(value.toLowerCase())).slice(0,14);
+  const show=open&&filtered.length>0;
+  return(
+    <div style={{position:"relative"}}>
+      <div style={{position:"relative"}}>
+        <input value={value||""} onChange={e=>{onChange(e.target.value);setOpen(true);setHi(0);}} onFocus={()=>{setOpen(true);setHi(0);}}
+          onBlur={()=>setTimeout(()=>setOpen(false),160)}
+          onKeyDown={e=>{
+            if(!show)return;
+            if(e.key==="ArrowDown"){setHi(h=>Math.min(h+1,filtered.length-1));e.preventDefault();}
+            else if(e.key==="ArrowUp"){setHi(h=>Math.max(h-1,0));e.preventDefault();}
+            else if(e.key==="Enter"&&filtered[hi]){onSelect(filtered[hi]);setOpen(false);e.preventDefault();}
+            else if(e.key==="Escape")setOpen(false);
+          }}
+          placeholder={placeholder} disabled={disabled}
+          style={{...style,paddingRight:loading?"32px":style?.paddingRight}}
+          autoComplete="off" autoCorrect="off" spellCheck="false"/>
+        {loading&&<span style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",color:"#9ca3af",fontSize:"0.7rem",pointerEvents:"none"}}>⟳</span>}
+      </div>
+      {show&&(
+        <div style={{position:"absolute",top:"calc(100% + 2px)",left:0,right:0,background:"white",border:"1.5px solid #d1d5db",borderRadius:8,boxShadow:"0 8px 28px rgba(0,0,0,0.13)",zIndex:2000,maxHeight:220,overflowY:"auto"}}>
+          {filtered.map((s,i)=>(
+            <div key={s} onMouseDown={e=>{e.preventDefault();onSelect(s);setOpen(false);}}
+              style={{padding:"8px 14px",cursor:"pointer",fontSize:"0.88rem",color:i===hi?"white":"#374151",background:i===hi?G:"white",borderBottom:"1px solid #f3f4f6",transition:"background 0.1s"}}>
+              {s}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── PADDLE LAB TAB ──────────────────────────────────────────────────────────
 function PaddleLabTab(){
   const EMPTY_FORM={brand:"",model:"",colorway:"",phase:"before",mod_type:"",mod_notes:"",static_weight:"",swing_weight:"",twist_weight:"",balance_point:"",length_mm:"",width_mm:"",thickness_mm:"",grip_size:"",handle_length:"",notes:"",measured_date:new Date().toISOString().slice(0,10)};
@@ -5241,6 +5278,33 @@ function PaddleLabTab(){
   const[filterFrom,setFilterFrom]=useState("");
   const[filterTo,setFilterTo]=useState("");
   const[optimizePaddle,setOptimizePaddle]=useState(null);
+  const[catalog,setCatalog]=useState(null); // {brands:[], byBrand:{}, source:''}
+  const[catalogLoading,setCatalogLoading]=useState(false);
+
+  // Load paddle catalog when form opens (cached 24h in localStorage)
+  useEffect(()=>{
+    if(!showForm)return;
+    try{
+      const stored=JSON.parse(localStorage.getItem("dm_paddle_cat")||"null");
+      if(stored&&Date.now()-stored.at<86400000){setCatalog(stored.data);return;}
+    }catch{}
+    if(catalog||catalogLoading)return;
+    setCatalogLoading(true);
+    adminFetch("/api/gear?resource=paddle-lab&action=paddle-catalog")
+      .then(r=>r.json())
+      .then(d=>{
+        if(d.catalog&&d.catalog.length>0){
+          const brands=[...new Set(d.catalog.map(p=>p.brand).filter(Boolean))].sort();
+          const byBrand={};
+          for(const p of d.catalog){if(p.brand){if(!byBrand[p.brand])byBrand[p.brand]=[];byBrand[p.brand].push(p.model);}}
+          const data={brands,byBrand,source:d.source};
+          setCatalog(data);
+          try{localStorage.setItem("dm_paddle_cat",JSON.stringify({data,at:Date.now()}));}catch{}
+        }
+      })
+      .catch(()=>{})
+      .finally(()=>setCatalogLoading(false));
+  },[showForm]);// eslint-disable-line
 
   const load=()=>{
     setLoading(true);
@@ -5486,12 +5550,15 @@ function PaddleLabTab(){
             {/* ── Paddle identity ── */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
               <div>
-                <label style={S.label}>Brand *</label>
-                <input value={form.brand} onChange={e=>setF("brand",e.target.value)} placeholder="e.g. CRBN" style={S.input}/>
+                <label style={S.label}>Brand *{catalog&&<span style={{fontWeight:400,color:"#9ca3af",textTransform:"none",letterSpacing:0}}> · {catalog.brands.length} brands from {catalog.source}</span>}</label>
+                <AutocompleteInput value={form.brand} onChange={v=>setF("brand",v)} onSelect={v=>setF("brand",v)}
+                  suggestions={catalog?.brands||[]} placeholder="e.g. CRBN" loading={catalogLoading} style={S.input}/>
               </div>
               <div>
                 <label style={S.label}>Model *</label>
-                <input value={form.model} onChange={e=>setF("model",e.target.value)} placeholder="e.g. CRBN² Barrage" style={S.input}/>
+                <AutocompleteInput value={form.model} onChange={v=>setF("model",v)} onSelect={v=>setF("model",v)}
+                  suggestions={catalog?.byBrand?.[form.brand]||catalog?.byBrand?.[Object.keys(catalog?.byBrand||{}).find(b=>b.toLowerCase()===form.brand.toLowerCase())||""]||[]}
+                  placeholder="e.g. CRBN² Barrage" loading={catalogLoading&&!!form.brand} style={S.input}/>
               </div>
             </div>
             <div style={{marginBottom:12}}>
