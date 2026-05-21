@@ -5362,7 +5362,7 @@ function PaddleLabTab(){
   const openNew=()=>{setEditId(null);setForm(EMPTY_FORM);setDupWarning(null);setExactDup(false);setPsResult(null);setPsError("");setSaveError("");setShowForm(true);};
   const openEdit=(m)=>{
     setEditId(m.id);
-    setForm({brand:m.brand||"",model:m.model||"",colorway:m.colorway||"",phase:m.phase||"before",mod_type:m.mod_type||"",mod_notes:m.mod_notes||"",static_weight:m.static_weight??'',swing_weight:m.swing_weight??'',twist_weight:m.twist_weight??'',balance_point:m.balance_point??'',length_mm:m.length_mm??'',width_mm:m.width_mm??'',thickness_mm:m.thickness_mm??'',grip_size:m.grip_size||"",handle_length:m.handle_length??'',notes:m.notes||"",measured_date:m.measured_date||new Date().toISOString().slice(0,10)});
+    setForm({brand:m.brand||"",model:m.model||"",colorway:m.colorway||"",phase:m.phase||"before",mod_type:m.mod_type||"",mod_notes:m.mod_notes||"",static_weight:m.static_weight??'',swing_weight:m.swing_weight??'',twist_weight:m.twist_weight??'',balance_point:m.balance_point??'',length_mm:m.length_mm!=null?+(m.length_mm/25.4).toFixed(2):'',width_mm:m.width_mm!=null?+(m.width_mm/25.4).toFixed(2):'',thickness_mm:m.thickness_mm??'',grip_size:m.grip_size||"",handle_length:m.handle_length??'',notes:m.notes||"",measured_date:m.measured_date||new Date().toISOString().slice(0,10)});
     setDupWarning(null);setExactDup(false);setPsResult(null);setPsError("");setSaveError("");setShowForm(true);
   };
   const closeForm=()=>{setShowForm(false);setEditId(null);setDupWarning(null);setExactDup(false);setPsResult(null);};
@@ -5383,7 +5383,10 @@ function PaddleLabTab(){
     setSaving(true);setSaveError("");
     const method=editId?"PATCH":"POST";
     const url=editId?`/api/gear?resource=paddle-lab&id=${editId}`:"/api/gear?resource=paddle-lab";
-    const r=await adminFetch(url,{method,body:JSON.stringify(form)}).catch(()=>null);
+    // length and width are entered in inches — convert to mm for storage (optimizer physics uses mm)
+    const toMm=v=>v!==''&&v!=null?+(parseFloat(v)*25.4).toFixed(1):'';
+    const body={...form,length_mm:toMm(form.length_mm),width_mm:toMm(form.width_mm)};
+    const r=await adminFetch(url,{method,body:JSON.stringify(body)}).catch(()=>null);
     if(!r){setSaveError("Network error.");setSaving(false);return;}
     const d=await r.json();
     if(!r.ok){setSaveError(d.error||"Save failed.");setSaving(false);return;}
@@ -5643,12 +5646,12 @@ function PaddleLabTab(){
             <div style={{fontWeight:700,fontSize:"0.78rem",color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.5px",margin:"4px 0 10px"}}>Paddle Dimensions <span style={{color:"#9ca3af",fontWeight:400,textTransform:"none",letterSpacing:0}}>(for optimizer physics)</span></div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:12}}>
               <div>
-                <label style={S.label}>Total length (mm)</label>
-                <input type="number" step="0.5" value={form.length_mm} onChange={e=>setF("length_mm",e.target.value)} placeholder="e.g. 420" style={S.input}/>
+                <label style={S.label}>Total Length (in)</label>
+                <input type="number" step="0.01" value={form.length_mm} onChange={e=>setF("length_mm",e.target.value)} placeholder="e.g. 16.5" style={S.input}/>
               </div>
               <div>
-                <label style={S.label}>Width (mm)</label>
-                <input type="number" step="0.5" value={form.width_mm} onChange={e=>setF("width_mm",e.target.value)} placeholder="e.g. 215" style={S.input}/>
+                <label style={S.label}>Width (in)</label>
+                <input type="number" step="0.01" value={form.width_mm} onChange={e=>setF("width_mm",e.target.value)} placeholder="e.g. 7.5" style={S.input}/>
               </div>
               <div>
                 <label style={S.label}>Thickness (mm)</label>
