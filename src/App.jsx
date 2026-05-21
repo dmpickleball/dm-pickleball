@@ -3633,7 +3633,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
 
       {/* ── Admin nav: tabs on desktop, burger on mobile ── */}
       {(()=>{
-        const TABS=[["students","Students"],["lessons","Lessons"],["finances","Finances"],["database","All Lessons"],["gear","Gear"],["news","News"],["traffic","Traffic"]];
+        const TABS=[["students","Students"],["lessons","Lessons"],["finances","Finances"],["database","All Lessons"],["gear","Gear"],["news","News"],["traffic","Traffic"],["paddle-lab","Paddle Lab"]];
         const isMobNav=window.innerWidth<640;
         if(!isMobNav){
           return(
@@ -5211,6 +5211,384 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
       {tab==="news"&&<AdminNewsTab/>}
 
       {tab==="traffic"&&<TrafficTab/>}
+
+      {tab==="paddle-lab"&&<PaddleLabTab/>}
+    </div>
+  );
+}
+
+// ─── PADDLE LAB TAB ──────────────────────────────────────────────────────────
+function PaddleLabTab(){
+  const EMPTY_FORM={brand:"",model:"",colorway:"",phase:"before",mod_type:"",mod_notes:"",static_weight:"",swing_weight:"",twist_weight:"",balance_point:"",grip_size:"",handle_length:"",notes:"",measured_date:new Date().toISOString().slice(0,10)};
+  const[measurements,setMeasurements]=useState([]);
+  const[loading,setLoading]=useState(true);
+  const[showForm,setShowForm]=useState(false);
+  const[editId,setEditId]=useState(null);
+  const[form,setForm]=useState(EMPTY_FORM);
+  const[saving,setSaving]=useState(false);
+  const[saveError,setSaveError]=useState("");
+  const[deleteConfirm,setDeleteConfirm]=useState(null);
+  const[deleting,setDeleting]=useState(false);
+  const[dupWarning,setDupWarning]=useState(null); // existing records for this paddle
+  const[exactDup,setExactDup]=useState(false);
+  const[psResult,setPsResult]=useState(null);
+  const[psLoading,setPsLoading]=useState(false);
+  const[psError,setPsError]=useState("");
+  // filters
+  const[filterBrand,setFilterBrand]=useState("");
+  const[filterModel,setFilterModel]=useState("");
+  const[filterPhase,setFilterPhase]=useState("");
+  const[filterFrom,setFilterFrom]=useState("");
+  const[filterTo,setFilterTo]=useState("");
+
+  const load=()=>{
+    setLoading(true);
+    const params=new URLSearchParams();
+    if(filterBrand)params.set("brand",filterBrand);
+    if(filterModel)params.set("model",filterModel);
+    if(filterPhase)params.set("phase",filterPhase);
+    if(filterFrom)params.set("date_from",filterFrom);
+    if(filterTo)params.set("date_after",filterTo);
+    adminFetch("/api/paddle-lab?"+params.toString())
+      .then(r=>r.json()).then(d=>setMeasurements(d.measurements||[])).catch(()=>{}).finally(()=>setLoading(false));
+  };
+  useEffect(()=>{load();},[]);// eslint-disable-line
+
+  // Check for duplicate / existing records when brand+model changes
+  const checkDup=async(brand,model,colorway,phase,mod_type)=>{
+    if(!brand||!model)return;
+    const params=new URLSearchParams({action:"check",brand,model,colorway:colorway||"",phase:phase||"before",mod_type:mod_type||""});
+    const r=await adminFetch("/api/paddle-lab?"+params.toString()).then(x=>x.json()).catch(()=>({existing:[],exactDuplicate:false}));
+    setDupWarning(r.existing&&r.existing.length>0?r.existing:null);
+    setExactDup(!!r.exactDuplicate);
+  };
+
+  const lookupPS=async()=>{
+    if(!form.brand||!form.model)return;
+    setPsLoading(true);setPsError("");setPsResult(null);
+    const r=await adminFetch(`/api/paddle-lab?action=lookup-ps&brand=${encodeURIComponent(form.brand)}&model=${encodeURIComponent(form.model)}`).then(x=>x.json()).catch(()=>({result:null}));
+    if(r.result){setPsResult(r.result);}else{setPsError("No match found on PickleballStudio — try checking manually.");}
+    setPsLoading(false);
+  };
+
+  const openNew=()=>{setEditId(null);setForm(EMPTY_FORM);setDupWarning(null);setExactDup(false);setPsResult(null);setPsError("");setSaveError("");setShowForm(true);};
+  const openEdit=(m)=>{
+    setEditId(m.id);
+    setForm({brand:m.brand||"",model:m.model||"",colorway:m.colorway||"",phase:m.phase||"before",mod_type:m.mod_type||"",mod_notes:m.mod_notes||"",static_weight:m.static_weight??'',swing_weight:m.swing_weight??'',twist_weight:m.twist_weight??'',balance_point:m.balance_point??'',grip_size:m.grip_size||"",handle_length:m.handle_length??'',notes:m.notes||"",measured_date:m.measured_date||new Date().toISOString().slice(0,10)});
+    setDupWarning(null);setExactDup(false);setPsResult(null);setPsError("");setSaveError("");setShowForm(true);
+  };
+  const closeForm=()=>{setShowForm(false);setEditId(null);setDupWarning(null);setExactDup(false);setPsResult(null);};
+
+  const setF=(k,v)=>{
+    setForm(f=>{
+      const next={...f,[k]:v};
+      // re-check dup when identity fields change
+      if(["brand","model","colorway","phase","mod_type"].includes(k)&&!editId){
+        checkDup(next.brand,next.model,next.colorway,next.phase,next.mod_type);
+      }
+      return next;
+    });
+  };
+
+  const save=async()=>{
+    if(exactDup&&!editId){setSaveError("An identical record already exists. Edit the existing entry instead.");return;}
+    setSaving(true);setSaveError("");
+    const method=editId?"PATCH":"POST";
+    const url=editId?`/api/paddle-lab?id=${editId}`:"/api/paddle-lab";
+    const r=await adminFetch(url,{method,body:JSON.stringify(form)}).catch(()=>null);
+    if(!r){setSaveError("Network error.");setSaving(false);return;}
+    const d=await r.json();
+    if(!r.ok){setSaveError(d.error||"Save failed.");setSaving(false);return;}
+    closeForm();load();setSaving(false);
+  };
+
+  const del=async()=>{
+    if(!deleteConfirm)return;
+    setDeleting(true);
+    await adminFetch(`/api/paddle-lab?id=${deleteConfirm}`,{method:"DELETE"}).catch(()=>{});
+    setDeleteConfirm(null);setDeleting(false);load();
+  };
+
+  // Unique brands list for filter dropdown
+  const brands=[...new Set(measurements.map(m=>m.brand).filter(Boolean))].sort();
+
+  const fmtNum=(v,dec=2)=>v!=null&&v!==''?parseFloat(v).toFixed(dec):'—';
+  const phaseColor=(p)=>p==='after'?'#059669':'#1a3c34';
+  const phaseLabel=(p)=>p==='after'?'After Mod':'Before Mod';
+
+  const S={
+    card:{background:"white",border:"1.5px solid #e5e7eb",borderRadius:12,padding:"20px 24px",marginBottom:16},
+    label:{fontSize:"0.75rem",fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:4,display:"block"},
+    input:{padding:"9px 12px",border:"1.5px solid #e5e7eb",borderRadius:8,fontSize:"0.95rem",outline:"none",background:"#fafafa",width:"100%",boxSizing:"border-box"},
+    btn:{padding:"9px 20px",borderRadius:50,border:"none",fontWeight:700,fontSize:"0.88rem",cursor:"pointer"},
+    th:{padding:"10px 14px",textAlign:"left",fontWeight:700,fontSize:"0.72rem",color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.5px",borderBottom:"2px solid #e5e7eb",whiteSpace:"nowrap"},
+    td:{padding:"11px 14px",fontSize:"0.88rem",borderBottom:"1px solid #f3f4f6",verticalAlign:"middle"},
+  };
+
+  return(
+    <div style={{maxWidth:1100,margin:"0 auto"}}>
+      {/* ── Header ── */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:24,flexWrap:"wrap",gap:12}}>
+        <div>
+          <div style={{fontWeight:900,fontSize:"1.35rem",color:"#1a1a1a"}}>Paddle Lab</div>
+          <div style={{fontSize:"0.82rem",color:"#6b7280",marginTop:2}}>Brifidi SW1 measurements · {measurements.length} record{measurements.length!==1?"s":""}</div>
+        </div>
+        <button onClick={openNew} style={{...S.btn,background:G,color:"white",display:"flex",alignItems:"center",gap:8}}>
+          <span style={{fontSize:"1.1rem",lineHeight:1}}>＋</span> New Measurement
+        </button>
+      </div>
+
+      {/* ── Filters ── */}
+      <div style={{...S.card,padding:"16px 20px",marginBottom:20}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:12,alignItems:"flex-end"}}>
+          <div>
+            <label style={S.label}>Brand</label>
+            <select value={filterBrand} onChange={e=>setFilterBrand(e.target.value)} style={S.input}>
+              <option value="">All brands</option>
+              {brands.map(b=><option key={b} value={b}>{b}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={S.label}>Model</label>
+            <input value={filterModel} onChange={e=>setFilterModel(e.target.value)} placeholder="Filter model…" style={S.input}/>
+          </div>
+          <div>
+            <label style={S.label}>Phase</label>
+            <select value={filterPhase} onChange={e=>setFilterPhase(e.target.value)} style={S.input}>
+              <option value="">Both phases</option>
+              <option value="before">Before Mod</option>
+              <option value="after">After Mod</option>
+            </select>
+          </div>
+          <div>
+            <label style={S.label}>From date</label>
+            <input type="date" value={filterFrom} onChange={e=>setFilterFrom(e.target.value)} style={S.input}/>
+          </div>
+          <div>
+            <label style={S.label}>To date</label>
+            <input type="date" value={filterTo} onChange={e=>setFilterTo(e.target.value)} style={S.input}/>
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={load} style={{...S.btn,background:G,color:"white",flex:1}}>Filter</button>
+            <button onClick={()=>{setFilterBrand("");setFilterModel("");setFilterPhase("");setFilterFrom("");setFilterTo("");setTimeout(load,0);}} style={{...S.btn,background:"#f3f4f6",color:"#374151",flex:1}}>Clear</button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Table ── */}
+      {loading?(
+        <div style={{textAlign:"center",padding:"60px 0",color:"#6b7280",fontSize:"0.95rem"}}>Loading…</div>
+      ):measurements.length===0?(
+        <div style={{textAlign:"center",padding:"60px 0",color:"#9ca3af"}}>
+          <div style={{fontSize:"2.5rem",marginBottom:12}}>🏓</div>
+          <div style={{fontWeight:700,color:"#374151",marginBottom:6}}>No measurements yet</div>
+          <div style={{fontSize:"0.85rem"}}>Hit "New Measurement" to log your first Brifidi SW1 reading.</div>
+        </div>
+      ):(
+        <div style={{overflowX:"auto",borderRadius:12,border:"1.5px solid #e5e7eb"}}>
+          <table style={{width:"100%",borderCollapse:"collapse",minWidth:860}}>
+            <thead style={{background:"#f9fafb"}}>
+              <tr>
+                <th style={S.th}>Brand / Model</th>
+                <th style={S.th}>Colorway</th>
+                <th style={S.th}>Phase</th>
+                <th style={S.th}>Static (g)</th>
+                <th style={S.th}>Swing Wt</th>
+                <th style={S.th}>Twist Wt</th>
+                <th style={S.th}>Balance (mm)</th>
+                <th style={S.th}>Grip</th>
+                <th style={S.th}>Date</th>
+                <th style={S.th}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {measurements.map((m,i)=>(
+                <tr key={m.id} style={{background:i%2===0?"white":"#fafafa"}}>
+                  <td style={S.td}>
+                    <div style={{fontWeight:700,color:"#1a1a1a"}}>{m.brand}</div>
+                    <div style={{fontSize:"0.8rem",color:"#6b7280"}}>{m.model}</div>
+                    {m.mod_type&&<div style={{fontSize:"0.72rem",color:"#9ca3af",marginTop:2}}>↳ {m.mod_type}</div>}
+                  </td>
+                  <td style={S.td}><span style={{color:"#374151"}}>{m.colorway||<span style={{color:"#d1d5db"}}>—</span>}</span></td>
+                  <td style={S.td}>
+                    <span style={{background:phaseColor(m.phase)+"18",color:phaseColor(m.phase),borderRadius:50,padding:"3px 10px",fontSize:"0.75rem",fontWeight:700,whiteSpace:"nowrap"}}>
+                      {phaseLabel(m.phase)}
+                    </span>
+                  </td>
+                  <td style={{...S.td,fontFamily:"monospace",fontWeight:700}}>{fmtNum(m.static_weight,1)}</td>
+                  <td style={{...S.td,fontFamily:"monospace",fontWeight:700,color:G}}>{fmtNum(m.swing_weight,1)}</td>
+                  <td style={{...S.td,fontFamily:"monospace",fontWeight:700,color:"#7c3aed"}}>{fmtNum(m.twist_weight,2)}</td>
+                  <td style={{...S.td,fontFamily:"monospace"}}>{fmtNum(m.balance_point,1)}</td>
+                  <td style={S.td}>{m.grip_size||<span style={{color:"#d1d5db"}}>—</span>}</td>
+                  <td style={{...S.td,whiteSpace:"nowrap",color:"#6b7280",fontSize:"0.82rem"}}>{m.measured_date||"—"}</td>
+                  <td style={S.td}>
+                    <div style={{display:"flex",gap:6}}>
+                      <button onClick={()=>openEdit(m)} style={{...S.btn,padding:"5px 12px",background:"#f3f4f6",color:"#374151",fontSize:"0.78rem"}}>Edit</button>
+                      <button onClick={()=>setDeleteConfirm(m.id)} style={{...S.btn,padding:"5px 12px",background:"#fee2e2",color:"#dc2626",fontSize:"0.78rem"}}>Del</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* ── Delete confirm modal ── */}
+      {deleteConfirm&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999}}>
+          <div style={{background:"white",borderRadius:16,padding:"32px",maxWidth:380,width:"90%",textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.25)"}}>
+            <div style={{fontSize:"2rem",marginBottom:12}}>🗑️</div>
+            <div style={{fontWeight:800,fontSize:"1rem",marginBottom:8}}>Delete this measurement?</div>
+            <div style={{fontSize:"0.85rem",color:"#6b7280",marginBottom:24}}>This cannot be undone.</div>
+            <div style={{display:"flex",gap:10,justifyContent:"center"}}>
+              <button onClick={()=>setDeleteConfirm(null)} style={{...S.btn,background:"#f3f4f6",color:"#374151"}}>Cancel</button>
+              <button onClick={del} disabled={deleting} style={{...S.btn,background:"#dc2626",color:"white"}}>{deleting?"Deleting…":"Delete"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Add / Edit modal ── */}
+      {showForm&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",display:"flex",alignItems:"flex-start",justifyContent:"center",zIndex:9990,overflowY:"auto",padding:"40px 16px"}}>
+          <div style={{background:"white",borderRadius:16,padding:"28px 28px 24px",maxWidth:640,width:"100%",boxShadow:"0 20px 60px rgba(0,0,0,0.25)"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+              <div style={{fontWeight:800,fontSize:"1.1rem",color:"#1a1a1a"}}>{editId?"Edit Measurement":"New Measurement"}</div>
+              <button onClick={closeForm} style={{background:"none",border:"none",fontSize:"1.4rem",cursor:"pointer",color:"#9ca3af",lineHeight:1}}>✕</button>
+            </div>
+
+            {/* ── Duplicate warning ── */}
+            {dupWarning&&!editId&&(
+              <div style={{background:exactDup?"#fee2e2":"#fef9c3",border:`1.5px solid ${exactDup?"#fca5a5":"#fde68a"}`,borderRadius:10,padding:"12px 14px",marginBottom:16,fontSize:"0.83rem"}}>
+                {exactDup?(
+                  <><span style={{fontWeight:700,color:"#dc2626"}}>⚠️ Exact duplicate detected.</span> A record with this brand, model, colorway, phase, and mod type already exists. Edit it instead of creating a new one.</>
+                ):(
+                  <><span style={{fontWeight:700,color:"#92400e"}}>📋 This paddle has been tested before.</span>
+                  <div style={{marginTop:6,display:"flex",flexDirection:"column",gap:4}}>
+                    {dupWarning.map(d=>(
+                      <div key={d.id} style={{display:"flex",gap:8,alignItems:"center"}}>
+                        <span style={{background:phaseColor(d.phase)+"18",color:phaseColor(d.phase),borderRadius:50,padding:"2px 8px",fontSize:"0.7rem",fontWeight:700}}>{phaseLabel(d.phase)}</span>
+                        <span style={{color:"#6b7280"}}>SW: <b>{fmtNum(d.swing_weight,1)}</b> · TW: <b>{fmtNum(d.twist_weight,2)}</b> · Static: <b>{fmtNum(d.static_weight,1)}g</b> · {d.measured_date}</span>
+                      </div>
+                    ))}
+                  </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* ── Paddle identity ── */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+              <div>
+                <label style={S.label}>Brand *</label>
+                <input value={form.brand} onChange={e=>setF("brand",e.target.value)} placeholder="e.g. CRBN" style={S.input}/>
+              </div>
+              <div>
+                <label style={S.label}>Model *</label>
+                <input value={form.model} onChange={e=>setF("model",e.target.value)} placeholder="e.g. CRBN² Barrage" style={S.input}/>
+              </div>
+            </div>
+            <div style={{marginBottom:12}}>
+              <label style={S.label}>Colorway</label>
+              <input value={form.colorway} onChange={e=>setF("colorway",e.target.value)} placeholder="e.g. Midnight Blue" style={S.input}/>
+            </div>
+
+            {/* ── Phase toggle ── */}
+            <div style={{marginBottom:12}}>
+              <label style={S.label}>Phase</label>
+              <div style={{display:"flex",gap:0,borderRadius:8,overflow:"hidden",border:"1.5px solid #e5e7eb",width:"fit-content"}}>
+                {["before","after"].map(p=>(
+                  <button key={p} onClick={()=>setF("phase",p)} style={{padding:"8px 22px",fontWeight:700,fontSize:"0.85rem",border:"none",cursor:"pointer",background:form.phase===p?phaseColor(p):"white",color:form.phase===p?"white":"#374151",transition:"background 0.15s"}}>
+                    {p==="before"?"Before Mod":"After Mod"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Modification (only meaningful for "after") ── */}
+            {form.phase==="after"&&(
+              <div style={{background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:8,padding:"12px 14px",marginBottom:12}}>
+                <div style={{marginBottom:8}}>
+                  <label style={{...S.label,color:"#059669"}}>Modification type</label>
+                  <input value={form.mod_type} onChange={e=>setF("mod_type",e.target.value)} placeholder="e.g. Lead tape at 3 & 9 o'clock" style={S.input}/>
+                </div>
+                <div>
+                  <label style={{...S.label,color:"#059669"}}>Mod notes</label>
+                  <input value={form.mod_notes} onChange={e=>setF("mod_notes",e.target.value)} placeholder="e.g. 2g each side, total +4g" style={S.input}/>
+                </div>
+              </div>
+            )}
+
+            {/* ── Brifidi measurements ── */}
+            <div style={{fontWeight:700,fontSize:"0.78rem",color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.5px",margin:"16px 0 10px"}}>Brifidi SW1 Readings</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:12}}>
+              {[["static_weight","Static Weight (g)","e.g. 242"],["swing_weight","Swing Weight","e.g. 115"],["twist_weight","Twist Weight","e.g. 6.5"],["balance_point","Balance Pt (mm)","e.g. 215"]].map(([k,lbl,ph])=>(
+                <div key={k}>
+                  <label style={S.label}>{lbl}</label>
+                  <input type="number" step="0.1" value={form[k]} onChange={e=>setF(k,e.target.value)} placeholder={ph} style={S.input}/>
+                </div>
+              ))}
+            </div>
+
+            {/* ── Physical specs ── */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+              <div>
+                <label style={S.label}>Grip size</label>
+                <input value={form.grip_size} onChange={e=>setF("grip_size",e.target.value)} placeholder="e.g. 4 1/8 / Small" style={S.input}/>
+              </div>
+              <div>
+                <label style={S.label}>Handle length (mm)</label>
+                <input type="number" step="0.5" value={form.handle_length} onChange={e=>setF("handle_length",e.target.value)} placeholder="e.g. 130" style={S.input}/>
+              </div>
+            </div>
+
+            <div style={{marginBottom:12}}>
+              <label style={S.label}>Date measured</label>
+              <input type="date" value={form.measured_date} onChange={e=>setF("measured_date",e.target.value)} style={{...S.input,maxWidth:200}}/>
+            </div>
+
+            <div style={{marginBottom:16}}>
+              <label style={S.label}>Notes</label>
+              <textarea value={form.notes} onChange={e=>setF("notes",e.target.value)} placeholder="Any observations, test conditions, etc." rows={3} style={{...S.input,resize:"vertical"}}/>
+            </div>
+
+            {/* ── PickleballStudio lookup ── */}
+            <div style={{background:"#f5f3ff",border:"1px solid #ddd6fe",borderRadius:8,padding:"12px 14px",marginBottom:20}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:psResult||psError?10:0}}>
+                <span style={{fontWeight:700,fontSize:"0.82rem",color:"#7c3aed"}}>🔬 PickleballStudio reference</span>
+                <button onClick={lookupPS} disabled={psLoading||!form.brand||!form.model} style={{...S.btn,padding:"5px 14px",background:"#7c3aed",color:"white",fontSize:"0.78rem",opacity:(!form.brand||!form.model)?0.5:1}}>
+                  {psLoading?"Looking up…":"Look up"}
+                </button>
+              </div>
+              {psError&&<div style={{fontSize:"0.8rem",color:"#9ca3af",marginTop:6}}>{psError} <a href="https://pickleballstudio.com/paddles" target="_blank" rel="noopener noreferrer" style={{color:"#7c3aed"}}>Search manually →</a></div>}
+              {psResult&&(
+                <div style={{fontSize:"0.82rem",color:"#4c1d95",background:"white",borderRadius:6,padding:"10px 12px",marginTop:6}}>
+                  <div style={{fontWeight:700,marginBottom:6}}>{psResult.name}</div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(110px,1fr))",gap:6}}>
+                    {[["Static",psResult.static_weight,"g"],["Swing Wt",psResult.swing_weight,""],["Twist Wt",psResult.twist_weight,""],["Balance",psResult.balance_point,"mm"]].map(([label,val,unit])=>(
+                      <div key={label} style={{background:"#f5f3ff",borderRadius:6,padding:"6px 8px",textAlign:"center"}}>
+                        <div style={{fontSize:"0.7rem",color:"#7c3aed",fontWeight:700}}>{label}</div>
+                        <div style={{fontWeight:800,fontSize:"1rem",color:"#1a1a1a"}}>{val!=null?val+unit:"—"}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <a href={psResult.url} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",marginTop:8,fontSize:"0.75rem",color:"#7c3aed"}}>View on PickleballStudio →</a>
+                </div>
+              )}
+            </div>
+
+            {saveError&&<div style={{background:"#fee2e2",color:"#dc2626",borderRadius:8,padding:"10px 14px",marginBottom:12,fontSize:"0.85rem",fontWeight:600}}>{saveError}</div>}
+
+            <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+              <button onClick={closeForm} style={{...S.btn,background:"#f3f4f6",color:"#374151"}}>Cancel</button>
+              <button onClick={save} disabled={saving||exactDup} style={{...S.btn,background:G,color:"white",opacity:(saving||exactDup)?0.6:1}}>
+                {saving?"Saving…":editId?"Save Changes":"Add Measurement"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
