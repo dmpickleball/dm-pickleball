@@ -5217,92 +5217,17 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
   );
 }
 
-// ─── PADDLE SEARCH FIELD ─────────────────────────────────────────────────────
-// Loads full USAPA catalog once → caches in localStorage 24h → instant local filter as you type
-const CAT_LS_KEY = "dm_paddle_cat_v3";
+// ─── PADDLE CATALOG CONSTANTS ────────────────────────────────────────────────
+const CAT_LS_KEY = "dm_paddle_cat_v4";
 const CAT_LS_TTL = 24 * 60 * 60 * 1000;
-
-function PaddleSearchField({onSelect,disabled}){
-  const[q,setQ]=useState("");
-  const[catalog,setCatalog]=useState(null); // [{brand,model},...]
-  const[loading,setLoading]=useState(false);
-  const[open,setOpen]=useState(false);
-  const[hi,setHi]=useState(0);
-
-  // Load full catalog once on mount (localStorage → backend)
-  useEffect(()=>{
-    try{
-      const stored=JSON.parse(localStorage.getItem(CAT_LS_KEY)||"null");
-      if(stored&&Array.isArray(stored.data)&&stored.data.length>0&&Date.now()-stored.at<CAT_LS_TTL){
-        setCatalog(stored.data);return;
-      }
-    }catch{}
-    setLoading(true);
-    adminFetch("/api/gear?resource=paddle-lab&action=paddle-catalog")
-      .then(r=>r.json())
-      .then(d=>{
-        if(d.catalog&&d.catalog.length>0){
-          setCatalog(d.catalog);
-          try{localStorage.setItem(CAT_LS_KEY,JSON.stringify({data:d.catalog,at:Date.now()}));}catch{}
-        }
-      })
-      .catch(()=>{})
-      .finally(()=>setLoading(false));
-  },[]);
-
-  // Instant local filter — no backend call per keystroke
-  const results=q.trim().length<1?[]:(catalog||[]).filter(e=>{
-    const ql=q.toLowerCase();
-    return e.brand.toLowerCase().includes(ql)||e.model.toLowerCase().includes(ql);
-  }).slice(0,24);
-
-  const show=open&&results.length>0;
-
-  function pick(entry){
-    onSelect(entry);
-    setQ(`${entry.brand} — ${entry.model}`);
-    setOpen(false);
-  }
-
-  return(
-    <div style={{position:"relative"}}>
-      <div style={{position:"relative"}}>
-        <input value={q}
-          onChange={e=>{setQ(e.target.value);setOpen(true);setHi(0);}}
-          onFocus={()=>{setOpen(true);setHi(0);}}
-          onBlur={()=>setTimeout(()=>setOpen(false),180)}
-          onKeyDown={e=>{
-            if(!show)return;
-            if(e.key==="ArrowDown"){setHi(h=>Math.min(h+1,results.length-1));e.preventDefault();}
-            else if(e.key==="ArrowUp"){setHi(h=>Math.max(h-1,0));e.preventDefault();}
-            else if(e.key==="Enter"&&results[hi]){pick(results[hi]);e.preventDefault();}
-            else if(e.key==="Escape")setOpen(false);
-          }}
-          placeholder={loading?"Loading paddles…":catalog?`Search ${catalog.length} paddles (e.g. Joola Scorpius)`:"Search paddle"}
-          disabled={disabled}
-          style={{width:"100%",padding:"9px 36px 9px 12px",border:"1.5px solid #d1d5db",borderRadius:8,fontSize:"0.9rem",boxSizing:"border-box",outline:"none"}}
-          autoComplete="off" autoCorrect="off" spellCheck="false"/>
-        <span style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",color:"#9ca3af",fontSize:"0.8rem",pointerEvents:"none"}}>
-          {loading?"⟳":"🔍"}
-        </span>
-      </div>
-      {show&&(
-        <div style={{position:"absolute",top:"calc(100% + 2px)",left:0,right:0,background:"white",border:"1.5px solid #d1d5db",borderRadius:8,boxShadow:"0 8px 28px rgba(0,0,0,0.13)",zIndex:2000,maxHeight:280,overflowY:"auto"}}>
-          {results.map((r,i)=>(
-            <div key={`${r.brand}|||${r.model}`} onMouseDown={e=>{e.preventDefault();pick(r);}}
-              style={{padding:"9px 14px",cursor:"pointer",fontSize:"0.88rem",background:i===hi?G:"white",color:i===hi?"white":"#111827",borderBottom:"1px solid #f3f4f6",transition:"background 0.1s"}}>
-              <span style={{fontWeight:600}}>{r.brand}</span>
-              <span style={{opacity:0.7}}> — {r.model}</span>
-            </div>
-          ))}
-          <div style={{padding:"6px 14px",fontSize:"0.74rem",color:"#9ca3af",borderTop:"1px solid #f3f4f6"}}>
-            USAPA approved · select to fill Brand &amp; Model below
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+// Hardcoded seed so brand dropdown always has something even if network fails
+const SEED_BRANDS = [
+  "6Zero","Aceto","Adidas","Amped","Babolat","Ben Johns","CRBN","Diadem",
+  "Electrum","Engage","Fila","Franklin","Gamma","Gearbox","Head","Holbrook",
+  "Hudef","Joola","Legacy","Nettie","Niupipo","Onix","Paddletek","Prince",
+  "ProKennex","Rally","Recess","Selkirk","Six Zero","Skechers","Slinger",
+  "Tempest","Vatic Pro","Viking","Vulcan","Wilson","Xenon","YOLA",
+];
 
 // ─── PADDLE LAB TAB ──────────────────────────────────────────────────────────
 function PaddleLabTab(){
@@ -5328,6 +5253,43 @@ function PaddleLabTab(){
   const[filterFrom,setFilterFrom]=useState("");
   const[filterTo,setFilterTo]=useState("");
   const[optimizePaddle,setOptimizePaddle]=useState(null);
+  // Paddle catalog for brand/model datalists
+  const[catBrands,setCatBrands]=useState(SEED_BRANDS);
+  const[catByBrand,setCatByBrand]=useState({});
+  const[catLoading,setCatLoading]=useState(false);
+
+  // Load catalog once on first form open
+  useEffect(()=>{
+    if(!showForm)return;
+    try{
+      const s=JSON.parse(localStorage.getItem(CAT_LS_KEY)||"null");
+      if(s&&s.brands&&s.brands.length>0&&Date.now()-s.at<CAT_LS_TTL){
+        setCatBrands([...new Set([...SEED_BRANDS,...s.brands])].sort());
+        setCatByBrand(s.byBrand||{});
+        return;
+      }
+    }catch{}
+    setCatLoading(true);
+    adminFetch("/api/gear?resource=paddle-lab&action=paddle-catalog")
+      .then(r=>r.json())
+      .then(d=>{
+        if(d.catalog&&d.catalog.length>0){
+          const brands=[...new Set(d.catalog.map(p=>p.brand).filter(Boolean))].sort();
+          const byBrand={};
+          for(const p of d.catalog){
+            if(p.brand&&p.model){
+              if(!byBrand[p.brand])byBrand[p.brand]=[];
+              if(!byBrand[p.brand].includes(p.model))byBrand[p.brand].push(p.model);
+            }
+          }
+          setCatBrands([...new Set([...SEED_BRANDS,...brands])].sort());
+          setCatByBrand(byBrand);
+          try{localStorage.setItem(CAT_LS_KEY,JSON.stringify({brands,byBrand,at:Date.now()}));}catch{}
+        }
+      })
+      .catch(()=>{})
+      .finally(()=>setCatLoading(false));
+  },[showForm]);// eslint-disable-line
 
   const load=()=>{
     setLoading(true);
@@ -5573,19 +5535,28 @@ function PaddleLabTab(){
               </div>
             )}
 
-            {/* ── Paddle identity ── */}
-            <div style={{marginBottom:12}}>
-              <label style={S.label}>Search Paddle <span style={{fontWeight:400,color:"#9ca3af",textTransform:"none",letterSpacing:0}}>(USAPA approved list)</span></label>
-              <PaddleSearchField disabled={!!editId} onSelect={entry=>{setF("brand",entry.brand);setF("model",entry.model);}}/>
-            </div>
+            {/* ── Paddle identity — datalist autocomplete ── */}
+            {/* Hidden datalists — browser filters these natively as you type */}
+            <datalist id="dl-brands">
+              {catBrands.map(b=><option key={b} value={b}/>)}
+            </datalist>
+            <datalist id="dl-models">
+              {(catByBrand[form.brand]||catByBrand[Object.keys(catByBrand).find(k=>k.toLowerCase()===form.brand.toLowerCase())||""]||[]).map(m=><option key={m} value={m}/>)}
+            </datalist>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
               <div>
-                <label style={S.label}>Brand *</label>
-                <input value={form.brand} onChange={e=>setF("brand",e.target.value)} placeholder="e.g. CRBN" style={S.input} autoComplete="off"/>
+                <label style={S.label}>
+                  Brand *{catLoading&&<span style={{fontWeight:400,color:"#9ca3af",textTransform:"none",letterSpacing:0}}> · loading list…</span>}
+                </label>
+                <input list="dl-brands" value={form.brand}
+                  onChange={e=>{setF("brand",e.target.value);setF("model","");}}
+                  placeholder="Type to search brands" style={S.input}/>
               </div>
               <div>
                 <label style={S.label}>Model *</label>
-                <input value={form.model} onChange={e=>setF("model",e.target.value)} placeholder="e.g. CRBN² Barrage" style={S.input} autoComplete="off"/>
+                <input list="dl-models" value={form.model}
+                  onChange={e=>setF("model",e.target.value)}
+                  placeholder={form.brand?"Type to search models":"Select brand first"} style={S.input}/>
               </div>
             </div>
             <div style={{marginBottom:12}}>
