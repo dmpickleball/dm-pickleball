@@ -5217,37 +5217,71 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
   );
 }
 
-// ─── AUTOCOMPLETE INPUT ──────────────────────────────────────────────────────
-function AutocompleteInput({value,onChange,onSelect,suggestions=[],placeholder,loading,style,disabled}){
+// ─── PADDLE SEARCH FIELD ─────────────────────────────────────────────────────
+// Single "Search paddle" field → live USAPA search → auto-fills brand + model
+function PaddleSearchField({onSelect,disabled}){
+  const[q,setQ]=useState("");
+  const[results,setResults]=useState([]);
+  const[searching,setSearching]=useState(false);
   const[open,setOpen]=useState(false);
   const[hi,setHi]=useState(0);
-  const filtered=suggestions.filter(s=>!value||s.toLowerCase().includes(value.toLowerCase())).slice(0,14);
-  const show=open&&filtered.length>0;
+  const timerRef=React.useRef(null);
+
+  function doSearch(val){
+    clearTimeout(timerRef.current);
+    if(!val||val.trim().length<2){setResults([]);setOpen(false);setSearching(false);return;}
+    setSearching(true);
+    timerRef.current=setTimeout(async()=>{
+      try{
+        const r=await adminFetch(`/api/gear?resource=paddle-lab&action=paddle-search&q=${encodeURIComponent(val.trim())}`);
+        const d=await r.json();
+        const res=(d.results||[]).slice(0,20);
+        setResults(res);
+        setOpen(res.length>0);
+        setHi(0);
+      }catch{setResults([]);}
+      finally{setSearching(false);}
+    },350);
+  }
+
+  function pick(entry){
+    onSelect(entry);
+    setQ(`${entry.brand} — ${entry.model}`);
+    setOpen(false);
+  }
+
   return(
     <div style={{position:"relative"}}>
       <div style={{position:"relative"}}>
-        <input value={value||""} onChange={e=>{onChange(e.target.value);setOpen(true);setHi(0);}} onFocus={()=>{setOpen(true);setHi(0);}}
-          onBlur={()=>setTimeout(()=>setOpen(false),160)}
+        <input value={q} onChange={e=>{setQ(e.target.value);doSearch(e.target.value);}}
+          onFocus={()=>{if(results.length>0)setOpen(true);}}
+          onBlur={()=>setTimeout(()=>setOpen(false),180)}
           onKeyDown={e=>{
-            if(!show)return;
-            if(e.key==="ArrowDown"){setHi(h=>Math.min(h+1,filtered.length-1));e.preventDefault();}
+            if(!open)return;
+            if(e.key==="ArrowDown"){setHi(h=>Math.min(h+1,results.length-1));e.preventDefault();}
             else if(e.key==="ArrowUp"){setHi(h=>Math.max(h-1,0));e.preventDefault();}
-            else if(e.key==="Enter"&&filtered[hi]){onSelect(filtered[hi]);setOpen(false);e.preventDefault();}
-            else if(e.key==="Escape")setOpen(false);
+            else if(e.key==="Enter"&&results[hi]){pick(results[hi]);e.preventDefault();}
+            else if(e.key==="Escape"){setOpen(false);}
           }}
-          placeholder={placeholder} disabled={disabled}
-          style={{...style,paddingRight:loading?"32px":style?.paddingRight}}
+          placeholder="Search paddle (e.g. Aireo Cyclone)" disabled={disabled}
+          style={{width:"100%",padding:"9px 36px 9px 12px",border:"1.5px solid #d1d5db",borderRadius:8,fontSize:"0.9rem",boxSizing:"border-box",outline:"none"}}
           autoComplete="off" autoCorrect="off" spellCheck="false"/>
-        {loading&&<span style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",color:"#9ca3af",fontSize:"0.7rem",pointerEvents:"none"}}>⟳</span>}
+        <span style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",color:"#9ca3af",fontSize:"0.78rem",pointerEvents:"none"}}>
+          {searching?"⟳":"🔍"}
+        </span>
       </div>
-      {show&&(
-        <div style={{position:"absolute",top:"calc(100% + 2px)",left:0,right:0,background:"white",border:"1.5px solid #d1d5db",borderRadius:8,boxShadow:"0 8px 28px rgba(0,0,0,0.13)",zIndex:2000,maxHeight:220,overflowY:"auto"}}>
-          {filtered.map((s,i)=>(
-            <div key={s} onMouseDown={e=>{e.preventDefault();onSelect(s);setOpen(false);}}
-              style={{padding:"8px 14px",cursor:"pointer",fontSize:"0.88rem",color:i===hi?"white":"#374151",background:i===hi?G:"white",borderBottom:"1px solid #f3f4f6",transition:"background 0.1s"}}>
-              {s}
+      {open&&results.length>0&&(
+        <div style={{position:"absolute",top:"calc(100% + 2px)",left:0,right:0,background:"white",border:"1.5px solid #d1d5db",borderRadius:8,boxShadow:"0 8px 28px rgba(0,0,0,0.13)",zIndex:2000,maxHeight:260,overflowY:"auto"}}>
+          {results.map((r,i)=>(
+            <div key={`${r.brand}|||${r.model}`} onMouseDown={e=>{e.preventDefault();pick(r);}}
+              style={{padding:"9px 14px",cursor:"pointer",fontSize:"0.88rem",background:i===hi?G:"white",color:i===hi?"white":"#111827",borderBottom:"1px solid #f3f4f6",transition:"background 0.1s"}}>
+              <span style={{fontWeight:600}}>{r.brand}</span>
+              <span style={{opacity:0.75}}> — {r.model}</span>
             </div>
           ))}
+          <div style={{padding:"6px 14px",fontSize:"0.75rem",color:"#9ca3af",borderTop:"1px solid #f3f4f6"}}>
+            USAPA approved list · select to fill Brand &amp; Model below
+          </div>
         </div>
       )}
     </div>
@@ -5278,33 +5312,6 @@ function PaddleLabTab(){
   const[filterFrom,setFilterFrom]=useState("");
   const[filterTo,setFilterTo]=useState("");
   const[optimizePaddle,setOptimizePaddle]=useState(null);
-  const[catalog,setCatalog]=useState(null); // {brands:[], byBrand:{}, source:''}
-  const[catalogLoading,setCatalogLoading]=useState(false);
-
-  // Load paddle catalog when form opens (cached 24h in localStorage)
-  useEffect(()=>{
-    if(!showForm)return;
-    try{
-      const stored=JSON.parse(localStorage.getItem("dm_paddle_cat")||"null");
-      if(stored&&Date.now()-stored.at<86400000){setCatalog(stored.data);return;}
-    }catch{}
-    if(catalog||catalogLoading)return;
-    setCatalogLoading(true);
-    adminFetch("/api/gear?resource=paddle-lab&action=paddle-catalog")
-      .then(r=>r.json())
-      .then(d=>{
-        if(d.catalog&&d.catalog.length>0){
-          const brands=[...new Set(d.catalog.map(p=>p.brand).filter(Boolean))].sort();
-          const byBrand={};
-          for(const p of d.catalog){if(p.brand){if(!byBrand[p.brand])byBrand[p.brand]=[];byBrand[p.brand].push(p.model);}}
-          const data={brands,byBrand,source:d.source};
-          setCatalog(data);
-          try{localStorage.setItem("dm_paddle_cat",JSON.stringify({data,at:Date.now()}));}catch{}
-        }
-      })
-      .catch(()=>{})
-      .finally(()=>setCatalogLoading(false));
-  },[showForm]);// eslint-disable-line
 
   const load=()=>{
     setLoading(true);
@@ -5548,17 +5555,18 @@ function PaddleLabTab(){
             )}
 
             {/* ── Paddle identity ── */}
+            <div style={{marginBottom:12}}>
+              <label style={S.label}>Search Paddle <span style={{fontWeight:400,color:"#9ca3af",textTransform:"none",letterSpacing:0}}>(USAPA approved list)</span></label>
+              <PaddleSearchField disabled={!!editId} onSelect={entry=>{setF("brand",entry.brand);setF("model",entry.model);}}/>
+            </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
               <div>
-                <label style={S.label}>Brand *{catalog&&<span style={{fontWeight:400,color:"#9ca3af",textTransform:"none",letterSpacing:0}}> · {catalog.brands.length} brands from {catalog.source}</span>}</label>
-                <AutocompleteInput value={form.brand} onChange={v=>setF("brand",v)} onSelect={v=>setF("brand",v)}
-                  suggestions={catalog?.brands||[]} placeholder="e.g. CRBN" loading={catalogLoading} style={S.input}/>
+                <label style={S.label}>Brand *</label>
+                <input value={form.brand} onChange={e=>setF("brand",e.target.value)} placeholder="e.g. CRBN" style={S.input} autoComplete="off"/>
               </div>
               <div>
                 <label style={S.label}>Model *</label>
-                <AutocompleteInput value={form.model} onChange={v=>setF("model",v)} onSelect={v=>setF("model",v)}
-                  suggestions={catalog?.byBrand?.[form.brand]||catalog?.byBrand?.[Object.keys(catalog?.byBrand||{}).find(b=>b.toLowerCase()===form.brand.toLowerCase())||""]||[]}
-                  placeholder="e.g. CRBN² Barrage" loading={catalogLoading&&!!form.brand} style={S.input}/>
+                <input value={form.model} onChange={e=>setF("model",e.target.value)} placeholder="e.g. CRBN² Barrage" style={S.input} autoComplete="off"/>
               </div>
             </div>
             <div style={{marginBottom:12}}>

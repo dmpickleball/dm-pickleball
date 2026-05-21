@@ -2,12 +2,9 @@ import { supabase } from './_supabase.js';
 import { createHmac, timingSafeEqual } from 'crypto';
 
 const ROW_ID = 'main';
+const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/124 Safari/537.36';
 
-// ── Paddle catalog cache (in-process, warm invocations only) ─────────────────
-let _catalog = { data: null, at: 0, source: '' };
-const CATALOG_TTL = 4 * 60 * 60 * 1000; // 4 hours
-
-// Parse USAPA HTML for brand/model pairs using entry-ID grouping
+// ── Parse USAPA HTML for brand/model pairs via entry-ID grouping ─────────────
 function parseUSAPAHtml(html) {
   const entries = {};
   const re = /href="https?:\/\/equipment\.usapickleball\.org\/paddle-list\/entry\/(\d+)[^"]*">([^<]+)<\/a>/g;
@@ -22,64 +19,65 @@ function parseUSAPAHtml(html) {
   return Object.values(entries).filter(e => e.brand && e.model);
 }
 
-async function fetchPaddleCatalog() {
-  if (_catalog.data && Date.now() - _catalog.at < CATALOG_TTL) {
-    return { catalog: _catalog.data, source: _catalog.source };
+// ── Live paddle search against USAPA (per-query, cached 30 min) ──────────────
+const _searchCache = new Map(); // key → { results, at }
+const SEARCH_TTL = 30 * 60 * 1000;
+
+async function searchPaddles(q) {
+  if (!q || q.trim().length < 2) return [];
+  const key = q.trim().toLowerCase();
+  const cached = _searchCache.get(key);
+  if (cached && Date.now() - cached.at < SEARCH_TTL) return cached.results;
+
+  const qEnc = encodeURIComponent(q.trim());
+
+  // Try several USAPA query-param formats; accept whichever returns < full list
+  const attempts = [
+    `https://equipment.usapickleball.org/paddle-list/?brand-search=${qEnc}`,
+    `https://equipment.usapickleball.org/paddle-list/?search=${qEnc}`,
+    `https://equipment.usapickleball.org/paddle-list/?s=${qEnc}`,
+    `https://equipment.usapickleball.org/paddle-list/?q=${qEnc}`,
+  ];
+
+  for (const url of attempts) {
+    try {
+      const r = await fetch(url, {
+        headers: { 'User-Agent': UA },
+        signal: AbortSignal.timeout(6000),
+      });
+      if (!r.ok) continue;
+      const html = await r.text();
+      // "Displaying X - Y of Z" tells us if filtering worked
+      const totalMatch = html.match(/Displaying\s+[\d,]+\s*[-–]\s*[\d,]+\s+of\s+([\d,]+)/i);
+      const total = parseInt((totalMatch?.[1] || '0').replace(/,/g, ''));
+      if (total > 0 && total < 4000) {
+        // Server-side filtering worked — parse this page's results
+        const results = parseUSAPAHtml(html);
+        _searchCache.set(key, { results, at: Date.now() });
+        return results;
+      }
+    } catch { /* try next */ }
   }
 
-  const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/124 Safari/537.36';
-
-  // ── Strategy 1: PickleballStudio __NEXT_DATA__ (best data, ~400 paddles) ──
+  // Fallback: fetch page 1 and filter client-side (only ~25 results, but better than nothing)
   try {
-    const r = await fetch('https://pickleballstudio.com/paddles', {
-      headers: { 'User-Agent': UA, 'Accept': 'text/html' },
-      signal: AbortSignal.timeout(10000),
+    const r = await fetch('https://equipment.usapickleball.org/paddle-list/', {
+      headers: { 'User-Agent': UA },
+      signal: AbortSignal.timeout(6000),
     });
     if (r.ok) {
       const html = await r.text();
-      const m = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
-      if (m) {
-        const nd = JSON.parse(m[1]);
-        const paddles = nd?.props?.pageProps?.paddles
-          || nd?.props?.pageProps?.allPaddles
-          || nd?.props?.pageProps?.data?.paddles
-          || nd?.props?.pageProps?.initialData?.paddles
-          || [];
-        if (paddles.length > 10) {
-          const catalog = paddles.map(p => ({
-            brand: (p.brand || p.manufacturer || '').trim(),
-            model: (p.name || p.paddle_name || p.title || '').trim(),
-          })).filter(p => p.brand && p.model);
-          _catalog = { data: catalog, at: Date.now(), source: 'PickleballStudio' };
-          return { catalog, source: 'PickleballStudio' };
-        }
-      }
+      const all = parseUSAPAHtml(html);
+      const qLow = key;
+      const results = all.filter(e =>
+        e.brand.toLowerCase().includes(qLow) || e.model.toLowerCase().includes(qLow)
+      );
+      _searchCache.set(key, { results, at: Date.now() });
+      return results;
     }
-  } catch (e) { console.log('PS catalog:', e.message); }
+  } catch { /* give up */ }
 
-  // ── Strategy 2: USAPA approved list page 1 (25 most recent) ─────────────
-  // For a fuller list, also fetch a few pages sorted by brand
-  try {
-    const pages = await Promise.all([
-      fetch('https://equipment.usapickleball.org/paddle-list/', { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(8000) }),
-      fetch('https://equipment.usapickleball.org/paddle-list/?pagenum=50', { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(8000) }),
-      fetch('https://equipment.usapickleball.org/paddle-list/?pagenum=100', { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(8000) }),
-    ]);
-    const htmls = await Promise.all(pages.filter(r => r.ok).map(r => r.text()));
-    const combined = {};
-    for (const html of htmls) {
-      for (const e of parseUSAPAHtml(html)) {
-        combined[`${e.brand}|||${e.model}`] = e;
-      }
-    }
-    const catalog = Object.values(combined);
-    if (catalog.length > 0) {
-      _catalog = { data: catalog, at: Date.now(), source: 'USAPA' };
-      return { catalog, source: 'USAPA' };
-    }
-  } catch (e) { console.log('USAPA catalog:', e.message); }
-
-  return { catalog: null, source: null };
+  return [];
 }
 
 // ── Admin auth (same pattern as students.js) ──────────────────────────────────
@@ -150,10 +148,11 @@ async function handlePaddleLab(req, res) {
   const { action, id } = req.query;
 
   if (req.method === 'GET') {
-    // Paddle catalog for autocomplete (brand + model prefill)
-    if (action === 'paddle-catalog') {
-      const { catalog, source } = await fetchPaddleCatalog();
-      return res.status(200).json({ catalog: catalog || [], source });
+    // Live paddle search for autocomplete
+    if (action === 'paddle-search') {
+      const { q = '' } = req.query;
+      const results = await searchPaddles(q);
+      return res.status(200).json({ results });
     }
 
     // Duplicate / existing check
