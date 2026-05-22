@@ -5223,6 +5223,54 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
 const CAT_BRANDS  = PADDLE_CATALOG.brands;          // string[]
 const CAT_BY_BRAND = PADDLE_CATALOG.byBrand;        // {brand: model[]}
 
+// ─── COMBOBOX — custom autocomplete, no browser autofill interference ────────
+function ComboBox({ value, onChange, options = [], placeholder, inputStyle }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const filtered = options.filter(o => o.toLowerCase().includes((value || '').toLowerCase())).slice(0, 40);
+
+  useEffect(() => {
+    const handler = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <input
+        value={value}
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="off"
+        spellCheck="false"
+        onChange={e => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        placeholder={placeholder}
+        style={inputStyle}
+      />
+      {open && filtered.length > 0 && (
+        <div style={{
+          position:'absolute',top:'100%',left:0,right:0,zIndex:9999,
+          background:'#1f2937',border:'1px solid #374151',borderRadius:8,
+          maxHeight:220,overflowY:'auto',boxShadow:'0 4px 16px rgba(0,0,0,0.35)',
+          marginTop:3,
+        }}>
+          {filtered.map(opt => (
+            <div
+              key={opt}
+              onMouseDown={e => { e.preventDefault(); onChange(opt); setOpen(false); }}
+              style={{ padding:'8px 12px',cursor:'pointer',color:'#f9fafb',fontSize:'0.9rem',
+                borderBottom:'1px solid #374151' }}
+              onMouseEnter={e => e.currentTarget.style.background='#374151'}
+              onMouseLeave={e => e.currentTarget.style.background='transparent'}
+            >{opt}</div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── PADDLE LAB TAB ──────────────────────────────────────────────────────────
 function PaddleLabTab(){
   const EMPTY_FORM={brand:"",model:"",colorway:"",phase:"before",mod_type:"",mod_notes:"",static_weight:"",swing_weight:"",twist_weight:"",balance_point:"",length_mm:"",width_mm:"",thickness_mm:"",grip_size:"",handle_length:"",notes:"",measured_date:new Date().toISOString().slice(0,10)};
@@ -5495,41 +5543,52 @@ function PaddleLabTab(){
               </div>
             )}
 
-            {/* ── Paddle identity — datalist autocomplete ── */}
-            {/* Suppress webkit-autofill white flash */}
-            <style>{`input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0px 1000px #fafafa inset !important;-webkit-text-fill-color:#111 !important;transition:background-color 9999s ease-in-out 0s;}`}</style>
-            {/* Hidden datalists — browser filters these natively as you type */}
-            <datalist id="dl-brands">
-              {catBrands.map(b=><option key={b} value={b}/>)}
-            </datalist>
-            <datalist id="dl-models">
-              {(catByBrand[form.brand]||catByBrand[Object.keys(catByBrand).find(k=>k.toLowerCase()===form.brand.toLowerCase())||""]||[]).map(m=><option key={m} value={m}/>)}
-            </datalist>
-            <datalist id="dl-colorways">
-              {[...new Set(
+            {/* ── Paddle identity — custom ComboBox (no browser autofill) ── */}
+            {(() => {
+              const brandKey = Object.keys(catByBrand).find(k=>k.toLowerCase()===form.brand.toLowerCase()) || form.brand;
+              const modelOptions = catByBrand[brandKey] || [];
+              const colorwayOptions = [...new Set(
                 measurements
                   .filter(m=>m.brand?.toLowerCase()===form.brand?.toLowerCase()&&m.model?.toLowerCase()===form.model?.toLowerCase())
                   .map(m=>m.colorway).filter(Boolean)
-              )].map(c=><option key={c} value={c}/>)}
-            </datalist>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
-              <div>
-                <label style={S.label}>Brand *</label>
-                <input list="dl-brands" autoComplete="off" value={form.brand}
-                  onChange={e=>{setF("brand",e.target.value);setF("model","");setF("colorway","");}}
-                  placeholder="Type to search brands" style={S.input}/>
-              </div>
-              <div>
-                <label style={S.label}>Model *</label>
-                <input list="dl-models" autoComplete="off" value={form.model}
-                  onChange={e=>{setF("model",e.target.value);setF("colorway","");}}
-                  placeholder={form.brand?"Type to search models":"Select brand first"} style={S.input}/>
-              </div>
-            </div>
-            <div style={{marginBottom:12}}>
-              <label style={S.label}>Colorway</label>
-              <input list="dl-colorways" autoComplete="off" value={form.colorway} onChange={e=>setF("colorway",e.target.value)} placeholder="e.g. Midnight Blue" style={S.input}/>
-            </div>
+              )];
+              return (
+                <>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+                    <div>
+                      <label style={S.label}>Brand *</label>
+                      <ComboBox
+                        value={form.brand}
+                        options={catBrands}
+                        placeholder="Type to search brands"
+                        inputStyle={S.input}
+                        onChange={v=>{setF("brand",v);setF("model","");setF("colorway","");}}
+                      />
+                    </div>
+                    <div>
+                      <label style={S.label}>Model *</label>
+                      <ComboBox
+                        value={form.model}
+                        options={modelOptions}
+                        placeholder={form.brand?"Type to search models":"Select brand first"}
+                        inputStyle={S.input}
+                        onChange={v=>{setF("model",v);setF("colorway","");}}
+                      />
+                    </div>
+                  </div>
+                  <div style={{marginBottom:12}}>
+                    <label style={S.label}>Colorway</label>
+                    <ComboBox
+                      value={form.colorway}
+                      options={colorwayOptions}
+                      placeholder="e.g. Midnight Blue"
+                      inputStyle={S.input}
+                      onChange={v=>setF("colorway",v)}
+                    />
+                  </div>
+                </>
+              );
+            })()}
 
             {/* ── Phase toggle ── */}
             <div style={{marginBottom:12}}>
