@@ -5496,6 +5496,8 @@ function PaddleLabTab(){
             )}
 
             {/* ── Paddle identity — datalist autocomplete ── */}
+            {/* Suppress webkit-autofill white flash */}
+            <style>{`input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0px 1000px #fafafa inset !important;-webkit-text-fill-color:#111 !important;transition:background-color 9999s ease-in-out 0s;}`}</style>
             {/* Hidden datalists — browser filters these natively as you type */}
             <datalist id="dl-brands">
               {catBrands.map(b=><option key={b} value={b}/>)}
@@ -5503,23 +5505,30 @@ function PaddleLabTab(){
             <datalist id="dl-models">
               {(catByBrand[form.brand]||catByBrand[Object.keys(catByBrand).find(k=>k.toLowerCase()===form.brand.toLowerCase())||""]||[]).map(m=><option key={m} value={m}/>)}
             </datalist>
+            <datalist id="dl-colorways">
+              {[...new Set(
+                measurements
+                  .filter(m=>m.brand?.toLowerCase()===form.brand?.toLowerCase()&&m.model?.toLowerCase()===form.model?.toLowerCase())
+                  .map(m=>m.colorway).filter(Boolean)
+              )].map(c=><option key={c} value={c}/>)}
+            </datalist>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
               <div>
                 <label style={S.label}>Brand *</label>
-                <input list="dl-brands" value={form.brand}
-                  onChange={e=>{setF("brand",e.target.value);setF("model","");}}
+                <input list="dl-brands" autoComplete="off" value={form.brand}
+                  onChange={e=>{setF("brand",e.target.value);setF("model","");setF("colorway","");}}
                   placeholder="Type to search brands" style={S.input}/>
               </div>
               <div>
                 <label style={S.label}>Model *</label>
-                <input list="dl-models" value={form.model}
-                  onChange={e=>setF("model",e.target.value)}
+                <input list="dl-models" autoComplete="off" value={form.model}
+                  onChange={e=>{setF("model",e.target.value);setF("colorway","");}}
                   placeholder={form.brand?"Type to search models":"Select brand first"} style={S.input}/>
               </div>
             </div>
             <div style={{marginBottom:12}}>
               <label style={S.label}>Colorway</label>
-              <input value={form.colorway} onChange={e=>setF("colorway",e.target.value)} placeholder="e.g. Midnight Blue" style={S.input}/>
+              <input list="dl-colorways" autoComplete="off" value={form.colorway} onChange={e=>setF("colorway",e.target.value)} placeholder="e.g. Midnight Blue" style={S.input}/>
             </div>
 
             {/* ── Phase toggle ── */}
