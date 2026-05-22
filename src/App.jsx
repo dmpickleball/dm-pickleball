@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, Fragment, Component } from "react";
 import { Analytics } from "@vercel/analytics/react";
+import PADDLE_CATALOG from "./paddleCatalog.json";
 
 // ─── ERROR BOUNDARY ──────────────────────────────────────────────────────────
 class ErrorBoundary extends Component {
@@ -5217,17 +5218,10 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
   );
 }
 
-// ─── PADDLE CATALOG CONSTANTS ────────────────────────────────────────────────
-const CAT_LS_KEY = "dm_paddle_cat_v4";
-const CAT_LS_TTL = 24 * 60 * 60 * 1000;
-// Hardcoded seed so brand dropdown always has something even if network fails
-const SEED_BRANDS = [
-  "6Zero","Aceto","Adidas","Amped","Babolat","Ben Johns","CRBN","Diadem",
-  "Electrum","Engage","Fila","Franklin","Gamma","Gearbox","Head","Holbrook",
-  "Hudef","Joola","Legacy","Nettie","Niupipo","Onix","Paddletek","Prince",
-  "ProKennex","Rally","Recess","Selkirk","Six Zero","Skechers","Slinger",
-  "Tempest","Vatic Pro","Viking","Vulcan","Wilson","Xenon","YOLA",
-];
+// ─── PADDLE CATALOG (static, scraped from USAPA) ─────────────────────────────
+// Imported from src/paddleCatalog.json — 475 brands, 1225+ paddles
+const CAT_BRANDS  = PADDLE_CATALOG.brands;          // string[]
+const CAT_BY_BRAND = PADDLE_CATALOG.byBrand;        // {brand: model[]}
 
 // ─── PADDLE LAB TAB ──────────────────────────────────────────────────────────
 function PaddleLabTab(){
@@ -5253,43 +5247,9 @@ function PaddleLabTab(){
   const[filterFrom,setFilterFrom]=useState("");
   const[filterTo,setFilterTo]=useState("");
   const[optimizePaddle,setOptimizePaddle]=useState(null);
-  // Paddle catalog for brand/model datalists
-  const[catBrands,setCatBrands]=useState(SEED_BRANDS);
-  const[catByBrand,setCatByBrand]=useState({});
-  const[catLoading,setCatLoading]=useState(false);
-
-  // Load catalog once on first form open
-  useEffect(()=>{
-    if(!showForm)return;
-    try{
-      const s=JSON.parse(localStorage.getItem(CAT_LS_KEY)||"null");
-      if(s&&s.brands&&s.brands.length>0&&Date.now()-s.at<CAT_LS_TTL){
-        setCatBrands([...new Set([...SEED_BRANDS,...s.brands])].sort());
-        setCatByBrand(s.byBrand||{});
-        return;
-      }
-    }catch{}
-    setCatLoading(true);
-    adminFetch("/api/gear?resource=paddle-lab&action=paddle-catalog")
-      .then(r=>r.json())
-      .then(d=>{
-        if(d.catalog&&d.catalog.length>0){
-          const brands=[...new Set(d.catalog.map(p=>p.brand).filter(Boolean))].sort();
-          const byBrand={};
-          for(const p of d.catalog){
-            if(p.brand&&p.model){
-              if(!byBrand[p.brand])byBrand[p.brand]=[];
-              if(!byBrand[p.brand].includes(p.model))byBrand[p.brand].push(p.model);
-            }
-          }
-          setCatBrands([...new Set([...SEED_BRANDS,...brands])].sort());
-          setCatByBrand(byBrand);
-          try{localStorage.setItem(CAT_LS_KEY,JSON.stringify({brands,byBrand,at:Date.now()}));}catch{}
-        }
-      })
-      .catch(()=>{})
-      .finally(()=>setCatLoading(false));
-  },[showForm]);// eslint-disable-line
+  // Catalog is static (imported JSON) — no loading needed
+  const catBrands=CAT_BRANDS;
+  const catByBrand=CAT_BY_BRAND;
 
   const load=()=>{
     setLoading(true);
@@ -5545,9 +5505,7 @@ function PaddleLabTab(){
             </datalist>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
               <div>
-                <label style={S.label}>
-                  Brand *{catLoading&&<span style={{fontWeight:400,color:"#9ca3af",textTransform:"none",letterSpacing:0}}> · loading list…</span>}
-                </label>
+                <label style={S.label}>Brand *</label>
                 <input list="dl-brands" value={form.brand}
                   onChange={e=>{setF("brand",e.target.value);setF("model","");}}
                   placeholder="Type to search brands" style={S.input}/>
