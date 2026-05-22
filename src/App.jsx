@@ -5251,17 +5251,17 @@ function ComboBox({ value, onChange, options = [], placeholder, inputStyle }) {
       {open && filtered.length > 0 && (
         <div style={{
           position:'absolute',top:'100%',left:0,right:0,zIndex:9999,
-          background:'#1f2937',border:'1px solid #374151',borderRadius:8,
-          maxHeight:220,overflowY:'auto',boxShadow:'0 4px 16px rgba(0,0,0,0.35)',
+          background:'#ffffff',border:'1.5px solid #e5e7eb',borderRadius:8,
+          maxHeight:220,overflowY:'auto',boxShadow:'0 4px 16px rgba(0,0,0,0.12)',
           marginTop:3,
         }}>
           {filtered.map(opt => (
             <div
               key={opt}
               onMouseDown={e => { e.preventDefault(); onChange(opt); setOpen(false); }}
-              style={{ padding:'8px 12px',cursor:'pointer',color:'#f9fafb',fontSize:'0.9rem',
-                borderBottom:'1px solid #374151' }}
-              onMouseEnter={e => e.currentTarget.style.background='#374151'}
+              style={{ padding:'8px 12px',cursor:'pointer',color:'#111827',fontSize:'0.9rem',
+                borderBottom:'1px solid #f3f4f6' }}
+              onMouseEnter={e => e.currentTarget.style.background='#f3f4f6'}
               onMouseLeave={e => e.currentTarget.style.background='transparent'}
             >{opt}</div>
           ))}
@@ -5548,10 +5548,8 @@ function PaddleLabTab(){
               const brandKey = Object.keys(catByBrand).find(k=>k.toLowerCase()===form.brand.toLowerCase()) || form.brand;
               const modelOptions = catByBrand[brandKey] || [];
               const colorwayOptions = [...new Set(
-                measurements
-                  .filter(m=>m.brand?.toLowerCase()===form.brand?.toLowerCase()&&m.model?.toLowerCase()===form.model?.toLowerCase())
-                  .map(m=>m.colorway).filter(Boolean)
-              )];
+                measurements.map(m=>m.colorway).filter(Boolean)
+              )].sort();
               return (
                 <>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
