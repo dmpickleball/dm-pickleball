@@ -435,8 +435,61 @@ body.dark .day-body .tl-label.tip       { color: #60a8d8 !important; }
 
 /* ── Private-site specific ── */
 body.dark #signout-bar  { background: #060e18; }
-body.dark #section-nav  { background: #080f18 !important; box-shadow: 0 2px 10px rgba(0,0,0,0.5) !important; }
-@media (max-width: 540px) { #section-nav { top: 50px; } }
+/* ── Section nav ── */
+#section-nav {
+  background: #12202e; position: sticky; top: 58px; z-index: 190;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+}
+body.dark #section-nav { background: #080f18; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+
+/* Desktop links */
+.snav-desk { display: flex; justify-content: center; flex-wrap: wrap; }
+.snav-link {
+  color: rgba(255,255,255,0.6); text-decoration: none;
+  padding: 12px 16px; font-size: 0.75rem; letter-spacing: 0.07em;
+  font-family: sans-serif; border-right: 1px solid rgba(255,255,255,0.08);
+  transition: all 0.18s;
+}
+.snav-link:last-child { border-right: none; }
+.snav-link:hover { color: #fff; background: rgba(255,255,255,0.07); }
+.snav-link.active { color: #fff; }
+
+/* Mobile pill + dropdown */
+.snav-mob { display: none; padding: 8px 16px; position: relative; }
+.snav-pill {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 20px; padding: 7px 14px; color: #fff;
+  font-family: sans-serif; font-size: 0.82rem; font-weight: 500;
+  cursor: pointer; width: 100%; justify-content: space-between;
+  transition: background 0.18s;
+}
+.snav-pill:hover { background: rgba(255,255,255,0.14); }
+.snav-chevron { font-size: 0.7rem; opacity: 0.6; transition: transform 0.22s; }
+.snav-chevron.open { transform: rotate(180deg); }
+.snav-dropdown {
+  position: absolute; top: calc(100% + 4px); left: 16px; right: 16px;
+  background: #1a2d44; border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px; overflow: hidden;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.45);
+  display: none; z-index: 200;
+}
+.snav-dropdown.open { display: block; }
+.snav-drop-link {
+  display: block; padding: 13px 18px; color: rgba(255,255,255,0.75);
+  text-decoration: none; font-family: sans-serif; font-size: 0.85rem;
+  border-bottom: 1px solid rgba(255,255,255,0.07); transition: all 0.15s;
+}
+.snav-drop-link:last-child { border-bottom: none; }
+.snav-drop-link:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.snav-drop-link.active { color: #fff; font-weight: 600; }
+
+@media (max-width: 600px) {
+  #section-nav { top: 50px; }
+  .snav-desk { display: none; }
+  .snav-mob  { display: block; }
+}
 body.dark [style*="background:#eee"],
 body.dark [style*="background: #eee"] { background: #1d2e42 !important; color: #7a8a9a !important; }
 body.dark .tl-section   { background: #111c28; border-bottom-color: #1d2e42; }
@@ -732,13 +785,31 @@ body.dark a[style*="color:#6a1b9a"] { color: #c084e0 !important; }
 <div id="schedule-wrap">
 
 <!-- Section nav -->
-<div id="section-nav" style="background:#12202e;display:flex;justify-content:center;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,0.08);position:sticky;top:58px;z-index:190;box-shadow:0 2px 10px rgba(0,0,0,0.25);">
-  <a href="#phase-0" style="color:rgba(255,255,255,0.65);text-decoration:none;padding:12px 16px;font-size:0.75rem;letter-spacing:0.07em;font-family:sans-serif;border-right:1px solid rgba(255,255,255,0.08);transition:all 0.18s;" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.07)'" onmouseout="this.style.color='rgba(255,255,255,0.65)';this.style.background='transparent'">✈️ Departure</a>
-  <a href="#phase-1" style="color:rgba(255,255,255,0.65);text-decoration:none;padding:12px 16px;font-size:0.75rem;letter-spacing:0.07em;font-family:sans-serif;border-right:1px solid rgba(255,255,255,0.08);transition:all 0.18s;" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.07)'" onmouseout="this.style.color='rgba(255,255,255,0.65)';this.style.background='transparent'">🚤 Venice</a>
-  <a href="#phase-2" style="color:rgba(255,255,255,0.65);text-decoration:none;padding:12px 16px;font-size:0.75rem;letter-spacing:0.07em;font-family:sans-serif;border-right:1px solid rgba(255,255,255,0.08);transition:all 0.18s;" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.07)'" onmouseout="this.style.color='rgba(255,255,255,0.65)';this.style.background='transparent'">⛰️ Dolomites</a>
-  <a href="#phase-3" style="color:rgba(255,255,255,0.65);text-decoration:none;padding:12px 16px;font-size:0.75rem;letter-spacing:0.07em;font-family:sans-serif;border-right:1px solid rgba(255,255,255,0.08);transition:all 0.18s;" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.07)'" onmouseout="this.style.color='rgba(255,255,255,0.65)';this.style.background='transparent'">🌊 Lake Como</a>
-  <a href="#phase-4" style="color:rgba(255,255,255,0.65);text-decoration:none;padding:12px 16px;font-size:0.75rem;letter-spacing:0.07em;font-family:sans-serif;border-right:1px solid rgba(255,255,255,0.08);transition:all 0.18s;" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.07)'" onmouseout="this.style.color='rgba(255,255,255,0.65)';this.style.background='transparent'">🏙️ Milan</a>
-  <a href="#phase-5" style="color:rgba(255,255,255,0.65);text-decoration:none;padding:12px 16px;font-size:0.75rem;letter-spacing:0.07em;font-family:sans-serif;transition:all 0.18s;" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.07)'" onmouseout="this.style.color='rgba(255,255,255,0.65)';this.style.background='transparent'">🏠 Home</a>
+<div id="section-nav">
+  <!-- Desktop: full horizontal links -->
+  <div class="snav-desk">
+    <a class="snav-link" href="#phase-0">✈️ Departure</a>
+    <a class="snav-link" href="#phase-1">🚤 Venice</a>
+    <a class="snav-link" href="#phase-2">⛰️ Dolomites</a>
+    <a class="snav-link" href="#phase-3">🌊 Lake Como</a>
+    <a class="snav-link" href="#phase-4">🏙️ Milan</a>
+    <a class="snav-link" href="#phase-5">🏠 Home</a>
+  </div>
+  <!-- Mobile: current section pill + dropdown -->
+  <div class="snav-mob">
+    <button class="snav-pill" id="snav-pill" onclick="toggleSnavMenu()">
+      <span id="snav-current">✈️ Departure</span>
+      <span class="snav-chevron" id="snav-chevron">▾</span>
+    </button>
+    <div class="snav-dropdown" id="snav-dropdown">
+      <a class="snav-drop-link" href="#phase-0" onclick="closeSnavMenu()">✈️ Departure</a>
+      <a class="snav-drop-link" href="#phase-1" onclick="closeSnavMenu()">🚤 Venice</a>
+      <a class="snav-drop-link" href="#phase-2" onclick="closeSnavMenu()">⛰️ Dolomites</a>
+      <a class="snav-drop-link" href="#phase-3" onclick="closeSnavMenu()">🌊 Lake Como</a>
+      <a class="snav-drop-link" href="#phase-4" onclick="closeSnavMenu()">🏙️ Milan</a>
+      <a class="snav-drop-link" href="#phase-5" onclick="closeSnavMenu()">🏠 Home</a>
+    </div>
+  </div>
 </div>
 
 <!-- ===================== PHASE 0: DEPARTURE ===================== -->
@@ -1771,6 +1842,7 @@ body.dark a[style*="color:#6a1b9a"] { color: #c084e0 !important; }
     bar.style.display = 'flex';
     document.getElementById('schedule-wrap').style.display = 'block';
     document.getElementById('sticky-legend').style.display = 'flex';
+    initSectionNav();
     buildPrivTimeline();
     updatePrivTimeline();
     updatePrivCountdown();
@@ -1803,6 +1875,56 @@ body.dark a[style*="color:#6a1b9a"] { color: #c084e0 !important; }
       }).catch(() => {});
     }, () => {}, { timeout: 10000, enableHighAccuracy: false });
   }
+
+  // ── Section nav: mobile dropdown + IntersectionObserver ──
+  const SNAV_PHASES = [
+    { id: 'phase-0', label: '✈️ Departure' },
+    { id: 'phase-1', label: '🚤 Venice' },
+    { id: 'phase-2', label: '⛰️ Dolomites' },
+    { id: 'phase-3', label: '🌊 Lake Como' },
+    { id: 'phase-4', label: '🏙️ Milan' },
+    { id: 'phase-5', label: '🏠 Home' },
+  ];
+
+  function initSectionNav() {
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          const p = SNAV_PHASES.find(p => p.id === e.target.id);
+          if (!p) return;
+          document.getElementById('snav-current').textContent = p.label;
+          document.querySelectorAll('.snav-drop-link').forEach((a, i) => {
+            a.classList.toggle('active', i === SNAV_PHASES.indexOf(p));
+          });
+          document.querySelectorAll('.snav-link').forEach((a, i) => {
+            a.classList.toggle('active', i === SNAV_PHASES.indexOf(p));
+          });
+        }
+      });
+    }, { rootMargin: '-10% 0px -75% 0px' });
+
+    SNAV_PHASES.forEach(p => {
+      const el = document.getElementById(p.id);
+      if (el) obs.observe(el);
+    });
+  }
+
+  function toggleSnavMenu() {
+    const dd = document.getElementById('snav-dropdown');
+    const ch = document.getElementById('snav-chevron');
+    dd.classList.toggle('open');
+    ch.classList.toggle('open');
+  }
+
+  function closeSnavMenu() {
+    document.getElementById('snav-dropdown').classList.remove('open');
+    document.getElementById('snav-chevron').classList.remove('open');
+  }
+
+  // Close dropdown when tapping outside
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#section-nav')) closeSnavMenu();
+  });
 
   function signOut() {
     localStorage.removeItem(TOKEN_KEY);
