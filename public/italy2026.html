@@ -435,7 +435,8 @@ body.dark .day-body .tl-label.tip       { color: #60a8d8 !important; }
 
 /* ── Private-site specific ── */
 body.dark #signout-bar  { background: #060e18; }
-body.dark #section-nav  { background: #080f18 !important; }
+body.dark #section-nav  { background: #080f18 !important; box-shadow: 0 2px 10px rgba(0,0,0,0.5) !important; }
+@media (max-width: 540px) { #section-nav { top: 50px; } }
 body.dark [style*="background:#eee"],
 body.dark [style*="background: #eee"] { background: #1d2e42 !important; color: #7a8a9a !important; }
 body.dark .tl-section   { background: #111c28; border-bottom-color: #1d2e42; }
@@ -731,7 +732,7 @@ body.dark a[style*="color:#6a1b9a"] { color: #c084e0 !important; }
 <div id="schedule-wrap">
 
 <!-- Section nav -->
-<div id="section-nav" style="background:#12202e;display:flex;justify-content:center;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,0.08);">
+<div id="section-nav" style="background:#12202e;display:flex;justify-content:center;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,0.08);position:sticky;top:58px;z-index:190;box-shadow:0 2px 10px rgba(0,0,0,0.25);">
   <a href="#phase-0" style="color:rgba(255,255,255,0.65);text-decoration:none;padding:12px 16px;font-size:0.75rem;letter-spacing:0.07em;font-family:sans-serif;border-right:1px solid rgba(255,255,255,0.08);transition:all 0.18s;" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.07)'" onmouseout="this.style.color='rgba(255,255,255,0.65)';this.style.background='transparent'">✈️ Departure</a>
   <a href="#phase-1" style="color:rgba(255,255,255,0.65);text-decoration:none;padding:12px 16px;font-size:0.75rem;letter-spacing:0.07em;font-family:sans-serif;border-right:1px solid rgba(255,255,255,0.08);transition:all 0.18s;" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.07)'" onmouseout="this.style.color='rgba(255,255,255,0.65)';this.style.background='transparent'">🚤 Venice</a>
   <a href="#phase-2" style="color:rgba(255,255,255,0.65);text-decoration:none;padding:12px 16px;font-size:0.75rem;letter-spacing:0.07em;font-family:sans-serif;border-right:1px solid rgba(255,255,255,0.08);transition:all 0.18s;" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.07)'" onmouseout="this.style.color='rgba(255,255,255,0.65)';this.style.background='transparent'">⛰️ Dolomites</a>
