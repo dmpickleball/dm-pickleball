@@ -7,14 +7,15 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 :root {
-  --dark:   #12202e;
-  --green:  #2d6a4f;
+  /* Daytime Italy — warm Mediterranean light */
+  --dark:   #281c10;   /* warm espresso ink */
+  --green:  #2d6a4f;   /* Italian cypress / olive */
   --accent: #3a7d5e;
-  --cream:  #f5f2ed;
-  --white:  #ffffff;
-  --muted:  #8a8a8a;
-  --border: #e4dfd7;
-  --shadow: 0 2px 16px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.04);
+  --cream:  #faf4ea;   /* sunbaked parchment walls */
+  --white:  #fffdf7;   /* warm white */
+  --muted:  #9a8470;   /* warm taupe */
+  --border: #e2d5c2;   /* warm sand */
+  --shadow: 0 2px 16px rgba(40,28,16,0.09), 0 1px 4px rgba(40,28,16,0.05);
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: 16px; scroll-behavior: smooth; }
@@ -241,8 +242,59 @@ body:not(.dark) .dt-sun { opacity: 0.9; }
 .legend { max-width: 860px; margin: 0 auto 48px; padding: 0 20px; display: flex; flex-wrap: wrap; gap: 16px; font-size: 0.8rem; color: var(--muted); font-family: sans-serif; }
 .legend-item { display: flex; align-items: center; gap: 7px; }
 .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+/* ═══════════════════════════════════════════
+   MOBILE — comprehensive responsive fixes
+════════════════════════════════════════════ */
 @media (max-width: 600px) {
-  .day-body { padding: 16px; }
+  /* Day cards */
+  .day-body            { padding: 14px 14px 18px; }
+  .days-container      { padding: 10px 10px 40px; }
+  .phase               { padding: 24px 14px 4px; }
+  .phase h2            { font-size: 1.35rem; }
+  .phase-tag           { font-size: 0.68rem; padding: 4px 14px; }
+
+  /* Day header */
+  .day-number          { min-width: 56px; padding: 12px 10px; }
+  .day-number strong   { font-size: 1.55rem; }
+  .day-info            { padding: 12px 14px; }
+  .day-info h3         { font-size: 1.08rem; line-height: 1.3; }
+  .location-meta       { font-size: 0.76rem; }
+  .hotel-badge         { font-size: 0.7rem; }
+
+  /* Timeline */
+  .tl-section          { padding: 18px 14px 14px; }
+  .tl-day              { font-size: 1.2rem; }
+
+  /* Inline booking confirmation grids → 1-column on mobile */
+  .day-body div[style*="grid-template-columns:1fr 1fr"],
+  .day-body div[style*="grid-template-columns: 1fr 1fr"] {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  /* Action buttons in booking boxes */
+  .day-body div[style*="display:flex"][style*="gap:10px"],
+  .day-body div[style*="display: flex"][style*="gap:10px"] {
+    flex-wrap: wrap !important;
+  }
+
+  /* Comments */
+  .priv-comments-section { padding: 0 12px 40px; }
+  .priv-comment-card     { padding: 14px 14px; }
+  .pcc-reply-row         { flex-direction: column; gap: 8px; }
+  .pcc-reply-btn         { width: 100%; text-align: center; }
+  .pcc-reply-input       { min-height: 70px; }
+
+  /* Transport + alert boxes */
+  .transport-box  { padding: 10px 12px; }
+  .alert-box      { padding: 9px 12px; }
+
+  /* Food tags */
+  .food-tag { font-size: 0.75rem; padding: 4px 10px; }
+
+  /* Topbar */
+  #signout-bar { padding: 0 12px; gap: 8px; height: 50px; }
+  .topbar-clock { display: none; }
 }
 
 /* ═══════════════════════════════════════════
@@ -272,24 +324,92 @@ body:not(.dark) .dt-sun { opacity: 0.9; }
 .priv-comments-empty { font-family: sans-serif; font-size: 0.84rem; color: var(--muted); text-align: center; padding: 32px 0; }
 
 /* ═══════════════════════════════════════════
-   DARK MODE
+   DARK MODE — Nighttime Italy
+   Adriatic midnight · candlelit piazza
 ════════════════════════════════════════════ */
 body.dark {
-  --dark:   #e4e0da;
-  --cream:  #141820;
-  --white:  #1c2230;
-  --muted:  #6a8090;
-  --border: #263040;
-  --shadow: 0 2px 16px rgba(0,0,0,0.4), 0 1px 4px rgba(0,0,0,0.3);
+  /* Nighttime Italy palette */
+  --dark:   #ebe2d5;   /* warm parchment text */
+  --cream:  #0f1a27;   /* Adriatic midnight bg */
+  --white:  #162234;   /* candlelit card bg */
+  --muted:  #7a8a9a;   /* cool Adriatic slate */
+  --border: #1d2e42;   /* deep navy border */
+  --shadow: 0 2px 24px rgba(0,0,0,0.65), 0 1px 6px rgba(0,0,0,0.4);
 }
-body.dark #signout-bar   { background: #0a1018; }
-body.dark .tl-section    { background: #182030; border-bottom-color: #222e3e; }
-body.dark .day-card      { background: #1c2230; }
-body.dark .day-header    { background: #182030; }
-body.dark .transport-box { background: #1e1a0a; }
-body.dark .alert-box     { background: #2a0a14; color: #f48fb1; }
-body.dark .pcc-existing-reply { background: rgba(45,106,79,0.12); }
-body.dark .pcc-reply-input    { background: #141820; }
+
+/* ── Inline booking box backgrounds (green/amber/blue/grey) ── */
+body.dark [style*="background:#e8f5e9"],
+body.dark [style*="background: #e8f5e9"] { background: #0d2218 !important; border-color: #1a4030 !important; }
+body.dark [style*="background:#fff8e1"],
+body.dark [style*="background: #fff8e1"] { background: #1a1500 !important; border-color: #3a2a00 !important; }
+body.dark [style*="background:#e3f2fd"],
+body.dark [style*="background: #e3f2fd"] { background: #0a1830 !important; border-color: #1a2e4a !important; }
+body.dark [style*="background:#eceff1"],
+body.dark [style*="background: #eceff1"] { background: #141c24 !important; border-color: #1e2c38 !important; }
+body.dark [style*="background:#fce4ec"],
+body.dark [style*="background: #fce4ec"] { background: #200010 !important; border-color: #3a0020 !important; }
+
+/* ── Inline grey label text → readable on dark ── */
+body.dark [style*="color:#777"]     { color: #8a9aaa !important; }
+body.dark [style*="color: #777"]    { color: #8a9aaa !important; }
+body.dark [style*="color:#555"]     { color: #8a9aaa !important; }
+body.dark [style*="color: #555"]    { color: #8a9aaa !important; }
+body.dark [style*="color:#37474f"]  { color: #8aacaa !important; }
+body.dark [style*="color: #37474f"] { color: #8aacaa !important; }
+body.dark [style*="color:#546e7a"]  { color: #7a9aaa !important; }
+body.dark [style*="color: #546e7a"] { color: #7a9aaa !important; }
+
+/* ── Inline accent/heading colors → lightened for dark bg ── */
+body.dark [style*="color:#2d6a4f"],
+body.dark [style*="color: #2d6a4f"]  { color: #4ab87a !important; }
+body.dark [style*="color:#e65100"],
+body.dark [style*="color: #e65100"]  { color: #e09050 !important; }
+body.dark [style*="color:#0d47a1"],
+body.dark [style*="color: #0d47a1"]  { color: #5aa0e0 !important; }
+body.dark [style*="color:#c62828"],
+body.dark [style*="color: #c62828"]  { color: #f48080 !important; }
+
+/* ── Inline booking box dividers ── */
+body.dark [style*="border-top:1px solid #c8e6c9"]  { border-color: #1a4030 !important; }
+body.dark [style*="border-top: 1px solid #c8e6c9"] { border-color: #1a4030 !important; }
+body.dark [style*="border-top:1px solid #ffe082"]  { border-color: #3a2a00 !important; }
+body.dark [style*="border-top: 1px solid #ffe082"] { border-color: #3a2a00 !important; }
+
+/* ── Component-class overrides ── */
+body.dark .transport-box {
+  background: #1a1500 !important; border-left-color: #c88020;
+  color: #d8c070;
+}
+body.dark .transport-box .transport-title { color: #e09050; }
+body.dark .transport-box .why            { color: #a09060; }
+body.dark .alert-box {
+  background: #1e0010 !important; color: #f490b8;
+  border-left-color: #880030;
+}
+body.dark .food-tag   { background: #111c28; border-color: #1d2e42; color: #ebe2d5; }
+body.dark .hotel-badge { background: rgba(61,144,104,0.18); color: #4ab87a; }
+body.dark .section-divider { color: #5a7a8a; }
+body.dark .legend          { color: #5a7a8a; }
+
+/* ── Day-body itinerary label colors in dark mode ── */
+body.dark .day-body .tl-label.morning   { color: #e09050 !important; }
+body.dark .day-body .tl-label.afternoon { color: #4ab87a !important; }
+body.dark .day-body .tl-label.evening   { color: #b090d8 !important; }
+body.dark .day-body .tl-label.tip       { color: #60a8d8 !important; }
+
+/* ── Private-site specific ── */
+body.dark #signout-bar  { background: #060e18; }
+body.dark .tl-section   { background: #111c28; border-bottom-color: #1d2e42; }
+body.dark .day-card     { background: #162234; }
+body.dark .day-header   { background: #111c28; }
+body.dark .day-number   { background: #1d2e42; }
+body.dark .day-number[style*="background:#555"] { background: #283848 !important; }
+
+/* Comments */
+body.dark .pcc-existing-reply     { background: rgba(61,144,104,0.12); border-left-color: #3d9068; }
+body.dark .pcc-reply-input        { background: #0f1a27; border-color: #1d2e42; color: #ebe2d5; }
+body.dark .pcc-delete-btn:hover       { background: #200010; color: #f490b8; }
+body.dark .pcc-delete-reply-btn:hover { background: #200010; color: #f490b8; }
 </style>
 </head>
 <body>

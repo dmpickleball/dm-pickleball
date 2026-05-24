@@ -7,14 +7,15 @@
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAplgT01JK_CZAPbcyVyn8muBnY-Z4KeRY"></script>
 <style>
 :root {
-  --dark:   #12202e;
-  --green:  #2d6a4f;
+  /* Daytime Italy — warm Mediterranean light */
+  --dark:   #281c10;   /* warm espresso ink */
+  --green:  #2d6a4f;   /* Italian cypress / olive */
   --accent: #3a7d5e;
-  --cream:  #f5f2ed;
-  --white:  #ffffff;
-  --muted:  #8a8a8a;
-  --border: #e4dfd7;
-  --shadow: 0 2px 16px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.04);
+  --cream:  #faf4ea;   /* sunbaked parchment walls */
+  --white:  #fffdf7;   /* warm white */
+  --muted:  #9a8470;   /* warm taupe */
+  --border: #e2d5c2;   /* warm sand */
+  --shadow: 0 2px 16px rgba(40,28,16,0.09), 0 1px 4px rgba(40,28,16,0.05);
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: 16px; scroll-behavior: smooth; }
@@ -453,25 +454,94 @@ body { font-family: 'Georgia', serif; background: var(--cream); color: var(--dar
 }
 
 /* ═══════════════════════════════════════════
-   DARK MODE
+   DARK MODE — Nighttime Italy
+   Adriatic midnight · candlelit piazza
 ════════════════════════════════════════════ */
 body.dark {
-  --dark:   #e4e0da;
-  --cream:  #141820;
-  --white:  #1c2230;
-  --muted:  #6a8090;
-  --border: #263040;
-  --shadow: 0 2px 16px rgba(0,0,0,0.4), 0 1px 4px rgba(0,0,0,0.3);
+  /* Nighttime Italy palette */
+  --dark:   #ebe2d5;   /* warm parchment text */
+  --cream:  #0f1a27;   /* Adriatic midnight bg */
+  --white:  #162234;   /* candlelit card bg */
+  --muted:  #7a8a9a;   /* cool Adriatic slate */
+  --border: #1d2e42;   /* deep navy border */
+  --shadow: 0 2px 24px rgba(0,0,0,0.65), 0 1px 6px rgba(0,0,0,0.4);
 }
-body.dark .topbar        { background: #0a1018; }
-body.dark .tl-section    { background: #182030; border-bottom-color: #222e3e; }
-body.dark .card          { background: #1c2230; }
-body.dark .flight-strip  { background: #0a1018; }
-body.dark .pw-card       { background: rgba(18,22,32,0.98); color: #e4e0da; }
-body.dark .pw-card p, body.dark .pw-card .pw-label { color: #8a9aaa; }
-body.dark .pw-row input  { background: #1c2230; border-color: #263040; color: #e4e0da; }
-body.dark .footer        { color: #6a7a88; }
-body.dark .loc-bar       { border-top-color: #263040; }
+
+/* ── Inline booking box backgrounds (green/amber/blue/grey) ── */
+body.dark [style*="background:#e8f5e9"],
+body.dark [style*="background: #e8f5e9"] { background: #0d2218 !important; border-color: #1a4030 !important; }
+body.dark [style*="background:#fff8e1"],
+body.dark [style*="background: #fff8e1"] { background: #1a1500 !important; border-color: #3a2a00 !important; }
+body.dark [style*="background:#e3f2fd"],
+body.dark [style*="background: #e3f2fd"] { background: #0a1830 !important; border-color: #1a2e4a !important; }
+body.dark [style*="background:#eceff1"],
+body.dark [style*="background: #eceff1"] { background: #141c24 !important; border-color: #1e2c38 !important; }
+body.dark [style*="background:#fce4ec"],
+body.dark [style*="background: #fce4ec"] { background: #200010 !important; border-color: #3a0020 !important; }
+
+/* ── Inline grey label text → readable on dark ── */
+body.dark [style*="color:#777"]     { color: #8a9aaa !important; }
+body.dark [style*="color: #777"]    { color: #8a9aaa !important; }
+body.dark [style*="color:#555"]     { color: #8a9aaa !important; }
+body.dark [style*="color: #555"]    { color: #8a9aaa !important; }
+body.dark [style*="color:#37474f"]  { color: #8aacaa !important; }
+body.dark [style*="color: #37474f"] { color: #8aacaa !important; }
+body.dark [style*="color:#546e7a"]  { color: #7a9aaa !important; }
+body.dark [style*="color: #546e7a"] { color: #7a9aaa !important; }
+
+/* ── Inline accent/heading colors → lightened for dark bg ── */
+body.dark [style*="color:#2d6a4f"],
+body.dark [style*="color: #2d6a4f"]  { color: #4ab87a !important; }
+body.dark [style*="color:#e65100"],
+body.dark [style*="color: #e65100"]  { color: #e09050 !important; }
+body.dark [style*="color:#0d47a1"],
+body.dark [style*="color: #0d47a1"]  { color: #5aa0e0 !important; }
+body.dark [style*="color:#c62828"],
+body.dark [style*="color: #c62828"]  { color: #f48080 !important; }
+
+/* ── Inline booking box dividers ── */
+body.dark [style*="border-top:1px solid #c8e6c9"]  { border-color: #1a4030 !important; }
+body.dark [style*="border-top: 1px solid #c8e6c9"] { border-color: #1a4030 !important; }
+body.dark [style*="border-top:1px solid #ffe082"]  { border-color: #3a2a00 !important; }
+body.dark [style*="border-top: 1px solid #ffe082"] { border-color: #3a2a00 !important; }
+
+/* ── Component-class overrides ── */
+body.dark .transport-box {
+  background: #1a1500 !important; border-left-color: #c88020;
+  color: #d8c070;
+}
+body.dark .transport-box .transport-title { color: #e09050; }
+body.dark .transport-box .why            { color: #a09060; }
+body.dark .alert-box {
+  background: #1e0010 !important; color: #f490b8;
+  border-left-color: #880030;
+}
+body.dark .food-tag   { background: #111c28; border-color: #1d2e42; color: #ebe2d5; }
+body.dark .hotel-badge { background: rgba(61,144,104,0.18); color: #4ab87a; }
+body.dark .section-divider { color: #5a7a8a; }
+body.dark .legend          { color: #5a7a8a; }
+
+/* ── Day-body itinerary label colors in dark mode ── */
+body.dark .day-body .tl-label.morning   { color: #e09050 !important; }
+body.dark .day-body .tl-label.afternoon { color: #4ab87a !important; }
+body.dark .day-body .tl-label.evening   { color: #b090d8 !important; }
+body.dark .day-body .tl-label.tip       { color: #60a8d8 !important; }
+
+/* ── Live-site specific ── */
+body.dark .topbar        { background: #060e18; }
+body.dark .tl-section    { background: #111c28; border-bottom-color: #1d2e42; }
+body.dark .card          { background: #162234; }
+body.dark .flight-strip  { background: #060e18; }
+body.dark .loc-bar       { border-top-color: #1d2e42; }
+body.dark .pw-card       { background: rgba(15,26,39,0.98); color: #ebe2d5; }
+body.dark .pw-card p, body.dark .pw-card .pw-label { color: #7a8a9a; }
+body.dark .pw-row input  { background: #162234; border-color: #1d2e42; color: #ebe2d5; }
+body.dark .footer        { color: #5a7a8a; }
+
+/* Comments */
+body.dark .comment-form, body.dark .comment-card { background: #162234; }
+body.dark .cf-name, body.dark .cf-msg { background: #0f1a27; border-color: #1d2e42; color: #ebe2d5; }
+body.dark .cc-reply { background: rgba(61,144,104,0.12); }
 
 /* Countdown / day badge */
 .topbar-day {
@@ -607,9 +677,29 @@ body:not(.dark) .dt-sun { opacity: 0.9; }
   margin-bottom: 4px;
 }
 .cc-reply-msg { font-size: 0.88rem; color: var(--dark); line-height: 1.5; }
-body.dark .comment-form, body.dark .comment-card { background: #1c2230; }
-body.dark .cf-name, body.dark .cf-msg { background: #141820; border-color: #263040; color: #e4e0da; }
-body.dark .cc-reply { background: rgba(45,106,79,0.12); }
+/* comments now in dark mode block above */
+/* ═══════════════════════════════════════════
+   MOBILE — comprehensive responsive fixes
+════════════════════════════════════════════ */
+@media (max-width: 600px) {
+  .tl-section    { padding: 18px 14px 14px; }
+  .tl-day        { font-size: 1.2rem; }
+  .content       { padding: 14px 12px 0; gap: 14px; }
+
+  /* Flight strip */
+  .flight-strip  { margin: 14px 10px 0; }
+  .fi            { padding: 14px 18px; }
+
+  /* Comments */
+  .comments-wrap { padding: 0 12px; }
+  .comment-form  { padding: 16px; }
+  .comment-card  { padding: 16px; }
+  .cf-name, .cf-msg { font-size: 0.88rem; }
+
+  /* Topbar */
+  .topbar        { padding: 0 12px; gap: 8px; height: 50px; }
+  .topbar-clock  { display: none; }
+}
 </style>
 </head>
 <body>
