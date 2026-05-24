@@ -106,6 +106,15 @@ body { font-family: 'Georgia', serif; background: var(--cream); color: var(--dar
 /* ═══════════════════════════════════════════
    MODERN DARK TOGGLE (pill slider)
 ════════════════════════════════════════════ */
+.dt-wrap {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 2px; flex-shrink: 0;
+}
+.dt-auto-label {
+  font-family: sans-serif; font-size: 0.42rem; font-weight: 700;
+  letter-spacing: 0.16em; color: rgba(255,255,255,0.32);
+  text-transform: uppercase; line-height: 1; user-select: none;
+}
 .dark-toggle { background: none; border: none; cursor: pointer; padding: 0; flex-shrink: 0; }
 .dt-track {
   display: flex; align-items: center;
@@ -689,13 +698,16 @@ body.dark a[style*="color:#6a1b9a"] { color: #c084e0 !important; }
   <button class="topbar-comments" onclick="document.getElementById('priv-comments-section').scrollIntoView({behavior:'smooth'})" title="Jump to comments">
     💬<span class="topbar-comments-badge" id="priv-comment-badge"></span>
   </button>
-  <button class="dark-toggle" id="dark-toggle" onclick="toggleDark()" title="Toggle dark mode">
-    <span class="dt-track">
-      <span class="dt-moon">🌙</span>
-      <span class="dt-thumb"></span>
-      <span class="dt-sun">☀️</span>
-    </span>
-  </button>
+  <div class="dt-wrap">
+    <span class="dt-auto-label">AUTO</span>
+    <button class="dark-toggle" id="dark-toggle" onclick="toggleDark()" title="Toggle dark mode">
+      <span class="dt-track">
+        <span class="dt-moon">🌙</span>
+        <span class="dt-thumb"></span>
+        <span class="dt-sun">☀️</span>
+      </span>
+    </button>
+  </div>
   <button class="topbar-btn" onclick="signOut()">Sign out</button>
 </div>
 
