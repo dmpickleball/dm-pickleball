@@ -298,6 +298,33 @@ body:not(.dark) .dt-sun { opacity: 0.9; }
 }
 
 /* ═══════════════════════════════════════════
+   STICKY LEGEND BAR
+════════════════════════════════════════════ */
+#sticky-legend {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 190;
+  background: var(--white);
+  border-top: 1px solid var(--border);
+  display: none; /* shown by JS after auth */
+  align-items: center; justify-content: center;
+  gap: 20px; padding: 0 20px; height: 38px;
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.07);
+}
+.sl-item {
+  display: flex; align-items: center; gap: 6px;
+  font-family: sans-serif; font-size: 0.72rem;
+  color: var(--muted); white-space: nowrap;
+}
+.sl-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+@media (max-width: 480px) {
+  #sticky-legend { gap: 14px; padding: 0 12px; }
+  .sl-item span  { display: none; } /* dots only on smallest screens */
+  .sl-dot        { width: 12px; height: 12px; }
+}
+body.dark #sticky-legend { box-shadow: 0 -2px 12px rgba(0,0,0,0.35); }
+
+/* ═══════════════════════════════════════════
    COMMENTS MANAGEMENT
 ════════════════════════════════════════════ */
 .priv-comments-section { max-width: 860px; margin: 40px auto 0; padding: 0 24px 60px; }
@@ -1638,13 +1665,8 @@ body.dark a[style*="color:#6a1b9a"] { color: #c084e0 !important; }
     </div>
   </div>
 
-  <!-- LEGEND -->
-  <div class="legend">
-    <div class="legend-item"><div class="legend-dot" style="background:#f9a825"></div> Morning</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#2d6a4f"></div> Afternoon</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#4a148c"></div> Evening</div>
-    <div class="legend-item"><div class="legend-dot" style="background:#0277bd"></div> Tip / Logistics</div>
-  </div>
+  <!-- bottom padding so content isn't hidden behind sticky legend -->
+  <div style="height:44px;"></div>
 
 </div><!-- end days-container -->
 
@@ -1735,6 +1757,7 @@ body.dark a[style*="color:#6a1b9a"] { color: #c084e0 !important; }
     const bar = document.getElementById('signout-bar');
     bar.style.display = 'flex';
     document.getElementById('schedule-wrap').style.display = 'block';
+    document.getElementById('sticky-legend').style.display = 'flex';
     buildPrivTimeline();
     updatePrivTimeline();
     updatePrivCountdown();
@@ -2103,5 +2126,13 @@ body.dark a[style*="color:#6a1b9a"] { color: #c084e0 !important; }
     return new Date(iso).toLocaleDateString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
   }
 </script>
+<!-- STICKY LEGEND BAR -->
+<div id="sticky-legend">
+  <div class="sl-item"><div class="sl-dot" style="background:#f9a825;"></div><span>Morning</span></div>
+  <div class="sl-item"><div class="sl-dot" style="background:#2d6a4f;"></div><span>Afternoon</span></div>
+  <div class="sl-item"><div class="sl-dot" style="background:#4a148c;"></div><span>Evening</span></div>
+  <div class="sl-item"><div class="sl-dot" style="background:#0277bd;"></div><span>Tip / Logistics</span></div>
+</div>
+
 </body>
 </html>
