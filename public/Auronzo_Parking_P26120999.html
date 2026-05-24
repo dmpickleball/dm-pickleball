@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tre Cime Parking Pass — P26120999</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f0f4f8; color: #1a1a2e; min-height: 100vh;
+    padding: 24px 16px 48px;
+  }
+  .wrapper { max-width: 520px; margin: 0 auto; }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #1a3a5c 0%, #2d6a9f 100%);
+    border-radius: 16px 16px 0 0;
+    padding: 28px 28px 22px;
+    color: #fff;
+  }
+  .header-eyebrow {
+    font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase;
+    color: rgba(255,255,255,0.55); margin-bottom: 8px;
+  }
+  .header-title { font-size: 1.45rem; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 4px; }
+  .header-sub { font-size: 0.85rem; color: rgba(255,255,255,0.7); }
+
+  /* Status badge */
+  .status-bar {
+    background: #fff8e1; border-left: 4px solid #f9a825;
+    padding: 12px 20px; font-size: 0.82rem; color: #6d4c00;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .status-badge {
+    background: #f9a825; color: #fff; font-size: 0.65rem; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    padding: 3px 10px; border-radius: 20px; white-space: nowrap;
+  }
+
+  /* Main card */
+  .card {
+    background: #fff;
+    border-radius: 0 0 16px 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+    overflow: hidden;
+  }
+
+  /* Code block */
+  .code-block {
+    background: #1a3a5c; color: #fff;
+    padding: 20px 28px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px;
+  }
+  .code-label { font-size: 0.6rem; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.45); margin-bottom: 4px; }
+  .code-value { font-size: 1.55rem; font-weight: 700; letter-spacing: 0.12em; font-family: 'Courier New', monospace; }
+  .code-icon { font-size: 2.4rem; opacity: 0.4; }
+
+  /* Detail grid */
+  .detail-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 0; border-top: 1px solid #f0f0f0;
+  }
+  .detail-item {
+    padding: 16px 20px;
+    border-right: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .detail-item:nth-child(even) { border-right: none; }
+  .detail-label { font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: #999; margin-bottom: 4px; }
+  .detail-value { font-size: 0.92rem; font-weight: 600; color: #1a1a2e; line-height: 1.35; }
+  .detail-value.highlight { color: #1a3a5c; font-size: 1.05rem; }
+
+  /* Validity banner */
+  .validity {
+    background: #e8f5e9; padding: 16px 20px;
+    display: flex; gap: 20px; flex-wrap: wrap;
+    border-bottom: 1px solid #c8e6c9;
+  }
+  .validity-item { flex: 1; min-width: 140px; }
+  .validity-label { font-size: 0.6rem; letter-spacing: 0.14em; text-transform: uppercase; color: #2d6a4f; margin-bottom: 3px; }
+  .validity-value { font-size: 0.95rem; font-weight: 700; color: #1a3a1a; }
+
+  /* Notes */
+  .notes { padding: 18px 20px; border-bottom: 1px solid #f0f0f0; }
+  .notes-title { font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: #999; margin-bottom: 10px; }
+  .note { display: flex; gap: 8px; margin-bottom: 8px; font-size: 0.82rem; color: #444; line-height: 1.45; }
+  .note:last-child { margin-bottom: 0; }
+  .note-icon { flex-shrink: 0; }
+
+  /* Action link */
+  .action { padding: 18px 20px; }
+  .action a {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    background: #1a3a5c; color: #fff; text-decoration: none;
+    border-radius: 10px; padding: 13px 20px;
+    font-size: 0.85rem; font-weight: 600; letter-spacing: 0.02em;
+    transition: background 0.18s;
+  }
+  .action a:hover { background: #2d6a9f; }
+  .action-note {
+    text-align: center; font-size: 0.72rem; color: #999; margin-top: 10px;
+    line-height: 1.5;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center; margin-top: 20px;
+    font-size: 0.7rem; color: #aaa; line-height: 1.6;
+  }
+
+  @media (max-width: 400px) {
+    .detail-grid { grid-template-columns: 1fr; }
+    .detail-item { border-right: none; }
+    .code-value { font-size: 1.25rem; }
+    .header-title { font-size: 1.2rem; }
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <div class="header">
+    <div class="header-eyebrow">🅿️ Parking Pass Confirmation</div>
+    <div class="header-title">Tre Cime di Lavaredo</div>
+    <div class="header-sub">Auronzo Toll Road · Rifugio Auronzo Trailhead</div>
+  </div>
+
+  <div class="status-bar">
+    <span class="status-badge">DA ATTIVARE</span>
+    <span>Pending activation — add vehicle plate before June 7</span>
+  </div>
+
+  <div class="card">
+
+    <div class="code-block">
+      <div>
+        <div class="code-label">Booking Code</div>
+        <div class="code-value">P26120999</div>
+      </div>
+      <div class="code-icon">🎫</div>
+    </div>
+
+    <div class="validity">
+      <div class="validity-item">
+        <div class="validity-label">Valid From</div>
+        <div class="validity-value">Sun Jun 7 · 7:30 AM</div>
+      </div>
+      <div class="validity-item">
+        <div class="validity-label">Valid To</div>
+        <div class="validity-value">Sun Jun 7 · 7:29 PM</div>
+      </div>
+    </div>
+
+    <div class="detail-grid">
+      <div class="detail-item">
+        <div class="detail-label">Operation</div>
+        <div class="detail-value">INSERIMENTO</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">Duration</div>
+        <div class="detail-value">From 07:30</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">Sector</div>
+        <div class="detail-value">Parcheggio Auto / Moto</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">Tariff</div>
+        <div class="detail-value">Tariffa Auto</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">Vehicles</div>
+        <div class="detail-value highlight">⚠️ TBD — add plate at activation</div>
+      </div>
+      <div class="detail-item">
+        <div class="detail-label">Website</div>
+        <div class="detail-value">pass.auronzo.info</div>
+      </div>
+    </div>
+
+    <div class="notes">
+      <div class="notes-title">📋 Important Notes</div>
+      <div class="note">
+        <span class="note-icon">🚗</span>
+        <span>You must activate this pass and enter your rental car's plate number at <strong>pass.auronzo.info</strong> before the day. It shows as "DA Attivare" until activated.</span>
+      </div>
+      <div class="note">
+        <span class="note-icon">⏰</span>
+        <span>Leave Dobbiaco by <strong>7:00 AM</strong> to reach the trailhead by 7:30. Parking fills by mid-morning and mountain weather deteriorates by early afternoon.</span>
+      </div>
+      <div class="note">
+        <span class="note-icon">📍</span>
+        <span>Drive Dobbiaco → Misurina (~20 min) → up the toll road to <strong>Rifugio Auronzo</strong> at 7,700 ft. This pass covers the toll road access and parking.</span>
+      </div>
+      <div class="note">
+        <span class="note-icon">📶</span>
+        <span>Signal at the trailhead is limited — have this page saved offline and the code <strong>P26120999</strong> written down as backup.</span>
+      </div>
+    </div>
+
+    <div class="action">
+      <a href="https://pass.auronzo.info" target="_blank">
+        🌐 Open pass.auronzo.info to Activate
+      </a>
+      <div class="action-note">
+        Activate before June 7 · Add vehicle plate number · Code: P26120999
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    Saved offline · Italy 2026 · Day 9 — Tre Cime di Lavaredo<br>
+    If online, manage at pass.auronzo.info
+  </div>
+
+</div>
+</body>
+</html>
