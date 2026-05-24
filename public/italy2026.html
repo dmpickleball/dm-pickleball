@@ -399,6 +399,9 @@ body.dark .day-body .tl-label.tip       { color: #60a8d8 !important; }
 
 /* ── Private-site specific ── */
 body.dark #signout-bar  { background: #060e18; }
+body.dark #section-nav  { background: #080f18 !important; }
+body.dark [style*="background:#eee"],
+body.dark [style*="background: #eee"] { background: #1d2e42 !important; color: #7a8a9a !important; }
 body.dark .tl-section   { background: #111c28; border-bottom-color: #1d2e42; }
 body.dark .day-card     { background: #162234; }
 body.dark .day-header   { background: #111c28; }
@@ -657,7 +660,7 @@ body.dark .pcc-delete-reply-btn:hover { background: #200010; color: #f490b8; }
 <div id="schedule-wrap">
 
 <!-- Section nav -->
-<div style="background:var(--dark);display:flex;justify-content:center;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,0.08);">
+<div id="section-nav" style="background:#12202e;display:flex;justify-content:center;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,0.08);">
   <a href="#phase-0" style="color:rgba(255,255,255,0.65);text-decoration:none;padding:12px 16px;font-size:0.75rem;letter-spacing:0.07em;font-family:sans-serif;border-right:1px solid rgba(255,255,255,0.08);transition:all 0.18s;" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.07)'" onmouseout="this.style.color='rgba(255,255,255,0.65)';this.style.background='transparent'">✈️ Departure</a>
   <a href="#phase-1" style="color:rgba(255,255,255,0.65);text-decoration:none;padding:12px 16px;font-size:0.75rem;letter-spacing:0.07em;font-family:sans-serif;border-right:1px solid rgba(255,255,255,0.08);transition:all 0.18s;" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.07)'" onmouseout="this.style.color='rgba(255,255,255,0.65)';this.style.background='transparent'">🚤 Venice</a>
   <a href="#phase-2" style="color:rgba(255,255,255,0.65);text-decoration:none;padding:12px 16px;font-size:0.75rem;letter-spacing:0.07em;font-family:sans-serif;border-right:1px solid rgba(255,255,255,0.08);transition:all 0.18s;" onmouseover="this.style.color='#fff';this.style.background='rgba(255,255,255,0.07)'" onmouseout="this.style.color='rgba(255,255,255,0.65)';this.style.background='transparent'">⛰️ Dolomites</a>
@@ -681,7 +684,7 @@ body.dark .pcc-delete-reply-btn:hover { background: #200010; color: #f490b8; }
       <div class="day-info">
         <h3>Depart Home → SFO ✈️</h3>
         <div class="location-meta">May 30 · Departure Day · SFO → Venice (VCE)</div>
-        <span class="hotel-badge" style="background:#eee;color:#555;">🏠 1164 Westminster Ave, Palo Alto CA 94303</span>
+        <span class="hotel-badge">🏠 1164 Westminster Ave, Palo Alto CA 94303</span>
       </div>
     </div>
     <div class="day-body">
