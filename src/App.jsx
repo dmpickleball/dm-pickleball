@@ -28,6 +28,7 @@ const LOGO_CRBN    = "/images/logo-crbn.png";     // was: IMG_5034.png
 const LOGO_VATIC   = "/images/logo-vatic.png";    // was: IMG_5036.png
 const LOGO_SIXZERO = "/images/logo-sixzero.png";  // was: IMG_5035.png
 const LOGO_ENGAGE  = "/images/logo-engage.png";   // was: IMG_5037.png
+const LOGO_AIREO   = "https://www.aireo-sports.com/cdn/shop/files/Group_4096.svg?v=1742226219";
 const DAVID_PHOTO  = "/images/david.jpg";         // was: 1773178886822_IMG_2962.JPG
 
 // ─── CONTACT FORM ────────────────────────────────────────────────────────────
@@ -83,6 +84,7 @@ const FOCUS_AREAS = ["Dinking & kitchen game","Third shot drops","Third shot dri
 
 // ─── BRANDS ──────────────────────────────────────────────────────────────────
 const BRANDS = [
+  { id:"aireo",   name:"Aireo Sports",        tagline:"Coach David's Current Paddle — AIREO Cyclone 16mm", description:"As an official Aireo Sports Ambassador, Coach David plays with the AIREO Cyclone 16mm — built with NanoGraph™ Surface Texture for long-lasting spin and PulseFoam™ Power Core for explosive rebound. USAP PBCoR .43 certified and designed to elevate your game at every level.", code:"dmpickleball", deal:"Discount off your order", link:"https://www.aireo-sports.com/collections/all-paddles", logo:LOGO_AIREO, logoBg:"#0d1117", logoPad:"28px 40px", shopBg:"#1d4ed8", shopColor:"white", codeColor:"#2563eb", codeBg:"#eff6ff", codeText:"#6b7280", featured:true },
   { id:"crbn",    name:"CRBN Pickleball",    tagline:"Coach David's #1 Recommended Paddle",  description:"As a CRBN Ambassador, Coach David uses and trusts CRBN paddles at every level of play — from training sessions to 5.0+ tournament competition. Use his code for a discount on your next order.", code:"DMPICKLEBALL", deal:"Discount off your order", link:"https://crbnpickleball.com",   logo:LOGO_CRBN,    logoBg:"#000000", logoPad:"20px 28px", shopBg:"#000000", shopColor:"white", codeColor:"#ffffff", codeBg:"#1a1a1a", codeText:"#9ca3af" },
   { id:"vatic",   name:"Vatic Pro",           tagline:"High Performance at Every Level", description:"Vatic Pro paddles deliver exceptional feel and control for players serious about improving their game. Trusted by competitive players across all skill levels.",                            code:"DMPICKLEBALL", deal:"Discount off your order", link:"https://vaticpro.com",         logo:LOGO_VATIC,   logoBg:"#ffffff", logoPad:"16px 24px", shopBg:"#e85d04", shopColor:"white", codeColor:"#e85d04", codeBg:"#fff5f0", codeText:"#9ca3af" },
   { id:"sixzero", name:"Six Zero Pickleball", tagline:"Engineered for Competitive Play", description:"Six Zero paddles are built for players who want precision, power, and consistency in every shot. A go-to brand for serious competitors on the court.",                                   code:"DAVIDMUK10",   deal:"10% off your order",      link:"https://sixzero.co",          logo:LOGO_SIXZERO, logoBg:"#ffffff", logoPad:"20px 24px", shopBg:"#111111", shopColor:"white", codeColor:"#111111", codeBg:"#f5f5f5", codeText:"#9ca3af" },
@@ -1073,7 +1075,7 @@ function GearPage(){
   const paddle={
     name: gearData?.paddle_name || BAG_ITEMS[0].name,
     detail: BAG_ITEMS[0].detail,
-    link: gearData?.paddle_link || BAG_ITEMS[0].link,
+    link: (gearData?.paddle_link?.startsWith?.('http') ? gearData.paddle_link : null) || BAG_ITEMS[0].link,
   };
   const bag={
     name: gearData?.bag_name || BAG_ITEMS[1].name,
@@ -1107,29 +1109,32 @@ function GearPage(){
         </div>
         <div style={{maxWidth:960,margin:"0 auto",display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(420px,100%),1fr))",gap:24}}>
           {BRANDS.map(brand=>(
-            <div key={brand.id} style={{background:"white",borderRadius:20,overflow:"hidden",boxShadow:"0 4px 24px rgba(0,0,0,0.07)",border:"1.5px solid #ebebeb",display:"flex",flexDirection:"column"}}>
-              <div style={{background:brand.logoBg,padding:brand.logoPad,display:"flex",alignItems:"center",justifyContent:"center",minHeight:110}}>
-                <img src={brand.logo} alt={brand.name} style={{maxHeight:68,maxWidth:"80%",objectFit:"contain"}}/>
-              </div>
-              <div style={{padding:"24px 28px",display:"flex",flexDirection:"column",flex:1}}>
-                <div style={{fontWeight:800,fontSize:"1.05rem",color:"#111"}}>{brand.name}</div>
-                <div style={{fontSize:"0.83rem",color:"#9ca3af",marginTop:3,marginBottom:14}}>{brand.tagline}</div>
-                <p style={{color:"#4b5563",fontSize:"0.88rem",lineHeight:1.8,marginBottom:20,flex:1}}>{brand.description}</p>
-                <div style={{background:brand.codeBg,borderRadius:12,padding:"14px 18px",marginBottom:14,border:"1.5px dashed #e5e7eb"}}>
-                  <div style={{fontSize:"0.68rem",fontWeight:700,color:brand.codeText,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Discount Code</div>
-                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap"}}>
-                    <div>
-                      <div style={{fontFamily:"monospace",fontWeight:900,fontSize:"1.4rem",color:brand.codeColor,letterSpacing:2}}>{brand.code}</div>
-                      <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:3}}>{brand.deal}</div>
-                    </div>
-                    <CopyButton code={brand.code}/>
-                  </div>
+            <div key={brand.id} style={{background:"white",borderRadius:20,overflow:"hidden",boxShadow:brand.featured?"0 8px 48px rgba(29,78,216,0.18)":"0 4px 24px rgba(0,0,0,0.07)",border:brand.featured?"2px solid #1d4ed8":"1.5px solid #ebebeb",display:"flex",flexDirection:"column",gridColumn:brand.featured?"1 / -1":undefined,position:"relative"}}>
+              {brand.featured&&<div style={{position:"absolute",top:16,right:20,background:"#1d4ed8",color:"white",fontSize:"0.6rem",fontWeight:900,padding:"4px 14px",borderRadius:50,textTransform:"uppercase",letterSpacing:2,zIndex:1,boxShadow:"0 2px 8px rgba(29,78,216,0.4)"}}>⭐ Title Sponsor</div>}
+              <div style={{display:"flex",flexDirection:brand.featured?"row":"column"}}>
+                <div style={{background:brand.logoBg,padding:brand.logoPad,display:"flex",alignItems:"center",justifyContent:"center",minHeight:brand.featured?160:110,minWidth:brand.featured?220:undefined,flexShrink:0}}>
+                  <img src={brand.logo} alt={brand.name} style={{maxHeight:brand.featured?90:68,maxWidth:"80%",objectFit:"contain"}}/>
                 </div>
-                <a href={brand.link} target="_blank" rel="noreferrer"
-                  onClick={()=>trackEvent("gear_discount_shop_click",{brand:brand.name})}
-                  style={{display:"flex",alignItems:"center",justifyContent:"center",background:brand.shopBg,color:brand.shopColor,padding:"12px 20px",borderRadius:50,fontWeight:700,textDecoration:"none",fontSize:"0.9rem"}}>
-                  Shop {brand.name} →
-                </a>
+                <div style={{padding:"24px 28px",display:"flex",flexDirection:"column",flex:1}}>
+                  <div style={{fontWeight:800,fontSize:brand.featured?"1.2rem":"1.05rem",color:"#111"}}>{brand.name}</div>
+                  <div style={{fontSize:"0.83rem",color:brand.featured?"#2563eb":"#9ca3af",fontWeight:brand.featured?600:400,marginTop:3,marginBottom:14}}>{brand.tagline}</div>
+                  <p style={{color:"#4b5563",fontSize:"0.88rem",lineHeight:1.8,marginBottom:20,flex:1}}>{brand.description}</p>
+                  <div style={{background:brand.codeBg,borderRadius:12,padding:"14px 18px",marginBottom:14,border:brand.featured?"1.5px dashed #93c5fd":"1.5px dashed #e5e7eb"}}>
+                    <div style={{fontSize:"0.68rem",fontWeight:700,color:brand.codeText,textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Discount Code</div>
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap"}}>
+                      <div>
+                        <div style={{fontFamily:"monospace",fontWeight:900,fontSize:"1.4rem",color:brand.codeColor,letterSpacing:2}}>{brand.code}</div>
+                        <div style={{fontSize:"0.78rem",color:"#6b7280",marginTop:3}}>{brand.deal}</div>
+                      </div>
+                      <CopyButton code={brand.code}/>
+                    </div>
+                  </div>
+                  <a href={brand.link} target="_blank" rel="noreferrer"
+                    onClick={()=>trackEvent("gear_discount_shop_click",{brand:brand.name})}
+                    style={{display:"flex",alignItems:"center",justifyContent:"center",background:brand.shopBg,color:brand.shopColor,padding:"12px 20px",borderRadius:50,fontWeight:700,textDecoration:"none",fontSize:"0.9rem"}}>
+                    Shop {brand.name} →
+                  </a>
+                </div>
               </div>
             </div>
           ))}
