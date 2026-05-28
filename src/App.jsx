@@ -92,8 +92,8 @@ const BRANDS = [
 ];
 
 const BAG_ITEMS = [
-  { id:"paddle", label:"Current Paddle", name:"CRBN² Barrage", detail:"TruFoam Core · Carbon Fiber Face", icon:"🎾", link:"https://crbnpickleball.com" },
-  { id:"bag",    label:"Current Bag",    name:"CRBN Tour Bag", detail:"Pear Colorway",                    icon:"🎒", link:"https://crbnpickleball.com" },
+  { id:"paddle", label:"Current Paddle", name:"Aireo Cyclone 16mm", detail:"PulseFoam™ Core · NanoGraph™ Surface", icon:"🎾", link:"https://www.aireo-sports.com/collections/all-paddles" },
+  { id:"bag",    label:"Current Bag",    name:"CRBN Tour Bag",      detail:"Pear Colorway",                       icon:"🎒", link:"https://crbnpickleball.com" },
 ];
 
 const PADDLE_HISTORY = [
@@ -1074,7 +1074,7 @@ function GearPage(){
   // Merge API data over hardcoded defaults
   const paddle={
     name: gearData?.paddle_name || BAG_ITEMS[0].name,
-    detail: BAG_ITEMS[0].detail,
+    detail: gearData?.paddle_detail || BAG_ITEMS[0].detail,
     link: (gearData?.paddle_link?.startsWith?.('http') ? gearData.paddle_link : null) || BAG_ITEMS[0].link,
   };
   const bag={
@@ -6458,7 +6458,7 @@ function LessonLedgerTab({mockUsers,setSelectedStudent,setTab}){
 }
 
 // ─── GEAR ADMIN TAB ───────────────────────────────────────────────────────────
-function PaddleHistoryEditor({history,setHistory,paddleName,paddleLink,paddleStart,bagName,bagDetail,bagLink,accentColor}){
+function PaddleHistoryEditor({history,setHistory,paddleName,paddleLink,paddleDetail,paddleStart,bagName,bagDetail,bagLink,accentColor}){
   const[editIdx,setEditIdx]=useState(null);
   const[editName,setEditName]=useState("");
   const[editFrom,setEditFrom]=useState("");
@@ -6469,7 +6469,7 @@ function PaddleHistoryEditor({history,setHistory,paddleName,paddleLink,paddleSta
 
   const persist=async(updated)=>{
     await fetch("/api/gear",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
-      paddle_name:paddleName,paddle_link:paddleLink,paddle_start:paddleStart,
+      paddle_name:paddleName,paddle_link:paddleLink,paddle_detail:paddleDetail,paddle_start:paddleStart,
       bag_name:bagName,bag_detail:bagDetail,bag_link:bagLink,paddle_history:updated,accent_color:accentColor,
     })});
   };
@@ -6541,6 +6541,7 @@ function GearAdminTab(){
   // Paddle fields
   const[paddleName,setPaddleName]=useState("");
   const[paddleLink,setPaddleLink]=useState("");
+  const[paddleDetail,setPaddleDetail]=useState("");
   const[paddleStart,setPaddleStart]=useState("");
 
   // Bag fields
@@ -6558,7 +6559,8 @@ function GearAdminTab(){
         const g=d.gear;
         setPaddleName(g.paddle_name||BAG_ITEMS[0].name);
         setPaddleLink(g.paddle_link||BAG_ITEMS[0].link);
-        setPaddleStart(g.paddle_start||"Mar 2026");
+        setPaddleDetail(g.paddle_detail||BAG_ITEMS[0].detail);
+        setPaddleStart(g.paddle_start||"May 2026");
         setBagName(g.bag_name||BAG_ITEMS[1].name);
         setBagDetail(g.bag_detail||BAG_ITEMS[1].detail);
         setBagLink(g.bag_link||BAG_ITEMS[1].link);
@@ -6568,6 +6570,7 @@ function GearAdminTab(){
         // No DB data yet — prefill from hardcoded defaults
         setPaddleName(BAG_ITEMS[0].name);
         setPaddleLink(BAG_ITEMS[0].link);
+        setPaddleDetail(BAG_ITEMS[0].detail);
         const curr=PADDLE_HISTORY.find(p=>p.current);
         setPaddleStart(curr?.from||fmtMonth(now));
         setBagName(BAG_ITEMS[1].name);
@@ -6608,6 +6611,7 @@ function GearAdminTab(){
         body:JSON.stringify({
           paddle_name:paddleName,
           paddle_link:paddleLink,
+          paddle_detail:paddleDetail,
           paddle_start:paddleStart,
           bag_name:bagName,
           bag_detail:bagDetail,
@@ -6648,16 +6652,22 @@ function GearAdminTab(){
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
           <div>
             <label style={lbl}>Paddle Name</label>
-            <input value={paddleName} onChange={e=>setPaddleName(e.target.value)} style={field} placeholder="e.g. CRBN² Barrage"/>
+            <input value={paddleName} onChange={e=>setPaddleName(e.target.value)} style={field} placeholder="e.g. Aireo Cyclone 16mm"/>
           </div>
           <div>
             <label style={lbl}>Using Since</label>
-            <input value={paddleStart} onChange={e=>setPaddleStart(e.target.value)} style={field} placeholder="e.g. Apr 2026"/>
+            <input value={paddleStart} onChange={e=>setPaddleStart(e.target.value)} style={field} placeholder="e.g. May 2026"/>
           </div>
         </div>
-        <div>
-          <label style={lbl}>Shop Link</label>
-          <input value={paddleLink} onChange={e=>setPaddleLink(e.target.value)} style={field} placeholder="https://…"/>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+          <div>
+            <label style={lbl}>Specs / Colorway</label>
+            <input value={paddleDetail} onChange={e=>setPaddleDetail(e.target.value)} style={field} placeholder="e.g. PulseFoam™ Core · NanoGraph™ Surface"/>
+          </div>
+          <div>
+            <label style={lbl}>Shop Link</label>
+            <input value={paddleLink} onChange={e=>setPaddleLink(e.target.value)} style={field} placeholder="https://…"/>
+          </div>
         </div>
       </div>
 
@@ -6710,6 +6720,7 @@ function GearAdminTab(){
         setHistory={setHistory}
         paddleName={paddleName}
         paddleLink={paddleLink}
+        paddleDetail={paddleDetail}
         paddleStart={paddleStart}
         bagName={bagName}
         bagDetail={bagDetail}

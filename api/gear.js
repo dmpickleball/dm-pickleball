@@ -269,10 +269,10 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-    const { paddle_name, paddle_link, paddle_start, bag_name, bag_detail, bag_link, paddle_history, accent_color } = req.body;
+    const { paddle_name, paddle_link, paddle_detail, paddle_start, bag_name, bag_detail, bag_link, paddle_history, accent_color } = req.body;
     const updated_at = new Date().toLocaleString('en-US', { month: 'short', year: 'numeric' });
     const { error } = await supabase.from('gear_settings').upsert({
-      id: ROW_ID, paddle_name, paddle_link, paddle_start,
+      id: ROW_ID, paddle_name, paddle_link, paddle_detail, paddle_start,
       bag_name, bag_detail, bag_link, paddle_history,
       accent_color: accent_color || '#f97316', updated_at,
     }, { onConflict: 'id' });
