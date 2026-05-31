@@ -374,32 +374,24 @@ body { font-family: 'Georgia', serif; background: var(--cream); color: var(--dar
 @media (max-width: 640px) { #map { height: 220px; } }
 @media (max-width: 480px) { #map { height: 190px; } }
 
-/* ─── Photos — row-first grid (newest top-left → oldest bottom-right) ─── */
+/* ─── Photos — justified layout (Apple Photos style) ─── */
 .photo-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-auto-rows: 170px;
+  display: flex;
+  flex-wrap: wrap;
   gap: 3px;
   padding: 3px;
-}
-@media (max-width: 600px) {
-  .photo-grid { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 130px; }
 }
 .photo-item {
   position: relative; cursor: pointer;
   overflow: hidden; background: #111;
   border-radius: 2px;
+  flex-shrink: 0;
 }
 .photo-item img {
   width: 100%; height: 100%; object-fit: cover; display: block;
   transition: transform 0.28s ease;
 }
 .photo-item:active img { transform: scale(0.96); }
-/* Video preview — use video element so browser shows first frame */
-.photo-item.is-video video {
-  width: 100%; height: 100%; object-fit: cover; display: block;
-  pointer-events: none;
-}
 /* Play badge */
 .video-badge {
   position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
@@ -1309,24 +1301,18 @@ async function loadPhotos(token) {
         </div>`;
       return;
     }
+    // Build HTML items first
     grid.innerHTML = d.photos.map((p, i) => {
       const thumb = p.thumb || p.url;
+      const ar = (p.width && p.height) ? p.width / p.height : (p.type === 'video' ? 16/9 : 4/3);
       if (p.type === 'video') {
         const posterImg = thumb ? `<img src="${thumb}" alt="Video ${i+1}" loading="lazy">` : `<div style="width:100%;height:100%;background:#1a2744"></div>`;
-        return `
-        <div class="photo-item is-video" data-url="${p.url}" onclick="openLB('${p.url}', true)">
-          ${posterImg}
-          <div class="video-badge"></div>
-          ${p.caption ? `<div class="photo-cap">${p.caption}</div>` : ''}
-        </div>`;
+        return `<div class="photo-item is-video" data-url="${p.url}" data-ar="${ar}" onclick="openLB('${p.url}', true)">${posterImg}<div class="video-badge"></div>${p.caption ? `<div class="photo-cap">${p.caption}</div>` : ''}</div>`;
       }
-      return `
-      <div class="photo-item" data-url="${p.url}" onclick="openLB('${p.url}', false)">
-        <img src="${thumb}" alt="Photo ${i+1}" loading="lazy"
-             onerror="this.parentElement.style.display='none'">
-        ${p.caption ? `<div class="photo-cap">${p.caption}</div>` : ''}
-      </div>`;
+      return `<div class="photo-item" data-url="${p.url}" data-ar="${ar}" onclick="openLB('${p.url}', false)"><img src="${thumb}" alt="Photo ${i+1}" loading="lazy" onerror="this.parentElement.style.display='none'">${p.caption ? `<div class="photo-cap">${p.caption}</div>` : ''}</div>`;
     }).join('');
+    // Apply justified layout (Apple Photos style)
+    applyJustifiedLayout(grid);
   } catch {
     grid.innerHTML = `
       <div class="photos-empty">
@@ -1507,6 +1493,44 @@ document.getElementById('lightbox').addEventListener('touchend', e => {
   const dx = e.changedTouches[0].clientX - _tsX;
   if (Math.abs(dx) > 50) lbNav(dx < 0 ? 1 : -1);
 }, { passive: true });
+
+// ── Justified layout (Apple Photos / Google Photos style) ─────────────────────
+function applyJustifiedLayout(grid) {
+  const items = Array.from(grid.querySelectorAll('.photo-item'));
+  if (!items.length) return;
+  const GAP = 3;
+  const TARGET_HEIGHT = window.innerWidth < 600 ? 130 : 180;
+  const containerW = grid.clientWidth - GAP * 2; // subtract padding
+
+  let row = [], rowAspectSum = 0;
+  function flushRow(isLast) {
+    if (!row.length) return;
+    // For the last row: don't stretch, just use target height
+    const rowH = isLast
+      ? Math.min(TARGET_HEIGHT, containerW / rowAspectSum)
+      : (containerW - GAP * (row.length - 1)) / rowAspectSum;
+    row.forEach(({ el, ar }) => {
+      el.style.width = (rowH * ar) + 'px';
+      el.style.height = rowH + 'px';
+    });
+    row = []; rowAspectSum = 0;
+  }
+
+  items.forEach(el => {
+    const ar = parseFloat(el.getAttribute('data-ar')) || 4/3;
+    const itemW = TARGET_HEIGHT * ar;
+    if (row.length && rowAspectSum * TARGET_HEIGHT + itemW > containerW + TARGET_HEIGHT * 0.5) {
+      flushRow(false);
+    }
+    row.push({ el, ar });
+    rowAspectSum += ar;
+  });
+  flushRow(true); // last row — don't over-stretch
+}
+window.addEventListener('resize', () => {
+  const grid = document.getElementById('photo-grid');
+  if (grid) applyJustifiedLayout(grid);
+});
 </script>
 </body>
 </html>
