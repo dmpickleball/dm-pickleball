@@ -374,44 +374,37 @@ body { font-family: 'Georgia', serif; background: var(--cream); color: var(--dar
 @media (max-width: 640px) { #map { height: 220px; } }
 @media (max-width: 480px) { #map { height: 190px; } }
 
-/* ─── Photos — masonry column layout (iCloud style) ─── */
+/* ─── Photos — row-first grid (newest top-left → oldest bottom-right) ─── */
 .photo-grid {
-  columns: 3;
-  column-gap: 3px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: 170px;
+  gap: 3px;
   padding: 3px;
 }
 @media (max-width: 600px) {
-  .photo-grid { columns: 2; }
+  .photo-grid { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 130px; }
 }
 .photo-item {
-  break-inside: avoid;
-  margin-bottom: 3px;
-  position: relative;
-  cursor: pointer;
-  border-radius: 3px;
-  overflow: hidden;
-  background: #111;
-  display: block;
+  position: relative; cursor: pointer;
+  overflow: hidden; background: #111;
+  border-radius: 2px;
 }
 .photo-item img {
-  width: 100%; height: auto; display: block;
-  transition: transform 0.3s ease;
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  transition: transform 0.28s ease;
 }
-.photo-item:active img { transform: scale(0.97); }
-/* Video thumbnail wrapper */
-.photo-item.is-video { position: relative; }
-.photo-item.is-video img { width: 100%; height: auto; display: block; }
-/* Placeholder for videos with no poster */
-.video-placeholder {
-  width: 100%; aspect-ratio: 16/9;
-  background: linear-gradient(135deg, #1a2744 0%, #162234 100%);
-  display: flex; align-items: center; justify-content: center;
+.photo-item:active img { transform: scale(0.96); }
+/* Video preview — use video element so browser shows first frame */
+.photo-item.is-video video {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  pointer-events: none;
 }
 /* Play badge */
 .video-badge {
   position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
   width: 44px; height: 44px; border-radius: 50%;
-  background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+  background: rgba(0,0,0,0.58); backdrop-filter: blur(4px);
   display: flex; align-items: center; justify-content: center;
   pointer-events: none;
 }
@@ -419,13 +412,6 @@ body { font-family: 'Georgia', serif; background: var(--cream); color: var(--dar
   content: ''; border-style: solid; border-width: 9px 0 9px 18px;
   border-color: transparent transparent transparent #fff;
   margin-left: 4px;
-}
-/* Duration badge */
-.video-dur {
-  position: absolute; bottom: 6px; right: 8px;
-  background: rgba(0,0,0,0.6); color: #fff;
-  font-family: sans-serif; font-size: 0.65rem; font-weight: 600;
-  padding: 2px 6px; border-radius: 4px; pointer-events: none;
 }
 .photo-cap {
   position: absolute; bottom: 0; left: 0; right: 0;
@@ -1324,20 +1310,19 @@ async function loadPhotos(token) {
       return;
     }
     grid.innerHTML = d.photos.map((p, i) => {
+      const thumb = p.thumb || p.url;
       if (p.type === 'video') {
-        const posterHTML = p.poster
-          ? `<img src="${p.poster}" alt="Video ${i+1}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling&&(this.nextElementSibling.style.display='flex')">`
-          : `<div class="video-placeholder"></div>`;
+        const posterImg = thumb ? `<img src="${thumb}" alt="Video ${i+1}" loading="lazy">` : `<div style="width:100%;height:100%;background:#1a2744"></div>`;
         return `
         <div class="photo-item is-video" data-url="${p.url}" onclick="openLB('${p.url}', true)">
-          ${posterHTML}
+          ${posterImg}
           <div class="video-badge"></div>
           ${p.caption ? `<div class="photo-cap">${p.caption}</div>` : ''}
         </div>`;
       }
       return `
       <div class="photo-item" data-url="${p.url}" onclick="openLB('${p.url}', false)">
-        <img src="${p.url}" alt="Photo ${i+1}" loading="lazy"
+        <img src="${thumb}" alt="Photo ${i+1}" loading="lazy"
              onerror="this.parentElement.style.display='none'">
         ${p.caption ? `<div class="photo-cap">${p.caption}</div>` : ''}
       </div>`;

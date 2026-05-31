@@ -122,22 +122,28 @@ async function getICloudPhotos() {
           }
         }
         if (!videoUrl) return null;
-        return { type: 'video', url: videoUrl, poster, caption };
+        return { type: 'video', url: videoUrl, thumb: poster, poster, caption };
       }
 
-      // Photo: pick the largest derivative (highest resolution)
+      // Photo: pick largest (full res) and smallest (thumbnail) derivative
       const keys = Object.keys(derivatives).map(Number).filter(k => !isNaN(k)).sort((a, b) => b - a);
-      const best = keys[0]?.toString();
-      if (!best) return null;
-      const d = derivatives[best];
-      const loc = urlData.items?.[d.checksum];
-      if (!loc) return null;
+      if (!keys.length) return null;
+      const bestKey = keys[0].toString();
+      const thumbKey = keys[keys.length - 1].toString(); // smallest = fastest to load
+      const dFull = derivatives[bestKey];
+      const dThumb = derivatives[thumbKey];
+      const locFull = urlData.items?.[dFull.checksum];
+      const locThumb = urlData.items?.[dThumb.checksum];
+      if (!locFull) return null;
+      const fullUrl = `https://${locFull.url_location}${locFull.url_path}`;
+      const thumbUrl = locThumb ? `https://${locThumb.url_location}${locThumb.url_path}` : fullUrl;
       return {
         type: 'photo',
-        url: `https://${loc.url_location}${loc.url_path}`,
+        url: fullUrl,
+        thumb: thumbUrl,
         caption,
-        width: d.width || 0,
-        height: d.height || 0,
+        width: dFull.width || 0,
+        height: dFull.height || 0,
       };
     }).filter(Boolean);
   } catch (e) {

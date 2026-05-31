@@ -242,10 +242,12 @@ async function loadPhotos() {
       `${_items.filter(p=>p.type==='photo').length} photos · ${_items.filter(p=>p.type==='video').length} videos`;
 
     grid.innerHTML = _items.map((p, i) => {
+      const thumb = p.thumb || p.url;
       if (p.type === 'video') {
-        return `<div class="photo-item is-video" data-idx="${i}" onclick="openLB(${i})"><video src="${p.url}" preload="metadata" muted playsinline></video><div class="video-badge"></div>${p.caption?`<div class="photo-cap">${p.caption}</div>`:''}</div>`;
+        const posterImg = thumb ? `<img src="${thumb}" alt="Video ${i+1}" loading="lazy">` : `<div style="width:100%;height:100%;background:#1a2744"></div>`;
+        return `<div class="photo-item is-video" data-idx="${i}" onclick="openLB(${i})">${posterImg}<div class="video-badge"></div>${p.caption?`<div class="photo-cap">${p.caption}</div>`:''}</div>`;
       }
-      return `<div class="photo-item" data-idx="${i}" onclick="openLB(${i})"><img src="${p.url}" alt="Photo ${i+1}" loading="lazy" onerror="this.parentElement.style.display='none'">${p.caption?`<div class="photo-cap">${p.caption}</div>`:''}</div>`;
+      return `<div class="photo-item" data-idx="${i}" onclick="openLB(${i})"><img src="${thumb}" alt="Photo ${i+1}" loading="lazy" onerror="this.parentElement.style.display='none'">${p.caption?`<div class="photo-cap">${p.caption}</div>`:''}</div>`;
     }).join('');
   } catch {
     grid.innerHTML = '<div class="loading-grid">Could not load photos.</div>';
