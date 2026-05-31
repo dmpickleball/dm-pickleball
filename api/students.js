@@ -38,7 +38,12 @@ function verifyLiveToken(token) {
   } catch { return false; }
 }
 
+let _photoCache = null;
+let _photoCacheTs = 0;
+const PHOTO_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 async function getICloudPhotos() {
+  if (_photoCache && Date.now() - _photoCacheTs < PHOTO_CACHE_TTL) return _photoCache;
   const token = process.env.ICLOUD_ALBUM_TOKEN;
   if (!token) return [];
   try {
@@ -146,6 +151,9 @@ async function getICloudPhotos() {
         height: dFull.height || 0,
       };
     }).filter(Boolean);
+    _photoCache = result;
+    _photoCacheTs = Date.now();
+    return result;
   } catch (e) {
     console.error('iCloud photos error:', e.message);
     return [];
