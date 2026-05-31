@@ -75,15 +75,46 @@ async function getICloudPhotos() {
 
     return photos.map(photo => {
       const derivatives = photo.derivatives || {};
-      // Pick the largest derivative (highest resolution)
+      const isVideo = (photo.mediaAssetType || '').toLowerCase().includes('video');
+      const caption = photo.caption || '';
+
+      if (isVideo) {
+        // For videos: look for a derivative with video contentType (mp4/quicktime)
+        // or fall back to the 'Video' key or any non-numeric key
+        const videoDerivative = Object.values(derivatives).find(d =>
+          d.contentType && (d.contentType.includes('video') || d.contentType.includes('quicktime'))
+        ) || Object.values(derivatives).find(d => d.checksum);
+        if (!videoDerivative) return null;
+        const loc = urlData.items?.[videoDerivative.checksum];
+        if (!loc) return null;
+        // Also grab a poster (thumbnail) — find the largest numeric key
+        const imgKeys = Object.keys(derivatives).map(Number).filter(k => !isNaN(k)).sort((a,b) => b-a);
+        const posterKey = imgKeys[0]?.toString();
+        const posterDeriv = posterKey ? derivatives[posterKey] : null;
+        const posterLoc = posterDeriv ? urlData.items?.[posterDeriv.checksum] : null;
+        const poster = posterLoc ? `https://${posterLoc.url_location}${posterLoc.url_path}` : '';
+        return {
+          type: 'video',
+          url: `https://${loc.url_location}${loc.url_path}`,
+          poster,
+          caption,
+        };
+      }
+
+      // Photo: pick the largest derivative (highest resolution)
       const keys = Object.keys(derivatives).map(Number).filter(k => !isNaN(k)).sort((a, b) => b - a);
       const best = keys[0]?.toString();
       if (!best) return null;
       const d = derivatives[best];
       const loc = urlData.items?.[d.checksum];
       if (!loc) return null;
-      // url_location is just the hostname — prepend https://
-      return { url: `https://${loc.url_location}${loc.url_path}`, caption: photo.caption || '' };
+      return {
+        type: 'photo',
+        url: `https://${loc.url_location}${loc.url_path}`,
+        caption,
+        width: d.width || 0,
+        height: d.height || 0,
+      };
     }).filter(Boolean);
   } catch (e) {
     console.error('iCloud photos error:', e.message);

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Italy 2026 — Live Tracker</title>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAplgT01JK_CZAPbcyVyn8muBnY-Z4KeRY"></script>
 <style>
@@ -315,9 +315,9 @@ body { font-family: 'Georgia', serif; background: var(--cream); color: var(--dar
 @media (max-width: 640px) {
   .tl-desk { display: none; }
   .tl-mob  { display: block; }
-  .tl-section { padding: 22px 20px 18px; }
-  .tl-day { font-size: 1.35rem; }
-  .tl-header { margin-bottom: 22px; }
+  .tl-section { padding: 16px 14px 14px; }
+  .tl-day { font-size: 1.2rem; }
+  .tl-header { margin-bottom: 16px; }
 }
 @media (min-width: 641px) {
   .tl-mob { display: none; }
@@ -334,7 +334,11 @@ body { font-family: 'Georgia', serif; background: var(--cream); color: var(--dar
   gap: 22px;
 }
 @media (max-width: 780px) {
-  .content { grid-template-columns: 1fr; padding: 20px 16px 0; gap: 16px; }
+  .content { grid-template-columns: 1fr; padding: 12px 10px 0; gap: 12px; }
+}
+@media (max-width: 480px) {
+  .content { padding: 10px 8px 0; gap: 10px; }
+  .card-label { padding: 14px 16px 0; font-size: 0.58rem; }
 }
 
 /* ─── Card ─── */
@@ -367,26 +371,48 @@ body { font-family: 'Georgia', serif; background: var(--cream); color: var(--dar
 .loc-text { flex: 1; }
 .loc-city { font-size: 0.9rem; display: block; }
 .loc-updated { font-family: sans-serif; font-size: 0.65rem; color: var(--muted); display: block; margin-top: 1px; }
-@media (max-width: 640px) { #map { height: 260px; } }
+@media (max-width: 640px) { #map { height: 220px; } }
+@media (max-width: 480px) { #map { height: 190px; } }
 
 /* ─── Photos ─── */
 .photo-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 3px; padding: 14px 3px 3px;
+  grid-auto-rows: 160px;
 }
-@media (max-width: 460px) {
-  .photo-grid { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 600px) {
+  .photo-grid { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 140px; }
 }
 .photo-item {
-  aspect-ratio: 1; overflow: hidden; position: relative;
-  cursor: pointer; background: var(--border);
+  overflow: hidden; position: relative;
+  cursor: pointer; background: #1a1a1a;
 }
+/* Portrait images span 2 rows so they aren't squashed */
+.photo-item.portrait { grid-row: span 2; }
+/* Videos always span 2 rows */
+.photo-item.is-video { grid-row: span 2; }
 .photo-item img {
   width: 100%; height: 100%; object-fit: cover;
   display: block; transition: transform 0.35s ease;
 }
-.photo-item:hover img { transform: scale(1.06); }
+.photo-item:hover img { transform: scale(1.04); }
+/* Video element */
+.photo-item video {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+/* Play badge on video thumbnails */
+.video-badge {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  width: 40px; height: 40px; border-radius: 50%;
+  background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+}
+.video-badge::after {
+  content: ''; border-style: solid; border-width: 8px 0 8px 16px;
+  border-color: transparent transparent transparent #fff;
+  margin-left: 3px;
+}
 .photo-overlay {
   position: absolute; inset: 0;
   background: linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 55%);
@@ -927,9 +953,10 @@ body.dark [style*="color:#90a4ae"]   { color: #7a9aaa !important; }
 </div>
 
 <!-- Lightbox -->
-<div id="lightbox">
+<div id="lightbox" onclick="if(event.target===this)closeLB()">
   <button id="lb-close" onclick="closeLB()">&#x2715;</button>
-  <img id="lb-img" src="" alt="">
+  <img id="lb-img" src="" alt="" style="display:none">
+  <video id="lb-vid" controls playsinline style="display:none;max-width:92vw;max-height:90vh;border-radius:6px;"></video>
 </div>
 
 <script>
@@ -1261,13 +1288,29 @@ async function loadPhotos(token) {
         </div>`;
       return;
     }
-    grid.innerHTML = d.photos.map((p, i) => `
-      <div class="photo-item" onclick="openLB('${p.url}')">
+    grid.innerHTML = d.photos.map((p, i) => {
+      if (p.type === 'video') {
+        return `
+        <div class="photo-item is-video" onclick="openLB('${p.url}', true)">
+          ${p.poster
+            ? `<img src="${p.poster}" alt="Video ${i+1}" loading="lazy" onerror="this.style.display='none'">`
+            : `<div style="width:100%;height:100%;background:#111;"></div>`}
+          <div class="video-badge"></div>
+          <div class="photo-overlay"></div>
+          ${p.caption ? `<div class="photo-cap">${p.caption}</div>` : ''}
+        </div>`;
+      }
+      // Detect portrait from width/height if available
+      const isPortrait = p.height && p.width && p.height > p.width;
+      return `
+      <div class="photo-item${isPortrait ? ' portrait' : ''}" onclick="openLB('${p.url}', false)">
         <img src="${p.url}" alt="Photo ${i+1}" loading="lazy"
-             onerror="this.parentElement.style.display='none'">
+             onerror="this.parentElement.style.display='none'"
+             onload="if(this.naturalHeight>this.naturalWidth)this.closest('.photo-item').classList.add('portrait')">
         <div class="photo-overlay"></div>
         ${p.caption ? `<div class="photo-cap">${p.caption}</div>` : ''}
-      </div>`).join('');
+      </div>`;
+    }).join('');
   } catch {
     grid.innerHTML = `
       <div class="photos-empty">
@@ -1385,12 +1428,22 @@ function toggleDark() {
 }
 
 // ── Lightbox ──────────────────────────────────────────────────────────────────
-function openLB(url) {
-  document.getElementById('lb-img').src = url;
+function openLB(url, isVideo) {
+  const img = document.getElementById('lb-img');
+  const vid = document.getElementById('lb-vid');
+  if (isVideo) {
+    img.style.display = 'none'; img.src = '';
+    vid.style.display = 'block'; vid.src = url; vid.play();
+  } else {
+    vid.style.display = 'none'; vid.pause(); vid.src = '';
+    img.style.display = 'block'; img.src = url;
+  }
   document.getElementById('lightbox').classList.add('open');
 }
 function closeLB() {
   document.getElementById('lightbox').classList.remove('open');
+  const vid = document.getElementById('lb-vid');
+  vid.pause(); vid.src = '';
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLB(); });
 </script>
