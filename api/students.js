@@ -62,7 +62,14 @@ async function getICloudPhotos() {
     });
     if (!streamRes.ok) return [];
     const stream = await streamRes.json();
-    const photos = (stream.photos || []).slice(0, 60);
+    // Sort newest first (iCloud dateCreated is an ISO string or epoch)
+    const allPhotos = (stream.photos || []);
+    allPhotos.sort((a, b) => {
+      const da = a.dateCreated || a.batchDateCreated || '';
+      const db = b.dateCreated || b.batchDateCreated || '';
+      return db.localeCompare(da);
+    });
+    const photos = allPhotos.slice(0, 60);
     if (!photos.length) return [];
 
     // Step 3: get expiring CDN URLs for each photo
