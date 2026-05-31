@@ -79,26 +79,43 @@ async function getICloudPhotos() {
       const caption = photo.caption || '';
 
       if (isVideo) {
-        // For videos: look for a derivative with video contentType (mp4/quicktime)
-        // or fall back to the 'Video' key or any non-numeric key
-        const videoDerivative = Object.values(derivatives).find(d =>
-          d.contentType && (d.contentType.includes('video') || d.contentType.includes('quicktime'))
-        ) || Object.values(derivatives).find(d => d.checksum);
-        if (!videoDerivative) return null;
-        const loc = urlData.items?.[videoDerivative.checksum];
-        if (!loc) return null;
-        // Also grab a poster (thumbnail) — find the largest numeric key
-        const imgKeys = Object.keys(derivatives).map(Number).filter(k => !isNaN(k)).sort((a,b) => b-a);
-        const posterKey = imgKeys[0]?.toString();
-        const posterDeriv = posterKey ? derivatives[posterKey] : null;
-        const posterLoc = posterDeriv ? urlData.items?.[posterDeriv.checksum] : null;
-        const poster = posterLoc ? `https://${posterLoc.url_location}${posterLoc.url_path}` : '';
-        return {
-          type: 'video',
-          url: `https://${loc.url_location}${loc.url_path}`,
-          poster,
-          caption,
-        };
+        // All numeric-key derivatives are JPEG thumbnails; non-numeric are the video file
+        const allValues = Object.entries(derivatives);
+        const numericKeys = allValues
+          .filter(([k]) => !isNaN(Number(k)))
+          .sort(([a],[b]) => Number(b) - Number(a));
+        const nonNumericKeys = allValues.filter(([k]) => isNaN(Number(k)));
+
+        // Poster = largest numeric-key derivative (JPEG thumbnail)
+        let poster = '';
+        for (const [, d] of numericKeys) {
+          const loc = urlData.items?.[d.checksum];
+          if (loc?.url_location && loc?.url_path) {
+            poster = `https://${loc.url_location}${loc.url_path}`;
+            break;
+          }
+        }
+
+        // Video URL = non-numeric key derivative, or any derivative whose URL looks like a video
+        let videoUrl = '';
+        // Try non-numeric keys first (these are usually the actual video)
+        for (const [, d] of nonNumericKeys) {
+          const loc = urlData.items?.[d.checksum];
+          if (loc?.url_location && loc?.url_path) {
+            videoUrl = `https://${loc.url_location}${loc.url_path}`;
+            break;
+          }
+        }
+        // Fallback: smallest numeric derivative (lower res = more likely to be a small video)
+        if (!videoUrl) {
+          const smallest = numericKeys[numericKeys.length - 1];
+          if (smallest) {
+            const loc = urlData.items?.[smallest[1].checksum];
+            if (loc?.url_location) videoUrl = `https://${loc.url_location}${loc.url_path}`;
+          }
+        }
+        if (!videoUrl) return null;
+        return { type: 'video', url: videoUrl, poster, caption };
       }
 
       // Photo: pick the largest derivative (highest resolution)
