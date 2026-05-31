@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Italy 2026 — Album</title>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 :root {
   --dark:   #281c10;
@@ -69,32 +68,33 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 .gallery-title { font-size: 1.6rem; font-weight: 300; letter-spacing: -0.01em; margin-bottom: 4px; }
 .gallery-sub { font-size: 0.8rem; color: rgba(255,255,255,0.38); letter-spacing: 0.04em; }
 
-/* ── Masonry grid ── */
+/* ── Grid ── */
 .photo-grid {
-  columns: 4; column-gap: 3px; padding: 3px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: 160px;
+  gap: 3px; padding: 3px;
 }
-@media (max-width: 900px) { .photo-grid { columns: 3; } }
-@media (max-width: 600px) { .photo-grid { columns: 2; } }
-@media (max-width: 360px) { .photo-grid { columns: 2; } }
+@media (max-width: 900px) { .photo-grid { grid-template-columns: repeat(3, 1fr); grid-auto-rows: 140px; } }
+@media (max-width: 600px) { .photo-grid { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 120px; } }
 
 .photo-item {
-  break-inside: avoid; margin-bottom: 3px;
   position: relative; cursor: pointer;
   border-radius: 4px; overflow: hidden;
-  background: #161b22; display: block;
+  background: #161b22;
 }
 .photo-item img {
-  width: 100%; height: auto; display: block;
+  width: 100%; height: 100%; object-fit: cover; display: block;
   transition: transform 0.28s ease;
 }
-.photo-item:hover img { transform: scale(1.03); }
-.photo-item:active img { transform: scale(0.97); }
-.photo-item.is-video img { width: 100%; height: auto; display: block; }
-.video-placeholder {
-  width: 100%; aspect-ratio: 16/9;
-  background: linear-gradient(135deg, #1a2744 0%, #0d1117 100%);
-  display: flex; align-items: center; justify-content: center;
+.photo-item video {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  pointer-events: none;
 }
+.photo-item:hover img,
+.photo-item:hover video { transform: scale(1.03); }
+.photo-item:active img,
+.photo-item:active video { transform: scale(0.97); }
 .video-badge {
   position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
   width: 44px; height: 44px; border-radius: 50%;
@@ -167,16 +167,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 </head>
 <body>
 
-<!-- Auth -->
-<div id="auth-screen">
-  <div class="auth-card">
-    <div style="font-size:2.4rem;margin-bottom:12px;">🇮🇹</div>
-    <h1>Italy 2026</h1>
-    <p>Sign in to view the full photo album</p>
-    <div id="g-signin-btn"></div>
-    <div id="auth-error">Access restricted to David &amp; Amanda.</div>
-  </div>
-</div>
+<!-- Auth screen (shown briefly if redirecting) -->
 
 <!-- Shell -->
 <div id="shell">
@@ -211,46 +202,20 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
 <script>
 const API = 'https://dmpickleball.com';
-const ALLOWED = ['davidmokblock@gmail.com','amandale91@gmail.com'];
-const TOKEN_KEY = 'italy_gal_token';
+const TOKEN_KEY = 'italy_session'; // shared with main private site
 let token = '';
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
-window.addEventListener('load', async () => {
-  // Check stored token
+window.addEventListener('load', () => {
   const stored = localStorage.getItem(TOKEN_KEY);
   if (stored) {
     token = stored;
     showShell();
-    return;
+  } else {
+    // Not authenticated — send to main site to sign in
+    window.location.href = 'italy2026.html';
   }
-  // Init Google Sign-In
-  google.accounts.id.initialize({
-    client_id: '648962645830-k3e3lqf21hc7qn1t5pdrni8mek85m4a6.apps.googleusercontent.com',
-    callback: handleGoogleCb,
-  });
-  google.accounts.id.renderButton(document.getElementById('g-signin-btn'), {
-    theme: 'outline', size: 'large', shape: 'rectangular', width: 260,
-  });
 });
-
-async function handleGoogleCb(resp) {
-  try {
-    const r = await fetch(API + '/api/students?action=italy-auth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ credential: resp.credential }),
-    });
-    const d = await r.json();
-    if (d.ok && d.token) {
-      token = d.token;
-      localStorage.setItem(TOKEN_KEY, token);
-      showShell();
-    } else {
-      document.getElementById('auth-error').style.display = 'block';
-    }
-  } catch { document.getElementById('auth-error').style.display = 'block'; }
-}
 
 function showShell() {
   document.getElementById('auth-screen').style.display = 'none';
@@ -279,10 +244,7 @@ async function loadPhotos() {
 
     grid.innerHTML = _items.map((p, i) => {
       if (p.type === 'video') {
-        const posterHTML = p.poster
-          ? `<img src="${p.poster}" alt="Video ${i+1}" loading="lazy" onerror="this.style.display='none'">`
-          : `<div class="video-placeholder"></div>`;
-        return `<div class="photo-item is-video" data-idx="${i}" onclick="openLB(${i})">${posterHTML}<div class="video-badge"></div>${p.caption?`<div class="photo-cap">${p.caption}</div>`:''}</div>`;
+        return `<div class="photo-item is-video" data-idx="${i}" onclick="openLB(${i})"><video src="${p.url}" preload="metadata" muted playsinline></video><div class="video-badge"></div>${p.caption?`<div class="photo-cap">${p.caption}</div>`:''}</div>`;
       }
       return `<div class="photo-item" data-idx="${i}" onclick="openLB(${i})"><img src="${p.url}" alt="Photo ${i+1}" loading="lazy" onerror="this.parentElement.style.display='none'">${p.caption?`<div class="photo-cap">${p.caption}</div>`:''}</div>`;
     }).join('');
