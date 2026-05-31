@@ -643,16 +643,38 @@ body:not(.dark) .dt-sun { opacity: 0.9; }
   display: none; position: fixed; inset: 0;
   background: rgba(0,0,0,0.94); z-index: 9999;
   align-items: center; justify-content: center;
+  touch-action: pan-y;
 }
 #lightbox.open { display: flex; }
-#lightbox img { max-width: 92vw; max-height: 90vh; object-fit: contain; border-radius: 6px; }
+#lightbox img { max-width: 92vw; max-height: 88vh; object-fit: contain; border-radius: 6px; }
 #lb-close {
   position: absolute; top: 18px; right: 22px;
   font-size: 1.6rem; color: rgba(255,255,255,0.5);
   background: none; border: none; cursor: pointer;
-  font-family: sans-serif; line-height: 1; transition: color 0.2s;
+  font-family: sans-serif; line-height: 1; transition: color 0.2s; z-index: 2;
 }
 #lb-close:hover { color: #fff; }
+.lb-arrow {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.18);
+  color: #fff; border-radius: 50%; width: 46px; height: 46px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 1.2rem; transition: background 0.2s;
+  user-select: none; backdrop-filter: blur(6px); z-index: 2;
+}
+.lb-arrow:hover { background: rgba(255,255,255,0.26); }
+#lb-prev { left: 16px; }
+#lb-next { right: 16px; }
+.lb-arrow.hidden { opacity: 0; pointer-events: none; }
+#lb-counter {
+  position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+  font-family: sans-serif; font-size: 0.72rem; color: rgba(255,255,255,0.45);
+  letter-spacing: 0.08em;
+}
+@media (max-width: 480px) {
+  .lb-arrow { width: 38px; height: 38px; font-size: 1rem; }
+  #lb-prev { left: 8px; } #lb-next { right: 8px; }
+}
 
 /* ═══════════════════════════════════════════
    COMMENTS
@@ -965,8 +987,11 @@ body.dark [style*="color:#90a4ae"]   { color: #7a9aaa !important; }
 <!-- Lightbox -->
 <div id="lightbox" onclick="if(event.target===this)closeLB()">
   <button id="lb-close" onclick="closeLB()">&#x2715;</button>
+  <button class="lb-arrow" id="lb-prev" onclick="lbNav(-1)">&#8249;</button>
   <img id="lb-img" src="" alt="" style="display:none">
-  <video id="lb-vid" controls playsinline style="display:none;max-width:92vw;max-height:90vh;border-radius:6px;"></video>
+  <video id="lb-vid" controls playsinline style="display:none;max-width:92vw;max-height:88vh;border-radius:6px;"></video>
+  <button class="lb-arrow" id="lb-next" onclick="lbNav(1)">&#8250;</button>
+  <div id="lb-counter"></div>
 </div>
 
 <script>
@@ -1304,14 +1329,14 @@ async function loadPhotos(token) {
           ? `<img src="${p.poster}" alt="Video ${i+1}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling&&(this.nextElementSibling.style.display='flex')">`
           : `<div class="video-placeholder"></div>`;
         return `
-        <div class="photo-item is-video" onclick="openLB('${p.url}', true)">
+        <div class="photo-item is-video" data-url="${p.url}" onclick="openLB('${p.url}', true)">
           ${posterHTML}
           <div class="video-badge"></div>
           ${p.caption ? `<div class="photo-cap">${p.caption}</div>` : ''}
         </div>`;
       }
       return `
-      <div class="photo-item" onclick="openLB('${p.url}', false)">
+      <div class="photo-item" data-url="${p.url}" onclick="openLB('${p.url}', false)">
         <img src="${p.url}" alt="Photo ${i+1}" loading="lazy"
              onerror="this.parentElement.style.display='none'">
         ${p.caption ? `<div class="photo-cap">${p.caption}</div>` : ''}
@@ -1433,25 +1458,70 @@ function toggleDark() {
   localStorage.setItem('italy_dark', isDark ? '1' : '0');
 }
 
-// ── Lightbox ──────────────────────────────────────────────────────────────────
-function openLB(url, isVideo) {
-  const img = document.getElementById('lb-img');
-  const vid = document.getElementById('lb-vid');
-  if (isVideo) {
-    img.style.display = 'none'; img.src = '';
-    vid.style.display = 'block'; vid.src = url; vid.play();
+// ── Lightbox with arrow navigation ───────────────────────────────────────────
+let _lbItems = [];   // [{url, isVideo}]
+let _lbIdx   = 0;
+
+function openLB(url, isVideo, idx) {
+  // Build the item list from the current grid on first open
+  if (idx === undefined) {
+    _lbItems = Array.from(document.querySelectorAll('.photo-item')).map(el => ({
+      url:     el.getAttribute('data-url'),
+      isVideo: el.classList.contains('is-video'),
+    }));
+    _lbIdx = _lbItems.findIndex(i => i.url === url);
+    if (_lbIdx < 0) _lbIdx = 0;
   } else {
-    vid.style.display = 'none'; vid.pause(); vid.src = '';
-    img.style.display = 'block'; img.src = url;
+    _lbIdx = idx;
   }
+  _lbShow();
   document.getElementById('lightbox').classList.add('open');
 }
+
+function _lbShow() {
+  const item = _lbItems[_lbIdx];
+  if (!item) return;
+  const img = document.getElementById('lb-img');
+  const vid = document.getElementById('lb-vid');
+  if (item.isVideo) {
+    img.style.display = 'none'; img.src = '';
+    vid.style.display = 'block'; vid.src = item.url; vid.play().catch(()=>{});
+  } else {
+    vid.style.display = 'none'; vid.pause(); vid.src = '';
+    img.style.display = 'block'; img.src = item.url;
+  }
+  document.getElementById('lb-prev').classList.toggle('hidden', _lbIdx === 0);
+  document.getElementById('lb-next').classList.toggle('hidden', _lbIdx === _lbItems.length - 1);
+  document.getElementById('lb-counter').textContent = `${_lbIdx + 1} / ${_lbItems.length}`;
+}
+
+function lbNav(dir) {
+  const next = _lbIdx + dir;
+  if (next < 0 || next >= _lbItems.length) return;
+  _lbIdx = next;
+  _lbShow();
+}
+
 function closeLB() {
   document.getElementById('lightbox').classList.remove('open');
   const vid = document.getElementById('lb-vid');
   vid.pause(); vid.src = '';
 }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLB(); });
+
+// Keyboard nav
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeLB();
+  if (e.key === 'ArrowLeft')  lbNav(-1);
+  if (e.key === 'ArrowRight') lbNav(1);
+});
+
+// Swipe support
+let _tsX = 0;
+document.getElementById('lightbox').addEventListener('touchstart', e => { _tsX = e.touches[0].clientX; }, { passive: true });
+document.getElementById('lightbox').addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - _tsX;
+  if (Math.abs(dx) > 50) lbNav(dx < 0 ? 1 : -1);
+}, { passive: true });
 </script>
 </body>
 </html>
