@@ -516,8 +516,8 @@ export default async function handler(req, res) {
     let photos = await getICloudPhotos();
 
     // ── R2 sync: upload any new thumbnails, swap in permanent CDN URLs ──
-    console.log('[R2] r2 client:', !!r2, '| photos:', photos.length);
-    if (r2 && photos.length) {
+    console.log('[R2] r2 ready:', !!R2_HOST, '| photos:', photos.length);
+    if (R2_HOST && photos.length) {
       try {
         const manifest = await getR2Manifest();
         const toSync = photos.filter(p => p.guid && p.thumb && !manifest[p.guid]);
