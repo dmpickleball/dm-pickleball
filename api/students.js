@@ -140,7 +140,7 @@ async function getICloudPhotos() {
     if (!urlRes.ok) return [];
     const urlData = await urlRes.json();
 
-    return photos.map(photo => {
+    const result = photos.map(photo => {
       const derivatives = photo.derivatives || {};
       const isVideo = (photo.mediaAssetType || '').toLowerCase().includes('video');
       const caption = photo.caption || '';
