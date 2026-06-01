@@ -212,7 +212,11 @@ async function getICloudPhotos() {
           if (loc?.url_location) videoUrl = `https://${loc.url_location}${loc.url_path}`;
         }
         if (!videoUrl) return null;
-        return { guid: photo.photoGuid, type: 'video', url: videoUrl, thumb: poster, poster, caption };
+        // Get width/height from any derivative that has them (for correct aspect ratio)
+        const dimsDerivative = allValues.find(([, d]) => d.width && d.height)?.[1] || {};
+        const width = dimsDerivative.width || 0;
+        const height = dimsDerivative.height || 0;
+        return { guid: photo.photoGuid, type: 'video', url: videoUrl, thumb: poster, poster, caption, width, height };
       }
 
       // Photo: pick largest (full res) and smallest (thumbnail) derivative

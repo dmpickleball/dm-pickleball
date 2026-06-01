@@ -417,6 +417,19 @@ body { font-family: 'Georgia', serif; background: var(--cream); color: var(--dar
   padding: 52px 20px; text-align: center;
   font-family: sans-serif; font-size: 0.84rem; color: var(--muted); line-height: 1.6;
 }
+.photos-loading {
+  padding: 52px 20px; text-align: center;
+  font-family: sans-serif; font-size: 0.8rem; color: var(--muted);
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+}
+.photos-spinner {
+  width: 32px; height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 .photos-empty-eyebrow {
   display: block; font-size: 0.6rem; letter-spacing: 0.2em;
   text-transform: uppercase; color: #ccc; font-weight: 700;
@@ -914,9 +927,9 @@ body.dark [style*="color:#90a4ae"]   { color: #7a9aaa !important; }
     <div class="card">
       <div class="card-label">Trip Photos</div>
       <div id="photo-grid" class="photo-grid">
-        <div class="photos-empty">
-          <span class="photos-empty-eyebrow">No photos yet</span>
-          Photos will appear here once David &amp; Amanda start sharing their album.
+        <div class="photos-loading">
+          <div class="photos-spinner"></div>
+          <span>Loading photos…</span>
         </div>
       </div>
     </div>
@@ -1312,6 +1325,7 @@ function renderPhotos(photos) {
   grid.innerHTML = photos.map((p, i) => {
     const thumb = p.thumb || p.url;
     const ar = (p.width && p.height) ? p.width / p.height : (p.type === 'video' ? 16/9 : 4/3);
+    // Note: width/height now returned for videos too, so portrait videos get correct ar
     if (p.type === 'video') {
       // Use still-image poster if available; fall back to dark placeholder.
       // Never use a video URL as <img> src — Safari will auto-play it.
@@ -1328,12 +1342,23 @@ function renderPhotos(photos) {
 
 async function loadPhotos(token) {
   // Show cached photos immediately if available and fresh
+  let hasCached = false;
   try {
     const cached = JSON.parse(localStorage.getItem(PHOTO_CACHE_KEY) || 'null');
     if (cached && Date.now() - cached.ts < PHOTO_CACHE_TTL && cached.photos?.length) {
       renderPhotos(cached.photos);
+      hasCached = true;
     }
   } catch {}
+
+  // If nothing cached, show spinner while we fetch
+  if (!hasCached) {
+    document.getElementById('photo-grid').innerHTML = `
+      <div class="photos-loading">
+        <div class="photos-spinner"></div>
+        <span>Loading photos…</span>
+      </div>`;
+  }
 
   // Fetch fresh from API in background
   try {
