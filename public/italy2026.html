@@ -762,6 +762,7 @@ body.dark a[style*="color:#6a1b9a"] { color: #c084e0 !important; }
       </span>
     </button>
   </div>
+  <button class="topbar-btn" id="refresh-photos-btn" onclick="bustPhotoCache()" title="Sync new photos to live tracker">📷 Sync Photos</button>
   <button class="topbar-btn" onclick="signOut()">Sign out</button>
 </div>
 
@@ -1929,6 +1930,30 @@ body.dark a[style*="color:#6a1b9a"] { color: #c084e0 !important; }
   document.addEventListener('click', e => {
     if (!e.target.closest('#section-nav')) closeSnavMenu();
   });
+
+  async function bustPhotoCache() {
+    const btn = document.getElementById('refresh-photos-btn');
+    const orig = btn.textContent;
+    btn.textContent = '⏳ Syncing…';
+    btn.disabled = true;
+    try {
+      const token = localStorage.getItem(TOKEN_KEY);
+      const r = await fetch(API + '/api/students?action=live-bust-photo-cache', {
+        headers: { 'x-italy-token': token }
+      });
+      const d = await r.json();
+      if (d.ok) {
+        btn.textContent = `✅ ${d.count} photos synced`;
+        // Also clear client localStorage so live tracker reloads fresh
+        localStorage.removeItem('italy_photos_cache');
+      } else {
+        btn.textContent = '❌ Failed';
+      }
+    } catch {
+      btn.textContent = '❌ Error';
+    }
+    setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 3000);
+  }
 
   function signOut() {
     localStorage.removeItem(TOKEN_KEY);

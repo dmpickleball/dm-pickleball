@@ -121,10 +121,48 @@ function verifyLiveToken(token) {
 
 let _photoCache = null;
 let _photoCacheTs = 0;
-const PHOTO_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const PHOTO_CACHE_TTL = 60 * 60 * 1000; // 60 minutes in-memory
 
-async function getICloudPhotos() {
-  if (_photoCache && Date.now() - _photoCacheTs < PHOTO_CACHE_TTL) return _photoCache;
+function refreshICloudInBackground() {
+  // Fire and forget — don't await, just refresh cache silently
+  getICloudPhotosFromICloud().then(result => {
+    if (result.length) {
+      _photoCache = result;
+      _photoCacheTs = Date.now();
+      savePhotosToSupabase(result);
+      console.log('[Photos] background refresh complete, count:', result.length);
+    }
+  }).catch(e => console.error('[Photos] background refresh error:', e.message));
+}
+
+async function savePhotosToSupabase(photos) {
+  try {
+    await supabase.from('photo_cache').upsert({
+      id: 'italy2026',
+      photos,
+      updated_at: new Date().toISOString(),
+      photo_count: photos.length,
+    });
+  } catch (e) {
+    console.error('Supabase photo save error:', e.message);
+  }
+}
+
+async function getPhotosFromSupabase() {
+  try {
+    const { data, error } = await supabase
+      .from('photo_cache')
+      .select('photos, updated_at')
+      .eq('id', 'italy2026')
+      .single();
+    if (error || !data?.photos?.length) return null;
+    return { photos: data.photos, updatedAt: new Date(data.updated_at).getTime() };
+  } catch (e) {
+    return null;
+  }
+}
+
+async function getICloudPhotosFromICloud() {
   const token = process.env.ICLOUD_ALBUM_TOKEN;
   if (!token) return [];
   try {
@@ -241,13 +279,41 @@ async function getICloudPhotos() {
         height: dFull.height || 0,
       };
     }).filter(Boolean);
-    _photoCache = result;
-    _photoCacheTs = Date.now();
+    console.log('[Photos] fetched from iCloud, count:', result.length);
     return result;
   } catch (e) {
     console.error('iCloud photos error:', e.message);
     return [];
   }
+}
+
+async function getICloudPhotos() {
+  // 1. In-memory cache (fastest — survives warm Vercel instances)
+  if (_photoCache && Date.now() - _photoCacheTs < PHOTO_CACHE_TTL) return _photoCache;
+
+  // 2. Supabase cache (survives cold starts — instant even after spin-down)
+  const dbCache = await getPhotosFromSupabase();
+  if (dbCache && dbCache.photos.length && Date.now() - dbCache.updatedAt < PHOTO_CACHE_TTL) {
+    _photoCache = dbCache.photos;
+    _photoCacheTs = dbCache.updatedAt;
+    console.log('[Photos] served from Supabase cache, age:', Math.round((Date.now() - dbCache.updatedAt) / 1000), 's');
+    // Background refresh if Supabase cache is older than 30 min
+    if (Date.now() - dbCache.updatedAt > 30 * 60 * 1000) refreshICloudInBackground();
+    return _photoCache;
+  }
+
+  // 3. Cold fetch from iCloud
+  const result = await getICloudPhotosFromICloud();
+  if (result.length) {
+    _photoCache = result;
+    _photoCacheTs = Date.now();
+    savePhotosToSupabase(result);
+  } else if (dbCache?.photos?.length) {
+    // iCloud failed but we have stale Supabase data — serve it
+    console.log('[Photos] iCloud failed, serving stale Supabase cache');
+    return dbCache.photos;
+  }
+  return result;
 }
 
 // ── Italy 2026 auth ───────────────────────────────────────────────────────────
@@ -524,6 +590,25 @@ export default async function handler(req, res) {
     let photos = await getICloudPhotos();
 
     return res.status(200).json({ ok: true, photos });
+  }
+
+  if (action === 'live-bust-photo-cache') {
+    // Admin only — requires valid Italy session token (only David/Amanda)
+    const italyToken = req.headers['x-italy-token'] || '';
+    if (!verifyItalyToken(italyToken)) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+    // Clear in-memory cache
+    _photoCache = null;
+    _photoCacheTs = 0;
+    // Clear Supabase cache
+    await supabase.from('photo_cache').upsert({ id: 'italy2026', photos: [], updated_at: new Date(0).toISOString(), photo_count: 0 });
+    // Fetch fresh from iCloud
+    const fresh = await getICloudPhotosFromICloud();
+    if (fresh.length) {
+      _photoCache = fresh;
+      _photoCacheTs = Date.now();
+      savePhotosToSupabase(fresh);
+    }
+    return res.status(200).json({ ok: true, count: fresh.length });
   }
 
   // ── Italy 2026 auth ─────────────────────────────────────────────────────────
