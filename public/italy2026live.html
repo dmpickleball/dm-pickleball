@@ -1076,8 +1076,8 @@ function showTracker() {
   loadComments();
   setInterval(updateTimeline, 60000);
   setInterval(updateClock, 10000);
-  setInterval(refreshLocation, 2 * 60 * 1000);   // location only, every 2 min
-  setInterval(refreshAll, 15 * 60 * 1000);        // full refresh (incl. photos) every 15 min
+  setInterval(refreshLocation, 15 * 60 * 1000);   // location only, every 15 min
+  setInterval(refreshAll, 60 * 60 * 1000);        // full refresh (incl. photos) every 60 min
   // If David/Amanda are logged in on their private site, hide the visitor form
   if (localStorage.getItem('italy_session')) {
     const form = document.querySelector('.comment-form');
