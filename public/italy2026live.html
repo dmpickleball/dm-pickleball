@@ -859,7 +859,7 @@ body.dark [style*="color:#90a4ae"]   { color: #7a9aaa !important; }
       <span class="day-label" id="cd-label">Countdown</span>
       <span class="day-value" id="cd-value">—</span>
     </div>
-    <button class="topbar-btn" onclick="refreshAll()">Refresh</button>
+    <button class="topbar-btn" onclick="refreshLocation()">Refresh</button>
   <button class="topbar-comments" onclick="scrollToComments()" title="Jump to comments">
     💬<span class="topbar-comments-badge" id="comment-badge"></span>
   </button>
@@ -1070,13 +1070,14 @@ function showTracker() {
   buildTimeline();
   updateTimeline();
   updateClock();
-  refreshAll();
+  refreshAll();          // load location + photos on first open
   updateCountdown();
   setInterval(updateCountdown, 30000);
   loadComments();
   setInterval(updateTimeline, 60000);
   setInterval(updateClock, 10000);
-  setInterval(refreshAll, 5 * 60 * 1000);
+  setInterval(refreshLocation, 2 * 60 * 1000);   // location only, every 2 min
+  setInterval(refreshAll, 15 * 60 * 1000);        // full refresh (incl. photos) every 15 min
   // If David/Amanda are logged in on their private site, hide the visitor form
   if (localStorage.getItem('italy_session')) {
     const form = document.querySelector('.comment-form');
@@ -1264,6 +1265,10 @@ function initMap() {
 }
 
 // ── Data ──────────────────────────────────────────────────────────────────────
+async function refreshLocation() {
+  const token = localStorage.getItem(PW_KEY);
+  await loadLocation(token);
+}
 async function refreshAll() {
   const token = localStorage.getItem(PW_KEY);
   await Promise.all([loadLocation(token), loadPhotos(token)]);
