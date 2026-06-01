@@ -1,6 +1,61 @@
 import { supabase } from './_supabase.js';
 import { google } from 'googleapis';
 import { createHmac, timingSafeEqual } from 'crypto';
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+
+// ── Cloudflare R2 setup ───────────────────────────────────────────────────────
+const R2_ACCOUNT_ID  = process.env.R2_ACCOUNT_ID;
+const R2_BUCKET      = 'italy2026';
+const R2_PUBLIC_URL  = process.env.R2_PUBLIC_URL; // https://pub-xxx.r2.dev
+
+const r2 = R2_ACCOUNT_ID ? new S3Client({
+  region: 'auto',
+  endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  credentials: {
+    accessKeyId: process.env.R2_ACCESS_KEY_ID,
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+  },
+}) : null;
+
+// In-memory manifest cache (survives warm instances)
+let _r2Manifest = null;
+let _r2ManifestTs = 0;
+
+async function getR2Manifest() {
+  if (!r2) return {};
+  if (_r2Manifest && Date.now() - _r2ManifestTs < 60_000) return _r2Manifest;
+  try {
+    const res = await r2.send(new GetObjectCommand({ Bucket: R2_BUCKET, Key: 'manifest.json' }));
+    _r2Manifest = JSON.parse(await res.Body.transformToString());
+  } catch {
+    _r2Manifest = {};
+  }
+  _r2ManifestTs = Date.now();
+  return _r2Manifest;
+}
+
+async function saveR2Manifest(manifest) {
+  if (!r2) return;
+  await r2.send(new PutObjectCommand({
+    Bucket: R2_BUCKET, Key: 'manifest.json',
+    Body: JSON.stringify(manifest), ContentType: 'application/json',
+  }));
+  _r2Manifest = manifest;
+  _r2ManifestTs = Date.now();
+}
+
+async function uploadToR2(key, sourceUrl, contentType = 'image/jpeg') {
+  try {
+    const res = await fetch(sourceUrl);
+    if (!res.ok) return false;
+    const buf = await res.arrayBuffer();
+    await r2.send(new PutObjectCommand({
+      Bucket: R2_BUCKET, Key: key,
+      Body: Buffer.from(buf), ContentType: contentType,
+    }));
+    return true;
+  } catch { return false; }
+}
 
 // Simple in-memory rate limiter
 const _rateMap = new Map();
@@ -127,14 +182,14 @@ async function getICloudPhotos() {
           }
         }
         if (!videoUrl) return null;
-        return { type: 'video', url: videoUrl, thumb: poster, poster, caption };
+        return { guid: photo.photoGuid, type: 'video', url: videoUrl, thumb: poster, poster, caption };
       }
 
       // Photo: pick largest (full res) and smallest (thumbnail) derivative
       const keys = Object.keys(derivatives).map(Number).filter(k => !isNaN(k)).sort((a, b) => b - a);
       if (!keys.length) return null;
       const bestKey = keys[0].toString();
-      const thumbKey = keys[keys.length - 1].toString(); // smallest = fastest to load
+      const thumbKey = keys[keys.length - 1].toString();
       const dFull = derivatives[bestKey];
       const dThumb = derivatives[thumbKey];
       const locFull = urlData.items?.[dFull.checksum];
@@ -143,6 +198,7 @@ async function getICloudPhotos() {
       const fullUrl = `https://${locFull.url_location}${locFull.url_path}`;
       const thumbUrl = locThumb ? `https://${locThumb.url_location}${locThumb.url_path}` : fullUrl;
       return {
+        guid: photo.photoGuid,
         type: 'photo',
         url: fullUrl,
         thumb: thumbUrl,
@@ -431,7 +487,46 @@ export default async function handler(req, res) {
   if (action === 'live-get-photos') {
     const token = req.headers['x-live-token'] || '';
     if (!verifyLiveToken(token)) return res.status(401).json({ ok: false, error: 'Unauthorized' });
-    const photos = await getICloudPhotos();
+    let photos = await getICloudPhotos();
+
+    // ── R2 sync: upload any new thumbnails, swap in permanent CDN URLs ──
+    if (r2 && photos.length) {
+      try {
+        const manifest = await getR2Manifest();
+        const toSync = photos.filter(p => p.guid && p.thumb && !manifest[p.guid]);
+
+        if (toSync.length) {
+          // Upload all new thumbnails in parallel (small files, fast)
+          const results = await Promise.allSettled(
+            toSync.map(async p => {
+              const key = `thumbs/${p.guid}.jpg`;
+              const ok = await uploadToR2(key, p.thumb);
+              return ok ? { guid: p.guid, key } : null;
+            })
+          );
+          let updated = false;
+          results.forEach(r => {
+            if (r.status === 'fulfilled' && r.value) {
+              manifest[r.value.guid] = r.value.key;
+              updated = true;
+            }
+          });
+          if (updated) await saveR2Manifest(manifest);
+        }
+
+        // Swap in permanent R2 URLs for thumbnails
+        photos = photos.map(p => ({
+          ...p,
+          thumb: (p.guid && manifest[p.guid])
+            ? `${R2_PUBLIC_URL}/${manifest[p.guid]}`
+            : p.thumb,
+        }));
+      } catch (e) {
+        console.error('R2 sync error:', e.message);
+        // Fall through — return iCloud URLs as-is
+      }
+    }
+
     return res.status(200).json({ ok: true, photos });
   }
 
