@@ -1331,11 +1331,11 @@ function renderPhotos(photos) {
       // Never use a video URL as <img> src — Safari will auto-play it.
       const isImgUrl = u => u && /\.(jpg|jpeg|png|heic|webp)(\?|$)/i.test(u);
       const posterEl = isImgUrl(thumb)
-        ? `<img src="${thumb}" alt="Video ${i+1}" loading="lazy">`
+        ? `<img src="${thumb}" alt="Video ${i+1}" loading="lazy" decoding="async">`
         : `<div style="width:100%;height:100%;background:linear-gradient(135deg,#1a2744 0%,#0d1a30 100%);"></div>`;
       return `<div class="photo-item is-video" data-url="${p.url}" data-thumb="${thumb}" data-ar="${ar}" onclick="openLB('${p.url}', true)">${posterEl}<div class="video-badge"></div>${p.caption ? `<div class="photo-cap">${p.caption}</div>` : ''}</div>`;
     }
-    return `<div class="photo-item" data-url="${p.url}" data-ar="${ar}" onclick="openLB('${p.url}', false)"><img src="${thumb}" alt="Photo ${i+1}" loading="lazy" onerror="this.parentElement.style.display='none'">${p.caption ? `<div class="photo-cap">${p.caption}</div>` : ''}</div>`;
+    return `<div class="photo-item" data-url="${p.url}" data-ar="${ar}" onclick="openLB('${p.url}', false)"><img src="${thumb}" alt="Photo ${i+1}" loading="lazy" decoding="async" onerror="this.parentElement.style.display='none'">${p.caption ? `<div class="photo-cap">${p.caption}</div>` : ''}</div>`;
   }).join('');
   applyJustifiedLayout(grid);
 }

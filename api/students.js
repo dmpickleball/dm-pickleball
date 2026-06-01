@@ -193,7 +193,7 @@ async function getICloudPhotosFromICloud() {
       const db = b.dateCreated || b.batchDateCreated || '';
       return db.localeCompare(da);
     });
-    const photos = allPhotos.slice(0, 60);
+    const photos = allPhotos.slice(0, 120);
     if (!photos.length) return [];
 
     // Step 3: get expiring CDN URLs for each photo
