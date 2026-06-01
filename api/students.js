@@ -515,47 +515,6 @@ export default async function handler(req, res) {
     if (!verifyLiveToken(token)) return res.status(401).json({ ok: false, error: 'Unauthorized' });
     let photos = await getICloudPhotos();
 
-    // ── R2 sync: upload any new thumbnails, swap in permanent CDN URLs ──
-    console.log('[R2] r2 ready:', !!R2_HOST, '| photos:', photos.length);
-    if (R2_HOST && photos.length) {
-      try {
-        const manifest = await getR2Manifest();
-        const toSync = photos.filter(p => p.guid && p.thumb && !manifest[p.guid]);
-        console.log('[R2] toSync:', toSync.length, '| manifest keys:', Object.keys(manifest).length);
-
-        if (toSync.length) {
-          const results = await Promise.allSettled(
-            toSync.map(async p => {
-              const key = `thumbs/${p.guid}.jpg`;
-              const ok = await uploadToR2(key, p.thumb);
-              if (!ok) console.log('[R2] upload failed for guid:', p.guid, 'thumb:', p.thumb?.slice(0,60));
-              return ok ? { guid: p.guid, key } : null;
-            })
-          );
-          let updated = false;
-          results.forEach(r => {
-            if (r.status === 'fulfilled' && r.value) {
-              manifest[r.value.guid] = r.value.key;
-              updated = true;
-            }
-          });
-          console.log('[R2] uploaded successfully:', results.filter(r => r.value).length);
-          if (updated) await saveR2Manifest(manifest);
-        }
-
-        // Swap in permanent R2 URLs for thumbnails
-        photos = photos.map(p => ({
-          ...p,
-          thumb: (p.guid && manifest[p.guid])
-            ? `${R2_PUBLIC_URL}/${manifest[p.guid]}`
-            : p.thumb,
-        }));
-      } catch (e) {
-        console.error('R2 sync error:', e.message);
-        // Fall through — return iCloud URLs as-is
-      }
-    }
-
     return res.status(200).json({ ok: true, photos });
   }
 

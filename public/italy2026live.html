@@ -968,7 +968,11 @@ body.dark [style*="color:#90a4ae"]   { color: #7a9aaa !important; }
   <button id="lb-close" onclick="closeLB()">&#x2715;</button>
   <button class="lb-arrow" id="lb-prev" onclick="lbNav(-1)">&#8249;</button>
   <img id="lb-img" src="" alt="" style="display:none">
-  <video id="lb-vid" controls playsinline style="display:none;max-width:92vw;max-height:88vh;border-radius:6px;"></video>
+  <div id="lb-vid-wrap" style="display:none;position:relative;max-width:92vw;max-height:88vh;">
+    <img id="lb-vid-thumb" src="" alt="" style="max-width:92vw;max-height:88vh;border-radius:6px;display:block;">
+    <button id="lb-play-btn" onclick="lbPlayVideo()" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:72px;height:72px;border-radius:50%;background:rgba(0,0,0,0.6);border:3px solid rgba(255,255,255,0.9);color:#fff;font-size:2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;padding-left:6px;">&#9654;</button>
+    <video id="lb-vid" controls playsinline style="display:none;max-width:92vw;max-height:88vh;border-radius:6px;"></video>
+  </div>
   <button class="lb-arrow" id="lb-next" onclick="lbNav(1)">&#8250;</button>
   <div id="lb-counter"></div>
 </div>
@@ -1479,9 +1483,19 @@ function _lbShow() {
   const vid = document.getElementById('lb-vid');
   if (item.isVideo) {
     img.style.display = 'none'; img.src = '';
-    vid.style.display = 'block'; vid.src = item.url; vid.play().catch(()=>{});
+    vid.pause(); vid.src = ''; vid.style.display = 'none';
+    const wrap = document.getElementById('lb-vid-wrap');
+    const thumb = document.getElementById('lb-vid-thumb');
+    const playBtn = document.getElementById('lb-play-btn');
+    wrap.style.display = 'block';
+    thumb.src = item.thumb || '';
+    thumb.style.display = 'block';
+    playBtn.style.display = 'flex';
+    wrap._videoUrl = item.url;
   } else {
-    vid.style.display = 'none'; vid.pause(); vid.src = '';
+    const wrap = document.getElementById('lb-vid-wrap');
+    wrap.style.display = 'none';
+    vid.pause(); vid.src = '';
     img.style.display = 'block'; img.src = item.url;
   }
   document.getElementById('lb-prev').classList.toggle('hidden', _lbIdx === 0);
@@ -1496,10 +1510,27 @@ function lbNav(dir) {
   _lbShow();
 }
 
+function lbPlayVideo() {
+  const wrap = document.getElementById('lb-vid-wrap');
+  const vid = document.getElementById('lb-vid');
+  const thumb = document.getElementById('lb-vid-thumb');
+  const playBtn = document.getElementById('lb-play-btn');
+  thumb.style.display = 'none';
+  playBtn.style.display = 'none';
+  vid.style.display = 'block';
+  vid.src = wrap._videoUrl || '';
+  vid.play().catch(()=>{});
+}
+
 function closeLB() {
   document.getElementById('lightbox').classList.remove('open');
   const vid = document.getElementById('lb-vid');
   vid.pause(); vid.src = '';
+  vid.style.display = 'none';
+  const wrap = document.getElementById('lb-vid-wrap');
+  wrap.style.display = 'none';
+  wrap._videoUrl = '';
+  document.getElementById('lb-vid-thumb').src = '';
 }
 
 // Keyboard nav
