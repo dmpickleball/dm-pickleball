@@ -1496,7 +1496,7 @@ function _lbShow() {
   } else {
     const wrap = document.getElementById('lb-vid-wrap');
     wrap.style.display = 'none';
-    vid.pause(); vid.src = '';
+    vid.pause(); vid.src = ''; vid.load();
     img.style.display = 'block'; img.src = item.url;
   }
   document.getElementById('lb-prev').classList.toggle('hidden', _lbIdx === 0);
@@ -1513,25 +1513,38 @@ function lbNav(dir) {
 
 function lbPlayVideo() {
   const wrap = document.getElementById('lb-vid-wrap');
-  const vid = document.getElementById('lb-vid');
   const thumb = document.getElementById('lb-vid-thumb');
   const playBtn = document.getElementById('lb-play-btn');
   thumb.style.display = 'none';
   playBtn.style.display = 'none';
-  vid.style.display = 'block';
+  // Create a fresh video element — iOS won't preview a new element
+  const oldVid = document.getElementById('lb-vid');
+  if (oldVid) oldVid.remove();
+  const vid = document.createElement('video');
+  vid.id = 'lb-vid';
+  vid.controls = true;
+  vid.setAttribute('playsinline', '');
+  vid.style.cssText = 'max-width:92vw;max-height:88vh;border-radius:6px;display:block;';
   vid.src = wrap._videoUrl || '';
+  wrap.appendChild(vid);
   vid.play().catch(()=>{});
 }
 
 function closeLB() {
   document.getElementById('lightbox').classList.remove('open');
   const vid = document.getElementById('lb-vid');
-  vid.pause(); vid.src = ''; vid.load();
-  vid.style.display = 'none';
+  if (vid) { vid.pause(); vid.src = ''; vid.load(); vid.remove(); }
+  // Recreate a clean placeholder so the element exists for next open
   const wrap = document.getElementById('lb-vid-wrap');
   wrap.style.display = 'none';
   wrap._videoUrl = '';
   document.getElementById('lb-vid-thumb').src = '';
+  const newVid = document.createElement('video');
+  newVid.id = 'lb-vid';
+  newVid.controls = true;
+  newVid.setAttribute('playsinline', '');
+  newVid.style.cssText = 'display:none;max-width:92vw;max-height:88vh;border-radius:6px;';
+  wrap.appendChild(newVid);
 }
 
 // Keyboard nav
