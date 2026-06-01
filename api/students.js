@@ -490,17 +490,19 @@ export default async function handler(req, res) {
     let photos = await getICloudPhotos();
 
     // ── R2 sync: upload any new thumbnails, swap in permanent CDN URLs ──
+    console.log('[R2] r2 client:', !!r2, '| photos:', photos.length);
     if (r2 && photos.length) {
       try {
         const manifest = await getR2Manifest();
         const toSync = photos.filter(p => p.guid && p.thumb && !manifest[p.guid]);
+        console.log('[R2] toSync:', toSync.length, '| manifest keys:', Object.keys(manifest).length);
 
         if (toSync.length) {
-          // Upload all new thumbnails in parallel (small files, fast)
           const results = await Promise.allSettled(
             toSync.map(async p => {
               const key = `thumbs/${p.guid}.jpg`;
               const ok = await uploadToR2(key, p.thumb);
+              if (!ok) console.log('[R2] upload failed for guid:', p.guid, 'thumb:', p.thumb?.slice(0,60));
               return ok ? { guid: p.guid, key } : null;
             })
           );
@@ -511,6 +513,7 @@ export default async function handler(req, res) {
               updated = true;
             }
           });
+          console.log('[R2] uploaded successfully:', results.filter(r => r.value).length);
           if (updated) await saveR2Manifest(manifest);
         }
 
