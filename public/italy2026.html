@@ -1938,7 +1938,7 @@ body.dark a[style*="color:#6a1b9a"] { color: #c084e0 !important; }
     btn.disabled = true;
     try {
       const token = localStorage.getItem(TOKEN_KEY);
-      const r = await fetch(API + '/api/students?action=live-bust-photo-cache', {
+      const r = await fetch(API_BASE + '/api/students?action=live-bust-photo-cache', {
         headers: { 'x-italy-token': token }
       });
       const d = await r.json();
