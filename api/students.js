@@ -1,45 +1,68 @@
 import { supabase } from './_supabase.js';
 import { google } from 'googleapis';
-import { createHmac, timingSafeEqual } from 'crypto';
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { createHmac, createHash, timingSafeEqual } from 'crypto';
 
-// ── Cloudflare R2 setup ───────────────────────────────────────────────────────
-const R2_ACCOUNT_ID  = process.env.R2_ACCOUNT_ID;
-const R2_BUCKET      = 'italy2026';
-const R2_PUBLIC_URL  = process.env.R2_PUBLIC_URL; // https://pub-xxx.r2.dev
+// ── Cloudflare R2 via native fetch + AWS Signature V4 ────────────────────────
+const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
+const R2_ACCESS_KEY = process.env.R2_ACCESS_KEY_ID;
+const R2_SECRET_KEY = process.env.R2_SECRET_ACCESS_KEY;
+const R2_BUCKET     = 'italy2026';
+const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL;
+const R2_HOST       = R2_ACCOUNT_ID ? `${R2_ACCOUNT_ID}.r2.cloudflarestorage.com` : null;
 
-const r2 = R2_ACCOUNT_ID ? new S3Client({
-  region: 'auto',
-  endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
-  },
-}) : null;
+function sha256hex(data) {
+  return createHash('sha256').update(data).digest('hex');
+}
 
-// In-memory manifest cache (survives warm instances)
+async function r2Fetch(method, key, body = null, contentType = 'application/octet-stream') {
+  if (!R2_HOST) return null;
+  const now = new Date();
+  const amzDate = now.toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+  const dateStamp = amzDate.slice(0, 8);
+  const path = `/${R2_BUCKET}/${key}`;
+  const bodyBuf = body ? (Buffer.isBuffer(body) ? body : Buffer.from(body)) : Buffer.alloc(0);
+  const payloadHash = sha256hex(bodyBuf);
+
+  const hdrs = { 'content-type': contentType, 'host': R2_HOST, 'x-amz-content-sha256': payloadHash, 'x-amz-date': amzDate };
+  const sortedKeys = Object.keys(hdrs).sort();
+  const canonicalHeaders = sortedKeys.map(k => `${k}:${hdrs[k]}`).join('\n') + '\n';
+  const signedHeaders = sortedKeys.join(';');
+  const canonicalRequest = [method, path, '', canonicalHeaders, signedHeaders, payloadHash].join('\n');
+  const credScope = `${dateStamp}/auto/s3/aws4_request`;
+  const stringToSign = ['AWS4-HMAC-SHA256', amzDate, credScope, sha256hex(canonicalRequest)].join('\n');
+
+  const kDate    = createHmac('sha256', `AWS4${R2_SECRET_KEY}`).update(dateStamp).digest();
+  const kRegion  = createHmac('sha256', kDate).update('auto').digest();
+  const kService = createHmac('sha256', kRegion).update('s3').digest();
+  const kSign    = createHmac('sha256', kService).update('aws4_request').digest();
+  const sig      = createHmac('sha256', kSign).update(stringToSign).digest('hex');
+
+  const auth = `AWS4-HMAC-SHA256 Credential=${R2_ACCESS_KEY}/${credScope}, SignedHeaders=${signedHeaders}, Signature=${sig}`;
+  return fetch(`https://${R2_HOST}${path}`, {
+    method,
+    headers: { Authorization: auth, 'Content-Type': contentType, 'X-Amz-Content-Sha256': payloadHash, 'X-Amz-Date': amzDate },
+    body: body ? bodyBuf : undefined,
+  });
+}
+
+// In-memory manifest cache
 let _r2Manifest = null;
 let _r2ManifestTs = 0;
 
 async function getR2Manifest() {
-  if (!r2) return {};
+  if (!R2_HOST) return {};
   if (_r2Manifest && Date.now() - _r2ManifestTs < 60_000) return _r2Manifest;
   try {
-    const res = await r2.send(new GetObjectCommand({ Bucket: R2_BUCKET, Key: 'manifest.json' }));
-    _r2Manifest = JSON.parse(await res.Body.transformToString());
-  } catch {
-    _r2Manifest = {};
-  }
+    const res = await r2Fetch('GET', 'manifest.json', null, 'application/json');
+    _r2Manifest = res?.ok ? JSON.parse(await res.text()) : {};
+  } catch { _r2Manifest = {}; }
   _r2ManifestTs = Date.now();
   return _r2Manifest;
 }
 
 async function saveR2Manifest(manifest) {
-  if (!r2) return;
-  await r2.send(new PutObjectCommand({
-    Bucket: R2_BUCKET, Key: 'manifest.json',
-    Body: JSON.stringify(manifest), ContentType: 'application/json',
-  }));
+  if (!R2_HOST) return;
+  await r2Fetch('PUT', 'manifest.json', JSON.stringify(manifest), 'application/json');
   _r2Manifest = manifest;
   _r2ManifestTs = Date.now();
 }
@@ -47,24 +70,15 @@ async function saveR2Manifest(manifest) {
 async function uploadToR2(key, sourceUrl, contentType = 'image/jpeg') {
   try {
     const res = await fetch(sourceUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15',
-        'Referer': 'https://www.icloud.com/',
-        'Origin': 'https://www.icloud.com',
-      }
+      headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://www.icloud.com/', 'Origin': 'https://www.icloud.com' }
     });
-    if (!res.ok) {
-      console.error('[R2] fetch status:', res.status, key);
-      return false;
-    }
-    const buf = await res.arrayBuffer();
-    await r2.send(new PutObjectCommand({
-      Bucket: R2_BUCKET, Key: key,
-      Body: Buffer.from(buf), ContentType: contentType,
-    }));
+    if (!res.ok) { console.error('[R2] icloud fetch:', res.status, key); return false; }
+    const buf = Buffer.from(await res.arrayBuffer());
+    const r2res = await r2Fetch('PUT', key, buf, contentType);
+    if (!r2res?.ok) { console.error('[R2] r2 put:', r2res?.status, key); return false; }
     return true;
   } catch (e) {
-    console.error('[R2] upload error:', e.message, key);
+    console.error('[R2] error:', e.message, key);
     return false;
   }
 }
