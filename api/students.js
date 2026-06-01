@@ -46,15 +46,27 @@ async function saveR2Manifest(manifest) {
 
 async function uploadToR2(key, sourceUrl, contentType = 'image/jpeg') {
   try {
-    const res = await fetch(sourceUrl);
-    if (!res.ok) return false;
+    const res = await fetch(sourceUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15',
+        'Referer': 'https://www.icloud.com/',
+        'Origin': 'https://www.icloud.com',
+      }
+    });
+    if (!res.ok) {
+      console.error('[R2] fetch status:', res.status, key);
+      return false;
+    }
     const buf = await res.arrayBuffer();
     await r2.send(new PutObjectCommand({
       Bucket: R2_BUCKET, Key: key,
       Body: Buffer.from(buf), ContentType: contentType,
     }));
     return true;
-  } catch { return false; }
+  } catch (e) {
+    console.error('[R2] upload error:', e.message, key);
+    return false;
+  }
 }
 
 // Simple in-memory rate limiter
