@@ -1526,7 +1526,7 @@ function lbPlayVideo() {
 function closeLB() {
   document.getElementById('lightbox').classList.remove('open');
   const vid = document.getElementById('lb-vid');
-  vid.pause(); vid.src = '';
+  vid.pause(); vid.src = ''; vid.load();
   vid.style.display = 'none';
   const wrap = document.getElementById('lb-vid-wrap');
   wrap.style.display = 'none';
