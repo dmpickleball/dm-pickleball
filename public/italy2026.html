@@ -98,8 +98,15 @@ body { font-family: 'Georgia', serif; background: var(--cream); color: var(--dar
   width: 16px; height: 16px; display: none; align-items: center; justify-content: center;
 }
 @media (max-width: 540px) {
-  #signout-bar { padding: 0 16px; gap: 10px; height: 52px; }
+  #signout-bar { padding: 0 12px; gap: 8px; height: 52px; }
   .topbar-title small { display: none; }
+  .topbar-title { font-size: 0.85rem; }
+  /* Sync Photos: icon only on mobile */
+  #refresh-photos-btn .btn-label { display: none; }
+  #refresh-photos-btn { padding: 7px 10px; font-size: 1rem; letter-spacing: 0; }
+  /* Sign Out: icon only on mobile */
+  #signout-btn .btn-label { display: none; }
+  #signout-btn { padding: 7px 10px; }
 }
 @media (max-width: 700px) { .topbar-day { display: none; } }
 
@@ -762,8 +769,8 @@ body.dark a[style*="color:#6a1b9a"] { color: #c084e0 !important; }
       </span>
     </button>
   </div>
-  <button class="topbar-btn" id="refresh-photos-btn" onclick="bustPhotoCache()" title="Sync new photos to live tracker">📷 Sync Photos</button>
-  <button class="topbar-btn" onclick="signOut()">Sign out</button>
+  <button class="topbar-btn" id="refresh-photos-btn" onclick="bustPhotoCache()" title="Sync new photos to live tracker">📷<span class="btn-label"> Sync Photos</span></button>
+  <button class="topbar-btn" id="signout-btn" onclick="signOut()" title="Sign out">↪<span class="btn-label"> Sign out</span></button>
 </div>
 
 <!-- Timeline (shown after login) -->
