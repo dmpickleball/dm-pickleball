@@ -611,6 +611,33 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, count: fresh.length });
   }
 
+  // ── Photo comments ──────────────────────────────────────────────────────────
+  if (action === 'live-get-photo-comments') {
+    const token = req.headers['x-live-token'] || '';
+    if (!verifyLiveToken(token)) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+    const guid = req.query.guid || '';
+    if (!guid) return res.status(400).json({ ok: false, error: 'guid required' });
+    const { data, error } = await supabase
+      .from('photo_comments')
+      .select('id, name, message, created_at')
+      .eq('photo_guid', guid)
+      .order('created_at', { ascending: true });
+    if (error) return res.status(500).json({ ok: false, error: error.message });
+    return res.status(200).json({ ok: true, comments: data || [] });
+  }
+
+  if (action === 'live-add-photo-comment') {
+    const token = req.headers['x-live-token'] || '';
+    if (!verifyLiveToken(token)) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+    const { guid, name, message } = req.body || {};
+    if (!guid || !name?.trim() || !message?.trim()) return res.status(400).json({ ok: false, error: 'guid, name and message required' });
+    const { error } = await supabase.from('photo_comments').insert({
+      photo_guid: guid, name: name.trim().slice(0, 50), message: message.trim().slice(0, 500),
+    });
+    if (error) return res.status(500).json({ ok: false, error: error.message });
+    return res.status(200).json({ ok: true });
+  }
+
   // ── Italy 2026 auth ─────────────────────────────────────────────────────────
   if (action === 'italy-auth') {
     res.setHeader('Access-Control-Allow-Origin', 'https://dmpickleball.com');

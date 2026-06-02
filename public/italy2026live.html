@@ -663,6 +663,17 @@ body:not(.dark) .dt-sun { opacity: 0.9; }
   font-family: sans-serif; font-size: 0.72rem; color: rgba(255,255,255,0.45);
   letter-spacing: 0.08em;
 }
+.lb-comment-item { font-family:sans-serif; font-size:0.78rem; color:rgba(255,255,255,0.85); line-height:1.4; }
+.lb-comment-item strong { color:#fff; margin-right:5px; }
+.lb-comment-item .comment-time { color:rgba(255,255,255,0.4); font-size:0.68rem; margin-left:5px; }
+.photo-comment-badge {
+  position:absolute; bottom:5px; right:6px;
+  background:rgba(0,0,0,0.55); backdrop-filter:blur(4px);
+  color:#fff; font-family:sans-serif; font-size:0.62rem;
+  border-radius:10px; padding:2px 6px;
+  display:flex; align-items:center; gap:3px;
+  pointer-events:none;
+}
 @media (max-width: 480px) {
   .lb-arrow { width: 38px; height: 38px; font-size: 1rem; }
   #lb-prev { left: 8px; } #lb-next { right: 8px; }
@@ -980,11 +991,30 @@ body.dark [style*="color:#90a4ae"]   { color: #7a9aaa !important; }
 <div id="lightbox" onclick="if(event.target===this)closeLB()">
   <button id="lb-close" onclick="closeLB()">&#x2715;</button>
   <button class="lb-arrow" id="lb-prev" onclick="lbNav(-1)">&#8249;</button>
-  <img id="lb-img" src="" alt="" style="display:none">
-  <div id="lb-vid-wrap" style="display:none;position:relative;max-width:92vw;max-height:88vh;">
-    <img id="lb-vid-thumb" src="" alt="" style="max-width:92vw;max-height:88vh;border-radius:6px;display:block;">
-    <button id="lb-play-btn" onclick="lbPlayVideo()" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:72px;height:72px;border-radius:50%;background:rgba(0,0,0,0.6);border:3px solid rgba(255,255,255,0.9);color:#fff;font-size:2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;padding-left:6px;">&#9654;</button>
-    <video id="lb-vid" controls playsinline style="display:none;max-width:92vw;max-height:88vh;border-radius:6px;"></video>
+  <div id="lb-main" style="display:flex;flex-direction:column;align-items:center;max-height:95vh;overflow:hidden;">
+    <img id="lb-img" src="" alt="" style="display:none;max-width:92vw;max-height:60vh;object-fit:contain;border-radius:6px;">
+    <div id="lb-vid-wrap" style="display:none;position:relative;max-width:92vw;">
+      <img id="lb-vid-thumb" src="" alt="" style="max-width:92vw;max-height:60vh;border-radius:6px;display:block;">
+      <button id="lb-play-btn" onclick="lbPlayVideo()" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:72px;height:72px;border-radius:50%;background:rgba(0,0,0,0.6);border:3px solid rgba(255,255,255,0.9);color:#fff;font-size:2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;padding-left:6px;">&#9654;</button>
+      <video id="lb-vid" controls playsinline style="display:none;max-width:92vw;max-height:60vh;border-radius:6px;"></video>
+    </div>
+    <!-- Comments panel -->
+    <div id="lb-comments" style="width:min(92vw,480px);margin-top:12px;background:rgba(255,255,255,0.06);border-radius:12px;overflow:hidden;">
+      <div id="lb-comments-toggle" onclick="toggleLbComments()" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;font-family:sans-serif;font-size:0.8rem;color:rgba(255,255,255,0.7);user-select:none;">
+        <span>💬 <span id="lb-comments-count">Comments</span></span>
+        <span id="lb-comments-chevron" style="font-size:0.7rem;">▼</span>
+      </div>
+      <div id="lb-comments-body" style="display:none;padding:0 14px 12px;">
+        <div id="lb-comments-list" style="max-height:140px;overflow-y:auto;margin-bottom:10px;display:flex;flex-direction:column;gap:8px;"></div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <input id="lb-comment-name" placeholder="Your name" maxlength="50" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:7px;padding:7px 10px;color:#fff;font-size:0.82rem;font-family:sans-serif;outline:none;">
+          <div style="display:flex;gap:6px;">
+            <input id="lb-comment-msg" placeholder="Leave a comment…" maxlength="500" style="flex:1;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:7px;padding:7px 10px;color:#fff;font-size:0.82rem;font-family:sans-serif;outline:none;">
+            <button onclick="submitPhotoComment()" style="background:var(--green,#2d6a4f);border:none;border-radius:7px;padding:7px 14px;color:#fff;font-size:0.82rem;font-family:sans-serif;cursor:pointer;white-space:nowrap;">Post</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
   <button class="lb-arrow" id="lb-next" onclick="lbNav(1)">&#8250;</button>
   <div id="lb-counter"></div>
@@ -1333,9 +1363,9 @@ function renderPhotos(photos) {
       const posterEl = isImgUrl(thumb)
         ? `<img src="${thumb}" alt="Video ${i+1}" loading="lazy" decoding="async">`
         : `<div style="width:100%;height:100%;background:linear-gradient(135deg,#1a2744 0%,#0d1a30 100%);"></div>`;
-      return `<div class="photo-item is-video" data-url="${p.url}" data-thumb="${thumb}" data-ar="${ar}" onclick="openLB('${p.url}', true)">${posterEl}<div class="video-badge"></div>${p.caption ? `<div class="photo-cap">${p.caption}</div>` : ''}</div>`;
+      return `<div class="photo-item is-video" data-url="${p.url}" data-thumb="${thumb}" data-guid="${p.guid||''}" data-ar="${ar}" onclick="openLB('${p.url}', true)">${posterEl}<div class="video-badge"></div>${p.guid ? `<div class="photo-comment-badge" data-guid="${p.guid}">💬</div>` : ''}${p.caption ? `<div class="photo-cap">${p.caption}</div>` : ''}</div>`;
     }
-    return `<div class="photo-item" data-url="${p.url}" data-ar="${ar}" onclick="openLB('${p.url}', false)"><img src="${thumb}" alt="Photo ${i+1}" loading="lazy" decoding="async" onerror="this.parentElement.style.display='none'">${p.caption ? `<div class="photo-cap">${p.caption}</div>` : ''}</div>`;
+    return `<div class="photo-item" data-url="${p.url}" data-guid="${p.guid||''}" data-ar="${ar}" onclick="openLB('${p.url}', false)"><img src="${thumb}" alt="Photo ${i+1}" loading="lazy" decoding="async" onerror="this.parentElement.style.display='none'">${p.guid ? `<div class="photo-comment-badge" data-guid="${p.guid}">💬</div>` : ''}${p.caption ? `<div class="photo-cap">${p.caption}</div>` : ''}</div>`;
   }).join('');
   applyJustifiedLayout(grid);
 }
@@ -1496,6 +1526,7 @@ function openLB(url, isVideo, idx) {
     _lbItems = Array.from(document.querySelectorAll('.photo-item')).map(el => ({
       url:     el.getAttribute('data-url'),
       thumb:   el.getAttribute('data-thumb') || '',
+      guid:    el.getAttribute('data-guid') || '',
       isVideo: el.classList.contains('is-video'),
     }));
     _lbIdx = _lbItems.findIndex(i => i.url === url);
@@ -1532,6 +1563,14 @@ function _lbShow() {
   document.getElementById('lb-prev').classList.toggle('hidden', _lbIdx === 0);
   document.getElementById('lb-next').classList.toggle('hidden', _lbIdx === _lbItems.length - 1);
   document.getElementById('lb-counter').textContent = `${_lbIdx + 1} / ${_lbItems.length}`;
+  // Reset comments panel
+  _lbCommentsOpen = false;
+  document.getElementById('lb-comments-body').style.display = 'none';
+  document.getElementById('lb-comments-chevron').textContent = '▼';
+  document.getElementById('lb-comments-count').textContent = 'Comments';
+  document.getElementById('lb-comments-list').innerHTML = '';
+  // Load comments for this photo
+  if (item.guid) loadPhotoComments(item.guid);
 }
 
 function lbNav(dir) {
@@ -1575,6 +1614,73 @@ function closeLB() {
   newVid.setAttribute('playsinline', '');
   newVid.style.cssText = 'display:none;max-width:92vw;max-height:88vh;border-radius:6px;';
   wrap.appendChild(newVid);
+}
+
+// ── Photo comments ───────────────────────────────────────────────────────────
+let _lbCommentsOpen = false;
+let _photoCommentCounts = {}; // guid -> count cache
+
+function toggleLbComments() {
+  _lbCommentsOpen = !_lbCommentsOpen;
+  document.getElementById('lb-comments-body').style.display = _lbCommentsOpen ? 'block' : 'none';
+  document.getElementById('lb-comments-chevron').textContent = _lbCommentsOpen ? '▲' : '▼';
+}
+
+async function loadPhotoComments(guid) {
+  const token = localStorage.getItem(PW_KEY);
+  const countEl = document.getElementById('lb-comments-count');
+  const listEl = document.getElementById('lb-comments-list');
+  countEl.textContent = 'Comments';
+  listEl.innerHTML = '<div style="color:rgba(255,255,255,0.4);font-family:sans-serif;font-size:0.75rem;">Loading…</div>';
+  try {
+    const r = await fetch(`${API}/api/students?action=live-get-photo-comments&guid=${encodeURIComponent(guid)}`, {
+      headers: { 'x-live-token': token }
+    });
+    const d = await r.json();
+    if (!d.ok) throw new Error();
+    const comments = d.comments || [];
+    _photoCommentCounts[guid] = comments.length;
+    countEl.textContent = comments.length ? `💬 ${comments.length} comment${comments.length > 1 ? 's' : ''}` : 'Comments — be first!';
+    // Update badge in grid
+    const badge = document.querySelector(`.photo-comment-badge[data-guid="${guid}"]`);
+    if (badge) badge.textContent = comments.length ? `💬 ${comments.length}` : '';
+    if (!comments.length) {
+      listEl.innerHTML = '<div style="color:rgba(255,255,255,0.35);font-family:sans-serif;font-size:0.75rem;padding:4px 0;">No comments yet.</div>';
+      return;
+    }
+    listEl.innerHTML = comments.map(c => `
+      <div class="lb-comment-item">
+        <strong>${esc(c.name)}</strong>${esc(c.message)}<span class="comment-time">${fmtDate(c.created_at)}</span>
+      </div>`).join('');
+  } catch {
+    listEl.innerHTML = '<div style="color:rgba(255,100,100,0.7);font-family:sans-serif;font-size:0.75rem;">Could not load comments.</div>';
+  }
+}
+
+async function submitPhotoComment() {
+  const item = _lbItems[_lbIdx];
+  if (!item?.guid) return;
+  const name = document.getElementById('lb-comment-name').value.trim();
+  const message = document.getElementById('lb-comment-msg').value.trim();
+  if (!name || !message) return;
+  const token = localStorage.getItem(PW_KEY);
+  const btn = document.querySelector('#lb-comments button[onclick="submitPhotoComment()"]');
+  if (btn) { btn.textContent = '…'; btn.disabled = true; }
+  try {
+    const r = await fetch(`${API}/api/students?action=live-add-photo-comment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-live-token': token },
+      body: JSON.stringify({ guid: item.guid, name, message })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      document.getElementById('lb-comment-msg').value = '';
+      await loadPhotoComments(item.guid);
+      // Auto-open comments if not already open
+      if (!_lbCommentsOpen) toggleLbComments();
+    }
+  } catch {}
+  if (btn) { btn.textContent = 'Post'; btn.disabled = false; }
 }
 
 // Keyboard nav
