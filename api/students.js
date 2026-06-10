@@ -254,7 +254,8 @@ async function getICloudPhotosFromICloud() {
         const dimsDerivative = allValues.find(([, d]) => d.width && d.height)?.[1] || {};
         const width = dimsDerivative.width || 0;
         const height = dimsDerivative.height || 0;
-        return { guid: photo.photoGuid, type: 'video', url: videoUrl, thumb: poster, poster, caption, width, height };
+        const photoDate = photo.dateCreated || photo.batchDateCreated || '';
+        return { guid: photo.photoGuid, type: 'video', url: videoUrl, thumb: poster, poster, caption, width, height, date: photoDate };
       }
 
       // Photo: pick largest (full res) and smallest (thumbnail) derivative
@@ -277,6 +278,7 @@ async function getICloudPhotosFromICloud() {
         caption,
         width: dFull.width || 0,
         height: dFull.height || 0,
+        date: photo.dateCreated || photo.batchDateCreated || '',
       };
     }).filter(Boolean);
     console.log('[Photos] fetched from iCloud, count:', result.length);

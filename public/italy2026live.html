@@ -376,10 +376,17 @@ body { font-family: 'Georgia', serif; background: var(--cream); color: var(--dar
 
 /* ─── Photos — justified layout (Apple Photos style) ─── */
 .photo-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
+  display: block;
   padding: 3px;
+}
+.photo-date-header {
+  width: 100%; padding: 12px 4px 5px;
+  font-family: sans-serif; font-size: 0.68rem; font-weight: 700;
+  color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em;
+  border-bottom: 1px solid var(--border); margin-bottom: 3px;
+}
+.photo-date-group {
+  display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 6px;
 }
 .photo-item {
   position: relative; cursor: pointer;
@@ -1342,6 +1349,43 @@ async function loadLocation(token) {
 const PHOTO_CACHE_KEY = 'italy_photos_cache';
 const PHOTO_CACHE_TTL = 60 * 60 * 1000; // 60 minutes
 
+const PHOTO_DATE_LABELS = {
+  '2026-05-24': 'May 24 · Milan Arrival',
+  '2026-05-30': 'May 30 · Venice Arrival',
+  '2026-05-31': 'May 31 · Venice',
+  '2026-06-01': 'Jun 1 · Venice',
+  '2026-06-02': 'Jun 2 · Dolomites Arrival',
+  '2026-06-03': 'Jun 3 · Alpe di Siusi & Val di Funes',
+  '2026-06-04': 'Jun 4 · Seceda Gondola',
+  '2026-06-05': 'Jun 5 · Spa Day',
+  '2026-06-06': 'Jun 6 · Tre Cime Arrival',
+  '2026-06-07': 'Jun 7 · Tre Cime di Lavaredo',
+  '2026-06-08': 'Jun 8 · Lake Como Arrival',
+  '2026-06-09': 'Jun 9 · Bellagio & Menaggio',
+  '2026-06-10': 'Jun 10 · Florence Day Trip',
+  '2026-06-11': 'Jun 11 · Milan',
+  '2026-06-12': 'Jun 12 · Flying Home',
+};
+
+function photoDateKey(dateStr) {
+  if (!dateStr) return '';
+  try { return new Date(dateStr).toLocaleDateString('en-CA', { timeZone: 'Europe/Rome' }); }
+  catch { return ''; }
+}
+
+function makePhotoItemHtml(p, idx) {
+  const thumb = p.thumb || p.url;
+  const ar = (p.width && p.height) ? p.width / p.height : (p.type === 'video' ? 16/9 : 4/3);
+  if (p.type === 'video') {
+    const isImgUrl = u => u && /\.(jpg|jpeg|png|heic|webp)(\?|$)/i.test(u);
+    const posterEl = isImgUrl(thumb)
+      ? `<img src="${thumb}" alt="Video ${idx+1}" loading="lazy" decoding="async">`
+      : `<div style="width:100%;height:100%;background:linear-gradient(135deg,#1a2744 0%,#0d1a30 100%);"></div>`;
+    return `<div class="photo-item is-video" data-url="${p.url}" data-thumb="${thumb}" data-guid="${p.guid||''}" data-ar="${ar}" onclick="openLB('${p.url}', true)">${posterEl}<div class="video-badge"></div>${p.guid ? `<div class="photo-comment-badge" data-guid="${p.guid}">💬</div>` : ''}${p.caption ? `<div class="photo-cap">${p.caption}</div>` : ''}</div>`;
+  }
+  return `<div class="photo-item" data-url="${p.url}" data-guid="${p.guid||''}" data-ar="${ar}" onclick="openLB('${p.url}', false)"><img src="${thumb}" alt="Photo ${idx+1}" loading="lazy" decoding="async" onerror="this.parentElement.style.display='none'">${p.guid ? `<div class="photo-comment-badge" data-guid="${p.guid}">💬</div>` : ''}${p.caption ? `<div class="photo-cap">${p.caption}</div>` : ''}</div>`;
+}
+
 function renderPhotos(photos) {
   const grid = document.getElementById('photo-grid');
   if (!photos?.length) {
@@ -1352,22 +1396,27 @@ function renderPhotos(photos) {
       </div>`;
     return;
   }
-  grid.innerHTML = photos.map((p, i) => {
-    const thumb = p.thumb || p.url;
-    const ar = (p.width && p.height) ? p.width / p.height : (p.type === 'video' ? 16/9 : 4/3);
-    // Note: width/height now returned for videos too, so portrait videos get correct ar
-    if (p.type === 'video') {
-      // Use still-image poster if available; fall back to dark placeholder.
-      // Never use a video URL as <img> src — Safari will auto-play it.
-      const isImgUrl = u => u && /\.(jpg|jpeg|png|heic|webp)(\?|$)/i.test(u);
-      const posterEl = isImgUrl(thumb)
-        ? `<img src="${thumb}" alt="Video ${i+1}" loading="lazy" decoding="async">`
-        : `<div style="width:100%;height:100%;background:linear-gradient(135deg,#1a2744 0%,#0d1a30 100%);"></div>`;
-      return `<div class="photo-item is-video" data-url="${p.url}" data-thumb="${thumb}" data-guid="${p.guid||''}" data-ar="${ar}" onclick="openLB('${p.url}', true)">${posterEl}<div class="video-badge"></div>${p.guid ? `<div class="photo-comment-badge" data-guid="${p.guid}">💬</div>` : ''}${p.caption ? `<div class="photo-cap">${p.caption}</div>` : ''}</div>`;
-    }
-    return `<div class="photo-item" data-url="${p.url}" data-guid="${p.guid||''}" data-ar="${ar}" onclick="openLB('${p.url}', false)"><img src="${thumb}" alt="Photo ${i+1}" loading="lazy" decoding="async" onerror="this.parentElement.style.display='none'">${p.guid ? `<div class="photo-comment-badge" data-guid="${p.guid}">💬</div>` : ''}${p.caption ? `<div class="photo-cap">${p.caption}</div>` : ''}</div>`;
-  }).join('');
-  applyJustifiedLayout(grid);
+
+  // Group photos by date (Italy timezone)
+  const groups = new Map();
+  photos.forEach(p => {
+    const key = photoDateKey(p.date);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(p);
+  });
+
+  let html = '';
+  let globalIdx = 0;
+  groups.forEach((groupPhotos, dateKey) => {
+    const label = PHOTO_DATE_LABELS[dateKey] || (dateKey || '');
+    if (label) html += `<div class="photo-date-header">${label}</div>`;
+    html += `<div class="photo-date-group">`;
+    groupPhotos.forEach(p => { html += makePhotoItemHtml(p, globalIdx++); });
+    html += `</div>`;
+  });
+
+  grid.innerHTML = html;
+  grid.querySelectorAll('.photo-date-group').forEach(g => applyJustifiedLayout(g));
 }
 
 async function loadPhotos(token) {
@@ -1733,7 +1782,10 @@ function applyJustifiedLayout(grid) {
 }
 window.addEventListener('resize', () => {
   const grid = document.getElementById('photo-grid');
-  if (grid) applyJustifiedLayout(grid);
+  if (!grid) return;
+  const groups = grid.querySelectorAll('.photo-date-group');
+  if (groups.length) groups.forEach(g => applyJustifiedLayout(g));
+  else applyJustifiedLayout(grid);
 });
 </script>
 </body>
