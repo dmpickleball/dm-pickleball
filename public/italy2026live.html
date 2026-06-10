@@ -1435,18 +1435,25 @@ function renderPhotos(photos) {
     _photoGroups.get(key).push(p);
   });
 
+  // If photos have no date field yet (old cache), treat all as one group
+  const hasOnlyUnknown = _photoGroups.size === 1 && _photoGroups.has('');
+
   // Populate dropdown
   const bar = document.getElementById('photo-day-bar');
   const sel = document.getElementById('photo-day-select');
   sel.innerHTML = '';
   _photoGroups.forEach((dayPhotos, dateKey) => {
-    const label = PHOTO_DATE_LABELS[dateKey] || dateKey || 'Unknown date';
+    const label = PHOTO_DATE_LABELS[dateKey] || dateKey || 'All Photos';
     const opt = document.createElement('option');
     opt.value = dateKey;
-    opt.textContent = `${label}  (${dayPhotos.length})`;
+    opt.textContent = hasOnlyUnknown
+      ? `All Photos  (${dayPhotos.length})`
+      : `${label}  (${dayPhotos.length})`;
     sel.appendChild(opt);
   });
-  bar.style.display = _photoGroups.size > 0 ? '' : 'none';
+
+  // Show bar only if there are multiple days to pick from
+  bar.style.display = (_photoGroups.size > 1 && !hasOnlyUnknown) ? 'block' : 'none';
 
   // Default: most recent day (first entry)
   const defaultKey = _photoGroups.keys().next().value || '';
