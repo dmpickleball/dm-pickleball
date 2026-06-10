@@ -376,35 +376,30 @@ body { font-family: 'Georgia', serif; background: var(--cream); color: var(--dar
 
 /* ─── Photos — justified layout (Apple Photos style) ─── */
 .photo-grid {
-  display: block;
-  padding: 3px;
+  display: flex; flex-wrap: wrap; gap: 3px; padding: 3px;
 }
-.photo-date-header {
-  width: 100%; padding: 12px 4px 5px;
-  font-family: sans-serif; font-size: 0.68rem; font-weight: 700;
-  color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em;
-  border-bottom: 1px solid var(--border); margin-bottom: 3px;
+/* ─── Day selector ─── */
+.photo-day-bar {
+  display: none; padding: 10px 10px 8px;
+  border-bottom: 1px solid var(--border);
 }
-.photo-date-group {
-  display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 6px;
+.photo-day-select-row {
+  display: flex; align-items: center; gap: 8px;
 }
-/* ─── Photo day-jump nav ─── */
-.photo-nav {
-  display: none; flex-wrap: nowrap; overflow-x: auto; gap: 6px;
-  padding: 10px 6px 10px; border-bottom: 1px solid var(--border);
-  margin-bottom: 4px;
-  -webkit-overflow-scrolling: touch; scrollbar-width: none;
+.photo-day-select {
+  flex: 1; background: var(--white); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 9px 34px 9px 12px;
+  font-family: sans-serif; font-size: 0.82rem; color: var(--dark);
+  cursor: pointer; outline: none; appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239a8470' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center;
+  background-size: 16px; transition: border-color 0.15s;
 }
-.photo-nav::-webkit-scrollbar { display: none; }
-.photo-nav-pill {
-  flex-shrink: 0; background: none; border: 1px solid var(--border);
-  color: var(--muted); border-radius: 20px; padding: 5px 13px;
-  font-family: sans-serif; font-size: 0.7rem; font-weight: 600;
-  cursor: pointer; white-space: nowrap; transition: all 0.15s;
-  line-height: 1.4;
+.photo-day-select:focus { border-color: var(--green); }
+.photo-day-count {
+  font-family: sans-serif; font-size: 0.72rem; color: var(--muted);
+  white-space: nowrap; flex-shrink: 0;
 }
-.photo-nav-pill:hover { background: rgba(40,28,16,0.07); color: var(--dark); }
-.photo-nav-pill.active { background: var(--dark); border-color: var(--dark); color: #fff; }
 .photo-item {
   position: relative; cursor: pointer;
   overflow: hidden; background: #111;
@@ -961,7 +956,12 @@ body.dark [style*="color:#90a4ae"]   { color: #7a9aaa !important; }
 
     <div class="card">
       <div class="card-label">Trip Photos</div>
-      <div id="photo-nav" class="photo-nav"></div>
+      <div id="photo-day-bar" class="photo-day-bar">
+        <div class="photo-day-select-row">
+          <select id="photo-day-select" class="photo-day-select" onchange="selectPhotoDay(this.value)"></select>
+          <span id="photo-day-count" class="photo-day-count"></span>
+        </div>
+      </div>
       <div id="photo-grid" class="photo-grid">
         <div class="photos-loading">
           <div class="photos-spinner"></div>
@@ -1368,21 +1368,21 @@ const PHOTO_CACHE_KEY = 'italy_photos_cache';
 const PHOTO_CACHE_TTL = 60 * 60 * 1000; // 60 minutes
 
 const PHOTO_DATE_LABELS = {
-  '2026-05-24': 'May 24 · Milan Arrival',
-  '2026-05-30': 'May 30 · Venice Arrival',
-  '2026-05-31': 'May 31 · Venice',
-  '2026-06-01': 'Jun 1 · Venice',
-  '2026-06-02': 'Jun 2 · Dolomites Arrival',
-  '2026-06-03': 'Jun 3 · Alpe di Siusi & Val di Funes',
-  '2026-06-04': 'Jun 4 · Seceda Gondola',
-  '2026-06-05': 'Jun 5 · Spa Day',
-  '2026-06-06': 'Jun 6 · Tre Cime Arrival',
-  '2026-06-07': 'Jun 7 · Tre Cime di Lavaredo',
-  '2026-06-08': 'Jun 8 · Lake Como Arrival',
-  '2026-06-09': 'Jun 9 · Bellagio & Menaggio',
-  '2026-06-10': 'Jun 10 · Florence Day Trip',
-  '2026-06-11': 'Jun 11 · Milan',
-  '2026-06-12': 'Jun 12 · Flying Home',
+  '2026-05-24': 'May 24 — Milan Arrival',
+  '2026-05-30': 'May 30 — Venice Arrival',
+  '2026-05-31': 'May 31 — Venice',
+  '2026-06-01': 'Jun 1 — Venice',
+  '2026-06-02': 'Jun 2 — Dolomites Arrival',
+  '2026-06-03': 'Jun 3 — Alpe di Siusi & Val di Funes',
+  '2026-06-04': 'Jun 4 — Seceda Gondola',
+  '2026-06-05': 'Jun 5 — Spa Day',
+  '2026-06-06': 'Jun 6 — Tre Cime Arrival',
+  '2026-06-07': 'Jun 7 — Tre Cime di Lavaredo',
+  '2026-06-08': 'Jun 8 — Lake Como Arrival',
+  '2026-06-09': 'Jun 9 — Bellagio & Menaggio',
+  '2026-06-10': 'Jun 10 — Florence Day Trip',
+  '2026-06-11': 'Jun 11 — Milan',
+  '2026-06-12': 'Jun 12 — Flying Home',
 };
 
 function photoDateKey(dateStr) {
@@ -1404,6 +1404,9 @@ function makePhotoItemHtml(p, idx) {
   return `<div class="photo-item" data-url="${p.url}" data-guid="${p.guid||''}" data-ar="${ar}" onclick="openLB('${p.url}', false)"><img src="${thumb}" alt="Photo ${idx+1}" loading="lazy" decoding="async" onerror="this.parentElement.style.display='none'">${p.guid ? `<div class="photo-comment-badge" data-guid="${p.guid}">💬</div>` : ''}${p.caption ? `<div class="photo-cap">${p.caption}</div>` : ''}</div>`;
 }
 
+// ── Photo day selector ────────────────────────────────────────────────────────
+let _photoGroups = new Map(); // dateKey → [photo, ...]
+
 function renderPhotos(photos) {
   const grid = document.getElementById('photo-grid');
   if (!photos?.length) {
@@ -1412,65 +1415,61 @@ function renderPhotos(photos) {
         <span class="photos-empty-eyebrow">No photos yet</span>
         Photos will appear here once David &amp; Amanda start sharing their album.
       </div>`;
+    document.getElementById('photo-day-bar').style.display = 'none';
     return;
   }
 
-  // Group photos by date (Italy timezone)
-  const groups = new Map();
+  // Group by date (Italy timezone), preserving insertion order (newest first)
+  _photoGroups = new Map();
   photos.forEach(p => {
     const key = photoDateKey(p.date);
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(p);
+    if (!_photoGroups.has(key)) _photoGroups.set(key, []);
+    _photoGroups.get(key).push(p);
   });
 
-  let html = '';
-  let globalIdx = 0;
-  groups.forEach((groupPhotos, dateKey) => {
-    const label = PHOTO_DATE_LABELS[dateKey] || (dateKey || '');
-    if (label) html += `<div class="photo-date-header" data-date="${dateKey}">${label}</div>`;
-    html += `<div class="photo-date-group">`;
-    groupPhotos.forEach(p => { html += makePhotoItemHtml(p, globalIdx++); });
-    html += `</div>`;
+  // Populate dropdown
+  const bar = document.getElementById('photo-day-bar');
+  const sel = document.getElementById('photo-day-select');
+  sel.innerHTML = '';
+  _photoGroups.forEach((dayPhotos, dateKey) => {
+    const label = PHOTO_DATE_LABELS[dateKey] || dateKey || 'Unknown date';
+    const opt = document.createElement('option');
+    opt.value = dateKey;
+    opt.textContent = `${label}  (${dayPhotos.length})`;
+    sel.appendChild(opt);
   });
+  bar.style.display = _photoGroups.size > 0 ? '' : 'none';
 
-  grid.innerHTML = html;
-  grid.querySelectorAll('.photo-date-group').forEach(g => applyJustifiedLayout(g));
+  // Default: most recent day (first entry)
+  const defaultKey = _photoGroups.keys().next().value || '';
+  sel.value = defaultKey;
+  renderPhotoDay(defaultKey);
+}
 
-  // Build day-jump nav pills
-  const nav = document.getElementById('photo-nav');
-  if (nav) {
-    if (groups.size > 1) {
-      nav.innerHTML = '';
-      let firstPill = null;
-      groups.forEach((_, dateKey) => {
-        const label = PHOTO_DATE_LABELS[dateKey] || dateKey;
-        const short = label.split('·')[0].trim(); // e.g. "Jun 3"
-        const btn = document.createElement('button');
-        btn.className = 'photo-nav-pill';
-        btn.textContent = short;
-        btn.dataset.date = dateKey;
-        btn.addEventListener('click', () => {
-          nav.querySelectorAll('.photo-nav-pill').forEach(p => p.classList.remove('active'));
-          btn.classList.add('active');
-          jumpToPhotoDate(dateKey);
-        });
-        nav.appendChild(btn);
-        if (!firstPill) firstPill = btn;
-      });
-      if (firstPill) firstPill.classList.add('active');
-      nav.style.display = 'flex';
-    } else {
-      nav.style.display = 'none';
-    }
+function selectPhotoDay(dateKey) {
+  renderPhotoDay(dateKey);
+  // Scroll photo card into view smoothly
+  const bar = document.getElementById('photo-day-bar');
+  if (bar) {
+    const top = bar.getBoundingClientRect().top + window.scrollY - 68;
+    window.scrollTo({ top, behavior: 'smooth' });
   }
 }
 
-function jumpToPhotoDate(dateKey) {
-  const header = document.querySelector(`.photo-date-header[data-date="${dateKey}"]`);
-  if (!header) return;
-  // Offset for sticky topbar (~58px) + a little breathing room
-  const top = header.getBoundingClientRect().top + window.scrollY - 68;
-  window.scrollTo({ top, behavior: 'smooth' });
+function renderPhotoDay(dateKey) {
+  const grid = document.getElementById('photo-grid');
+  const countEl = document.getElementById('photo-day-count');
+  const dayPhotos = _photoGroups.get(dateKey) || [];
+
+  if (!dayPhotos.length) {
+    grid.innerHTML = `<div class="photos-empty">No photos for this day.</div>`;
+    if (countEl) countEl.textContent = '';
+    return;
+  }
+
+  grid.innerHTML = dayPhotos.map((p, i) => makePhotoItemHtml(p, i)).join('');
+  applyJustifiedLayout(grid);
+  if (countEl) countEl.textContent = `${dayPhotos.length} photo${dayPhotos.length !== 1 ? 's' : ''}`;
 }
 
 async function loadPhotos(token) {
@@ -1836,10 +1835,7 @@ function applyJustifiedLayout(grid) {
 }
 window.addEventListener('resize', () => {
   const grid = document.getElementById('photo-grid');
-  if (!grid) return;
-  const groups = grid.querySelectorAll('.photo-date-group');
-  if (groups.length) groups.forEach(g => applyJustifiedLayout(g));
-  else applyJustifiedLayout(grid);
+  if (grid) applyJustifiedLayout(grid);
 });
 </script>
 </body>
