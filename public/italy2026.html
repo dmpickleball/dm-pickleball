@@ -2013,16 +2013,22 @@ body.dark a[style*="color:#6a1b9a"] { color: #c084e0 !important; }
       });
       const d = await r.json();
       if (d.ok) {
-        btn.textContent = `✅ ${d.count} photos synced`;
-        // Also clear client localStorage so live tracker reloads fresh
+        if (d.refreshing) {
+          // iCloud fetch is still in progress server-side — live tracker will
+          // pick it up automatically on next load (cache is marked expired)
+          btn.textContent = '🔄 Refreshing… open live tracker in ~30s';
+        } else {
+          btn.textContent = `✅ ${d.count} photos synced`;
+        }
+        // Clear client localStorage so live tracker reloads fresh
         localStorage.removeItem('italy_photos_cache');
       } else {
-        btn.textContent = '❌ Failed';
+        btn.textContent = '❌ ' + (d.error || 'Failed');
       }
     } catch {
-      btn.textContent = '❌ Error';
+      btn.textContent = '❌ Network error';
     }
-    setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 3000);
+    setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 4000);
   }
 
   function signOut() {

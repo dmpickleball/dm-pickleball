@@ -598,19 +598,37 @@ export default async function handler(req, res) {
     // Admin only — requires valid Italy session token (only David/Amanda)
     const italyToken = req.headers['x-italy-token'] || '';
     if (!verifyItalyToken(italyToken)) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+
     // Clear in-memory cache
     _photoCache = null;
     _photoCacheTs = 0;
-    // Clear Supabase cache
-    await supabase.from('photo_cache').upsert({ id: 'italy2026', photos: [], updated_at: new Date(0).toISOString(), photo_count: 0 });
-    // Fetch fresh from iCloud
-    const fresh = await getICloudPhotosFromICloud();
+
+    // Mark Supabase cache as expired WITHOUT wiping photos
+    // (keeps old photos as fallback if the iCloud re-fetch fails or times out)
+    await supabase.from('photo_cache').upsert({
+      id: 'italy2026',
+      updated_at: new Date(0).toISOString(), // epoch = treated as expired
+    });
+
+    // Race iCloud fetch against a 7-second wall-clock timeout so we always
+    // return before Vercel's 10-second function limit kills the request.
+    let fresh = [];
+    try {
+      const fetchPromise = getICloudPhotosFromICloud();
+      const giveUp = new Promise(resolve => setTimeout(() => resolve([]), 7000));
+      fresh = await Promise.race([fetchPromise, giveUp]);
+    } catch {}
+
     if (fresh.length) {
       _photoCache = fresh;
       _photoCacheTs = Date.now();
-      savePhotosToSupabase(fresh);
+      await savePhotosToSupabase(fresh);
+      return res.status(200).json({ ok: true, count: fresh.length });
     }
-    return res.status(200).json({ ok: true, count: fresh.length });
+
+    // Fetch didn't finish in time (or returned nothing) — cache is expired,
+    // so the next live-get-photos request will do a cold iCloud fetch automatically.
+    return res.status(200).json({ ok: true, count: 0, refreshing: true });
   }
 
   // ── Photo comments ──────────────────────────────────────────────────────────
