@@ -388,6 +388,23 @@ body { font-family: 'Georgia', serif; background: var(--cream); color: var(--dar
 .photo-date-group {
   display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 6px;
 }
+/* ─── Photo day-jump nav ─── */
+.photo-nav {
+  display: none; flex-wrap: nowrap; overflow-x: auto; gap: 6px;
+  padding: 10px 6px 10px; border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+  -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.photo-nav::-webkit-scrollbar { display: none; }
+.photo-nav-pill {
+  flex-shrink: 0; background: none; border: 1px solid var(--border);
+  color: var(--muted); border-radius: 20px; padding: 5px 13px;
+  font-family: sans-serif; font-size: 0.7rem; font-weight: 600;
+  cursor: pointer; white-space: nowrap; transition: all 0.15s;
+  line-height: 1.4;
+}
+.photo-nav-pill:hover { background: rgba(40,28,16,0.07); color: var(--dark); }
+.photo-nav-pill.active { background: var(--dark); border-color: var(--dark); color: #fff; }
 .photo-item {
   position: relative; cursor: pointer;
   overflow: hidden; background: #111;
@@ -944,6 +961,7 @@ body.dark [style*="color:#90a4ae"]   { color: #7a9aaa !important; }
 
     <div class="card">
       <div class="card-label">Trip Photos</div>
+      <div id="photo-nav" class="photo-nav"></div>
       <div id="photo-grid" class="photo-grid">
         <div class="photos-loading">
           <div class="photos-spinner"></div>
@@ -1409,7 +1427,7 @@ function renderPhotos(photos) {
   let globalIdx = 0;
   groups.forEach((groupPhotos, dateKey) => {
     const label = PHOTO_DATE_LABELS[dateKey] || (dateKey || '');
-    if (label) html += `<div class="photo-date-header">${label}</div>`;
+    if (label) html += `<div class="photo-date-header" data-date="${dateKey}">${label}</div>`;
     html += `<div class="photo-date-group">`;
     groupPhotos.forEach(p => { html += makePhotoItemHtml(p, globalIdx++); });
     html += `</div>`;
@@ -1417,6 +1435,42 @@ function renderPhotos(photos) {
 
   grid.innerHTML = html;
   grid.querySelectorAll('.photo-date-group').forEach(g => applyJustifiedLayout(g));
+
+  // Build day-jump nav pills
+  const nav = document.getElementById('photo-nav');
+  if (nav) {
+    if (groups.size > 1) {
+      nav.innerHTML = '';
+      let firstPill = null;
+      groups.forEach((_, dateKey) => {
+        const label = PHOTO_DATE_LABELS[dateKey] || dateKey;
+        const short = label.split('·')[0].trim(); // e.g. "Jun 3"
+        const btn = document.createElement('button');
+        btn.className = 'photo-nav-pill';
+        btn.textContent = short;
+        btn.dataset.date = dateKey;
+        btn.addEventListener('click', () => {
+          nav.querySelectorAll('.photo-nav-pill').forEach(p => p.classList.remove('active'));
+          btn.classList.add('active');
+          jumpToPhotoDate(dateKey);
+        });
+        nav.appendChild(btn);
+        if (!firstPill) firstPill = btn;
+      });
+      if (firstPill) firstPill.classList.add('active');
+      nav.style.display = 'flex';
+    } else {
+      nav.style.display = 'none';
+    }
+  }
+}
+
+function jumpToPhotoDate(dateKey) {
+  const header = document.querySelector(`.photo-date-header[data-date="${dateKey}"]`);
+  if (!header) return;
+  // Offset for sticky topbar (~58px) + a little breathing room
+  const top = header.getBoundingClientRect().top + window.scrollY - 68;
+  window.scrollTo({ top, behavior: 'smooth' });
 }
 
 async function loadPhotos(token) {
