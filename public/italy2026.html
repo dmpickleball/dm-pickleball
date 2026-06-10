@@ -800,6 +800,7 @@ body.dark a[style*="color:#6a1b9a"] { color: #c084e0 !important; }
     <a class="snav-link" href="#phase-1">🚤 Venice</a>
     <a class="snav-link" href="#phase-2">⛰️ Dolomites</a>
     <a class="snav-link" href="#phase-3">🌊 Lake Como</a>
+    <a class="snav-link" href="#day-florence">🌸 Florence</a>
     <a class="snav-link" href="#phase-4">🏙️ Milan</a>
     <a class="snav-link" href="#phase-5">🏠 Home</a>
   </div>
@@ -814,6 +815,7 @@ body.dark a[style*="color:#6a1b9a"] { color: #c084e0 !important; }
       <a class="snav-drop-link" href="#phase-1" onclick="closeSnavMenu()">🚤 Venice</a>
       <a class="snav-drop-link" href="#phase-2" onclick="closeSnavMenu()">⛰️ Dolomites</a>
       <a class="snav-drop-link" href="#phase-3" onclick="closeSnavMenu()">🌊 Lake Como</a>
+      <a class="snav-drop-link" href="#day-florence" onclick="closeSnavMenu()">🌸 Florence</a>
       <a class="snav-drop-link" href="#phase-4" onclick="closeSnavMenu()">🏙️ Milan</a>
       <a class="snav-drop-link" href="#phase-5" onclick="closeSnavMenu()">🏠 Home</a>
     </div>
@@ -1600,8 +1602,8 @@ body.dark a[style*="color:#6a1b9a"] { color: #c084e0 !important; }
     </div>
   </div>
 
-  <!-- DAY 11 -->
-  <div class="day-card">
+  <!-- DAY 11 / FLORENCE -->
+  <div id="day-florence" class="day-card">
     <div class="day-header">
       <div class="day-number">Day<strong>12</strong>Wed</div>
       <div class="day-info">
@@ -1953,12 +1955,13 @@ body.dark a[style*="color:#6a1b9a"] { color: #c084e0 !important; }
 
   // ── Section nav: mobile dropdown + IntersectionObserver ──
   const SNAV_PHASES = [
-    { id: 'phase-0', label: '✈️ Departure' },
-    { id: 'phase-1', label: '🚤 Venice' },
-    { id: 'phase-2', label: '⛰️ Dolomites' },
-    { id: 'phase-3', label: '🌊 Lake Como' },
-    { id: 'phase-4', label: '🏙️ Milan' },
-    { id: 'phase-5', label: '🏠 Home' },
+    { id: 'phase-0',     label: '✈️ Departure' },
+    { id: 'phase-1',     label: '🚤 Venice' },
+    { id: 'phase-2',     label: '⛰️ Dolomites' },
+    { id: 'phase-3',     label: '🌊 Lake Como' },
+    { id: 'day-florence',label: '🌸 Florence' },
+    { id: 'phase-4',     label: '🏙️ Milan' },
+    { id: 'phase-5',     label: '🏠 Home' },
   ];
 
   function initSectionNav() {

@@ -1084,8 +1084,16 @@ const PHASES = [
     start: new Date('2026-06-06T10:00:00+02:00').getTime(),
     end:   new Date('2026-06-08T10:00:00+02:00').getTime(),
     tz:'Europe/Rome', tzLabel:'Dobbiaco' },
-  { id:'como',   city:'Lake Como',   detail:'Varenna, Lake Como · Jun 8–11',
+  { id:'como',   city:'Lake Como',   detail:'Varenna, Lake Como · Jun 8–10',
     start: new Date('2026-06-08T10:00:00+02:00').getTime(),
+    end:   new Date('2026-06-10T07:30:00+02:00').getTime(),
+    tz:'Europe/Rome', tzLabel:'Varenna' },
+  { id:'florence',city:'Florence',   detail:'Day trip from Varenna · Jun 10',
+    start: new Date('2026-06-10T07:30:00+02:00').getTime(),
+    end:   new Date('2026-06-10T21:00:00+02:00').getTime(),
+    tz:'Europe/Rome', tzLabel:'Florence' },
+  { id:'varenna', city:'Lake Como',  detail:'Varenna last night · Jun 10–11',
+    start: new Date('2026-06-10T21:00:00+02:00').getTime(),
     end:   new Date('2026-06-11T12:00:00+02:00').getTime(),
     tz:'Europe/Rome', tzLabel:'Varenna' },
   { id:'milan',  city:'Milan',       detail:'ME Milan Il Duca · Jun 11–12',
@@ -1097,7 +1105,7 @@ const PHASES = [
     end:   new Date('2026-06-12T21:02:00-07:00').getTime(),
     tz:'America/Los_Angeles', tzLabel:'SFO Time' },
 ];
-const DATES      = ['May 30','May 31','Jun 2','Jun 6','Jun 8','Jun 11','Jun 12','Jun 12'];
+const DATES      = ['May 30','May 31','Jun 2','Jun 6','Jun 8','Jun 10','Jun 10','Jun 11','Jun 12','Jun 12'];
 const TRIP_START = PHASES[0].start;
 const TRIP_END   = PHASES[PHASES.length-1].end;
 
