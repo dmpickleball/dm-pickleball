@@ -2353,33 +2353,43 @@ body.dark a[style*="color:#6a1b9a"] { color: #c084e0 !important; }
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) { list.innerHTML = '<div class="priv-comments-empty">Log in to view photo comments.</div>'; return; }
     try {
-      const r = await fetch(API_BASE + '/api/students?action=live-get-all-photo-comments', {
-        headers: { 'x-italy-token': token }
-      });
-      const d = await r.json();
-      if (!d.ok) { list.innerHTML = '<div class="priv-comments-empty">Could not load photo comments.</div>'; return; }
-      if (!d.comments || !d.comments.length) {
+      // Fetch comments and photo thumbnails in parallel
+      const [commentsRes, photosRes] = await Promise.all([
+        fetch(API_BASE + '/api/students?action=live-get-all-photo-comments', { headers: { 'x-italy-token': token } }),
+        fetch(API_BASE + '/api/students?action=live-get-photos-admin', { headers: { 'x-italy-token': token } }),
+      ]);
+      const commentsData = await commentsRes.json();
+      const photosData = await photosRes.json();
+
+      if (!commentsData.ok) { list.innerHTML = '<div class="priv-comments-empty">Could not load photo comments.</div>'; return; }
+      if (!commentsData.comments || !commentsData.comments.length) {
         list.innerHTML = '<div class="priv-comments-empty">No photo comments yet.</div>';
         return;
       }
-      list.innerHTML = d.comments.map(c => {
-        // Try to derive a day label from created_at
-        let dayLabel = '';
-        try {
-          const dateKey = new Date(c.created_at).toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
-          dayLabel = PHOTO_DATE_LABELS_PRIV[dateKey] || '';
-        } catch {}
+
+      // Build guid → photo map for quick lookup
+      const photoMap = {};
+      if (photosData.ok && photosData.photos) {
+        photosData.photos.forEach(p => { photoMap[p.guid] = p; });
+      }
+
+      list.innerHTML = commentsData.comments.map(c => {
+        const photo = photoMap[c.photo_guid];
+        const thumbHtml = photo
+          ? `<a href="${photo.url}" target="_blank" rel="noopener" title="Open full photo">
+               <img class="pcmt-thumb" src="${photo.thumb}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=pcmt-thumb-placeholder>📷</div>'" />
+             </a>`
+          : `<div class="pcmt-thumb-placeholder">📷</div>`;
         return `
         <div class="pcmt-card">
-          <div class="pcmt-thumb-placeholder">📷</div>
+          ${thumbHtml}
           <div class="pcmt-body">
             <div class="pcmt-meta">
               <span class="pcmt-name">${pEsc(c.name)}</span>
               <span class="pcmt-time">${pFmt(c.created_at)}</span>
-              ${dayLabel ? `<span class="pcmt-badge">${pEsc(dayLabel)}</span>` : ''}
             </div>
             <div class="pcmt-msg">${pEsc(c.message)}</div>
-            <div class="pcmt-guid">Photo ID: ${pEsc(c.photo_guid)}</div>
+            ${photo ? `<a href="${photo.url}" target="_blank" rel="noopener" style="font-family:sans-serif;font-size:0.72rem;color:var(--accent);">View full photo →</a>` : `<div class="pcmt-guid">Photo ID: ${pEsc(c.photo_guid)}</div>`}
           </div>
         </div>`;
       }).join('');

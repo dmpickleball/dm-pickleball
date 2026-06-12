@@ -643,6 +643,16 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, comments: data || [] });
   }
 
+  // ── Photos admin (returns guid+thumb map for private portal) ────────────────
+  if (action === 'live-get-photos-admin') {
+    const italyToken = req.headers['x-italy-token'] || '';
+    if (!verifyItalyToken(italyToken)) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+    const photos = await getICloudPhotos();
+    // Only send guid + thumb to keep response small
+    const slim = photos.map(p => ({ guid: p.guid, thumb: p.thumb, url: p.url, type: p.type }));
+    return res.status(200).json({ ok: true, photos: slim });
+  }
+
   // ── Photo comments ──────────────────────────────────────────────────────────
   if (action === 'live-get-photo-comments') {
     const token = req.headers['x-live-token'] || '';
