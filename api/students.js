@@ -193,7 +193,7 @@ async function getICloudPhotosFromICloud() {
       const db = b.dateCreated || b.batchDateCreated || '';
       return db.localeCompare(da);
     });
-    const photos = allPhotos.slice(0, 500);
+    const photos = allPhotos.slice(0, 1000);
     if (!photos.length) return [];
 
     // Step 3: get expiring CDN URLs for each photo
@@ -629,6 +629,18 @@ export default async function handler(req, res) {
     // Fetch didn't finish in time (or returned nothing) — cache is expired,
     // so the next live-get-photos request will do a cold iCloud fetch automatically.
     return res.status(200).json({ ok: true, count: 0, refreshing: true });
+  }
+
+  // ── All photo comments (admin) ──────────────────────────────────────────────
+  if (action === 'live-get-all-photo-comments') {
+    const italyToken = req.headers['x-italy-token'] || '';
+    if (!verifyItalyToken(italyToken)) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+    const { data, error } = await supabase
+      .from('photo_comments')
+      .select('id, photo_guid, name, message, created_at')
+      .order('created_at', { ascending: false });
+    if (error) return res.status(500).json({ ok: false, error: error.message });
+    return res.status(200).json({ ok: true, comments: data || [] });
   }
 
   // ── Photo comments ──────────────────────────────────────────────────────────
