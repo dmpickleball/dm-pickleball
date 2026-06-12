@@ -96,7 +96,7 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
   </div>
   <div class="scoring-note">
     <b>Win correct = 1 pt</b> &nbsp;|&nbsp; <b>Tie correct = 2 pts</b> &nbsp;|&nbsp; 
-    Payouts: 🥇 $250 &nbsp;🥈 $100 &nbsp;🥉 $50
+    Payouts: 🥇 $275 &nbsp;🥈 $100 &nbsp;🥉 $50
   </div>
 </header>
 
@@ -147,7 +147,7 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
 </main>
 
 <script>
-const PLAYERS = ["JV", "Alex", "Chapul", "Junior", "Mike", "Steve", "Pablo", "Kimmy", "Edgar", "Cesar", "Diego", "Eric", "P.Sosa", "Pollo", "David", "Jerry"];
+const PLAYERS = ["JV", "Alex", "Chapul", "Junior", "Mike", "Steve", "Pablo", "Kimmy", "Edgar", "Cesar", "Diego", "Eric", "P.Sosa", "Pollo", "David", "Jerry", "Ivan"];
 const DAVID_IDX = PLAYERS.indexOf('David');
 
 const MATCHES = [
@@ -158,6 +158,7 @@ const MATCHES = [
     "t1": "Mexico",
     "t2": "South Africa",
     "p": [
+      "Mexico",
       "Mexico",
       "Mexico",
       "Mexico",
@@ -198,7 +199,8 @@ const MATCHES = [
       "Tie",
       "South Korea",
       "Tie",
-      "Tie"
+      "Tie",
+      "South Korea"
     ]
   },
   {
@@ -223,7 +225,8 @@ const MATCHES = [
       "Mexico",
       "Mexico",
       "Tie",
-      "Tie"
+      "Tie",
+      "Mexico"
     ]
   },
   {
@@ -248,6 +251,7 @@ const MATCHES = [
       "Tie",
       "South Africa",
       "Czechia",
+      "Czechia",
       "Czechia"
     ]
   },
@@ -269,6 +273,7 @@ const MATCHES = [
       "Mexico",
       "Mexico",
       "Tie",
+      "Mexico",
       "Mexico",
       "Mexico",
       "Mexico",
@@ -298,6 +303,7 @@ const MATCHES = [
       "Tie",
       "South Korea",
       "Tie",
+      "South Korea",
       "South Korea"
     ]
   },
@@ -323,7 +329,8 @@ const MATCHES = [
       "Canada",
       "Canada",
       "Tie",
-      "Tie"
+      "Tie",
+      "Canada"
     ]
   },
   {
@@ -342,6 +349,7 @@ const MATCHES = [
       "Switzerland",
       "Qatar",
       "Qatar",
+      "Switzerland",
       "Switzerland",
       "Switzerland",
       "Switzerland",
@@ -373,6 +381,7 @@ const MATCHES = [
       "Canada",
       "Canada",
       "Canada",
+      "Canada",
       "Canada"
     ]
   },
@@ -387,6 +396,7 @@ const MATCHES = [
       "Switzerland",
       "Switzerland",
       "Tie",
+      "Switzerland",
       "Switzerland",
       "Switzerland",
       "Switzerland",
@@ -423,6 +433,7 @@ const MATCHES = [
       "Tie",
       "Tie",
       "Tie",
+      "Tie",
       "Tie"
     ]
   },
@@ -448,7 +459,8 @@ const MATCHES = [
       "Bosnia",
       "Bosnia",
       "Bosnia",
-      "Tie"
+      "Tie",
+      "Bosnia"
     ]
   },
   {
@@ -473,6 +485,7 @@ const MATCHES = [
       "Brazil",
       "Brazil",
       "Tie",
+      "Brazil",
       "Brazil"
     ]
   },
@@ -498,7 +511,8 @@ const MATCHES = [
       "Scotland",
       "Scotland",
       "Scotland",
-      "Tie"
+      "Tie",
+      "Scotland"
     ]
   },
   {
@@ -508,6 +522,7 @@ const MATCHES = [
     "t1": "Brazil",
     "t2": "Haiti",
     "p": [
+      "Brazil",
       "Brazil",
       "Brazil",
       "Brazil",
@@ -548,7 +563,8 @@ const MATCHES = [
       "Morocco",
       "Morocco",
       "Morocco",
-      "Tie"
+      "Tie",
+      "Scotland"
     ]
   },
   {
@@ -573,6 +589,7 @@ const MATCHES = [
       "Brazil",
       "Brazil",
       "Brazil",
+      "Brazil",
       "Brazil"
     ]
   },
@@ -583,6 +600,7 @@ const MATCHES = [
     "t1": "Morocco",
     "t2": "Haiti",
     "p": [
+      "Morocco",
       "Morocco",
       "Morocco",
       "Morocco",
@@ -623,7 +641,8 @@ const MATCHES = [
       "USA",
       "Tie",
       "Tie",
-      "Paraguay"
+      "Paraguay",
+      "Tie"
     ]
   },
   {
@@ -642,6 +661,7 @@ const MATCHES = [
       "Turkey",
       "Turkey",
       "Australia",
+      "Turkey",
       "Turkey",
       "Turkey",
       "Turkey",
@@ -673,7 +693,8 @@ const MATCHES = [
       "USA",
       "USA",
       "USA",
-      "Tie"
+      "Tie",
+      "USA"
     ]
   },
   {
@@ -698,7 +719,8 @@ const MATCHES = [
       "Tie",
       "Paraguay",
       "Tie",
-      "Tie"
+      "Tie",
+      "Paraguay"
     ]
   },
   {
@@ -723,7 +745,8 @@ const MATCHES = [
       "Tie",
       "USA",
       "Tie",
-      "Tie"
+      "Tie",
+      "USA"
     ]
   },
   {
@@ -748,7 +771,8 @@ const MATCHES = [
       "Paraguay",
       "Tie",
       "Tie",
-      "Tie"
+      "Tie",
+      "Australia"
     ]
   },
   {
@@ -758,6 +782,7 @@ const MATCHES = [
     "t1": "Germany",
     "t2": "Curacao",
     "p": [
+      "Germany",
       "Germany",
       "Germany",
       "Germany",
@@ -798,6 +823,7 @@ const MATCHES = [
       "Ecuador",
       "Tie",
       "Tie",
+      "Ecuador",
       "Ecuador"
     ]
   },
@@ -823,6 +849,7 @@ const MATCHES = [
       "Germany",
       "Germany",
       "Germany",
+      "Germany",
       "Germany"
     ]
   },
@@ -833,6 +860,7 @@ const MATCHES = [
     "t1": "Ecuador",
     "t2": "Curacao",
     "p": [
+      "Ecuador",
       "Ecuador",
       "Ecuador",
       "Ecuador",
@@ -873,7 +901,8 @@ const MATCHES = [
       "Germany",
       "Germany",
       "Tie",
-      "Germany"
+      "Germany",
+      "Ecuador"
     ]
   },
   {
@@ -898,7 +927,8 @@ const MATCHES = [
       "Ivory Coast",
       "Curacao",
       "Ivory Coast",
-      "Tie"
+      "Tie",
+      "Ivory Coast"
     ]
   },
   {
@@ -923,6 +953,7 @@ const MATCHES = [
       "Netherlands",
       "Japan",
       "Tie",
+      "Netherlands",
       "Netherlands"
     ]
   },
@@ -948,6 +979,7 @@ const MATCHES = [
       "Sweden",
       "Sweden",
       "Tie",
+      "Sweden",
       "Sweden"
     ]
   },
@@ -958,6 +990,7 @@ const MATCHES = [
     "t1": "Netherlands",
     "t2": "Sweden",
     "p": [
+      "Netherlands",
       "Netherlands",
       "Netherlands",
       "Netherlands",
@@ -998,6 +1031,7 @@ const MATCHES = [
       "Japan",
       "Japan",
       "Japan",
+      "Japan",
       "Japan"
     ]
   },
@@ -1008,6 +1042,7 @@ const MATCHES = [
     "t1": "Tunisia",
     "t2": "Netherlands",
     "p": [
+      "Netherlands",
       "Netherlands",
       "Netherlands",
       "Netherlands",
@@ -1048,6 +1083,7 @@ const MATCHES = [
       "Tie",
       "Japan",
       "Tie",
+      "Japan",
       "Japan"
     ]
   },
@@ -1073,7 +1109,8 @@ const MATCHES = [
       "Belgium",
       "Belgium",
       "Belgium",
-      "Tie"
+      "Tie",
+      "Belgium"
     ]
   },
   {
@@ -1098,7 +1135,8 @@ const MATCHES = [
       "Iran",
       "Iran",
       "Iran",
-      "Tie"
+      "Tie",
+      "New Zealand"
     ]
   },
   {
@@ -1123,7 +1161,8 @@ const MATCHES = [
       "Belgium",
       "Belgium",
       "Belgium",
-      "Tie"
+      "Tie",
+      "Belgium"
     ]
   },
   {
@@ -1148,7 +1187,8 @@ const MATCHES = [
       "Egypt",
       "Egypt",
       "Egypt",
-      "Egypt"
+      "Egypt",
+      "New Zealand"
     ]
   },
   {
@@ -1168,6 +1208,7 @@ const MATCHES = [
       "Belgium",
       "New Zealand",
       "New Zealand",
+      "Belgium",
       "Belgium",
       "Belgium",
       "Belgium",
@@ -1198,7 +1239,8 @@ const MATCHES = [
       "Tie",
       "Tie",
       "Tie",
-      "Tie"
+      "Tie",
+      "Egypt"
     ]
   },
   {
@@ -1208,6 +1250,7 @@ const MATCHES = [
     "t1": "Spain",
     "t2": "Cape Verde",
     "p": [
+      "Spain",
       "Spain",
       "Spain",
       "Spain",
@@ -1248,6 +1291,7 @@ const MATCHES = [
       "Uruguay",
       "Uruguay",
       "Uruguay",
+      "Uruguay",
       "Uruguay"
     ]
   },
@@ -1273,6 +1317,7 @@ const MATCHES = [
       "Spain",
       "Spain",
       "Spain",
+      "Spain",
       "Spain"
     ]
   },
@@ -1283,6 +1328,7 @@ const MATCHES = [
     "t1": "Uruguay",
     "t2": "Cape Verde",
     "p": [
+      "Uruguay",
       "Uruguay",
       "Uruguay",
       "Uruguay",
@@ -1323,7 +1369,8 @@ const MATCHES = [
       "Spain",
       "Spain",
       "Tie",
-      "Spain"
+      "Spain",
+      "Tie"
     ]
   },
   {
@@ -1348,7 +1395,8 @@ const MATCHES = [
       "Saudi Arabia",
       "Tie",
       "Saudi Arabia",
-      "Tie"
+      "Tie",
+      "Saudi Arabia"
     ]
   },
   {
@@ -1358,6 +1406,7 @@ const MATCHES = [
     "t1": "France",
     "t2": "Senegal",
     "p": [
+      "France",
       "France",
       "France",
       "France",
@@ -1398,6 +1447,7 @@ const MATCHES = [
       "Norway",
       "Norway",
       "Norway",
+      "Norway",
       "Norway"
     ]
   },
@@ -1412,6 +1462,7 @@ const MATCHES = [
       "France",
       "France",
       "Tie",
+      "France",
       "France",
       "France",
       "France",
@@ -1448,7 +1499,8 @@ const MATCHES = [
       "Tie",
       "Norway",
       "Tie",
-      "Senegal"
+      "Senegal",
+      "Norway"
     ]
   },
   {
@@ -1473,6 +1525,7 @@ const MATCHES = [
       "France",
       "France",
       "Tie",
+      "Tie",
       "Tie"
     ]
   },
@@ -1485,6 +1538,7 @@ const MATCHES = [
     "p": [
       "Senegal",
       "Iraq",
+      "Senegal",
       "Senegal",
       "Senegal",
       "Senegal",
@@ -1523,6 +1577,7 @@ const MATCHES = [
       "Argentina",
       "Argentina",
       "Argentina",
+      "Argentina",
       "Argentina"
     ]
   },
@@ -1548,7 +1603,8 @@ const MATCHES = [
       "Austria",
       "Austria",
       "Austria",
-      "Tie"
+      "Tie",
+      "Austria"
     ]
   },
   {
@@ -1566,6 +1622,7 @@ const MATCHES = [
       "Argentina",
       "Argentina",
       "Tie",
+      "Argentina",
       "Argentina",
       "Argentina",
       "Argentina",
@@ -1598,7 +1655,8 @@ const MATCHES = [
       "Algeria",
       "Algeria",
       "Tie",
-      "Tie"
+      "Tie",
+      "Jordan"
     ]
   },
   {
@@ -1608,6 +1666,7 @@ const MATCHES = [
     "t1": "Jordan",
     "t2": "Argentina",
     "p": [
+      "Argentina",
       "Argentina",
       "Argentina",
       "Argentina",
@@ -1648,7 +1707,8 @@ const MATCHES = [
       "Tie",
       "Tie",
       "Tie",
-      "Tie"
+      "Tie",
+      "Austria"
     ]
   },
   {
@@ -1658,6 +1718,7 @@ const MATCHES = [
     "t1": "Portugal",
     "t2": "Congo",
     "p": [
+      "Portugal",
       "Portugal",
       "Portugal",
       "Portugal",
@@ -1698,7 +1759,8 @@ const MATCHES = [
       "Colombia",
       "Colombia",
       "Colombia",
-      "Tie"
+      "Tie",
+      "Colombia"
     ]
   },
   {
@@ -1708,6 +1770,7 @@ const MATCHES = [
     "t1": "Portugal",
     "t2": "Uzbekistan",
     "p": [
+      "Portugal",
       "Portugal",
       "Portugal",
       "Portugal",
@@ -1748,6 +1811,7 @@ const MATCHES = [
       "Colombia",
       "Colombia",
       "Colombia",
+      "Colombia",
       "Colombia"
     ]
   },
@@ -1773,7 +1837,8 @@ const MATCHES = [
       "Tie",
       "Portugal",
       "Tie",
-      "Tie"
+      "Tie",
+      "Portugal"
     ]
   },
   {
@@ -1798,7 +1863,8 @@ const MATCHES = [
       "Tie",
       "Tie",
       "Tie",
-      "Tie"
+      "Tie",
+      "Uzbekistan"
     ]
   },
   {
@@ -1823,7 +1889,8 @@ const MATCHES = [
       "England",
       "England",
       "Tie",
-      "Tie"
+      "Tie",
+      "England"
     ]
   },
   {
@@ -1848,6 +1915,7 @@ const MATCHES = [
       "Ghana",
       "Ghana",
       "Tie",
+      "Tie",
       "Tie"
     ]
   },
@@ -1866,6 +1934,7 @@ const MATCHES = [
       "England",
       "England",
       "Ghana",
+      "England",
       "England",
       "England",
       "England",
@@ -1898,7 +1967,8 @@ const MATCHES = [
       "Croatia",
       "Croatia",
       "Croatia",
-      "Tie"
+      "Tie",
+      "Croatia"
     ]
   },
   {
@@ -1917,6 +1987,7 @@ const MATCHES = [
       "England",
       "England",
       "Panama",
+      "England",
       "England",
       "England",
       "England",
@@ -1944,6 +2015,7 @@ const MATCHES = [
       "Croatia",
       "Croatia",
       "Tie",
+      "Croatia",
       "Croatia",
       "Croatia",
       "Croatia",
