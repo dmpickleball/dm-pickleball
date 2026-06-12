@@ -296,7 +296,9 @@ body:not(.dark) .dt-sun { opacity: 0.9; }
 
   /* Comments */
   .priv-comments-section { padding: 0 12px 40px; }
+  .photo-comments-section { padding: 0 12px 40px; }
   .priv-comment-card     { padding: 14px 14px; }
+  .pcmt-card             { padding: 12px 12px; }
   .pcc-reply-row         { flex-direction: column; gap: 8px; }
   .pcc-reply-btn         { width: 100%; text-align: center; }
   .pcc-reply-input       { min-height: 70px; }
@@ -365,6 +367,21 @@ body.dark #sticky-legend { box-shadow: 0 -2px 12px rgba(0,0,0,0.35); }
 .pcc-delete-reply-btn { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 0.72rem; font-family: sans-serif; padding: 2px 6px; border-radius: 5px; transition: all 0.18s; flex-shrink: 0; }
 .pcc-delete-reply-btn:hover { background: #fdecea; color: #c62828; }
 .priv-comments-empty { font-family: sans-serif; font-size: 0.84rem; color: var(--muted); text-align: center; padding: 32px 0; }
+
+/* ── Photo Comments section ─────────────────────────────────────── */
+.photo-comments-section { max-width: 860px; margin: 0 auto; padding: 0 24px 60px; }
+.pcmt-card { background: var(--white); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; margin-bottom: 12px; box-shadow: var(--shadow); display: flex; gap: 14px; align-items: flex-start; }
+.pcmt-thumb { width: 64px; height: 64px; border-radius: 9px; object-fit: cover; flex-shrink: 0; background: var(--border); }
+.pcmt-thumb-placeholder { width: 64px; height: 64px; border-radius: 9px; background: var(--bg); border: 1.5px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; }
+.pcmt-body { flex: 1; min-width: 0; }
+.pcmt-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+.pcmt-name { font-family: sans-serif; font-weight: 700; font-size: 0.82rem; color: var(--dark); }
+.pcmt-time { font-family: sans-serif; font-size: 0.68rem; color: var(--muted); }
+.pcmt-badge { font-family: sans-serif; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; background: rgba(45,106,79,0.1); color: var(--accent); border-radius: 5px; padding: 2px 7px; }
+.pcmt-msg { font-size: 0.9rem; color: var(--dark); line-height: 1.5; }
+.pcmt-guid { font-family: monospace; font-size: 0.62rem; color: var(--muted); margin-top: 6px; word-break: break-all; }
+body.dark .pcmt-card { background: #0f1a27; border-color: #1d2e42; }
+body.dark .pcmt-thumb-placeholder { background: #0f1a27; border-color: #1d2e42; }
 
 /* ═══════════════════════════════════════════
    DARK MODE — Nighttime Italy
@@ -1833,6 +1850,12 @@ body.dark a[style*="color:#6a1b9a"] { color: #c084e0 !important; }
 
 
 
+    <!-- Photo Comments (admin) -->
+    <div class="photo-comments-section" id="photo-comments-section">
+      <div class="priv-comments-header">📸 Photo Comments</div>
+      <div id="photo-comment-list"><div class="priv-comments-empty">Loading photo comments…</div></div>
+    </div>
+
     <!-- Comments Management -->
     <div class="priv-comments-section" id="priv-comments-section">
       <div class="priv-comments-header">Visitor Comments</div>
@@ -1927,6 +1950,7 @@ body.dark a[style*="color:#6a1b9a"] { color: #c084e0 !important; }
     setInterval(updatePrivTimeline, 60000);
     setInterval(updatePrivCountdown, 30000);
     loadPrivComments();
+    loadPhotoComments();
     // Silently capture location for the family tracker
     captureLocation();
   }
@@ -2304,6 +2328,63 @@ body.dark a[style*="color:#6a1b9a"] { color: #c084e0 !important; }
         </div>`).join('');
     } catch(e) {
       if (list) list.innerHTML = '<div class="priv-comments-empty">Could not load comments.</div>';
+    }
+  }
+
+  // ── Photo Comments viewer ───────────────────────────────────────────────────
+  const PHOTO_DATE_LABELS_PRIV = {
+    '2026-05-24': 'May 24 — Milan Arrival',
+    '2026-05-31': 'May 31 — Venice',
+    '2026-06-02': 'Jun 2 — Dolomites Arrival',
+    '2026-06-03': 'Jun 3 — Alpe di Siusi & Val di Funes',
+    '2026-06-04': 'Jun 4 — Seceda Gondola',
+    '2026-06-05': 'Jun 5 — Spa Day',
+    '2026-06-07': 'Jun 7 — Tre Cime di Lavaredo',
+    '2026-06-08': 'Jun 8 — Lake Como Arrival',
+    '2026-06-09': 'Jun 9 — Bellagio & Menaggio',
+    '2026-06-10': 'Jun 10 — Florence Day Trip',
+    '2026-06-11': 'Jun 11 — Milan',
+    '2026-06-12': 'Jun 12 — Flying Home',
+  };
+
+  async function loadPhotoComments() {
+    const list = document.getElementById('photo-comment-list');
+    if (!list) return;
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) { list.innerHTML = '<div class="priv-comments-empty">Log in to view photo comments.</div>'; return; }
+    try {
+      const r = await fetch(API_BASE + '/api/students?action=live-get-all-photo-comments', {
+        headers: { 'x-italy-token': token }
+      });
+      const d = await r.json();
+      if (!d.ok) { list.innerHTML = '<div class="priv-comments-empty">Could not load photo comments.</div>'; return; }
+      if (!d.comments || !d.comments.length) {
+        list.innerHTML = '<div class="priv-comments-empty">No photo comments yet.</div>';
+        return;
+      }
+      list.innerHTML = d.comments.map(c => {
+        // Try to derive a day label from created_at
+        let dayLabel = '';
+        try {
+          const dateKey = new Date(c.created_at).toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+          dayLabel = PHOTO_DATE_LABELS_PRIV[dateKey] || '';
+        } catch {}
+        return `
+        <div class="pcmt-card">
+          <div class="pcmt-thumb-placeholder">📷</div>
+          <div class="pcmt-body">
+            <div class="pcmt-meta">
+              <span class="pcmt-name">${pEsc(c.name)}</span>
+              <span class="pcmt-time">${pFmt(c.created_at)}</span>
+              ${dayLabel ? `<span class="pcmt-badge">${pEsc(dayLabel)}</span>` : ''}
+            </div>
+            <div class="pcmt-msg">${pEsc(c.message)}</div>
+            <div class="pcmt-guid">Photo ID: ${pEsc(c.photo_guid)}</div>
+          </div>
+        </div>`;
+      }).join('');
+    } catch(e) {
+      list.innerHTML = '<div class="priv-comments-empty">Could not load photo comments.</div>';
     }
   }
 

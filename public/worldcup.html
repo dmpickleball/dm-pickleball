@@ -2113,12 +2113,17 @@ function renderAll(){
 
 function renderLeaderboard(){
   const totals=calcTotals().sort((a,b)=>b.pts-a.pts||(a.pending-b.pending));
-  const medals=['🥇','🥈','🥉'];
+  const medals={1:'🥇',2:'🥈',3:'🥉'};
+  // Dense ranking: same pts → same rank; next distinct total gets rank+1
+  let rank=0,prevPts=null;
   let html='';
   totals.forEach((t,i)=>{
-    const medal=i<3?`<span class="medal-${i+1}">${medals[i]}</span>`:`${i+1}`;
+    if(t.pts!==prevPts){ rank=i+1; prevPts=t.pts; }
+    const badge=rank<=3
+      ?`<span class="medal-${rank}">${medals[rank]}</span>`
+      :`${rank}`;
     html+=`<tr>
-      <td class="rank">${medal}</td>
+      <td class="rank">${badge}</td>
       <td class="player-name ${t.isMe?'me':''}">${t.name}${t.isMe?' ⭐':''}</td>
       <td class="pts">${t.pts}</td>
       <td><span class="stat-badge">✅ ${t.correct}</span></td>
