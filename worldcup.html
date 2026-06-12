@@ -1,0 +1,2203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>World Cup 2026 Pool · DM Pickleball</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#0d1b2a;color:#e8eaf6;min-height:100vh}
+/* ─── HEADER ─── */
+.header{background:linear-gradient(135deg,#006847 0%,#0d1b2a 40%,#0d1b2a 60%,#B22234 100%);padding:20px 16px 0;text-align:center;border-bottom:3px solid #c9a227}
+.flag-row{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:8px}
+.flag-emoji{font-size:2.4rem}
+.wc-title{font-size:1.05rem;letter-spacing:3px;color:#c9a227;font-weight:700;text-transform:uppercase}
+.pool-title{font-size:1.6rem;font-weight:900;color:#fff;letter-spacing:1px}
+.header-meta{display:flex;align-items:center;justify-content:center;gap:10px;margin:8px 0}
+#last-updated{font-size:0.78rem;color:#aaa}
+.refresh-btn{background:#c9a227;color:#0d1b2a;border:none;border-radius:4px;padding:4px 10px;font-size:0.78rem;font-weight:700;cursor:pointer}
+.refresh-btn:hover{background:#e8c040}
+.scoring-note{font-size:0.72rem;color:#aaa;padding:6px 0 12px}
+.scoring-note b{color:#c9a227}
+/* ─── TABS ─── */
+.tabs{display:flex;background:#111d2c;border-bottom:2px solid #1e3050}
+.tab-btn{flex:1;padding:12px 4px;background:none;border:none;color:#7a8fa6;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all .2s;border-bottom:3px solid transparent}
+.tab-btn.active,.tab-btn:hover{color:#c9a227;border-bottom-color:#c9a227;background:#0d1b2a}
+/* ─── MAIN ─── */
+main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
+.tab-content{display:none}
+.tab-content.active{display:block}
+/* ─── LEADERBOARD ─── */
+.lb-title{font-size:1.1rem;font-weight:700;color:#c9a227;margin:12px 0 8px;text-align:center;letter-spacing:1px}
+.lb-table{width:100%;border-collapse:collapse;font-size:0.88rem}
+.lb-table th{background:#1a2e45;color:#c9a227;padding:9px 10px;text-align:left;font-size:0.78rem;letter-spacing:1px;text-transform:uppercase}
+.lb-table td{padding:9px 10px;border-bottom:1px solid #1a2e45}
+.lb-table tr:hover td{background:#1a2e45}
+.rank{font-weight:900;font-size:1rem;width:36px}
+.player-name{font-weight:700}
+.player-name.me{color:#c9a227}
+.pts{font-weight:900;font-size:1.1rem;color:#fff}
+.medal-1{color:#FFD700;font-size:1.2rem}
+.medal-2{color:#C0C0C0;font-size:1.2rem}
+.medal-3{color:#CD7F32;font-size:1.2rem}
+.stat-badge{background:#1a2e45;border-radius:10px;padding:2px 7px;font-size:0.75rem;margin-left:4px;color:#7a8fa6}
+.live-badge{background:#c0392b;color:#fff;border-radius:4px;padding:1px 5px;font-size:0.68rem;font-weight:700;margin-left:6px;animation:blink 1.2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+/* ─── MATCHES ─── */
+.group-card{background:#111d2c;border-radius:8px;margin-bottom:12px;overflow:hidden;border:1px solid #1e3050}
+.group-header{background:#1a2e45;padding:10px 14px;display:flex;align-items:center;gap:8px}
+.group-letter{background:#c9a227;color:#0d1b2a;font-weight:900;border-radius:4px;padding:2px 8px;font-size:0.85rem}
+.group-teams{font-size:0.78rem;color:#7a8fa6}
+.match-row{display:flex;align-items:center;padding:8px 14px;border-top:1px solid #1a2e45;gap:8px;flex-wrap:wrap}
+.match-row:nth-child(even){background:#0f1e2f}
+.match-date{font-size:0.7rem;color:#7a8fa6;width:52px;flex-shrink:0}
+.match-teams{flex:1;min-width:140px;font-size:0.88rem;font-weight:600}
+.match-score{font-size:1rem;font-weight:900;padding:2px 10px;border-radius:4px;text-align:center;min-width:60px}
+.score-final{background:#1a3a1a;color:#4caf50}
+.score-live{background:#3a1a1a;color:#ff6b6b}
+.score-sched{background:#1a2e45;color:#7a8fa6;font-size:0.75rem;font-weight:600}
+.correct-count{font-size:0.72rem;color:#4caf50;white-space:nowrap}
+.md-badge{font-size:0.65rem;background:#1e3050;color:#7a8fa6;border-radius:3px;padding:1px 5px;margin-left:4px}
+/* ─── PICKS GRID ─── */
+.picks-wrapper{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.picks-table{border-collapse:collapse;font-size:0.72rem;min-width:700px}
+.picks-table th{background:#1a2e45;color:#c9a227;padding:6px 5px;white-space:nowrap;position:sticky;top:0;z-index:10;font-size:0.68rem}
+.picks-table th.match-col{background:#111d2c;color:#7a8fa6;text-align:left;min-width:130px;position:sticky;left:0;z-index:20}
+.picks-table td{padding:4px 5px;border:1px solid #1a2e45;text-align:center;white-space:nowrap}
+.picks-table td.match-info{background:#111d2c;color:#e8eaf6;text-align:left;position:sticky;left:0;z-index:5;padding:4px 8px}
+.picks-table td.match-info span{display:block;font-size:0.65rem;color:#7a8fa6}
+.cell-correct{background:#1a3a1a!important;color:#4caf50!important;font-weight:700}
+.cell-wrong{background:#3a1a1a!important;color:#c0392b!important}
+.cell-pending{background:#1a2e45;color:#aaa}
+.cell-me{border:2px solid #c9a227!important}
+.filter-bar{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
+.filter-bar select,.filter-bar input{background:#111d2c;border:1px solid #1e3050;color:#e8eaf6;padding:5px 8px;border-radius:4px;font-size:0.8rem}
+/* ─── RESPONSIVE ─── */
+@media(max-width:600px){
+  .pool-title{font-size:1.2rem}
+  .lb-table td,.lb-table th{padding:7px 6px}
+  .match-row{padding:7px 10px}
+}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="flag-row">
+    <span class="flag-emoji">🇲🇽</span>
+    <div>
+      <div class="wc-title">⚽ FIFA World Cup 2026™</div>
+      <div class="pool-title">DM PICKLEBALL POOL</div>
+    </div>
+    <span class="flag-emoji">🇺🇸</span>
+  </div>
+  <div class="header-meta">
+    <span id="last-updated">Loading scores…</span>
+    <button class="refresh-btn" onclick="fetchScores()">⟳ Refresh</button>
+  </div>
+  <div class="scoring-note">
+    <b>Win correct = 1 pt</b> &nbsp;|&nbsp; <b>Tie correct = 2 pts</b> &nbsp;|&nbsp; 
+    Payouts: 🥇 $250 &nbsp;🥈 $100 &nbsp;🥉 $50
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab-btn active" onclick="showTab('leaderboard',this)">🏆 Leaderboard</button>
+  <button class="tab-btn" onclick="showTab('matches',this)">⚽ Results</button>
+  <button class="tab-btn" onclick="showTab('picks',this)">📋 All Picks</button>
+</nav>
+
+<main>
+  <div id="tab-leaderboard" class="tab-content active">
+    <div class="lb-title">🏆 STANDINGS</div>
+    <table class="lb-table">
+      <thead><tr>
+        <th>#</th><th>Player</th><th>Points</th>
+        <th>✅ Correct</th><th>⏳ Left</th>
+      </tr></thead>
+      <tbody id="lb-body"><tr><td colspan="5" style="text-align:center;padding:20px;color:#7a8fa6">Loading…</td></tr></tbody>
+    </table>
+  </div>
+
+  <div id="tab-matches" class="tab-content">
+    <div id="matches-content"><div style="text-align:center;padding:30px;color:#7a8fa6">Loading…</div></div>
+  </div>
+
+  <div id="tab-picks" class="tab-content">
+    <div class="filter-bar">
+      <select id="filter-group" onchange="renderPicks()">
+        <option value="">All Groups</option>
+        <option>A</option><option>B</option><option>C</option><option>D</option>
+        <option>E</option><option>F</option><option>G</option><option>H</option>
+        <option>I</option><option>J</option><option>K</option><option>L</option>
+      </select>
+      <select id="filter-md" onchange="renderPicks()">
+        <option value="">All Matchdays</option>
+        <option value="1">Matchday 1</option>
+        <option value="2">Matchday 2</option>
+        <option value="3">Matchday 3</option>
+      </select>
+    </div>
+    <div class="picks-wrapper">
+      <table class="picks-table" id="picks-table">
+        <thead><tr id="picks-header"></tr></thead>
+        <tbody id="picks-body"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script>
+const PLAYERS = ["JV", "Alex", "Chapul", "Junior", "Mike", "Steve", "Pablo", "Kimmy", "Edgar", "Cesar", "Diego", "Eric", "P.Sosa", "Pollo", "David", "Jerry"];
+const DAVID_IDX = PLAYERS.indexOf('David');
+
+const MATCHES = [
+  {
+    "id": "760415",
+    "group": "A",
+    "md": 1,
+    "t1": "Mexico",
+    "t2": "South Africa",
+    "p": [
+      "Mexico",
+      "Mexico",
+      "Mexico",
+      "Mexico",
+      "Mexico",
+      "Mexico",
+      "Mexico",
+      "Mexico",
+      "Mexico",
+      "Mexico",
+      "Mexico",
+      "Mexico",
+      "Mexico",
+      "Mexico",
+      "Mexico",
+      "Mexico"
+    ]
+  },
+  {
+    "id": "760414",
+    "group": "A",
+    "md": 1,
+    "t1": "South Korea",
+    "t2": "Czechia",
+    "p": [
+      "Tie",
+      "Tie",
+      "Tie",
+      "South Korea",
+      "Tie",
+      "South Korea",
+      "South Korea",
+      "South Korea",
+      "South Korea",
+      "South Korea",
+      "South Korea",
+      "Tie",
+      "Tie",
+      "South Korea",
+      "Tie",
+      "Tie"
+    ]
+  },
+  {
+    "id": "760441",
+    "group": "A",
+    "md": 2,
+    "t1": "Mexico",
+    "t2": "South Korea",
+    "p": [
+      "Tie",
+      "Mexico",
+      "Mexico",
+      "Tie",
+      "Mexico",
+      "Mexico",
+      "Mexico",
+      "Mexico",
+      "Tie",
+      "Mexico",
+      "Mexico",
+      "Mexico",
+      "Mexico",
+      "Mexico",
+      "Tie",
+      "Tie"
+    ]
+  },
+  {
+    "id": "760438",
+    "group": "A",
+    "md": 2,
+    "t1": "Czechia",
+    "t2": "South Africa",
+    "p": [
+      "Czechia",
+      "Czechia",
+      "Czechia",
+      "Czechia",
+      "Czechia",
+      "Czechia",
+      "Czechia",
+      "South Africa",
+      "Czechia",
+      "Czechia",
+      "Czechia",
+      "Czechia",
+      "Tie",
+      "South Africa",
+      "Czechia",
+      "Czechia"
+    ]
+  },
+  {
+    "id": "760467",
+    "group": "A",
+    "md": 3,
+    "t1": "Czechia",
+    "t2": "Mexico",
+    "p": [
+      "Mexico",
+      "Mexico",
+      "Tie",
+      "Mexico",
+      "Mexico",
+      "Mexico",
+      "Mexico",
+      "Mexico",
+      "Mexico",
+      "Mexico",
+      "Tie",
+      "Mexico",
+      "Mexico",
+      "Mexico",
+      "Mexico",
+      "Mexico"
+    ]
+  },
+  {
+    "id": "760466",
+    "group": "A",
+    "md": 3,
+    "t1": "South Africa",
+    "t2": "South Korea",
+    "p": [
+      "South Korea",
+      "South Korea",
+      "South Korea",
+      "South Africa",
+      "South Korea",
+      "South Korea",
+      "South Korea",
+      "South Korea",
+      "Tie",
+      "South Korea",
+      "South Korea",
+      "South Korea",
+      "Tie",
+      "South Korea",
+      "Tie",
+      "South Korea"
+    ]
+  },
+  {
+    "id": "760416",
+    "group": "B",
+    "md": 1,
+    "t1": "Canada",
+    "t2": "Bosnia",
+    "p": [
+      "Canada",
+      "Tie",
+      "Tie",
+      "Tie",
+      "Tie",
+      "Canada",
+      "Canada",
+      "Canada",
+      "Bosnia",
+      "Tie",
+      "Canada",
+      "Bosnia",
+      "Canada",
+      "Canada",
+      "Tie",
+      "Tie"
+    ]
+  },
+  {
+    "id": "760420",
+    "group": "B",
+    "md": 1,
+    "t1": "Qatar",
+    "t2": "Switzerland",
+    "p": [
+      "Switzerland",
+      "Switzerland",
+      "Switzerland",
+      "Qatar",
+      "Qatar",
+      "Switzerland",
+      "Switzerland",
+      "Qatar",
+      "Qatar",
+      "Switzerland",
+      "Switzerland",
+      "Switzerland",
+      "Switzerland",
+      "Switzerland",
+      "Switzerland",
+      "Switzerland"
+    ]
+  },
+  {
+    "id": "760440",
+    "group": "B",
+    "md": 2,
+    "t1": "Canada",
+    "t2": "Qatar",
+    "p": [
+      "Canada",
+      "Canada",
+      "Canada",
+      "Canada",
+      "Qatar",
+      "Canada",
+      "Canada",
+      "Canada",
+      "Canada",
+      "Canada",
+      "Canada",
+      "Canada",
+      "Canada",
+      "Canada",
+      "Canada",
+      "Canada"
+    ]
+  },
+  {
+    "id": "760439",
+    "group": "B",
+    "md": 2,
+    "t1": "Switzerland",
+    "t2": "Bosnia",
+    "p": [
+      "Switzerland",
+      "Switzerland",
+      "Switzerland",
+      "Tie",
+      "Switzerland",
+      "Switzerland",
+      "Switzerland",
+      "Switzerland",
+      "Switzerland",
+      "Switzerland",
+      "Switzerland",
+      "Switzerland",
+      "Switzerland",
+      "Switzerland",
+      "Switzerland",
+      "Switzerland"
+    ]
+  },
+  {
+    "id": "760463",
+    "group": "B",
+    "md": 3,
+    "t1": "Switzerland",
+    "t2": "Canada",
+    "p": [
+      "Tie",
+      "Tie",
+      "Canada",
+      "Canada",
+      "Tie",
+      "Tie",
+      "Switzerland",
+      "Tie",
+      "Switzerland",
+      "Canada",
+      "Tie",
+      "Tie",
+      "Tie",
+      "Tie",
+      "Tie",
+      "Tie"
+    ]
+  },
+  {
+    "id": "760462",
+    "group": "B",
+    "md": 3,
+    "t1": "Bosnia",
+    "t2": "Qatar",
+    "p": [
+      "Qatar",
+      "Bosnia",
+      "Bosnia",
+      "Qatar",
+      "Bosnia",
+      "Bosnia",
+      "Tie",
+      "Qatar",
+      "Bosnia",
+      "Bosnia",
+      "Bosnia",
+      "Tie",
+      "Bosnia",
+      "Bosnia",
+      "Bosnia",
+      "Tie"
+    ]
+  },
+  {
+    "id": "760419",
+    "group": "C",
+    "md": 1,
+    "t1": "Brazil",
+    "t2": "Morocco",
+    "p": [
+      "Tie",
+      "Tie",
+      "Tie",
+      "Tie",
+      "Brazil",
+      "Brazil",
+      "Tie",
+      "Tie",
+      "Brazil",
+      "Brazil",
+      "Tie",
+      "Morocco",
+      "Brazil",
+      "Brazil",
+      "Tie",
+      "Brazil"
+    ]
+  },
+  {
+    "id": "760418",
+    "group": "C",
+    "md": 1,
+    "t1": "Haiti",
+    "t2": "Scotland",
+    "p": [
+      "Scotland",
+      "Scotland",
+      "Tie",
+      "Scotland",
+      "Haiti",
+      "Scotland",
+      "Scotland",
+      "Scotland",
+      "Haiti",
+      "Scotland",
+      "Scotland",
+      "Tie",
+      "Scotland",
+      "Scotland",
+      "Scotland",
+      "Tie"
+    ]
+  },
+  {
+    "id": "760444",
+    "group": "C",
+    "md": 2,
+    "t1": "Brazil",
+    "t2": "Haiti",
+    "p": [
+      "Brazil",
+      "Brazil",
+      "Brazil",
+      "Brazil",
+      "Brazil",
+      "Brazil",
+      "Brazil",
+      "Brazil",
+      "Brazil",
+      "Brazil",
+      "Brazil",
+      "Brazil",
+      "Brazil",
+      "Brazil",
+      "Brazil",
+      "Brazil"
+    ]
+  },
+  {
+    "id": "760445",
+    "group": "C",
+    "md": 2,
+    "t1": "Scotland",
+    "t2": "Morocco",
+    "p": [
+      "Morocco",
+      "Morocco",
+      "Morocco",
+      "Morocco",
+      "Morocco",
+      "Morocco",
+      "Morocco",
+      "Morocco",
+      "Morocco",
+      "Morocco",
+      "Morocco",
+      "Morocco",
+      "Morocco",
+      "Morocco",
+      "Morocco",
+      "Tie"
+    ]
+  },
+  {
+    "id": "760465",
+    "group": "C",
+    "md": 3,
+    "t1": "Scotland",
+    "t2": "Brazil",
+    "p": [
+      "Tie",
+      "Brazil",
+      "Brazil",
+      "Brazil",
+      "Brazil",
+      "Brazil",
+      "Brazil",
+      "Brazil",
+      "Brazil",
+      "Brazil",
+      "Brazil",
+      "Brazil",
+      "Brazil",
+      "Brazil",
+      "Brazil",
+      "Brazil"
+    ]
+  },
+  {
+    "id": "760464",
+    "group": "C",
+    "md": 3,
+    "t1": "Morocco",
+    "t2": "Haiti",
+    "p": [
+      "Morocco",
+      "Morocco",
+      "Morocco",
+      "Morocco",
+      "Morocco",
+      "Morocco",
+      "Morocco",
+      "Morocco",
+      "Morocco",
+      "Morocco",
+      "Morocco",
+      "Morocco",
+      "Morocco",
+      "Morocco",
+      "Morocco",
+      "Morocco"
+    ]
+  },
+  {
+    "id": "760417",
+    "group": "D",
+    "md": 1,
+    "t1": "USA",
+    "t2": "Paraguay",
+    "p": [
+      "USA",
+      "Tie",
+      "Tie",
+      "Paraguay",
+      "USA",
+      "USA",
+      "USA",
+      "USA",
+      "Paraguay",
+      "USA",
+      "USA",
+      "USA",
+      "USA",
+      "Tie",
+      "Tie",
+      "Paraguay"
+    ]
+  },
+  {
+    "id": "760421",
+    "group": "D",
+    "md": 1,
+    "t1": "Australia",
+    "t2": "Turkey",
+    "p": [
+      "Turkey",
+      "Turkey",
+      "Turkey",
+      "Turkey",
+      "Turkey",
+      "Turkey",
+      "Turkey",
+      "Turkey",
+      "Australia",
+      "Turkey",
+      "Turkey",
+      "Turkey",
+      "Turkey",
+      "Turkey",
+      "Turkey",
+      "Turkey"
+    ]
+  },
+  {
+    "id": "760442",
+    "group": "D",
+    "md": 2,
+    "t1": "USA",
+    "t2": "Australia",
+    "p": [
+      "USA",
+      "USA",
+      "USA",
+      "USA",
+      "USA",
+      "USA",
+      "USA",
+      "Australia",
+      "Tie",
+      "Tie",
+      "USA",
+      "Tie",
+      "USA",
+      "USA",
+      "USA",
+      "Tie"
+    ]
+  },
+  {
+    "id": "760443",
+    "group": "D",
+    "md": 2,
+    "t1": "Turkey",
+    "t2": "Paraguay",
+    "p": [
+      "Tie",
+      "Tie",
+      "Turkey",
+      "Paraguay",
+      "Turkey",
+      "Turkey",
+      "Turkey",
+      "Paraguay",
+      "Tie",
+      "Turkey",
+      "Tie",
+      "Turkey",
+      "Tie",
+      "Paraguay",
+      "Tie",
+      "Tie"
+    ]
+  },
+  {
+    "id": "760470",
+    "group": "D",
+    "md": 3,
+    "t1": "Turkey",
+    "t2": "USA",
+    "p": [
+      "USA",
+      "Tie",
+      "Tie",
+      "Turkey",
+      "USA",
+      "Tie",
+      "Turkey",
+      "USA",
+      "Turkey",
+      "USA",
+      "USA",
+      "Turkey",
+      "Tie",
+      "USA",
+      "Tie",
+      "Tie"
+    ]
+  },
+  {
+    "id": "760469",
+    "group": "D",
+    "md": 3,
+    "t1": "Paraguay",
+    "t2": "Australia",
+    "p": [
+      "Tie",
+      "Paraguay",
+      "Paraguay",
+      "Paraguay",
+      "Paraguay",
+      "Tie",
+      "Australia",
+      "Tie",
+      "Tie",
+      "Australia",
+      "Australia",
+      "Tie",
+      "Paraguay",
+      "Tie",
+      "Tie",
+      "Tie"
+    ]
+  },
+  {
+    "id": "760422",
+    "group": "E",
+    "md": 1,
+    "t1": "Germany",
+    "t2": "Curacao",
+    "p": [
+      "Germany",
+      "Germany",
+      "Germany",
+      "Germany",
+      "Germany",
+      "Germany",
+      "Germany",
+      "Germany",
+      "Germany",
+      "Germany",
+      "Germany",
+      "Germany",
+      "Germany",
+      "Germany",
+      "Germany",
+      "Germany"
+    ]
+  },
+  {
+    "id": "760423",
+    "group": "E",
+    "md": 1,
+    "t1": "Ivory Coast",
+    "t2": "Ecuador",
+    "p": [
+      "Ecuador",
+      "Ecuador",
+      "Tie",
+      "Ecuador",
+      "Ecuador",
+      "Tie",
+      "Ecuador",
+      "Ecuador",
+      "Ecuador",
+      "Tie",
+      "Ivory Coast",
+      "Tie",
+      "Ecuador",
+      "Tie",
+      "Tie",
+      "Ecuador"
+    ]
+  },
+  {
+    "id": "760448",
+    "group": "E",
+    "md": 2,
+    "t1": "Germany",
+    "t2": "Ivory Coast",
+    "p": [
+      "Germany",
+      "Germany",
+      "Tie",
+      "Germany",
+      "Tie",
+      "Germany",
+      "Germany",
+      "Germany",
+      "Germany",
+      "Germany",
+      "Ivory Coast",
+      "Germany",
+      "Germany",
+      "Germany",
+      "Germany",
+      "Germany"
+    ]
+  },
+  {
+    "id": "760446",
+    "group": "E",
+    "md": 2,
+    "t1": "Ecuador",
+    "t2": "Curacao",
+    "p": [
+      "Ecuador",
+      "Ecuador",
+      "Ecuador",
+      "Ecuador",
+      "Ecuador",
+      "Ecuador",
+      "Ecuador",
+      "Ecuador",
+      "Ecuador",
+      "Ecuador",
+      "Ecuador",
+      "Ecuador",
+      "Ecuador",
+      "Ecuador",
+      "Ecuador",
+      "Ecuador"
+    ]
+  },
+  {
+    "id": "760468",
+    "group": "E",
+    "md": 3,
+    "t1": "Ecuador",
+    "t2": "Germany",
+    "p": [
+      "Germany",
+      "Germany",
+      "Germany",
+      "Germany",
+      "Germany",
+      "Germany",
+      "Germany",
+      "Germany",
+      "Germany",
+      "Germany",
+      "Germany",
+      "Germany",
+      "Germany",
+      "Germany",
+      "Tie",
+      "Germany"
+    ]
+  },
+  {
+    "id": "760473",
+    "group": "E",
+    "md": 3,
+    "t1": "Curacao",
+    "t2": "Ivory Coast",
+    "p": [
+      "Tie",
+      "Ivory Coast",
+      "Tie",
+      "Curacao",
+      "Tie",
+      "Ivory Coast",
+      "Ivory Coast",
+      "Ivory Coast",
+      "Curacao",
+      "Ivory Coast",
+      "Ivory Coast",
+      "Ivory Coast",
+      "Ivory Coast",
+      "Curacao",
+      "Ivory Coast",
+      "Tie"
+    ]
+  },
+  {
+    "id": "760425",
+    "group": "F",
+    "md": 1,
+    "t1": "Netherlands",
+    "t2": "Japan",
+    "p": [
+      "Netherlands",
+      "Tie",
+      "Tie",
+      "Japan",
+      "Netherlands",
+      "Netherlands",
+      "Japan",
+      "Netherlands",
+      "Japan",
+      "Tie",
+      "Tie",
+      "Japan",
+      "Netherlands",
+      "Japan",
+      "Tie",
+      "Netherlands"
+    ]
+  },
+  {
+    "id": "760424",
+    "group": "F",
+    "md": 1,
+    "t1": "Sweden",
+    "t2": "Tunisia",
+    "p": [
+      "Sweden",
+      "Sweden",
+      "Sweden",
+      "Tunisia",
+      "Sweden",
+      "Sweden",
+      "Sweden",
+      "Sweden",
+      "Sweden",
+      "Sweden",
+      "Tunisia",
+      "Sweden",
+      "Sweden",
+      "Sweden",
+      "Tie",
+      "Sweden"
+    ]
+  },
+  {
+    "id": "760447",
+    "group": "F",
+    "md": 2,
+    "t1": "Netherlands",
+    "t2": "Sweden",
+    "p": [
+      "Netherlands",
+      "Netherlands",
+      "Netherlands",
+      "Netherlands",
+      "Netherlands",
+      "Netherlands",
+      "Netherlands",
+      "Netherlands",
+      "Netherlands",
+      "Netherlands",
+      "Netherlands",
+      "Netherlands",
+      "Netherlands",
+      "Netherlands",
+      "Netherlands",
+      "Netherlands"
+    ]
+  },
+  {
+    "id": "760449",
+    "group": "F",
+    "md": 2,
+    "t1": "Tunisia",
+    "t2": "Japan",
+    "p": [
+      "Japan",
+      "Japan",
+      "Japan",
+      "Japan",
+      "Tunisia",
+      "Japan",
+      "Japan",
+      "Japan",
+      "Japan",
+      "Japan",
+      "Japan",
+      "Japan",
+      "Japan",
+      "Japan",
+      "Japan",
+      "Japan"
+    ]
+  },
+  {
+    "id": "760472",
+    "group": "F",
+    "md": 3,
+    "t1": "Tunisia",
+    "t2": "Netherlands",
+    "p": [
+      "Netherlands",
+      "Netherlands",
+      "Netherlands",
+      "Netherlands",
+      "Netherlands",
+      "Netherlands",
+      "Netherlands",
+      "Netherlands",
+      "Netherlands",
+      "Netherlands",
+      "Netherlands",
+      "Netherlands",
+      "Netherlands",
+      "Netherlands",
+      "Netherlands",
+      "Netherlands"
+    ]
+  },
+  {
+    "id": "760471",
+    "group": "F",
+    "md": 3,
+    "t1": "Japan",
+    "t2": "Sweden",
+    "p": [
+      "Japan",
+      "Japan",
+      "Japan",
+      "Japan",
+      "Japan",
+      "Japan",
+      "Tie",
+      "Tie",
+      "Japan",
+      "Tie",
+      "Japan",
+      "Japan",
+      "Tie",
+      "Japan",
+      "Tie",
+      "Japan"
+    ]
+  },
+  {
+    "id": "760426",
+    "group": "G",
+    "md": 1,
+    "t1": "Belgium",
+    "t2": "Egypt",
+    "p": [
+      "Tie",
+      "Tie",
+      "Tie",
+      "Egypt",
+      "Belgium",
+      "Belgium",
+      "Belgium",
+      "Egypt",
+      "Belgium",
+      "Belgium",
+      "Belgium",
+      "Egypt",
+      "Belgium",
+      "Belgium",
+      "Belgium",
+      "Tie"
+    ]
+  },
+  {
+    "id": "760427",
+    "group": "G",
+    "md": 1,
+    "t1": "Iran",
+    "t2": "New Zealand",
+    "p": [
+      "Iran",
+      "Iran",
+      "Tie",
+      "Iran",
+      "Iran",
+      "Iran",
+      "Iran",
+      "New Zealand",
+      "Tie",
+      "Tie",
+      "Iran",
+      "Iran",
+      "Iran",
+      "Iran",
+      "Iran",
+      "Tie"
+    ]
+  },
+  {
+    "id": "760451",
+    "group": "G",
+    "md": 2,
+    "t1": "Belgium",
+    "t2": "Iran",
+    "p": [
+      "Belgium",
+      "Tie",
+      "Tie",
+      "Iran",
+      "Belgium",
+      "Belgium",
+      "Belgium",
+      "Tie",
+      "Belgium",
+      "Belgium",
+      "Belgium",
+      "Belgium",
+      "Belgium",
+      "Belgium",
+      "Belgium",
+      "Tie"
+    ]
+  },
+  {
+    "id": "760452",
+    "group": "G",
+    "md": 2,
+    "t1": "New Zealand",
+    "t2": "Egypt",
+    "p": [
+      "Tie",
+      "Egypt",
+      "Egypt",
+      "Egypt",
+      "Egypt",
+      "Egypt",
+      "Egypt",
+      "New Zealand",
+      "Tie",
+      "Egypt",
+      "Tie",
+      "Egypt",
+      "Egypt",
+      "Egypt",
+      "Egypt",
+      "Egypt"
+    ]
+  },
+  {
+    "id": "760477",
+    "group": "G",
+    "md": 3,
+    "t1": "New Zealand",
+    "t2": "Belgium",
+    "p": [
+      "Belgium",
+      "Belgium",
+      "Belgium",
+      "New Zealand",
+      "Belgium",
+      "Belgium",
+      "Belgium",
+      "Belgium",
+      "New Zealand",
+      "New Zealand",
+      "Belgium",
+      "Belgium",
+      "Belgium",
+      "Belgium",
+      "Belgium",
+      "Belgium"
+    ]
+  },
+  {
+    "id": "760476",
+    "group": "G",
+    "md": 3,
+    "t1": "Egypt",
+    "t2": "Iran",
+    "p": [
+      "Tie",
+      "Tie",
+      "Tie",
+      "Tie",
+      "Tie",
+      "Tie",
+      "Tie",
+      "Tie",
+      "Tie",
+      "Tie",
+      "Tie",
+      "Tie",
+      "Tie",
+      "Tie",
+      "Tie",
+      "Tie"
+    ]
+  },
+  {
+    "id": "760428",
+    "group": "H",
+    "md": 1,
+    "t1": "Spain",
+    "t2": "Cape Verde",
+    "p": [
+      "Spain",
+      "Spain",
+      "Spain",
+      "Spain",
+      "Spain",
+      "Spain",
+      "Spain",
+      "Spain",
+      "Spain",
+      "Spain",
+      "Spain",
+      "Spain",
+      "Spain",
+      "Spain",
+      "Spain",
+      "Spain"
+    ]
+  },
+  {
+    "id": "760429",
+    "group": "H",
+    "md": 1,
+    "t1": "Saudi Arabia",
+    "t2": "Uruguay",
+    "p": [
+      "Uruguay",
+      "Uruguay",
+      "Uruguay",
+      "Uruguay",
+      "Uruguay",
+      "Uruguay",
+      "Uruguay",
+      "Uruguay",
+      "Uruguay",
+      "Uruguay",
+      "Uruguay",
+      "Tie",
+      "Uruguay",
+      "Uruguay",
+      "Uruguay",
+      "Uruguay"
+    ]
+  },
+  {
+    "id": "760453",
+    "group": "H",
+    "md": 2,
+    "t1": "Spain",
+    "t2": "Saudi Arabia",
+    "p": [
+      "Spain",
+      "Spain",
+      "Spain",
+      "Spain",
+      "Spain",
+      "Spain",
+      "Spain",
+      "Saudi Arabia",
+      "Spain",
+      "Spain",
+      "Spain",
+      "Spain",
+      "Spain",
+      "Spain",
+      "Spain",
+      "Spain"
+    ]
+  },
+  {
+    "id": "760450",
+    "group": "H",
+    "md": 2,
+    "t1": "Uruguay",
+    "t2": "Cape Verde",
+    "p": [
+      "Uruguay",
+      "Uruguay",
+      "Uruguay",
+      "Uruguay",
+      "Uruguay",
+      "Uruguay",
+      "Uruguay",
+      "Uruguay",
+      "Uruguay",
+      "Uruguay",
+      "Uruguay",
+      "Uruguay",
+      "Uruguay",
+      "Uruguay",
+      "Uruguay",
+      "Uruguay"
+    ]
+  },
+  {
+    "id": "760479",
+    "group": "H",
+    "md": 3,
+    "t1": "Uruguay",
+    "t2": "Spain",
+    "p": [
+      "Tie",
+      "Tie",
+      "Spain",
+      "Tie",
+      "Tie",
+      "Spain",
+      "Spain",
+      "Spain",
+      "Tie",
+      "Spain",
+      "Spain",
+      "Spain",
+      "Spain",
+      "Spain",
+      "Tie",
+      "Spain"
+    ]
+  },
+  {
+    "id": "760478",
+    "group": "H",
+    "md": 3,
+    "t1": "Cape Verde",
+    "t2": "Saudi Arabia",
+    "p": [
+      "Saudi Arabia",
+      "Saudi Arabia",
+      "Saudi Arabia",
+      "Saudi Arabia",
+      "Saudi Arabia",
+      "Tie",
+      "Saudi Arabia",
+      "Saudi Arabia",
+      "Saudi Arabia",
+      "Saudi Arabia",
+      "Saudi Arabia",
+      "Saudi Arabia",
+      "Saudi Arabia",
+      "Tie",
+      "Saudi Arabia",
+      "Tie"
+    ]
+  },
+  {
+    "id": "760432",
+    "group": "I",
+    "md": 1,
+    "t1": "France",
+    "t2": "Senegal",
+    "p": [
+      "France",
+      "France",
+      "France",
+      "France",
+      "France",
+      "France",
+      "France",
+      "France",
+      "France",
+      "France",
+      "France",
+      "France",
+      "France",
+      "France",
+      "France",
+      "France"
+    ]
+  },
+  {
+    "id": "760430",
+    "group": "I",
+    "md": 1,
+    "t1": "Iraq",
+    "t2": "Norway",
+    "p": [
+      "Norway",
+      "Norway",
+      "Norway",
+      "Norway",
+      "Iraq",
+      "Norway",
+      "Norway",
+      "Norway",
+      "Norway",
+      "Norway",
+      "Norway",
+      "Norway",
+      "Norway",
+      "Norway",
+      "Norway",
+      "Norway"
+    ]
+  },
+  {
+    "id": "760457",
+    "group": "I",
+    "md": 2,
+    "t1": "France",
+    "t2": "Iraq",
+    "p": [
+      "France",
+      "France",
+      "France",
+      "Tie",
+      "France",
+      "France",
+      "France",
+      "France",
+      "France",
+      "France",
+      "France",
+      "France",
+      "France",
+      "France",
+      "France",
+      "France"
+    ]
+  },
+  {
+    "id": "760454",
+    "group": "I",
+    "md": 2,
+    "t1": "Norway",
+    "t2": "Senegal",
+    "p": [
+      "Tie",
+      "Norway",
+      "Tie",
+      "Senegal",
+      "Norway",
+      "Norway",
+      "Senegal",
+      "Norway",
+      "Senegal",
+      "Senegal",
+      "Norway",
+      "Norway",
+      "Tie",
+      "Norway",
+      "Tie",
+      "Senegal"
+    ]
+  },
+  {
+    "id": "760475",
+    "group": "I",
+    "md": 3,
+    "t1": "Norway",
+    "t2": "France",
+    "p": [
+      "France",
+      "France",
+      "France",
+      "France",
+      "France",
+      "France",
+      "France",
+      "Tie",
+      "France",
+      "Tie",
+      "France",
+      "Tie",
+      "France",
+      "France",
+      "Tie",
+      "Tie"
+    ]
+  },
+  {
+    "id": "760474",
+    "group": "I",
+    "md": 3,
+    "t1": "Senegal",
+    "t2": "Iraq",
+    "p": [
+      "Senegal",
+      "Iraq",
+      "Senegal",
+      "Senegal",
+      "Senegal",
+      "Senegal",
+      "Senegal",
+      "Senegal",
+      "Senegal",
+      "Senegal",
+      "Senegal",
+      "Senegal",
+      "Senegal",
+      "Senegal",
+      "Senegal",
+      "Senegal"
+    ]
+  },
+  {
+    "id": "760433",
+    "group": "J",
+    "md": 1,
+    "t1": "Argentina",
+    "t2": "Algeria",
+    "p": [
+      "Argentina",
+      "Tie",
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Tie",
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Argentina"
+    ]
+  },
+  {
+    "id": "760431",
+    "group": "J",
+    "md": 1,
+    "t1": "Austria",
+    "t2": "Jordan",
+    "p": [
+      "Tie",
+      "Austria",
+      "Austria",
+      "Jordan",
+      "Austria",
+      "Austria",
+      "Austria",
+      "Austria",
+      "Austria",
+      "Tie",
+      "Austria",
+      "Austria",
+      "Austria",
+      "Austria",
+      "Austria",
+      "Tie"
+    ]
+  },
+  {
+    "id": "760456",
+    "group": "J",
+    "md": 2,
+    "t1": "Argentina",
+    "t2": "Austria",
+    "p": [
+      "Tie",
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Tie",
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Argentina"
+    ]
+  },
+  {
+    "id": "760455",
+    "group": "J",
+    "md": 2,
+    "t1": "Jordan",
+    "t2": "Algeria",
+    "p": [
+      "Tie",
+      "Algeria",
+      "Algeria",
+      "Algeria",
+      "Algeria",
+      "Algeria",
+      "Algeria",
+      "Algeria",
+      "Jordan",
+      "Tie",
+      "Algeria",
+      "Algeria",
+      "Algeria",
+      "Algeria",
+      "Tie",
+      "Tie"
+    ]
+  },
+  {
+    "id": "760483",
+    "group": "J",
+    "md": 3,
+    "t1": "Jordan",
+    "t2": "Argentina",
+    "p": [
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Argentina",
+      "Argentina"
+    ]
+  },
+  {
+    "id": "760484",
+    "group": "J",
+    "md": 3,
+    "t1": "Algeria",
+    "t2": "Austria",
+    "p": [
+      "Austria",
+      "Algeria",
+      "Algeria",
+      "Algeria",
+      "Algeria",
+      "Algeria",
+      "Austria",
+      "Austria",
+      "Algeria",
+      "Tie",
+      "Austria",
+      "Austria",
+      "Tie",
+      "Tie",
+      "Tie",
+      "Tie"
+    ]
+  },
+  {
+    "id": "760435",
+    "group": "K",
+    "md": 1,
+    "t1": "Portugal",
+    "t2": "Congo",
+    "p": [
+      "Portugal",
+      "Portugal",
+      "Portugal",
+      "Portugal",
+      "Portugal",
+      "Portugal",
+      "Portugal",
+      "Portugal",
+      "Portugal",
+      "Portugal",
+      "Portugal",
+      "Portugal",
+      "Portugal",
+      "Portugal",
+      "Portugal",
+      "Portugal"
+    ]
+  },
+  {
+    "id": "760436",
+    "group": "K",
+    "md": 1,
+    "t1": "Uzbekistan",
+    "t2": "Colombia",
+    "p": [
+      "Colombia",
+      "Colombia",
+      "Colombia",
+      "Colombia",
+      "Colombia",
+      "Colombia",
+      "Colombia",
+      "Colombia",
+      "Colombia",
+      "Colombia",
+      "Tie",
+      "Colombia",
+      "Colombia",
+      "Colombia",
+      "Colombia",
+      "Tie"
+    ]
+  },
+  {
+    "id": "760461",
+    "group": "K",
+    "md": 2,
+    "t1": "Portugal",
+    "t2": "Uzbekistan",
+    "p": [
+      "Portugal",
+      "Portugal",
+      "Portugal",
+      "Portugal",
+      "Portugal",
+      "Portugal",
+      "Portugal",
+      "Portugal",
+      "Portugal",
+      "Portugal",
+      "Portugal",
+      "Portugal",
+      "Portugal",
+      "Portugal",
+      "Portugal",
+      "Portugal"
+    ]
+  },
+  {
+    "id": "760459",
+    "group": "K",
+    "md": 2,
+    "t1": "Colombia",
+    "t2": "Congo",
+    "p": [
+      "Colombia",
+      "Colombia",
+      "Colombia",
+      "Congo",
+      "Colombia",
+      "Colombia",
+      "Colombia",
+      "Colombia",
+      "Colombia",
+      "Colombia",
+      "Colombia",
+      "Colombia",
+      "Colombia",
+      "Colombia",
+      "Colombia",
+      "Colombia"
+    ]
+  },
+  {
+    "id": "760481",
+    "group": "K",
+    "md": 3,
+    "t1": "Colombia",
+    "t2": "Portugal",
+    "p": [
+      "Portugal",
+      "Portugal",
+      "Tie",
+      "Colombia",
+      "Colombia",
+      "Tie",
+      "Portugal",
+      "Portugal",
+      "Tie",
+      "Portugal",
+      "Tie",
+      "Tie",
+      "Tie",
+      "Portugal",
+      "Tie",
+      "Tie"
+    ]
+  },
+  {
+    "id": "760482",
+    "group": "K",
+    "md": 3,
+    "t1": "Congo",
+    "t2": "Uzbekistan",
+    "p": [
+      "Tie",
+      "Uzbekistan",
+      "Tie",
+      "Uzbekistan",
+      "Congo",
+      "Uzbekistan",
+      "Uzbekistan",
+      "Uzbekistan",
+      "Tie",
+      "Tie",
+      "Uzbekistan",
+      "Tie",
+      "Tie",
+      "Tie",
+      "Tie",
+      "Tie"
+    ]
+  },
+  {
+    "id": "760437",
+    "group": "L",
+    "md": 1,
+    "t1": "England",
+    "t2": "Croatia",
+    "p": [
+      "Tie",
+      "England",
+      "Tie",
+      "Tie",
+      "Tie",
+      "England",
+      "Tie",
+      "England",
+      "Croatia",
+      "England",
+      "England",
+      "England",
+      "England",
+      "England",
+      "Tie",
+      "Tie"
+    ]
+  },
+  {
+    "id": "760434",
+    "group": "L",
+    "md": 1,
+    "t1": "Ghana",
+    "t2": "Panama",
+    "p": [
+      "Tie",
+      "Tie",
+      "Tie",
+      "Ghana",
+      "Ghana",
+      "Ghana",
+      "Ghana",
+      "Panama",
+      "Ghana",
+      "Ghana",
+      "Ghana",
+      "Panama",
+      "Ghana",
+      "Ghana",
+      "Tie",
+      "Tie"
+    ]
+  },
+  {
+    "id": "760458",
+    "group": "L",
+    "md": 2,
+    "t1": "England",
+    "t2": "Ghana",
+    "p": [
+      "England",
+      "England",
+      "Tie",
+      "Tie",
+      "England",
+      "England",
+      "England",
+      "Ghana",
+      "England",
+      "England",
+      "England",
+      "England",
+      "England",
+      "England",
+      "England",
+      "England"
+    ]
+  },
+  {
+    "id": "760460",
+    "group": "L",
+    "md": 2,
+    "t1": "Panama",
+    "t2": "Croatia",
+    "p": [
+      "Croatia",
+      "Croatia",
+      "Croatia",
+      "Tie",
+      "Tie",
+      "Croatia",
+      "Croatia",
+      "Croatia",
+      "Panama",
+      "Croatia",
+      "Croatia",
+      "Croatia",
+      "Croatia",
+      "Croatia",
+      "Croatia",
+      "Tie"
+    ]
+  },
+  {
+    "id": "760485",
+    "group": "L",
+    "md": 3,
+    "t1": "Panama",
+    "t2": "England",
+    "p": [
+      "England",
+      "England",
+      "England",
+      "England",
+      "England",
+      "England",
+      "England",
+      "England",
+      "Panama",
+      "England",
+      "England",
+      "England",
+      "England",
+      "England",
+      "England",
+      "England"
+    ]
+  },
+  {
+    "id": "760480",
+    "group": "L",
+    "md": 3,
+    "t1": "Croatia",
+    "t2": "Ghana",
+    "p": [
+      "Croatia",
+      "Croatia",
+      "Tie",
+      "Tie",
+      "Croatia",
+      "Croatia",
+      "Croatia",
+      "Tie",
+      "Croatia",
+      "Croatia",
+      "Tie",
+      "Croatia",
+      "Croatia",
+      "Croatia",
+      "Croatia",
+      "Croatia"
+    ]
+  }
+];
+
+// Normalize ESPN names → pool canonical names
+const ESPN_MAP = {
+  'United States':'USA','Türkiye':'Turkey',
+  'Bosnia-Herzegovina':'Bosnia','Congo DR':'Congo',
+  'Curaçao':'Curacao','Korea Republic':'South Korea',
+  'Czech Republic':'Czechia'
+};
+function norm(n){ return ESPN_MAP[n]||n; }
+
+// Determine result from scores
+function getResult(t1,s1,t2,s2,status){
+  const done = status==='Full Time'||status==='Final'||status==='FT';
+  const live = status==='In Progress'||status==='Halftime'||status==='Second Half'||status==='First Half';
+  if(!done && !live) return null; // not played
+  const n1=parseInt(s1)||0, n2=parseInt(s2)||0;
+  if(n1>n2) return {winner:t1,done,live};
+  if(n2>n1) return {winner:t2,done,live};
+  return {winner:'Tie',done,live};
+}
+
+function pts(pick,result){
+  if(!result||!result.done) return null;
+  if(pick===result.winner) return result.winner==='Tie'?2:1;
+  return 0;
+}
+
+// Global state
+let results = {}; // espnId → {winner,done,live,score}
+let liveIds = new Set();
+
+async function fetchScores(){
+  document.getElementById('last-updated').textContent='Updating…';
+  try{
+    const r = await fetch('https://site.api.espn.com/apis/site/v2/sports/soccer/FIFA.WORLD/scoreboard?dates=20260611-20260628&limit=100');
+    const data = await r.json();
+    results={};liveIds=new Set();
+    for(const ev of (data.events||[])){
+      const comp=ev.competitions[0];
+      const teams=comp.competitors;
+      const t1=norm(teams[0].team.displayName);
+      const t2=norm(teams[1].team.displayName);
+      const s1=teams[0].score||'0';
+      const s2=teams[1].score||'0';
+      const status=comp.status.type.description;
+      const res=getResult(t1,parseInt(s1),t2,parseInt(s2),status);
+      if(res){
+        results[ev.id]={...res,t1,t2,s1,s2,status};
+        if(res.live) liveIds.add(ev.id);
+      } else {
+        results[ev.id]={winner:null,done:false,live:false,t1,t2,s1,s2,status};
+      }
+    }
+    const now=new Date();
+    document.getElementById('last-updated').textContent=`Updated ${now.toLocaleTimeString()}${liveIds.size?' · '+liveIds.size+' LIVE':''}`;
+    renderAll();
+    // auto-refresh faster if live matches
+    clearInterval(autoTimer);
+    autoTimer=setInterval(fetchScores, liveIds.size>0?30000:60000);
+  }catch(e){
+    document.getElementById('last-updated').textContent='Error loading scores — click Refresh';
+  }
+}
+
+// Calculate per-player totals
+function calcTotals(){
+  return PLAYERS.map((p,pi)=>{
+    let pts_total=0, correct=0, wrong=0, pending=0;
+    for(const m of MATCHES){
+      const res=results[m.id];
+      const pick=m.p[pi];
+      if(!res||!res.done){ pending++; continue; }
+      const p2=pts(pick,res);
+      if(p2>0){ pts_total+=p2; correct++; }
+      else{ wrong++; }
+    }
+    return {name:p,pts:pts_total,correct,wrong,pending,isMe:pi===DAVID_IDX};
+  });
+}
+
+function renderAll(){
+  renderLeaderboard();
+  const activeTab=document.querySelector('.tab-content.active');
+  if(activeTab&&activeTab.id==='tab-matches') renderMatches();
+  if(activeTab&&activeTab.id==='tab-picks') renderPicks();
+}
+
+function renderLeaderboard(){
+  const totals=calcTotals().sort((a,b)=>b.pts-a.pts||(a.pending-b.pending));
+  const medals=['🥇','🥈','🥉'];
+  let html='';
+  totals.forEach((t,i)=>{
+    const medal=i<3?`<span class="medal-${i+1}">${medals[i]}</span>`:`${i+1}`;
+    html+=`<tr>
+      <td class="rank">${medal}</td>
+      <td class="player-name ${t.isMe?'me':''}">${t.name}${t.isMe?' ⭐':''}</td>
+      <td class="pts">${t.pts}</td>
+      <td><span class="stat-badge">✅ ${t.correct}</span></td>
+      <td><span class="stat-badge">⏳ ${t.pending}</span></td>
+    </tr>`;
+  });
+  document.getElementById('lb-body').innerHTML=html||'<tr><td colspan="5">No data</td></tr>';
+}
+
+const GROUP_TEAMS={
+  A:'Mexico · South Africa · South Korea · Czechia',
+  B:'Canada · Bosnia · Qatar · Switzerland',
+  C:'Brazil · Morocco · Scotland · Haiti',
+  D:'USA · Paraguay · Australia · Turkey',
+  E:'Germany · Curaçao · Ecuador · Ivory Coast',
+  F:'Netherlands · Japan · Sweden · Tunisia',
+  G:'Belgium · Egypt · Iran · New Zealand',
+  H:'Spain · Saudi Arabia · Uruguay · Cape Verde',
+  I:'France · Iraq · Norway · Senegal',
+  J:'Argentina · Algeria · Austria · Jordan',
+  K:'Portugal · Congo · Uzbekistan · Colombia',
+  L:'England · Croatia · Ghana · Panama'
+};
+
+const MATCH_DATES={
+  '760415':'Jun 11','760414':'Jun 12','760416':'Jun 12','760417':'Jun 13',
+  '760420':'Jun 13','760419':'Jun 13','760418':'Jun 14','760421':'Jun 14',
+  '760422':'Jun 14','760425':'Jun 14','760423':'Jun 14','760424':'Jun 15',
+  '760428':'Jun 15','760426':'Jun 15','760429':'Jun 15','760427':'Jun 16',
+  '760432':'Jun 16','760430':'Jun 16','760433':'Jun 17','760431':'Jun 17',
+  '760435':'Jun 17','760437':'Jun 17','760434':'Jun 17','760436':'Jun 18',
+  '760438':'Jun 18','760439':'Jun 18','760440':'Jun 18','760441':'Jun 19',
+  '760442':'Jun 19','760445':'Jun 19','760444':'Jun 20','760443':'Jun 20',
+  '760447':'Jun 20','760448':'Jun 20','760446':'Jun 21','760449':'Jun 21',
+  '760453':'Jun 21','760451':'Jun 21','760450':'Jun 21','760452':'Jun 22',
+  '760456':'Jun 22','760457':'Jun 22','760454':'Jun 23','760455':'Jun 23',
+  '760461':'Jun 23','760458':'Jun 23','760460':'Jun 23','760459':'Jun 24',
+  '760462':'Jun 24','760463':'Jun 24','760464':'Jun 24','760465':'Jun 24',
+  '760467':'Jun 25','760466':'Jun 25','760473':'Jun 25','760468':'Jun 25',
+  '760471':'Jun 25','760472':'Jun 25','760469':'Jun 26','760470':'Jun 26',
+  '760475':'Jun 26','760474':'Jun 26','760478':'Jun 27','760479':'Jun 27',
+  '760476':'Jun 27','760477':'Jun 27','760480':'Jun 27','760485':'Jun 27',
+  '760481':'Jun 27','760482':'Jun 27','760484':'Jun 28','760483':'Jun 28'
+};
+
+function renderMatches(){
+  const groups=[...new Set(MATCHES.map(m=>m.group))];
+  let html='';
+  for(const g of groups){
+    const gMatches=MATCHES.filter(m=>m.group===g);
+    html+=`<div class="group-card">
+      <div class="group-header">
+        <span class="group-letter">Group ${g}</span>
+        <span class="group-teams">${GROUP_TEAMS[g]}</span>
+      </div>`;
+    for(const m of gMatches){
+      const res=results[m.id];
+      const date=MATCH_DATES[m.id]||'';
+      let scoreHtml,liveFlag='';
+      if(res&&res.done){
+        scoreHtml=`<span class="match-score score-final">${res.t1===m.t1?res.s1:res.s2} – ${res.t1===m.t1?res.s2:res.s1}</span>`;
+      } else if(res&&res.live){
+        scoreHtml=`<span class="match-score score-live">${res.s1}–${res.s2}</span>`;
+        liveFlag=`<span class="live-badge">LIVE</span>`;
+      } else {
+        scoreHtml=`<span class="match-score score-sched">${date}</span>`;
+      }
+      // how many players got it right
+      let correctCount=0, totalDone=0;
+      if(res&&res.done){
+        totalDone=PLAYERS.length;
+        PLAYERS.forEach((_,pi)=>{if(pts(m.p[pi],res)>0)correctCount++;});
+      }
+      const correctStr=res&&res.done?`<span class="correct-count">✅ ${correctCount}/${PLAYERS.length} correct</span>`:'';
+      html+=`<div class="match-row">
+        <span class="match-date">${date}</span>
+        <span class="match-teams">${m.t1} <span style="color:#7a8fa6">vs</span> ${m.t2}
+          <span class="md-badge">MD${m.md}</span>${liveFlag}
+        </span>
+        ${scoreHtml}
+        ${correctStr}
+      </div>`;
+    }
+    html+='</div>';
+  }
+  document.getElementById('matches-content').innerHTML=html;
+}
+
+function renderPicks(){
+  const fg=document.getElementById('filter-group').value;
+  const fmd=parseInt(document.getElementById('filter-md').value)||0;
+  const filtered=MATCHES.filter(m=>(fg?m.group===fg:true)&&(fmd?m.md===fmd:true));
+
+  // Header
+  let hdr=`<th class="match-col">Match</th>`;
+  PLAYERS.forEach((p,i)=>{
+    hdr+=`<th${i===DAVID_IDX?' style="color:#c9a227;background:#2a2400"':''}>${p}</th>`;
+  });
+  document.getElementById('picks-header').innerHTML=hdr;
+
+  let body='';
+  for(const m of filtered){
+    const res=results[m.id];
+    const date=MATCH_DATES[m.id]||'';
+    body+=`<tr><td class="match-info">${m.t1} v ${m.t2}<span>Grp ${m.group} MD${m.md} · ${date}</span></td>`;
+    PLAYERS.forEach((p,pi)=>{
+      const pick=m.p[pi];
+      let cls='cell-pending', label=shorten(pick);
+      if(res&&res.done){
+        const p2=pts(pick,res);
+        cls=p2>0?'cell-correct':'cell-wrong';
+        if(p2===2) label+=' 2';
+      }
+      if(pi===DAVID_IDX) cls+=' cell-me';
+      body+=`<td class="${cls}">${label}</td>`;
+    });
+    body+='</tr>';
+  }
+  document.getElementById('picks-body').innerHTML=body;
+}
+
+function shorten(n){
+  const s={
+    'South Korea':'SKor','South Africa':'SAf','Saudi Arabia':'SAu',
+    'New Zealand':'NZ','Ivory Coast':'ICo','Cape Verde':'CaV',
+    'Bosnia':'Bos','Mexico':'Mex','Switzerland':'Swi','Netherlands':'Net',
+    'Argentina':'Arg','Australia':'Aus','Portugal':'Por','Colombia':'Col',
+    'Scotland':'Sco','Uruguay':'Uru','England':'Eng','Germany':'Ger',
+    'Belgium':'Bel','Croatia':'Cro','Paraguay':'Par','Ecuador':'Ecu',
+    'Panama':'Pan','Algeria':'Alg','Austria':'Aut','Morocco':'Mor',
+    'Senegal':'Sen','Norway':'Nor','Tunisia':'Tun','Curacao':'Cur',
+    'Uzbekistan':'Uzb','Congo':'Con','Czechia':'Cze','Sweden':'Swe',
+    'Jordan':'Jor','Ghana':'Gha','France':'Fra','Brazil':'Bra',
+    'Spain':'Spa','Japan':'Jap','Canada':'Can','Iran':'Ira',
+    'Haiti':'Hai','Qatar':'Qat','Turkey':'Tur','Iraq':'Iraq',
+    'Egypt':'Egy'
+  };
+  return s[n]||n;
+}
+
+function showTab(id,btn){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(id==='matches') renderMatches();
+  if(id==='picks') renderPicks();
+}
+
+let autoTimer;
+fetchScores();
+</script>
+</body>
+</html>

@@ -3,6 +3,7 @@
     { "src": "/for-mikaela", "dest": "/for-mikaela.html" },
     { "src": "/italy2026", "dest": "/italy2026.html" },
     { "src": "/italy2026live", "dest": "/italy2026live.html" },
+    { "src": "/worldcup", "dest": "/worldcup.html" },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/" }
   ]
