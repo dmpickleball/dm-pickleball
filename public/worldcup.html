@@ -148,6 +148,7 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
         <option value="2">Matchday 2</option>
         <option value="3">Matchday 3</option>
       </select>
+      <button class="action-link" onclick="clearAllFilters()" style="padding:5px 10px;font-size:0.8rem">✕ Clear Filters</button>
     </div>
     <div id="player-chips"></div>
     <div class="picks-wrapper">
@@ -2308,6 +2309,12 @@ function updateDropdownLabel(){
   if(selectedPlayers.size===0) lbl.textContent='👤 All Players';
   else if(selectedPlayers.size===1) lbl.textContent=`👤 ${[...selectedPlayers][0]}`;
   else lbl.textContent=`👤 ${selectedPlayers.size} players selected`;
+}
+
+function clearAllFilters(){
+  document.getElementById('filter-group').value='';
+  document.getElementById('filter-md').value='';
+  clearPlayerFilter();
 }
 
 function jumpToPicks(group){
