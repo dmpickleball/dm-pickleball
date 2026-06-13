@@ -269,6 +269,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
+    if (!requireAdmin(req, res)) return;
     const { paddle_name, paddle_link, paddle_detail, paddle_start, bag_name, bag_detail, bag_link, paddle_history, accent_color } = req.body;
     const updated_at = new Date().toLocaleString('en-US', { month: 'short', year: 'numeric' });
     const { error } = await supabase.from('gear_settings').upsert({

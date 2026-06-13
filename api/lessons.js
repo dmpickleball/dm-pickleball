@@ -1,5 +1,18 @@
 import { supabase } from './_supabase.js';
 import { google } from 'googleapis';
+import { createHmac, timingSafeEqual } from 'crypto';
+
+function verifyAdminToken(token) {
+  try {
+    if (!token) return null;
+    const { email, ts, sig } = JSON.parse(Buffer.from(token, 'base64url').toString());
+    if (Date.now() - ts > 30 * 24 * 60 * 60 * 1000) return null;
+    const secret = process.env.ADMIN_SESSION_SECRET || '';
+    const expected = createHmac('sha256', secret).update(`${email}:${ts}`).digest('hex');
+    if (!timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'))) return null;
+    return email;
+  } catch { return null; }
+}
 
 function getCalAuth() {
   const rawKey = process.env.GOOGLE_PRIVATE_KEY || '';
@@ -54,8 +67,10 @@ export default async function handler(req, res) {
     return res.status(200).json({ success: true });
   }
 
-  // POST delete lesson
+  // POST delete lesson (admin only)
   if (req.method === 'POST' && action === 'delete') {
+    const token = req.headers['x-admin-token'] || '';
+    if (!verifyAdminToken(token)) return res.status(401).json({ error: 'Unauthorized' });
     const { lessonId } = req.body;
     console.log('delete lesson: lessonId=', lessonId, 'type=', typeof lessonId);
     if (!lessonId) return res.status(400).json({ error: 'lessonId is required' });

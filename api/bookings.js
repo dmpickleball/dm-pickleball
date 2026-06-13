@@ -1,5 +1,24 @@
 import { google } from 'googleapis';
 
+// ── Simple in-memory rate limiter ─────────────────────────────────────────────
+const rateLimitMap = new Map();
+function isRateLimited(ip, maxRequests = 10, windowMs = 60_000) {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip) || { count: 0, resetAt: now + windowMs };
+  if (now > entry.resetAt) { entry.count = 0; entry.resetAt = now + windowMs; }
+  entry.count++;
+  rateLimitMap.set(ip, entry);
+  // Prune old entries periodically
+  if (rateLimitMap.size > 500) {
+    for (const [k, v] of rateLimitMap) { if (now > v.resetAt) rateLimitMap.delete(k); }
+  }
+  return entry.count > maxRequests;
+}
+
+function getClientIp(req) {
+  return (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
+}
+
 function getAuth() {
   const rawKey = process.env.GOOGLE_PRIVATE_KEY || '';
   const privateKey = rawKey.includes('\\n') ? rawKey.replace(/\\n/g, '\n') : rawKey;
@@ -84,6 +103,11 @@ async function handleCancel(body, res) {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const ip = getClientIp(req);
+  // Rate limit: 10 booking/cancel requests per minute per IP
+  if (isRateLimited(ip, 10, 60_000)) {
+    return res.status(429).json({ error: 'Too many requests — please wait a moment and try again.' });
+  }
   const { action } = req.body || {};
   try {
     if (action === 'cancel') return await handleCancel(req.body, res);

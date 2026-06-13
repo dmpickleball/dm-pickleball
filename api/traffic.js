@@ -1,4 +1,18 @@
 import { supabase } from './_supabase.js';
+import { createHmac, timingSafeEqual } from 'crypto';
+
+// ── Admin auth ────────────────────────────────────────────────────────────────
+function verifyAdminToken(token) {
+  try {
+    if (!token) return null;
+    const { email, ts, sig } = JSON.parse(Buffer.from(token, 'base64url').toString());
+    if (Date.now() - ts > 30 * 24 * 60 * 60 * 1000) return null;
+    const secret = process.env.ADMIN_SESSION_SECRET || '';
+    const expected = createHmac('sha256', secret).update(`${email}:${ts}`).digest('hex');
+    if (!timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'))) return null;
+    return email;
+  } catch { return null; }
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function getDeviceType(ua = '') {
@@ -132,6 +146,10 @@ async function getTraffic(req, res) {
 
 export default async function handler(req, res) {
   if (req.method === 'POST') return trackVisit(req, res);
-  if (req.method === 'GET')  return getTraffic(req, res);
+  if (req.method === 'GET') {
+    const token = req.headers['x-admin-token'] || '';
+    if (!verifyAdminToken(token)) return res.status(401).json({ error: 'Unauthorized' });
+    return getTraffic(req, res);
+  }
   return res.status(405).end();
 }

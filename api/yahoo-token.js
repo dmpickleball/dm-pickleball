@@ -6,7 +6,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Missing required parameters" });
   }
 
-  const YAHOO_CLIENT_ID = "dj0yJmk9dEVscml2TzNha0JVJmQ9WVdrOU5XOWFUMG95WjBNbWNHbzlNQT09JnM9Y29uc3VtZXJzZWNyZXQmc3Y9MCZ4PTUy";
+  const YAHOO_CLIENT_ID = process.env.YAHOO_CLIENT_ID || "";
 
   const params = new URLSearchParams({
     grant_type: "authorization_code",

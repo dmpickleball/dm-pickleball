@@ -1,7 +1,22 @@
 import { supabase } from './_supabase.js';
+import { createHmac, timingSafeEqual } from 'crypto';
+
+function verifyAdminToken(token) {
+  try {
+    if (!token) return null;
+    const { email, ts, sig } = JSON.parse(Buffer.from(token, 'base64url').toString());
+    if (Date.now() - ts > 30 * 24 * 60 * 60 * 1000) return null;
+    const secret = process.env.ADMIN_SESSION_SECRET || '';
+    const expected = createHmac('sha256', secret).update(`${email}:${ts}`).digest('hex');
+    if (!timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'))) return null;
+    return email;
+  } catch { return null; }
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,x-admin-token');
+  if (req.method === 'OPTIONS') return res.status(200).end();
   const action = req.query.action;
 
   // GET places search (Google Maps autocomplete)
@@ -47,6 +62,12 @@ export default async function handler(req, res) {
     const { data, error } = await supabase.from('locations').select('*').order('name', { ascending: true });
     if (error) return res.status(500).json({ error: error.message });
     return res.status(200).json({ locations: data });
+  }
+
+  // POST mutations require admin token
+  if (req.method === 'POST' && (action === 'add' || action === 'update' || action === 'delete')) {
+    const token = req.headers['x-admin-token'] || '';
+    if (!verifyAdminToken(token)) return res.status(401).json({ error: 'Unauthorized' });
   }
 
   // POST add location

@@ -2362,14 +2362,14 @@ function LocationsTab({locations,setLocations}){
 
   const saveEdit=async(id)=>{
     setSaving(true);
-    await fetch("/api/locations?action=update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id,name:editName,address:editAddress})});
+    await adminFetch("/api/locations?action=update",{method:"POST",body:JSON.stringify({id,name:editName,address:editAddress})});
     setLocations(prev=>prev.map(l=>l.id===id?{...l,name:editName,address:editAddress}:l));
     cancelEdit();
     setSaving(false);
   };
 
   const handleDelete=async(id)=>{
-    await fetch("/api/locations?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})});
+    await adminFetch("/api/locations?action=delete",{method:"POST",body:JSON.stringify({id})});
     setLocations(prev=>prev.filter(l=>l.id!==id));
     setDeleteConfirm(null);
   };
@@ -2377,7 +2377,7 @@ function LocationsTab({locations,setLocations}){
   const handleAdd=async()=>{
     if(!newName||!newAddress)return;
     setSaving(true);
-    const r=await fetch("/api/locations?action=add",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:newName,address:newAddress})});
+    const r=await adminFetch("/api/locations?action=add",{method:"POST",body:JSON.stringify({name:newName,address:newAddress})});
     const data=await r.json();
     if(data.location)setLocations(prev=>[...prev,data.location].sort((a,b)=>a.name.localeCompare(b.name)));
     setNewName("");setNewAddress("");setAdding(false);
@@ -4361,7 +4361,7 @@ function AdminPanel({allLessons,onUpdateLesson,onCancelLesson,onDeleteLesson,pen
                         {permDeleteTarget?.id===l.id?(
                           <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
                             <span style={{fontSize:"0.75rem",color:"#dc2626",fontWeight:600}}>Permanently delete?</span>
-                            <button onClick={()=>{onDeleteLesson(selectedStudent,l.id);setPermDeleteTarget(null);if(l.id)fetch("/api/lessons?action=delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lessonId:l.id})}).catch(()=>{});}} style={{background:"#dc2626",color:"white",border:"none",padding:"4px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.75rem",fontWeight:700}}>Yes, Delete</button>
+                            <button onClick={()=>{onDeleteLesson(selectedStudent,l.id);setPermDeleteTarget(null);if(l.id)adminFetch("/api/lessons?action=delete",{method:"POST",body:JSON.stringify({lessonId:l.id})}).catch(()=>{});}} style={{background:"#dc2626",color:"white",border:"none",padding:"4px 12px",borderRadius:50,cursor:"pointer",fontSize:"0.75rem",fontWeight:700}}>Yes, Delete</button>
                             <button onClick={()=>{setPermDeleteTarget(null);}} style={{background:"white",border:"1.5px solid #e5e7eb",padding:"4px 10px",borderRadius:50,cursor:"pointer",fontSize:"0.75rem",fontWeight:600}}>Cancel</button>
                           </div>
                         ):(
@@ -6147,7 +6147,7 @@ function TrafficTab(){
 
   useEffect(()=>{
     setLoading(true);
-    fetch("/api/traffic").then(r=>r.json()).then(d=>{
+    adminFetch("/api/traffic").then(r=>r.json()).then(d=>{
       if(d.error)setError(d.error);
       else setData(d);
     }).catch(()=>setError("Failed to load traffic data.")).finally(()=>setLoading(false));
@@ -6468,7 +6468,7 @@ function PaddleHistoryEditor({history,setHistory,paddleName,paddleLink,paddleDet
   const sorted=[...history].sort((a,b)=>{if(a.current)return -1;if(b.current)return 1;return parseMonth(b.from)-parseMonth(a.from);});
 
   const persist=async(updated)=>{
-    await fetch("/api/gear",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+    await adminFetch("/api/gear",{method:"POST",body:JSON.stringify({
       paddle_name:paddleName,paddle_link:paddleLink,paddle_detail:paddleDetail,paddle_start:paddleStart,
       bag_name:bagName,bag_detail:bagDetail,bag_link:bagLink,paddle_history:updated,accent_color:accentColor,
     })});
@@ -6605,9 +6605,8 @@ function GearAdminTab(){
     }
 
     try{
-      const res=await fetch("/api/gear",{
+      const res=await adminFetch("/api/gear",{
         method:"POST",
-        headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
           paddle_name:paddleName,
           paddle_link:paddleLink,
