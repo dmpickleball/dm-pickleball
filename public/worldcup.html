@@ -2068,14 +2068,21 @@ function pts(pick,result){
 
 // Global state
 let results = {}; // espnId → {winner,done,live,score}
+let matchTimes = {}; // espnId → "12:00 PM PT"
 let liveIds = new Set();
+
+function toPT(utcStr){
+  try{
+    return new Date(utcStr).toLocaleTimeString('en-US',{timeZone:'America/Los_Angeles',hour:'numeric',minute:'2-digit',hour12:true})+' PT';
+  }catch(e){return '';}
+}
 
 async function fetchScores(){
   document.getElementById('last-updated').textContent='Updating…';
   try{
     const r = await fetch('https://site.api.espn.com/apis/site/v2/sports/soccer/FIFA.WORLD/scoreboard?dates=20260611-20260628&limit=100');
     const data = await r.json();
-    results={};liveIds=new Set();
+    results={};matchTimes={};liveIds=new Set();
     for(const ev of (data.events||[])){
       const comp=ev.competitions[0];
       const teams=comp.competitors;
@@ -2084,6 +2091,7 @@ async function fetchScores(){
       const s1=teams[0].score||'0';
       const s2=teams[1].score||'0';
       const status=comp.status.type.description;
+      if(ev.date) matchTimes[ev.id]=toPT(ev.date);
       const res=getResult(t1,parseInt(s1),t2,parseInt(s2),status);
       if(res){
         results[ev.id]={...res,t1,t2,s1,s2,status};
@@ -2204,7 +2212,8 @@ function renderMatches(){
         scoreHtml=`<span class="match-score score-live">${res.s1}–${res.s2}</span>`;
         liveFlag=`<span class="live-badge">LIVE</span>`;
       } else {
-        scoreHtml=`<span class="match-score score-sched">${date}</span>`;
+        const timeStr=matchTimes[m.id]||'';
+        scoreHtml=`<span class="match-score score-sched">${date}${timeStr?'<br><span style="font-size:0.65rem;font-weight:500">'+timeStr+'</span>':''}`;
       }
       // how many players got it right
       let correctCount=0, totalDone=0;
@@ -2250,7 +2259,8 @@ function renderPicks(){
   for(const m of filtered){
     const res=results[m.id];
     const date=MATCH_DATES[m.id]||'';
-    body+=`<tr><td class="match-info">${m.t1} v ${m.t2}<span>Grp ${m.group} MD${m.md} · ${date}</span></td>`;
+    const timeStr=matchTimes[m.id]?` · ${matchTimes[m.id]}`:'';
+    body+=`<tr><td class="match-info">${m.t1} v ${m.t2}<span>Grp ${m.group} MD${m.md} · ${date}${timeStr}</span></td>`;
     PLAYERS.forEach((p,pi)=>{
       if(!showAll&&!selectedPlayers.has(p)) return;
       const pick=m.p[pi];
