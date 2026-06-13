@@ -71,10 +71,16 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
 .cell-pending{background:#1a2e45;color:#aaa}
 .filter-bar{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
 .filter-bar select,.filter-bar input{background:#111d2c;border:1px solid #1e3050;color:#e8eaf6;padding:5px 8px;border-radius:4px;font-size:0.8rem}
-.player-chip-wrap{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
-.player-chip{background:#1a2e45;border:1px solid #1e3050;color:#7a8fa6;border-radius:20px;padding:3px 10px;font-size:0.72rem;cursor:pointer;transition:all .15s;white-space:nowrap;font-family:inherit}
-.player-chip.active{background:#c9a227;color:#0d1b2a;border-color:#c9a227;font-weight:700}
-.player-chip.clear-chip{border-color:#c0392b;color:#c0392b}
+.player-dropdown{position:relative;display:inline-block}
+.player-dd-btn{background:#111d2c;border:1px solid #1e3050;color:#e8eaf6;padding:5px 10px;border-radius:4px;font-size:0.8rem;cursor:pointer;font-family:inherit;min-width:150px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.player-dd-btn:hover{border-color:#c9a227;color:#c9a227}
+.player-dd-panel{display:none;position:absolute;top:calc(100% + 4px);left:0;background:#111d2c;border:1px solid #1e3050;border-radius:6px;padding:4px 0;z-index:100;min-width:170px;box-shadow:0 4px 16px rgba(0,0,0,.6);max-height:280px;overflow-y:auto}
+.player-dd-panel.open{display:block}
+.player-dd-item{display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;font-size:0.8rem;color:#e8eaf6}
+.player-dd-item:hover{background:#1a2e45}
+.player-dd-item input{accent-color:#c9a227;cursor:pointer;width:14px;height:14px}
+.player-dd-clear{border-top:1px solid #1e3050;margin-top:4px;padding:6px 12px;color:#c0392b;font-size:0.75rem;cursor:pointer;text-align:center}
+.player-dd-clear:hover{background:#1a2e45}
 .action-links{display:flex;gap:5px;align-items:center}
 .action-link{font-size:0.68rem;background:#1a2e45;color:#c9a227;text-decoration:none;border-radius:4px;padding:2px 6px;white-space:nowrap;border:1px solid #1e3050;cursor:pointer}
 .action-link:hover{background:#1e3050;color:#e8c040}
@@ -2260,38 +2266,48 @@ function renderPicks(){
   document.getElementById('picks-body').innerHTML=body;
 }
 
-function initPlayerChips(){
-  const wrap=document.createElement('div');
-  wrap.className='player-chip-wrap';
-  PLAYERS.forEach(p=>{
-    const btn=document.createElement('button');
-    btn.className='player-chip';
-    btn.textContent=p;
-    btn.dataset.player=p;
-    btn.onclick=()=>togglePlayerChip(p,btn);
-    wrap.appendChild(btn);
+function initPlayerDropdown(){
+  const wrap=document.getElementById('player-chips');
+  wrap.innerHTML=`<div class="player-dropdown" id="player-dropdown">
+    <button class="player-dd-btn" id="player-dd-btn" onclick="togglePlayerDropdown(event)">
+      <span id="player-dd-label">👤 All Players</span><span>▾</span>
+    </button>
+    <div class="player-dd-panel" id="player-dd-panel">
+      ${PLAYERS.map(p=>`<label class="player-dd-item"><input type="checkbox" value="${p}" onchange="onPlayerCheck(this)"> ${p}</label>`).join('')}
+      <div class="player-dd-clear" onclick="clearPlayerFilter()">✕ Clear selection</div>
+    </div>
+  </div>`;
+  document.addEventListener('click',e=>{
+    const dd=document.getElementById('player-dropdown');
+    if(dd&&!dd.contains(e.target)) document.getElementById('player-dd-panel').classList.remove('open');
   });
-  const clearBtn=document.createElement('button');
-  clearBtn.className='player-chip clear-chip';
-  clearBtn.id='clear-chips';
-  clearBtn.textContent='✕ Clear';
-  clearBtn.style.display='none';
-  clearBtn.onclick=()=>{
-    selectedPlayers.clear();
-    wrap.querySelectorAll('.player-chip[data-player]').forEach(b=>b.classList.remove('active'));
-    clearBtn.style.display='none';
-    renderPicks();
-  };
-  wrap.appendChild(clearBtn);
-  document.getElementById('player-chips').appendChild(wrap);
 }
 
-function togglePlayerChip(p,btn){
-  if(selectedPlayers.has(p)){selectedPlayers.delete(p);btn.classList.remove('active');}
-  else{selectedPlayers.add(p);btn.classList.add('active');}
-  const clearBtn=document.getElementById('clear-chips');
-  if(clearBtn) clearBtn.style.display=selectedPlayers.size>0?'':'none';
+function togglePlayerDropdown(e){
+  e.stopPropagation();
+  document.getElementById('player-dd-panel').classList.toggle('open');
+}
+
+function onPlayerCheck(cb){
+  if(cb.checked) selectedPlayers.add(cb.value);
+  else selectedPlayers.delete(cb.value);
+  updateDropdownLabel();
   renderPicks();
+}
+
+function clearPlayerFilter(){
+  selectedPlayers.clear();
+  document.querySelectorAll('#player-dd-panel input').forEach(cb=>cb.checked=false);
+  updateDropdownLabel();
+  renderPicks();
+}
+
+function updateDropdownLabel(){
+  const lbl=document.getElementById('player-dd-label');
+  if(!lbl) return;
+  if(selectedPlayers.size===0) lbl.textContent='👤 All Players';
+  else if(selectedPlayers.size===1) lbl.textContent=`👤 ${[...selectedPlayers][0]}`;
+  else lbl.textContent=`👤 ${selectedPlayers.size} players selected`;
 }
 
 function jumpToPicks(group){
@@ -2333,7 +2349,7 @@ function showTab(id,btn){
 }
 
 let autoTimer;
-initPlayerChips();
+initPlayerDropdown();
 fetchScores();
 </script>
 </body>
