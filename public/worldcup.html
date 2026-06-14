@@ -84,6 +84,9 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
 .action-links{display:flex;gap:5px;align-items:center}
 .action-link{font-size:0.68rem;background:#1a2e45;color:#c9a227;text-decoration:none;border-radius:4px;padding:2px 6px;white-space:nowrap;border:1px solid #1e3050;cursor:pointer}
 .action-link:hover{background:#1e3050;color:#e8c040}
+.toggle-btn{background:#111d2c;border:1px solid #1e3050;color:#7a8fa6;padding:5px 12px;border-radius:4px;font-size:0.8rem;cursor:pointer;font-family:inherit;transition:all .15s}
+.toggle-btn.active{background:#1a2e45;border-color:#c9a227;color:#c9a227;font-weight:700}
+.toggle-btn:hover{border-color:#c9a227;color:#c9a227}
 /* ─── RESPONSIVE ─── */
 @media(max-width:600px){
   .pool-title{font-size:1.2rem}
@@ -131,6 +134,10 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
   </div>
 
   <div id="tab-matches" class="tab-content">
+    <div class="filter-bar" style="margin-bottom:10px">
+      <button class="toggle-btn active" id="view-group" onclick="setMatchView('group',this)">📁 By Group</button>
+      <button class="toggle-btn" id="view-chrono" onclick="setMatchView('chrono',this)">🕐 Chronological</button>
+    </div>
     <div id="matches-content"><div style="text-align:center;padding:30px;color:#7a8fa6">Loading…</div></div>
   </div>
 
@@ -2069,7 +2076,16 @@ function pts(pick,result){
 // Global state
 let results = {}; // espnId → {winner,done,live,score}
 let matchTimes = {}; // espnId → "12:00 PM PT"
+let matchTimestamps = {}; // espnId → epoch ms for sorting
+let matchView = 'group'; // 'group' | 'chrono'
 let liveIds = new Set();
+
+function setMatchView(view, btn){
+  matchView = view;
+  document.querySelectorAll('.toggle-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderMatches();
+}
 
 function toPT(utcStr){
   try{
@@ -2091,7 +2107,7 @@ async function fetchScores(){
       const s1=teams[0].score||'0';
       const s2=teams[1].score||'0';
       const status=comp.status.type.description;
-      if(ev.date) matchTimes[ev.id]=toPT(ev.date);
+      if(ev.date){ matchTimes[ev.id]=toPT(ev.date); matchTimestamps[ev.id]=new Date(ev.date).getTime(); }
       const res=getResult(t1,parseInt(s1),t2,parseInt(s2),status);
       if(res){
         results[ev.id]={...res,t1,t2,s1,s2,status};
@@ -2193,52 +2209,66 @@ const MATCH_DATES={
 };
 
 function renderMatches(){
-  const groups=[...new Set(MATCHES.map(m=>m.group))];
   let html='';
-  for(const g of groups){
-    const gMatches=MATCHES.filter(m=>m.group===g);
-    html+=`<div class="group-card">
-      <div class="group-header">
-        <span class="group-letter">Group ${g}</span>
-        <span class="group-teams">${GROUP_TEAMS[g]}</span>
-      </div>`;
-    for(const m of gMatches){
-      const res=results[m.id];
+  if(matchView==='chrono'){
+    const sorted=[...MATCHES].sort((a,b)=>(matchTimestamps[a.id]||0)-(matchTimestamps[b.id]||0));
+    let lastDate='';
+    for(const m of sorted){
       const date=MATCH_DATES[m.id]||'';
-      let scoreHtml,liveFlag='';
-      if(res&&res.done){
-        scoreHtml=`<span class="match-score score-final">${res.t1===m.t1?res.s1:res.s2} – ${res.t1===m.t1?res.s2:res.s1}</span>`;
-      } else if(res&&res.live){
-        scoreHtml=`<span class="match-score score-live">${res.s1}–${res.s2}</span>`;
-        liveFlag=`<span class="live-badge">LIVE</span>`;
-      } else {
-        const timeStr=matchTimes[m.id]||'';
-        scoreHtml=`<span class="match-score score-sched">${date}${timeStr?'<br><span style="font-size:0.65rem;font-weight:500">'+timeStr+'</span>':''}`;
+      if(date!==lastDate){
+        if(lastDate) html+='</div>';
+        html+=`<div class="group-card"><div class="group-header"><span class="group-letter">${date}</span></div>`;
+        lastDate=date;
       }
-      // how many players got it right
-      let correctCount=0, totalDone=0;
-      if(res&&res.done){
-        totalDone=PLAYERS.length;
-        PLAYERS.forEach((_,pi)=>{if(pts(m.p[pi],res)>0)correctCount++;});
-      }
-      const correctStr=res&&res.done?`<span class="correct-count">✅ ${correctCount}/${PLAYERS.length} correct</span>`:'';
-      const actionHtml=res&&res.done?`<div class="action-links">
-        <a class="action-link" href="#" onclick="jumpToPicks('${m.group}');return false">📋 Picks</a>
-        <a class="action-link" href="https://www.espn.com/soccer/match/_/gameId/${m.id}" target="_blank" rel="noopener">🎬 Recap</a>
-      </div>`:'';
-      html+=`<div class="match-row">
-        <span class="match-date">${date}</span>
-        <span class="match-teams">${m.t1} <span style="color:#7a8fa6">vs</span> ${m.t2}
-          <span class="md-badge">MD${m.md}</span>${liveFlag}
-        </span>
-        ${scoreHtml}
-        ${correctStr}
-        ${actionHtml}
-      </div>`;
+      html+=matchRowHtml(m);
     }
-    html+='</div>';
+    if(lastDate) html+='</div>';
+  } else {
+    const groups=[...new Set(MATCHES.map(m=>m.group))];
+    for(const g of groups){
+      const gMatches=MATCHES.filter(m=>m.group===g);
+      html+=`<div class="group-card">
+        <div class="group-header">
+          <span class="group-letter">Group ${g}</span>
+          <span class="group-teams">${GROUP_TEAMS[g]}</span>
+        </div>`;
+      for(const m of gMatches) html+=matchRowHtml(m);
+      html+='</div>';
+    }
   }
   document.getElementById('matches-content').innerHTML=html;
+}
+
+function matchRowHtml(m){
+  const res=results[m.id];
+  const date=MATCH_DATES[m.id]||'';
+  let scoreHtml,liveFlag='';
+  if(res&&res.done){
+    scoreHtml=`<span class="match-score score-final">${res.t1===m.t1?res.s1:res.s2} – ${res.t1===m.t1?res.s2:res.s1}</span>`;
+  } else if(res&&res.live){
+    scoreHtml=`<span class="match-score score-live">${res.s1}–${res.s2}</span>`;
+    liveFlag=`<span class="live-badge">LIVE</span>`;
+  } else {
+    const timeStr=matchTimes[m.id]||'';
+    scoreHtml=`<span class="match-score score-sched">${date}${timeStr?'<br><span style="font-size:0.65rem;font-weight:500">'+timeStr+'</span>':''}`;
+  }
+  let correctCount=0;
+  if(res&&res.done) PLAYERS.forEach((_,pi)=>{if(pts(m.p[pi],res)>0)correctCount++;});
+  const correctStr=res&&res.done?`<span class="correct-count">✅ ${correctCount}/${PLAYERS.length} correct</span>`:'';
+  const groupBadge=matchView==='chrono'?`<span class="md-badge">Grp ${m.group}</span>`:'';
+  const actionHtml=res&&res.done?`<div class="action-links">
+    <a class="action-link" href="#" onclick="jumpToPicks('${m.group}');return false">📋 Picks</a>
+    <a class="action-link" href="https://www.espn.com/soccer/match/_/gameId/${m.id}" target="_blank" rel="noopener">🎬 Recap</a>
+  </div>`:'';
+  return `<div class="match-row">
+    <span class="match-date">${date}</span>
+    <span class="match-teams">${m.t1} <span style="color:#7a8fa6">vs</span> ${m.t2}
+      <span class="md-badge">MD${m.md}</span>${groupBadge}${liveFlag}
+    </span>
+    ${scoreHtml}
+    ${correctStr}
+    ${actionHtml}
+  </div>`;
 }
 
 function renderPicks(){
