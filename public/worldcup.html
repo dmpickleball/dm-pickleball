@@ -144,9 +144,9 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
     <table class="lb-table">
       <thead><tr>
         <th>#</th><th>Player</th><th>Points</th>
-        <th>✅ Correct</th><th>⏳ Left</th>
+        <th>✅ Correct</th>
       </tr></thead>
-      <tbody id="lb-body"><tr><td colspan="5" style="text-align:center;padding:20px;color:#7a8fa6">Loading…</td></tr></tbody>
+      <tbody id="lb-body"><tr><td colspan="4" style="text-align:center;padding:20px;color:#7a8fa6">Loading…</td></tr></tbody>
     </table>
   </div>
 
@@ -2147,7 +2147,8 @@ async function fetchScores(){
       }
     }
     const now=new Date();
-    document.getElementById('last-updated').textContent=`Updated ${now.toLocaleTimeString()}${liveIds.size?' · '+liveIds.size+' LIVE':''}`;
+    const gamesLeft=MATCHES.filter(m=>!results[m.id]||(!results[m.id].done&&!results[m.id].live)).length;
+    document.getElementById('last-updated').textContent=`Updated ${now.toLocaleTimeString()}${liveIds.size?' · '+liveIds.size+' LIVE':''} · ${gamesLeft} games left`;
     renderAll();
     // auto-refresh faster if live matches
     clearInterval(autoTimer);
@@ -2286,10 +2287,9 @@ function renderLeaderboard(){
       <td class="player-name">${t.name}${trendHtml}</td>
       <td class="pts">${t.pts}</td>
       <td><span class="stat-badge">✅ ${t.correct}</span></td>
-      <td><span class="stat-badge">⏳ ${t.pending}</span></td>
     </tr>`;
   });
-  document.getElementById('lb-body').innerHTML=html||'<tr><td colspan="5">No data</td></tr>';
+  document.getElementById('lb-body').innerHTML=html||'<tr><td colspan="4">No data</td></tr>';
 }
 
 const GROUP_TEAMS={
