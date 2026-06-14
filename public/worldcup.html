@@ -96,6 +96,8 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
 .pts-earned-pos{color:#4caf50;font-size:0.78rem;font-weight:700;margin-left:5px}
 .pts-earned-zero{color:#7a8fa6;font-size:0.72rem;margin-left:5px}
 .lb-live-badge{background:#c0392b;color:#fff;border-radius:4px;padding:1px 6px;font-size:0.68rem;font-weight:700;margin-left:8px;animation:blink 1.2s infinite;vertical-align:middle}
+.tab-live-dot{width:7px;height:7px;background:#c0392b;border-radius:50%;display:inline-block;margin-left:6px;vertical-align:middle;animation:blink 1.2s infinite}
+.tab-live-dot.hidden{display:none}
 @keyframes trend-pulse{0%,100%{opacity:1}50%{opacity:.25}}
 .toggle-btn{background:#111d2c;border:1px solid #1e3050;color:#7a8fa6;padding:5px 12px;border-radius:4px;font-size:0.8rem;cursor:pointer;font-family:inherit;transition:all .15s}
 .toggle-btn.active{background:#1a2e45;border-color:#c9a227;color:#c9a227;font-weight:700}
@@ -129,7 +131,7 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
 </header>
 
 <nav class="tabs">
-  <button class="tab-btn active" onclick="showTab('leaderboard',this)">🏆 Leaderboard</button>
+  <button class="tab-btn active" onclick="showTab('leaderboard',this)">🏆 Leaderboard<span id="tab-live-dot" class="tab-live-dot hidden"></span></button>
   <button class="tab-btn" onclick="showTab('matches',this)">⚽ Results</button>
   <button class="tab-btn" onclick="showTab('picks',this)">📋 All Picks</button>
 </nav>
@@ -2247,16 +2249,15 @@ function renderLeaderboard(){
   const hasSecondHalf = Object.keys(trends).length>0;
   const hasFirstHalf = anyLive && !hasSecondHalf;
 
-  // LIVE badge on title
+  // LIVE badge on title + tab dot
   const liveBadge = document.getElementById('lb-live-badge');
-  if(liveBadge){
-    if(anyLive){
-      liveBadge.textContent='⚽ LIVE';
-      liveBadge.className='lb-live-badge';
-      liveBadge.style.display='inline';
-    } else {
-      liveBadge.style.display='none';
-    }
+  const tabDot = document.getElementById('tab-live-dot');
+  if(anyLive){
+    if(liveBadge){ liveBadge.textContent='⚽ LIVE'; liveBadge.className='lb-live-badge'; liveBadge.style.display='inline'; }
+    if(tabDot) tabDot.classList.remove('hidden');
+  } else {
+    if(liveBadge) liveBadge.style.display='none';
+    if(tabDot) tabDot.classList.add('hidden');
   }
 
   // Post-game pts (only when no live games)
