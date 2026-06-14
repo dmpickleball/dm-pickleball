@@ -144,7 +144,7 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
     <table class="lb-table">
       <thead><tr>
         <th>#</th><th>Player</th><th>Points</th>
-        <th>Record</th>
+        <th id="record-header">Record</th>
       </tr></thead>
       <tbody id="lb-body"><tr><td colspan="4" style="text-align:center;padding:20px;color:#7a8fa6">Loading…</td></tr></tbody>
     </table>
@@ -2264,15 +2264,19 @@ function renderLeaderboard(){
   // Last-place player name for the "wrong" stat label
   const lastPlayer = totals[totals.length-1];
   const wrongLabel = lastPlayer ? lastPlayer.name+'s' : 'Wrong';
+  const lastPlacePts = lastPlayer ? lastPlayer.pts : null;
+  const hdr = document.getElementById('record-header');
+  if(hdr) hdr.textContent = wrongLabel + ' · Record';
 
   const medals={1:'🥇',2:'🥈',3:'🥉'};
   let denseRank=0,prevPts=null;
   let html='';
   totals.forEach((t,i)=>{
     if(t.pts!==prevPts){ denseRank++; prevPts=t.pts; }
+    const isLast = t.pts===lastPlacePts && denseRank>3;
     const badge=denseRank<=3
       ?`<span class="medal-${denseRank}">${medals[denseRank]}</span>`
-      :`${denseRank}`;
+      : isLast ? '🥄' : `${denseRank}`;
     let trendHtml='';
     if(hasSecondHalf){
       // Rank projection arrows
@@ -2292,7 +2296,7 @@ function renderLeaderboard(){
       <td class="rank">${badge}</td>
       <td class="player-name">${t.name}${trendHtml}</td>
       <td class="pts">${t.pts}</td>
-      <td><div style="display:flex;align-items:center;gap:6px"><span style="font-size:1.15rem;font-weight:700;color:#fff">${t.correct}</span><div style="line-height:1.5"><span style="display:block;font-size:0.68rem;color:#4caf50">Wins ${t.wins}</span><span style="display:block;font-size:0.68rem;color:#c9a227">Ties ${t.ties}</span><span style="display:block;font-size:0.68rem;color:#c0392b">${wrongLabel} ${t.wrong}</span></div></div></td>
+      <td><div style="display:flex;align-items:center;gap:6px"><span style="font-size:1.15rem;font-weight:700;color:#c0392b">${t.wrong}</span><div style="line-height:1.5"><span style="display:block;font-size:0.68rem;color:#4caf50">Wins ${t.wins}</span><span style="display:block;font-size:0.68rem;color:#c9a227">Ties ${t.ties}</span></div></div></td>
     </tr>`;
   });
   document.getElementById('lb-body').innerHTML=html||'<tr><td colspan="4">No data</td></tr>';
