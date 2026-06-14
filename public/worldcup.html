@@ -2498,13 +2498,6 @@ function renderLeaderboard(){
     </tr>`;
   });
   document.getElementById('lb-body').innerHTML=html||'<tr><td colspan="4">No data</td></tr>';
-  // Engrave leader name on trophy SVG (only visible if trophy.png is absent)
-  const trophyName=document.getElementById('trophy-name');
-  if(trophyName&&totals.length){
-    const top=totals[0];
-    const tied=totals.filter(t=>t.pts===top.pts);
-    trophyName.textContent=tied.length>1?tied.map(t=>t.name).join(' & ').toUpperCase():top.name.toUpperCase();
-  }
 }
 
 const GROUP_TEAMS={
