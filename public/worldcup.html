@@ -2276,7 +2276,7 @@ function renderLeaderboard(){
     const isLast = t.pts===lastPlacePts && denseRank>3;
     const badge=denseRank<=3
       ?`<span class="medal-${denseRank}">${medals[denseRank]}</span>`
-      : isLast ? '🥄' : `${denseRank}`;
+      : isLast ? '💩' : `${denseRank}`;
     let trendHtml='';
     if(hasSecondHalf){
       // Rank projection arrows
