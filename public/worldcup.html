@@ -110,28 +110,22 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
 .toggle-btn.active{background:#1a2e45;border-color:#c9a227;color:#c9a227;font-weight:700}
 .toggle-btn:hover{border-color:#c9a227;color:#c9a227}
 /* ─── BANNER LIVE ─── */
-.banner-live{padding:10px 14px 0;display:flex;flex-direction:column;gap:8px}
+.banner-live{padding:10px 14px 12px;display:flex;flex-direction:column;gap:8px}
 .banner-row{display:flex;gap:8px;flex-wrap:nowrap}
-.banner-card{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;flex:1;min-width:0;text-align:left}
-.bc-label{font-size:0.58rem;text-transform:uppercase;letter-spacing:1px;color:#7a8fa6;display:block;margin-bottom:3px}
-.bl-name{font-size:1rem;font-weight:800;color:#c9a227;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.bl-pts{font-size:0.68rem;color:#aaa}
-.bm-teams{font-size:0.8rem;font-weight:700;color:#fff;display:block;line-height:1.4}
-.bm-score{color:#c9a227;font-size:1rem;font-weight:900;margin:0 4px}
-.bm-correct{font-size:0.63rem;color:#4caf50;display:block;margin-top:2px}
-.bp-dots{display:flex;gap:2px;flex-wrap:wrap;margin:3px 0 2px}
-.bp-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0}
-.bp-done{background:#4caf50}
-.bp-live{background:#c0392b;animation:blink 1.2s infinite}
-.bp-sched{background:#1a2e45;border:1px solid #2a4060}
-.bp-count{font-size:0.63rem;color:#7a8fa6}
-.banner-ticker-wrap{overflow:hidden;position:relative;border-top:1px solid rgba(255,255,255,0.07);margin-top:4px;padding:7px 0}
-.banner-ticker-wrap::before,.banner-ticker-wrap::after{content:'';position:absolute;top:0;width:32px;height:100%;z-index:1;pointer-events:none}
-.banner-ticker-wrap::before{left:0;background:linear-gradient(to right,#0a1929,transparent)}
-.banner-ticker-wrap::after{right:0;background:linear-gradient(to left,#0a1929,transparent)}
-.bt-track{display:inline-flex;align-items:center;white-space:nowrap;animation:ticker-scroll 50s linear infinite}
+.banner-card{background:rgba(4,12,26,0.90);border-left:3px solid #c9a227;border-top:1px solid rgba(201,162,39,0.25);border-right:1px solid rgba(201,162,39,0.12);border-bottom:1px solid rgba(201,162,39,0.12);border-radius:0 6px 6px 0;padding:9px 13px;flex:1;min-width:0;text-align:left}
+.bc-label{font-size:0.50rem;text-transform:uppercase;letter-spacing:2px;color:#c9a227;display:block;margin-bottom:5px;font-weight:700}
+.bl-name{font-size:1.05rem;font-weight:900;color:#fff;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bl-pts{font-size:0.62rem;color:#c9a227;font-weight:600;margin-top:2px;display:block}
+.bm-teams{font-size:0.70rem;font-weight:700;color:#e8eaf6;display:block;line-height:1.9}
+.bm-score{color:#c9a227;font-size:0.85rem;font-weight:900;margin:0 3px}
+.bm-correct{font-size:0.58rem;color:#4caf50;display:block;margin-top:1px}
+.banner-ticker-wrap{overflow:hidden;position:relative;border-top:1px solid rgba(201,162,39,0.2);margin-top:4px;padding:7px 0}
+.banner-ticker-wrap::before,.banner-ticker-wrap::after{content:'';position:absolute;top:0;width:40px;height:100%;z-index:1;pointer-events:none}
+.banner-ticker-wrap::before{left:0;background:linear-gradient(to right,#071220,transparent)}
+.banner-ticker-wrap::after{right:0;background:linear-gradient(to left,#071220,transparent)}
+.bt-track{display:inline-flex;align-items:center;white-space:nowrap;animation:ticker-scroll 60s linear infinite}
 .banner-ticker-wrap:hover .bt-track{animation-play-state:paused}
-.bt-item{font-size:0.73rem;color:#c8d8e8;padding:0 14px}
+.bt-item{font-size:0.72rem;color:#c8d8e8;padding:0 16px;letter-spacing:0.3px}
 .bt-item b{color:#c9a227}
 .bt-sep{color:#2a4060;font-size:0.8rem}
 @keyframes ticker-scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
@@ -142,8 +136,7 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
   .match-row{padding:7px 10px}
   .banner-row{flex-wrap:wrap}
   .banner-card{min-width:calc(50% - 4px);flex:unset}
-  .banner-card:last-child{min-width:100%}
-  .bt-item{font-size:0.68rem;padding:0 10px}
+  .bt-item{font-size:0.65rem;padding:0 10px}
 }
 </style>
 </head>
@@ -168,8 +161,7 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
   <div class="banner-live">
     <div class="banner-row">
       <div class="banner-card" id="banner-leader"><span class="bc-label">👑 Leading</span><span class="bl-name">—</span></div>
-      <div class="banner-card" id="banner-motd"><span class="bc-label">⚽ Latest Result</span><span class="bm-teams" style="color:#7a8fa6">—</span></div>
-      <div class="banner-card" id="banner-progress"><span class="bc-label">Today's Games</span><div class="bp-dots"></div><span class="bp-count">—</span></div>
+      <div class="banner-card" id="banner-motd"><span class="bc-label">⚽ Today's Results</span><span class="bm-teams" style="color:#7a8fa6">—</span></div>
     </div>
     <div class="banner-ticker-wrap"><div class="bt-track" id="banner-ticker"><span class="bt-item" style="color:#7a8fa6">Loading…</span></div></div>
   </div>
@@ -188,31 +180,53 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
       <svg class="trophy-bg" viewBox="0 0 160 290" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="tg" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#FFD700"/>
-            <stop offset="50%" style="stop-color:#c9a227"/>
-            <stop offset="100%" style="stop-color:#8a6010"/>
+            <stop offset="0%" style="stop-color:#FFE566"/>
+            <stop offset="45%" style="stop-color:#c9a227"/>
+            <stop offset="100%" style="stop-color:#7a5a10"/>
+          </linearGradient>
+          <linearGradient id="tgh" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#7a5a10"/>
+            <stop offset="50%" style="stop-color:#FFE566"/>
+            <stop offset="100%" style="stop-color:#7a5a10"/>
+          </linearGradient>
+          <linearGradient id="mg" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#2e8b2e"/>
+            <stop offset="100%" style="stop-color:#0d4a0d"/>
           </linearGradient>
         </defs>
-        <!-- Globe top -->
-        <circle cx="80" cy="40" r="32" fill="url(#tg)"/>
-        <ellipse cx="80" cy="40" rx="32" ry="13" fill="none" stroke="#8a6010" stroke-width="2"/>
-        <line x1="80" y1="8" x2="80" y2="72" stroke="#8a6010" stroke-width="2"/>
-        <line x1="48" y1="40" x2="112" y2="40" stroke="#8a6010" stroke-width="2"/>
-        <!-- Left figure reaching up -->
-        <path d="M48,72 C36,62 34,46 42,36 C46,30 54,34 57,42 C61,52 58,66 56,76" fill="url(#tg)"/>
-        <!-- Right figure reaching up -->
-        <path d="M112,72 C124,62 126,46 118,36 C114,30 106,34 103,42 C99,52 102,66 104,76" fill="url(#tg)"/>
-        <!-- Body -->
-        <path d="M54,76 C57,92 57,108 60,120 L100,120 C103,108 103,92 106,76 Z" fill="url(#tg)"/>
-        <!-- Stem -->
-        <rect x="68" y="120" width="24" height="58" rx="5" fill="url(#tg)"/>
-        <!-- Base green bands -->
-        <rect x="58" y="178" width="44" height="9" rx="2" fill="#1a5a1a"/>
-        <rect x="50" y="187" width="60" height="14" rx="2" fill="url(#tg)"/>
-        <rect x="44" y="201" width="72" height="9" rx="2" fill="#1a5a1a"/>
-        <rect x="38" y="210" width="84" height="22" rx="3" fill="url(#tg)"/>
-        <!-- Player name engraved on base -->
-        <text id="trophy-name" x="80" y="225" text-anchor="middle" font-size="9" font-weight="900" font-family="Arial,sans-serif" fill="#5a3a00" letter-spacing="1"></text>
+        <!-- Globe sphere -->
+        <circle cx="80" cy="34" r="24" fill="url(#tg)"/>
+        <!-- Globe latitude lines -->
+        <ellipse cx="80" cy="34" rx="24" ry="9" fill="none" stroke="#7a5a10" stroke-width="1.2" opacity="0.6"/>
+        <ellipse cx="80" cy="34" rx="24" ry="17" fill="none" stroke="#7a5a10" stroke-width="1.2" opacity="0.6"/>
+        <!-- Globe meridian -->
+        <line x1="80" y1="10" x2="80" y2="58" stroke="#7a5a10" stroke-width="1.2" opacity="0.6"/>
+        <line x1="56" y1="34" x2="104" y2="34" stroke="#7a5a10" stroke-width="1.2" opacity="0.6"/>
+        <!-- Globe highlight -->
+        <circle cx="70" cy="24" r="6" fill="#FFE566" opacity="0.2"/>
+        <!-- Left figure — arm sweeping up to globe -->
+        <path d="M56,58 C48,52 40,44 38,32 C36,22 42,14 50,20 C56,24 58,36 58,48 C58,52 57,56 56,58Z" fill="url(#tg)"/>
+        <!-- Right figure — arm sweeping up to globe -->
+        <path d="M104,58 C112,52 120,44 122,32 C124,22 118,14 110,20 C104,24 102,36 102,48 C102,52 103,56 104,58Z" fill="url(#tg)"/>
+        <!-- Cup bowl (concave-sided) -->
+        <path d="M50,58 C47,70 47,86 54,96 C62,107 72,112 80,112 C88,112 98,107 106,96 C113,86 113,70 110,58Z" fill="url(#tg)"/>
+        <!-- Bowl inner highlight (concave effect) -->
+        <path d="M60,68 C58,78 60,92 66,100 C72,108 76,110 80,110" fill="none" stroke="#FFE566" stroke-width="2.5" opacity="0.4" stroke-linecap="round"/>
+        <!-- Narrow neck/stem -->
+        <rect x="71" y="112" width="18" height="54" rx="7" fill="url(#tg)"/>
+        <rect x="75" y="112" width="4" height="54" rx="2" fill="#FFE566" opacity="0.25"/>
+        <!-- Malachite band 1 (thin) -->
+        <rect x="58" y="166" width="44" height="8" rx="2" fill="url(#mg)"/>
+        <!-- Gold band -->
+        <rect x="50" y="174" width="60" height="14" rx="2" fill="url(#tgh)"/>
+        <!-- Malachite band 2 (thin) -->
+        <rect x="44" y="188" width="72" height="8" rx="2" fill="url(#mg)"/>
+        <!-- Wide stepped base (gold) -->
+        <rect x="38" y="196" width="84" height="26" rx="4" fill="url(#tgh)"/>
+        <!-- Base bottom edge shadow -->
+        <rect x="40" y="218" width="80" height="4" rx="2" fill="#5a3a08" opacity="0.6"/>
+        <!-- Engraved name -->
+        <text id="trophy-name" x="80" y="213" text-anchor="middle" font-size="7.5" font-weight="900" font-family="Arial,sans-serif" fill="#4a2e00" letter-spacing="1.5"></text>
       </svg>
       <table class="lb-table">
         <thead><tr>
@@ -2138,6 +2152,11 @@ const MATCHES = [
   }
 ];
 
+// Country flag emojis
+const COUNTRY_FLAGS={'Mexico':'🇲🇽','USA':'🇺🇸','Canada':'🇨🇦','Argentina':'🇦🇷','Brazil':'🇧🇷','Germany':'🇩🇪','France':'🇫🇷','Spain':'🇪🇸','England':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','Netherlands':'🇳🇱','Portugal':'🇵🇹','Belgium':'🇧🇪','Croatia':'🇭🇷','Uruguay':'🇺🇾','Colombia':'🇨🇴','Ecuador':'🇪🇨','Chile':'🇨🇱','Senegal':'🇸🇳','Morocco':'🇲🇦','Nigeria':'🇳🇬','Cameroon':'🇨🇲','Japan':'🇯🇵','South Korea':'🇰🇷','Australia':'🇦🇺','Iran':'🇮🇷','Saudi Arabia':'🇸🇦','Qatar':'🇶🇦','Poland':'🇵🇱','Switzerland':'🇨🇭','Denmark':'🇩🇰','Serbia':'🇷🇸','Czechia':'🇨🇿','Scotland':'🏴󠁧󠁢󠁳󠁣󠁴󠁿','Austria':'🇦🇹','Turkey':'🇹🇷','Ukraine':'🇺🇦','Hungary':'🇭🇺','Albania':'🇦🇱','Slovakia':'🇸🇰','New Zealand':'🇳🇿','Jamaica':'🇯🇲','Panama':'🇵🇦','Costa Rica':'🇨🇷','Honduras':'🇭🇳','Bolivia':'🇧🇴','Paraguay':'🇵🇾','Peru':'🇵🇪','Venezuela':'🇻🇪','Egypt':'🇪🇬','Algeria':'🇩🇿','Tunisia':'🇹🇳','Ghana':'🇬🇭','Ivory Coast':'🇨🇮','Congo':'🇨🇩','Mali':'🇲🇱','South Africa':'🇿🇦','Benin':'🇧🇯','Indonesia':'🇮🇩','Uzbekistan':'🇺🇿','Curacao':'🇨🇼','Haiti':'🇭🇹','Bosnia':'🇧🇦','Sweden':'🇸🇪','Romania':'🇷🇴','Greece':'🇬🇷','Georgia':'🇬🇪','Slovenia':'🇸🇮','Tanzania':'🇹🇿','Kenya':'🇰🇪','Cuba':'🇨🇺','Trinidad':'🇹🇹','Guatemala':'🇬🇹','El Salvador':'🇸🇻','Norway':'🇳🇴','Finland':'🇫🇮'};
+// Country abbreviations (FIFA-style)
+const COUNTRY_ABBR={'Mexico':'MEX','USA':'USA','Canada':'CAN','Argentina':'ARG','Brazil':'BRA','Germany':'GER','France':'FRA','Spain':'ESP','England':'ENG','Netherlands':'NED','Portugal':'POR','Belgium':'BEL','Croatia':'CRO','Uruguay':'URU','Colombia':'COL','Ecuador':'ECU','Chile':'CHI','Senegal':'SEN','Morocco':'MAR','Nigeria':'NGA','Cameroon':'CMR','Japan':'JPN','South Korea':'KOR','Australia':'AUS','Iran':'IRN','Saudi Arabia':'KSA','Qatar':'QAT','Poland':'POL','Switzerland':'SUI','Denmark':'DEN','Serbia':'SRB','Czechia':'CZE','Scotland':'SCO','Austria':'AUT','Turkey':'TUR','Ukraine':'UKR','Hungary':'HUN','Albania':'ALB','Slovakia':'SVK','New Zealand':'NZL','Jamaica':'JAM','Panama':'PAN','Costa Rica':'CRC','Honduras':'HON','Bolivia':'BOL','Paraguay':'PAR','Peru':'PER','Venezuela':'VEN','Egypt':'EGY','Algeria':'ALG','Tunisia':'TUN','Ghana':'GHA','Ivory Coast':'CIV','Congo':'COD','Mali':'MLI','South Africa':'RSA','Benin':'BEN','Indonesia':'IDN','Uzbekistan':'UZB','Curacao':'CUW','Haiti':'HAI','Bosnia':'BIH','Sweden':'SWE','Romania':'ROU','Greece':'GRE','Georgia':'GEO','Slovenia':'SVN','Tanzania':'TAN','Kenya':'KEN','Cuba':'CUB','Trinidad':'TRI','Guatemala':'GUA','El Salvador':'SLV','Norway':'NOR','Finland':'FIN'};
+
 // Normalize ESPN names → pool canonical names
 const ESPN_MAP = {
   'United States':'USA','Türkiye':'Turkey',
@@ -2261,7 +2280,6 @@ function renderAll(){
 function renderBanner(){
   renderBannerLeader();
   renderBannerMotd();
-  renderBannerProgress();
   renderBannerTicker();
 }
 
@@ -2279,36 +2297,30 @@ function renderBannerLeader(){
 function renderBannerMotd(){
   const el=document.getElementById('banner-motd');
   if(!el) return;
-  const done=MATCHES.filter(m=>results[m.id]&&results[m.id].done);
-  if(!done.length){el.innerHTML='<span class="bc-label">⚽ Latest Result</span><span class="bm-teams" style="color:#7a8fa6">No results yet</span>';return;}
-  const maxTs=Math.max(...done.map(m=>matchTimestamps[m.id]||0));
-  const m=done.find(mm=>(matchTimestamps[mm.id]||0)===maxTs)||done[done.length-1];
+  const todayStr=new Date().toLocaleDateString('en-US',{timeZone:'America/Los_Angeles',month:'short',day:'numeric'});
+  const todayDone=MATCHES.filter(m=>MATCH_DATES[m.id]===todayStr&&results[m.id]&&results[m.id].done);
+  if(todayDone.length){
+    const rows=todayDone.map(m=>{
+      const res=results[m.id];
+      const s1=res.t1===m.t1?res.s1:res.s2;
+      const s2=res.t1===m.t1?res.s2:res.s1;
+      return `<div class="bm-teams">${m.t1}<span class="bm-score">${s1}–${s2}</span>${m.t2}</div>`;
+    }).join('');
+    el.innerHTML=`<span class="bc-label">⚽ Today's Results</span>${rows}`;
+    return;
+  }
+  // Fall back to latest completed result from any day
+  const allDone=MATCHES.filter(m=>results[m.id]&&results[m.id].done);
+  if(!allDone.length){el.innerHTML='<span class="bc-label">⚽ Today\'s Results</span><span class="bm-teams" style="color:#7a8fa6;font-size:0.7rem">No results yet</span>';return;}
+  const maxTs=Math.max(...allDone.map(m=>matchTimestamps[m.id]||0));
+  const m=allDone.find(mm=>(matchTimestamps[mm.id]||0)===maxTs)||allDone[allDone.length-1];
   const res=results[m.id];
   const s1=res.t1===m.t1?res.s1:res.s2;
   const s2=res.t1===m.t1?res.s2:res.s1;
-  let correct=0;
-  PLAYERS.forEach((_,pi)=>{if(pts(m.p[pi],res)>0)correct++;});
-  el.innerHTML=`<span class="bc-label">⚽ Latest Result</span>
-    <span class="bm-teams">${m.t1}<span class="bm-score">${s1}–${s2}</span>${m.t2}</span>
-    <span class="bm-correct">✅ ${correct}/${PLAYERS.length} correct</span>`;
+  el.innerHTML=`<span class="bc-label">⚽ Today's Results</span>
+    <div class="bm-teams">${m.t1}<span class="bm-score">${s1}–${s2}</span>${m.t2}</div>`;
 }
 
-function renderBannerProgress(){
-  const el=document.getElementById('banner-progress');
-  if(!el) return;
-  const todayStr=new Date().toLocaleDateString('en-US',{timeZone:'America/Los_Angeles',month:'short',day:'numeric'});
-  const todayM=MATCHES.filter(m=>MATCH_DATES[m.id]===todayStr);
-  if(!todayM.length){el.innerHTML='<span class="bc-label">Today\'s Games</span><span class="bp-count" style="color:#7a8fa6">None scheduled</span>';return;}
-  const dots=todayM.map(m=>{
-    const res=results[m.id];
-    if(res&&res.done) return '<span class="bp-dot bp-done"></span>';
-    if(res&&res.live) return '<span class="bp-dot bp-live"></span>';
-    return '<span class="bp-dot bp-sched"></span>';
-  }).join('');
-  const doneC=todayM.filter(m=>results[m.id]&&results[m.id].done).length;
-  const liveC=todayM.filter(m=>results[m.id]&&results[m.id].live).length;
-  el.innerHTML=`<span class="bc-label">Today's Games</span><div class="bp-dots">${dots}</div><span class="bp-count">${doneC}/${todayM.length} done${liveC?' · '+liveC+' LIVE':''}`;
-}
 
 function renderBannerTicker(){
   const el=document.getElementById('banner-ticker');
@@ -2320,16 +2332,18 @@ function renderBannerTicker(){
     const res=results[m.id];
     const s1=res.t1===m.t1?res.s1:res.s2;
     const s2=res.t1===m.t1?res.s2:res.s1;
-    return `<span class="bt-item">${m.t1} <b>${s1}–${s2}</b> ${m.t2}</span><span class="bt-sep">·</span>`;
+    const f1=COUNTRY_FLAGS[m.t1]||'';const f2=COUNTRY_FLAGS[m.t2]||'';
+    const a1=COUNTRY_ABBR[m.t1]||m.t1;const a2=COUNTRY_ABBR[m.t2]||m.t2;
+    return `<span class="bt-item">${f1} <b>${a1}</b> <b style="color:#fff">${s1}–${s2}</b> <b>${a2}</b> ${f2}</span><span class="bt-sep">·</span>`;
   }).join('');
   el.innerHTML=items+items;
 }
 
 function calcLiveTrends(){
-  // Only show arrows after halftime / second half / ET / shootout
+  // Show arrows for any live game from kickoff
   const liveSecondHalf = MATCHES.filter(m=>{
     const res=results[m.id];
-    return res && res.live && (res.status==='Second Half'||res.status==='Halftime'||res.status==='Extra Time'||res.status==='Penalty Shootout');
+    return res && res.live;
   });
   if(!liveSecondHalf.length) return {};
 
@@ -2394,7 +2408,6 @@ function renderLeaderboard(){
   const anyLive = MATCHES.some(m=>results[m.id]&&results[m.id].live);
   const trends = calcLiveTrends();
   const hasSecondHalf = Object.keys(trends).length>0;
-  const hasFirstHalf = anyLive && !hasSecondHalf;
 
   // Tab live dot
   const tabDot = document.getElementById('tab-live-dot');
@@ -2421,13 +2434,10 @@ function renderLeaderboard(){
       : isLast ? '💩' : `${denseRank}`;
     let trendHtml='';
     if(hasSecondHalf){
-      // Rank projection arrows
+      // Rank projection arrows — live from kickoff
       if(trends[t.name]==='up') trendHtml=`<span class="trend-up">▲</span>`;
       else if(trends[t.name]==='down') trendHtml=`<span class="trend-down">▼</span>`;
       else trendHtml=`<span class="trend-same">●</span>`;
-    } else if(hasFirstHalf){
-      // Game in progress, too early for projections
-      trendHtml=`<span class="trend-first">●</span>`;
     } else if(lastPts){
       // Show points earned from last completed game
       const earned=lastPts[t.name]||0;
@@ -2540,7 +2550,7 @@ function matchRowHtml(m){
   if(res&&res.done) PLAYERS.forEach((_,pi)=>{if(pts(m.p[pi],res)>0)correctCount++;});
   const correctStr=res&&res.done?`<span class="correct-count">✅ ${correctCount}/${PLAYERS.length} correct</span>`:'';
   const groupBadge=matchView==='chrono'?`<span class="md-badge">Grp ${m.group}</span>`:'';
-  const watchHtml=res&&res.live?`<div class="action-links"><a class="action-link watch-link" href="https://www.foxsports.com/live/fs1" target="_blank" rel="noopener">📺 Watch</a><a class="action-link" href="https://www.espn.com/soccer/match/_/gameId/${m.id}" target="_blank" rel="noopener">📊 Stats</a></div>`:'';
+  const watchHtml=res&&res.live?`<div class="action-links"><a class="action-link watch-link" href="https://www.foxone.com" target="_blank" rel="noopener">📺 Watch</a><a class="action-link" href="https://www.espn.com/soccer/match/_/gameId/${m.id}" target="_blank" rel="noopener">📊 Stats</a></div>`:'';
   const actionHtml=res&&res.done?`<div class="action-links">
     <a class="action-link" href="#" onclick="jumpToPicks('${m.group}');return false">📋 Picks</a>
     <a class="action-link" href="https://www.espn.com/soccer/match/_/gameId/${m.id}" target="_blank" rel="noopener">🎬 Recap</a>
