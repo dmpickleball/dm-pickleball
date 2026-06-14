@@ -2266,7 +2266,7 @@ function renderLeaderboard(){
   const wrongLabel = lastPlayer ? lastPlayer.name+'s' : 'Wrong';
   const lastPlacePts = lastPlayer ? lastPlayer.pts : null;
   const hdr = document.getElementById('record-header');
-  if(hdr) hdr.textContent = wrongLabel + ' · Record';
+  if(hdr) hdr.textContent = wrongLabel;
 
   const medals={1:'🥇',2:'🥈',3:'🥉'};
   let denseRank=0,prevPts=null;
