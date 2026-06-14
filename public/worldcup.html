@@ -2087,6 +2087,7 @@ function pts(pick,result){
 let results = {}; // espnId → {winner,done,live,score}
 let matchTimes = {}; // espnId → "12:00 PM PT"
 let matchTimestamps = {}; // espnId → epoch ms for sorting
+let matchClocks = {}; // espnId → "46'" (live clock)
 let matchView = 'chrono'; // 'group' | 'chrono'
 let liveIds = new Set();
 
@@ -2108,7 +2109,7 @@ async function fetchScores(){
   try{
     const r = await fetch('https://site.api.espn.com/apis/site/v2/sports/soccer/FIFA.WORLD/scoreboard?dates=20260611-20260628&limit=100');
     const data = await r.json();
-    results={};matchTimes={};liveIds=new Set();
+    results={};matchTimes={};liveIds=new Set();matchClocks={};
     for(const ev of (data.events||[])){
       const comp=ev.competitions[0];
       const teams=comp.competitors;
@@ -2123,6 +2124,12 @@ async function fetchScores(){
         matchTimestamps[ev.id]=d.getTime();
         // Store PT date string for display
         MATCH_DATES[ev.id]=d.toLocaleDateString('en-US',{timeZone:'America/Los_Angeles',month:'short',day:'numeric'});
+      }
+      // Capture live game clock (e.g. "46'")
+      const rawClock=comp.status.displayClock;
+      if(rawClock && rawClock!=='0:00'){
+        const mins=rawClock.split(':')[0];
+        matchClocks[ev.id]=mins+"'";
       }
       const res=getResult(t1,parseInt(s1),t2,parseInt(s2),status);
       if(res){
@@ -2362,7 +2369,8 @@ function matchRowHtml(m){
     scoreHtml=`<span class="match-score score-final">${res.t1===m.t1?res.s1:res.s2} – ${res.t1===m.t1?res.s2:res.s1}${timeStr}</span>`;
     liveFlag=`<span class="status-badge">Final</span>`;
   } else if(res&&res.live){
-    scoreHtml=`<span class="match-score score-live">${res.s1}–${res.s2}</span>`;
+    const clockStr=matchClocks[m.id]?`<br><span style="font-size:0.62rem;font-weight:500;color:#ff9999">${matchClocks[m.id]}</span>`:'';
+    scoreHtml=`<span class="match-score score-live">${res.s1}–${res.s2}${clockStr}</span>`;
     liveFlag=res.status==='Halftime'
       ?`<span class="status-badge halftime-badge">Half</span>`
       :`<span class="live-badge">LIVE</span>`;
