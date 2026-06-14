@@ -2287,7 +2287,7 @@ function renderLeaderboard(){
       <td class="rank">${badge}</td>
       <td class="player-name">${t.name}${trendHtml}</td>
       <td class="pts">${t.pts}</td>
-      <td style="line-height:1.4"><span style="font-weight:700;color:#fff">${t.correct}</span><br><span style="font-size:0.68rem;color:#4caf50">Wins ${t.wins}</span><br><span style="font-size:0.68rem;color:#c9a227">Ties ${t.ties}</span></td>
+      <td><div style="display:flex;align-items:center;gap:6px"><span style="font-size:1.15rem;font-weight:700;color:#fff">${t.correct}</span><div style="line-height:1.5"><span style="display:block;font-size:0.68rem;color:#4caf50">Wins ${t.wins}</span><span style="display:block;font-size:0.68rem;color:#c9a227">Ties ${t.ties}</span></div></div></td>
     </tr>`;
   });
   document.getElementById('lb-body').innerHTML=html||'<tr><td colspan="4">No data</td></tr>';
