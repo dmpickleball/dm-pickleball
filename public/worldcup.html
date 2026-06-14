@@ -135,8 +135,8 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
 
   <div id="tab-matches" class="tab-content">
     <div class="filter-bar" style="margin-bottom:10px">
-      <button class="toggle-btn active" id="view-group" onclick="setMatchView('group',this)">📁 By Group</button>
-      <button class="toggle-btn" id="view-chrono" onclick="setMatchView('chrono',this)">🕐 Chronological</button>
+      <button class="toggle-btn" id="view-group" onclick="setMatchView('group',this)">📁 By Group</button>
+      <button class="toggle-btn active" id="view-chrono" onclick="setMatchView('chrono',this)">🕐 Chronological</button>
     </div>
     <div id="matches-content"><div style="text-align:center;padding:30px;color:#7a8fa6">Loading…</div></div>
   </div>
@@ -2077,7 +2077,7 @@ function pts(pick,result){
 let results = {}; // espnId → {winner,done,live,score}
 let matchTimes = {}; // espnId → "12:00 PM PT"
 let matchTimestamps = {}; // espnId → epoch ms for sorting
-let matchView = 'group'; // 'group' | 'chrono'
+let matchView = 'chrono'; // 'group' | 'chrono'
 let liveIds = new Set();
 
 function setMatchView(view, btn){
