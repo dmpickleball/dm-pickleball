@@ -9,19 +9,20 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',Arial,sans-serif;background:#0d1b2a;color:#e8eaf6;min-height:100vh}
 /* ─── HEADER ─── */
-.header{background:linear-gradient(90deg,rgba(0,104,71,0.82) 0%,rgba(0,104,71,0.55) 18%,rgba(206,17,38,0.60) 38%,rgba(206,17,38,0.60) 62%,rgba(60,59,110,0.55) 82%,rgba(60,59,110,0.88) 100%),url('https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=1400&q=70') center/cover no-repeat;padding:20px 16px 0;text-align:center;border-bottom:3px solid #c9a227}
+.header{background:linear-gradient(90deg,rgba(0,104,71,0.78) 0%,rgba(0,80,55,0.55) 18%,rgba(180,14,32,0.52) 38%,rgba(180,14,32,0.52) 62%,rgba(50,48,100,0.55) 82%,rgba(50,48,100,0.82) 100%),linear-gradient(rgba(1,6,14,0.78),rgba(1,6,14,0.78)),url('https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=1400&q=70') center/cover no-repeat;padding:20px 16px 0;text-align:center;border-bottom:3px solid #c9a227}
 .flag-row{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:8px}
 .flag-emoji{font-size:2.4rem}
 .title-center{display:flex;flex-direction:column;align-items:center;gap:5px}
 .star-row{display:flex;align-items:center;justify-content:center;gap:5px}
-.wc-title{font-size:0.78rem;letter-spacing:3px;color:#c9a227;font-weight:700;text-transform:uppercase}
 .pool-title{font-family:'Anton',sans-serif;font-size:2.3rem;letter-spacing:2px;background:linear-gradient(135deg,#fff 0%,#FFE566 28%,#c9a227 60%,#ff9a00 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.05}
 .header-meta{display:flex;align-items:center;justify-content:center;gap:10px;margin:8px 0}
-#last-updated{font-size:0.78rem;color:#aaa}
+#last-updated{font-size:0.78rem;color:#c8d4e0;text-shadow:0 1px 4px rgba(0,0,0,0.95)}
 .refresh-btn{background:#c9a227;color:#0d1b2a;border:none;border-radius:4px;padding:4px 10px;font-size:0.78rem;font-weight:700;cursor:pointer}
 .refresh-btn:hover{background:#e8c040}
-.scoring-note{font-size:0.72rem;color:#aaa;padding:6px 0 12px}
-.scoring-note b{color:#c9a227}
+.scoring-note{font-size:0.72rem;color:#d0dbe8;padding:6px 0 12px;text-shadow:0 1px 4px rgba(0,0,0,0.95)}
+.scoring-note-inner{display:inline-block;background:rgba(0,0,0,0.42);border-radius:20px;padding:5px 18px;border:1px solid rgba(201,162,39,0.18)}
+.scoring-note b{color:#f0c840}
+.wc-title{font-size:0.78rem;letter-spacing:3px;color:#c9a227;font-weight:700;text-transform:uppercase;text-shadow:0 1px 4px rgba(0,0,0,0.9)}
 /* ─── TABS ─── */
 .tabs{display:flex;background:#111d2c;border-bottom:2px solid #1e3050}
 .tab-btn{flex:1;padding:12px 4px;background:none;border:none;color:#7a8fa6;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all .2s;border-bottom:3px solid transparent}
@@ -113,9 +114,9 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
 .toggle-btn.active{background:#1a2e45;border-color:#c9a227;color:#c9a227;font-weight:700}
 .toggle-btn:hover{border-color:#c9a227;color:#c9a227}
 /* ─── BANNER LIVE ─── */
-.banner-live{padding:10px 14px 12px;display:flex;flex-direction:column;gap:8px}
+.banner-live{padding:10px 14px 12px;display:flex;flex-direction:column;gap:8px;background:rgba(0,0,0,0.30);border-radius:0 0 6px 6px}
 .banner-row{display:flex;gap:8px;flex-wrap:nowrap}
-.banner-card{background:rgba(4,12,26,0.90);border-left:3px solid #c9a227;border-top:1px solid rgba(201,162,39,0.25);border-right:1px solid rgba(201,162,39,0.12);border-bottom:1px solid rgba(201,162,39,0.12);border-radius:0 6px 6px 0;padding:9px 13px;flex:1;min-width:0;text-align:left}
+.banner-card{background:rgba(2,8,18,0.96);border-left:3px solid #c9a227;border-top:1px solid rgba(201,162,39,0.30);border-right:1px solid rgba(201,162,39,0.15);border-bottom:1px solid rgba(201,162,39,0.15);border-radius:0 6px 6px 0;padding:9px 13px;flex:1;min-width:0;text-align:left;box-shadow:0 2px 12px rgba(0,0,0,0.6)}
 .bc-label{font-size:0.50rem;text-transform:uppercase;letter-spacing:2px;color:#c9a227;display:block;margin-bottom:5px;font-weight:700}
 .bl-name{font-size:1.05rem;font-weight:900;color:#fff;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bl-pts{font-size:0.62rem;color:#c9a227;font-weight:600;margin-top:2px;display:block}
@@ -124,8 +125,8 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
 .bm-correct{font-size:0.58rem;color:#4caf50;display:block;margin-top:1px}
 .banner-ticker-wrap{overflow:hidden;position:relative;border-top:1px solid rgba(201,162,39,0.2);margin-top:4px;padding:7px 0}
 .banner-ticker-wrap::before,.banner-ticker-wrap::after{content:'';position:absolute;top:0;width:40px;height:100%;z-index:1;pointer-events:none}
-.banner-ticker-wrap::before{left:0;background:linear-gradient(to right,#071220,transparent)}
-.banner-ticker-wrap::after{right:0;background:linear-gradient(to left,#071220,transparent)}
+.banner-ticker-wrap::before{left:0;background:linear-gradient(to right,#020812,transparent)}
+.banner-ticker-wrap::after{right:0;background:linear-gradient(to left,#020812,transparent)}
 .bt-track{display:inline-flex;align-items:center;white-space:nowrap;animation:ticker-scroll 60s linear infinite}
 .banner-ticker-wrap:hover .bt-track{animation-play-state:paused}
 .bt-item{font-size:0.72rem;color:#c8d8e8;padding:0 16px;letter-spacing:0.3px}
@@ -172,8 +173,10 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
     <button class="refresh-btn" onclick="fetchScores()">⟳ Refresh</button>
   </div>
   <div class="scoring-note">
-    <b>Win correct = 1 pt</b> &nbsp;|&nbsp; <b>Tie correct = 2 pts</b><br>
-    <span style="white-space:nowrap">Payouts: 🥇 $275 &nbsp;🥈 $100 &nbsp;🥉 $50</span>
+    <div class="scoring-note-inner">
+      <b>Win correct = 1 pt</b> &nbsp;|&nbsp; <b>Tie correct = 2 pts</b><br>
+      <span style="white-space:nowrap">Payouts: 🥇 $275 &nbsp;🥈 $100 &nbsp;🥉 $50</span>
+    </div>
   </div>
   <div class="banner-live">
     <div class="banner-row">
