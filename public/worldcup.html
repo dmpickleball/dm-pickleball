@@ -2147,8 +2147,9 @@ async function fetchScores(){
       }
     }
     const now=new Date();
+    const gamesPlayed=MATCHES.filter(m=>results[m.id]&&results[m.id].done).length;
     const gamesLeft=MATCHES.filter(m=>!results[m.id]||(!results[m.id].done&&!results[m.id].live)).length;
-    document.getElementById('last-updated').textContent=`Updated ${now.toLocaleTimeString()}${liveIds.size?' · '+liveIds.size+' LIVE':''} · ${gamesLeft} games left`;
+    document.getElementById('last-updated').textContent=`Updated ${now.toLocaleTimeString()}${liveIds.size?' · '+liveIds.size+' LIVE':''} · ${gamesPlayed} played · ${gamesLeft} left`;
     renderAll();
     // auto-refresh faster if live matches
     clearInterval(autoTimer);
