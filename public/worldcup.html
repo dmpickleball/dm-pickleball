@@ -84,6 +84,8 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
 .action-links{display:flex;gap:5px;align-items:center}
 .action-link{font-size:0.68rem;background:#1a2e45;color:#c9a227;text-decoration:none;border-radius:4px;padding:2px 6px;white-space:nowrap;border:1px solid #1e3050;cursor:pointer}
 .action-link:hover{background:#1e3050;color:#e8c040}
+.trend-up{color:#4caf50;font-size:0.85rem;font-weight:900;margin-left:4px}
+.trend-down{color:#c0392b;font-size:0.85rem;font-weight:900;margin-left:4px}
 .toggle-btn{background:#111d2c;border:1px solid #1e3050;color:#7a8fa6;padding:5px 12px;border-radius:4px;font-size:0.8rem;cursor:pointer;font-family:inherit;transition:all .15s}
 .toggle-btn.active{background:#1a2e45;border-color:#c9a227;color:#c9a227;font-weight:700}
 .toggle-btn:hover{border-color:#c9a227;color:#c9a227}
@@ -2156,10 +2158,52 @@ function renderAll(){
   if(activeTab&&activeTab.id==='tab-picks') renderPicks();
 }
 
+function calcLiveTrends(){
+  // Only show after halftime or in second half
+  const liveSecondHalf = MATCHES.filter(m=>{
+    const res=results[m.id];
+    return res && res.live && (res.status==='Second Half'||res.status==='Halftime'||res.status==='Extra Time'||res.status==='Penalty Shootout');
+  });
+  if(!liveSecondHalf.length) return {};
+
+  // For each player, calc projected extra pts if current score holds
+  const projExtra = PLAYERS.map((p,pi)=>{
+    let extra=0;
+    for(const m of liveSecondHalf){
+      const res=results[m.id];
+      const s1=parseInt(res.s1)||0, s2=parseInt(res.s2)||0;
+      const liveOutcome = s1>s2 ? res.t1 : (s2>s1 ? res.t2 : 'Tie');
+      const pick=m.p[pi];
+      if(pick===liveOutcome) extra += liveOutcome==='Tie'?2:1;
+    }
+    return extra;
+  });
+
+  // Current ranks
+  const totals=calcTotals().sort((a,b)=>b.pts-a.pts||(a.pending-b.pending));
+  let rank=0,prevPts=null;
+  totals.forEach(t=>{ if(t.pts!==prevPts){rank++;prevPts=t.pts;} t.curRank=rank; });
+
+  // Projected ranks
+  const proj=totals.map(t=>({...t, projPts:t.pts+projExtra[PLAYERS.indexOf(t.name)]}));
+  const projSorted=[...proj].sort((a,b)=>b.projPts-a.projPts||(a.pending-b.pending));
+  let pr=0,prevPP=null;
+  projSorted.forEach(t=>{ if(t.projPts!==prevPP){pr++;prevPP=t.projPts;} t.projRank=pr; });
+
+  const trends={};
+  proj.forEach(t=>{
+    if(t.projRank<t.curRank) trends[t.name]='up';
+    else if(t.projRank>t.curRank) trends[t.name]='down';
+    else trends[t.name]='same';
+  });
+  return trends;
+}
+
 function renderLeaderboard(){
   const totals=calcTotals().sort((a,b)=>b.pts-a.pts||(a.pending-b.pending));
+  const trends=calcLiveTrends();
+  const hasLive=Object.keys(trends).length>0;
   const medals={1:'🥇',2:'🥈',3:'🥉'};
-  // Dense ranking: same pts → same rank; next distinct total increments by 1
   let denseRank=0,prevPts=null;
   let html='';
   totals.forEach((t,i)=>{
@@ -2167,9 +2211,14 @@ function renderLeaderboard(){
     const badge=denseRank<=3
       ?`<span class="medal-${denseRank}">${medals[denseRank]}</span>`
       :`${denseRank}`;
+    let trendHtml='';
+    if(hasLive){
+      if(trends[t.name]==='up') trendHtml=`<span class="trend-up">▲</span>`;
+      else if(trends[t.name]==='down') trendHtml=`<span class="trend-down">▼</span>`;
+    }
     html+=`<tr>
       <td class="rank">${badge}</td>
-      <td class="player-name">${t.name}</td>
+      <td class="player-name">${t.name}${trendHtml}</td>
       <td class="pts">${t.pts}</td>
       <td><span class="stat-badge">✅ ${t.correct}</span></td>
       <td><span class="stat-badge">⏳ ${t.pending}</span></td>
