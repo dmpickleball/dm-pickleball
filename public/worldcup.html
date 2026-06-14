@@ -2161,16 +2161,17 @@ async function fetchScores(){
 // Calculate per-player totals
 function calcTotals(){
   return PLAYERS.map((p,pi)=>{
-    let pts_total=0, correct=0, wrong=0, pending=0;
+    let pts_total=0, correct=0, wins=0, ties=0, wrong=0, pending=0;
     for(const m of MATCHES){
       const res=results[m.id];
       const pick=m.p[pi];
       if(!res||!res.done){ pending++; continue; }
       const p2=pts(pick,res);
-      if(p2>0){ pts_total+=p2; correct++; }
+      if(p2===2){ pts_total+=p2; correct++; ties++; }
+      else if(p2===1){ pts_total+=p2; correct++; wins++; }
       else{ wrong++; }
     }
-    return {name:p,pts:pts_total,correct,wrong,pending,isMe:pi===DAVID_IDX};
+    return {name:p,pts:pts_total,correct,wins,ties,wrong,pending,isMe:pi===DAVID_IDX};
   });
 }
 
@@ -2286,7 +2287,7 @@ function renderLeaderboard(){
       <td class="rank">${badge}</td>
       <td class="player-name">${t.name}${trendHtml}</td>
       <td class="pts">${t.pts}</td>
-      <td><span class="stat-badge">✅ ${t.correct}</span></td>
+      <td><span class="stat-badge">✅ ${t.correct}</span><span style="font-size:0.68rem;color:#7a8fa6;margin-left:5px">${t.wins}W ${t.ties}T</span></td>
     </tr>`;
   });
   document.getElementById('lb-body').innerHTML=html||'<tr><td colspan="4">No data</td></tr>';
