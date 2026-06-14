@@ -2274,7 +2274,8 @@ function matchRowHtml(m){
 function renderPicks(){
   const fg=document.getElementById('filter-group').value;
   const fmd=parseInt(document.getElementById('filter-md').value)||0;
-  const filtered=MATCHES.filter(m=>(fg?m.group===fg:true)&&(fmd?m.md===fmd:true));
+  const filtered=MATCHES.filter(m=>(fg?m.group===fg:true)&&(fmd?m.md===fmd:true))
+    .sort((a,b)=>(matchTimestamps[a.id]||0)-(matchTimestamps[b.id]||0));
   const showAll=selectedPlayers.size===0;
 
   // Header
