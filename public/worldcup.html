@@ -2300,7 +2300,8 @@ function matchRowHtml(m){
   const date=MATCH_DATES[m.id]||'';
   let scoreHtml,liveFlag='';
   if(res&&res.done){
-    scoreHtml=`<span class="match-score score-final">${res.t1===m.t1?res.s1:res.s2} – ${res.t1===m.t1?res.s2:res.s1}</span>`;
+    const timeStr=matchTimes[m.id]?`<br><span style="font-size:0.62rem;font-weight:400;color:#7a8fa6">${matchTimes[m.id]}</span>`:'';
+    scoreHtml=`<span class="match-score score-final">${res.t1===m.t1?res.s1:res.s2} – ${res.t1===m.t1?res.s2:res.s1}${timeStr}</span>`;
   } else if(res&&res.live){
     scoreHtml=`<span class="match-score score-live">${res.s1}–${res.s2}</span>`;
     liveFlag=`<span class="live-badge">LIVE</span>`;
