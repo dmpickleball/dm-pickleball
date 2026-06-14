@@ -88,6 +88,7 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
 .action-link:hover{background:#1e3050;color:#e8c040}
 .trend-up{color:#4caf50;font-size:0.85rem;font-weight:900;margin-left:4px;animation:trend-pulse 1.8s ease-in-out infinite}
 .trend-down{color:#c0392b;font-size:0.85rem;font-weight:900;margin-left:4px;animation:trend-pulse 1.8s ease-in-out infinite}
+.trend-same{color:#7a8fa6;font-size:0.7rem;margin-left:5px;animation:trend-pulse 2.5s ease-in-out infinite}
 @keyframes trend-pulse{0%,100%{opacity:1}50%{opacity:.25}}
 .toggle-btn{background:#111d2c;border:1px solid #1e3050;color:#7a8fa6;padding:5px 12px;border-radius:4px;font-size:0.8rem;cursor:pointer;font-family:inherit;transition:all .15s}
 .toggle-btn.active{background:#1a2e45;border-color:#c9a227;color:#c9a227;font-weight:700}
@@ -2218,6 +2219,7 @@ function renderLeaderboard(){
     if(hasLive){
       if(trends[t.name]==='up') trendHtml=`<span class="trend-up">▲</span>`;
       else if(trends[t.name]==='down') trendHtml=`<span class="trend-down">▼</span>`;
+      else trendHtml=`<span class="trend-same">●</span>`;
     }
     html+=`<tr>
       <td class="rank">${badge}</td>
