@@ -56,7 +56,7 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
 .match-teams{flex:1;min-width:140px;font-size:0.88rem;font-weight:600}
 .match-score{font-size:1rem;font-weight:900;padding:2px 10px;border-radius:4px;text-align:center;min-width:60px}
 .score-final{background:#1a3a1a;color:#4caf50}
-.score-live{background:#3a1a1a;color:#ff6b6b}
+.score-live{background:#1a2535;color:#e0e8f0}
 .score-sched{background:#1a2e45;color:#7a8fa6;font-size:0.75rem;font-weight:600}
 .correct-count{font-size:0.72rem;color:#4caf50;white-space:nowrap}
 .md-badge{font-size:0.65rem;background:#1e3050;color:#7a8fa6;border-radius:3px;padding:1px 5px;margin-left:4px}
@@ -2372,7 +2372,7 @@ function matchRowHtml(m){
     scoreHtml=`<span class="match-score score-final">${res.t1===m.t1?res.s1:res.s2} – ${res.t1===m.t1?res.s2:res.s1}${timeStr}</span>`;
     liveFlag=`<span class="status-badge">Final</span>`;
   } else if(res&&res.live){
-    const clockStr=matchClocks[m.id]?`<br><span style="font-size:0.62rem;font-weight:500;color:#ff9999">${matchClocks[m.id]}</span>`:'';
+    const clockStr=matchClocks[m.id]?`<br><span style="font-size:0.62rem;font-weight:500;color:#7a9ab8">${matchClocks[m.id]}</span>`:'';
     scoreHtml=`<span class="match-score score-live">${res.s1}–${res.s2}${clockStr}</span>`;
     liveFlag=res.status==='Halftime'
       ?`<span class="status-badge halftime-badge">Half</span>`
