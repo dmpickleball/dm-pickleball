@@ -2339,7 +2339,7 @@ function renderBannerMotd(){
       const s2=res.t1===m.t1?res.s2:res.s1;
       return `<div class="bm-teams bm-row"><span>${m.t1}<span class="bm-score">${s1}–${s2}</span>${m.t2}</span><span class="bm-clock-ft">FT</span></div>`;
     }).join('');
-    const label=todayLive.length?'🔴 LIVE':'⚽ Today\'s Results';
+    const label=todayLive.length?'⚽ Today\'s Games':'⚽ Today\'s Results';
     el.innerHTML=`<span class="bc-label">${label}</span>${liveRows}${doneRows}`;
     return;
   }
