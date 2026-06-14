@@ -42,6 +42,8 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
 .medal-3{color:#CD7F32;font-size:1.2rem}
 .stat-badge{background:#1a2e45;border-radius:10px;padding:2px 7px;font-size:0.75rem;margin-left:4px;color:#7a8fa6}
 .live-badge{background:#c0392b;color:#fff;border-radius:4px;padding:1px 5px;font-size:0.68rem;font-weight:700;margin-left:6px;animation:blink 1.2s infinite}
+.status-badge{border-radius:4px;padding:1px 6px;font-size:0.68rem;font-weight:700;margin-left:6px;background:#1a3a1a;color:#4caf50}
+.halftime-badge{background:#2a2400;color:#c9a227}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
 /* ─── MATCHES ─── */
 .group-card{background:#111d2c;border-radius:8px;margin-bottom:12px;overflow:hidden;border:1px solid #1e3050}
@@ -2302,9 +2304,12 @@ function matchRowHtml(m){
   if(res&&res.done){
     const timeStr=matchTimes[m.id]?`<br><span style="font-size:0.62rem;font-weight:400;color:#7a8fa6">${matchTimes[m.id]}</span>`:'';
     scoreHtml=`<span class="match-score score-final">${res.t1===m.t1?res.s1:res.s2} – ${res.t1===m.t1?res.s2:res.s1}${timeStr}</span>`;
+    liveFlag=`<span class="status-badge">Final</span>`;
   } else if(res&&res.live){
     scoreHtml=`<span class="match-score score-live">${res.s1}–${res.s2}</span>`;
-    liveFlag=`<span class="live-badge">LIVE</span>`;
+    liveFlag=res.status==='Halftime'
+      ?`<span class="status-badge halftime-badge">Half</span>`
+      :`<span class="live-badge">LIVE</span>`;
   } else {
     const timeStr=matchTimes[m.id]||'';
     scoreHtml=`<span class="match-score score-sched">${date}${timeStr?'<br><span style="font-size:0.65rem;font-weight:500">'+timeStr+'</span>':''}`;
