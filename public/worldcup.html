@@ -2305,7 +2305,6 @@ function renderPicks(){
       if(res&&res.done){
         const p2=pts(pick,res);
         cls=p2>0?'cell-correct':'cell-wrong';
-        if(p2===2) label+=' 2';
       }
       body+=`<td class="${cls}">${label}</td>`;
     });
