@@ -4,15 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Al's World Cup 2026 Pool</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',Arial,sans-serif;background:#0d1b2a;color:#e8eaf6;min-height:100vh}
 /* ─── HEADER ─── */
 .header{background:linear-gradient(90deg,rgba(0,104,71,0.82) 0%,rgba(0,104,71,0.55) 18%,rgba(206,17,38,0.60) 38%,rgba(206,17,38,0.60) 62%,rgba(60,59,110,0.55) 82%,rgba(60,59,110,0.88) 100%),url('https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=1400&q=70') center/cover no-repeat;padding:20px 16px 0;text-align:center;border-bottom:3px solid #c9a227}
-.flag-row{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:8px}
+.flag-row{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:8px}
 .flag-emoji{font-size:2.4rem}
-.wc-title{font-size:1.05rem;letter-spacing:3px;color:#c9a227;font-weight:700;text-transform:uppercase}
-.pool-title{font-size:1.6rem;font-weight:900;color:#fff;letter-spacing:1px}
+.title-center{display:flex;flex-direction:column;align-items:center;gap:5px}
+.star-row{display:flex;align-items:center;justify-content:center;gap:5px}
+.wc-title{font-size:0.78rem;letter-spacing:3px;color:#c9a227;font-weight:700;text-transform:uppercase}
+.pool-title{font-family:'Anton',sans-serif;font-size:2.3rem;letter-spacing:2px;background:linear-gradient(135deg,#fff 0%,#FFE566 28%,#c9a227 60%,#ff9a00 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.05}
 .header-meta{display:flex;align-items:center;justify-content:center;gap:10px;margin:8px 0}
 #last-updated{font-size:0.78rem;color:#aaa}
 .refresh-btn{background:#c9a227;color:#0d1b2a;border:none;border-radius:4px;padding:4px 10px;font-size:0.78rem;font-weight:700;cursor:pointer}
@@ -131,7 +134,8 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
 @keyframes ticker-scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 /* ─── RESPONSIVE ─── */
 @media(max-width:600px){
-  .pool-title{font-size:1.2rem}
+  .pool-title{font-size:1.65rem;letter-spacing:1px}
+  .flag-emoji{font-size:1.9rem}
   .lb-table td,.lb-table th{padding:7px 6px}
   .match-row{padding:7px 10px}
   .banner-row{flex-wrap:wrap}
@@ -144,9 +148,22 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
 <header class="header">
   <div class="flag-row">
     <span class="flag-emoji">🇲🇽</span>
-    <div>
-      <div class="wc-title">⚽ FIFA World Cup 2026™</div>
+    <div class="title-center">
+      <div class="star-row">
+        <svg width="13" height="13" viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="#c9a227"/></svg>
+        <svg width="13" height="13" viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="#c9a227"/></svg>
+        <span style="font-size:1.4rem">🏆</span>
+        <svg width="13" height="13" viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="#c9a227"/></svg>
+        <svg width="13" height="13" viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="#c9a227"/></svg>
+      </div>
       <div class="pool-title">AL'S WORLD CUP POOL</div>
+      <div class="star-row">
+        <svg width="10" height="10" viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="#c9a227"/></svg>
+        <svg width="10" height="10" viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="#c9a227"/></svg>
+        <span class="wc-title">⚽ FIFA WORLD CUP 2026™</span>
+        <svg width="10" height="10" viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="#c9a227"/></svg>
+        <svg width="10" height="10" viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="#c9a227"/></svg>
+      </div>
     </div>
     <span class="flag-emoji">🇺🇸</span>
   </div>
@@ -2437,7 +2454,18 @@ function renderLeaderboard(){
       // Rank projection arrows — live from kickoff
       if(trends[t.name]==='up') trendHtml=`<span class="trend-up">▲</span>`;
       else if(trends[t.name]==='down') trendHtml=`<span class="trend-down">▼</span>`;
-      else trendHtml=`<span class="trend-same">●</span>`;
+      else {
+        // Same rank — check if player has a correct live pick (show green if so)
+        const pi=PLAYERS.indexOf(t.name);
+        const hasCorrectLive=MATCHES.some(m=>{
+          const res=results[m.id];
+          if(!res||!res.live) return false;
+          const s1=parseInt(res.s1)||0,s2=parseInt(res.s2)||0;
+          const lo=s1>s2?res.t1:s2>s1?res.t2:'Tie';
+          return m.p[pi]===lo;
+        });
+        trendHtml=hasCorrectLive?`<span class="trend-up">▲</span>`:`<span class="trend-same">●</span>`;
+      }
     } else if(lastPts){
       // Show points earned from last completed game
       const earned=lastPts[t.name]||0;
@@ -2550,7 +2578,7 @@ function matchRowHtml(m){
   if(res&&res.done) PLAYERS.forEach((_,pi)=>{if(pts(m.p[pi],res)>0)correctCount++;});
   const correctStr=res&&res.done?`<span class="correct-count">✅ ${correctCount}/${PLAYERS.length} correct</span>`:'';
   const groupBadge=matchView==='chrono'?`<span class="md-badge">Grp ${m.group}</span>`:'';
-  const watchHtml=res&&res.live?`<div class="action-links"><a class="action-link" href="https://www.foxone.com/live" target="_blank" rel="noopener">FOX ONE</a><a class="action-link" href="https://www.espn.com/soccer/match/_/gameId/${m.id}" target="_blank" rel="noopener">📊 Stats</a></div>`:'';
+  const watchHtml=res&&res.live?`<div class="action-links"><a class="action-link" href="https://www.foxsports.com/soccer/fifa-world-cup" target="_blank" rel="noopener">FOX ONE</a><a class="action-link" href="https://www.espn.com/soccer/match/_/gameId/${m.id}" target="_blank" rel="noopener">📊 Stats</a></div>`:'';
   const actionHtml=res&&res.done?`<div class="action-links">
     <a class="action-link" href="#" onclick="jumpToPicks('${m.group}');return false">📋 Picks</a>
     <a class="action-link" href="https://www.espn.com/soccer/match/_/gameId/${m.id}" target="_blank" rel="noopener">🎬 Recap</a>
