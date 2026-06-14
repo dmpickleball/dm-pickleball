@@ -104,11 +104,39 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
 .toggle-btn{background:#111d2c;border:1px solid #1e3050;color:#7a8fa6;padding:5px 12px;border-radius:4px;font-size:0.8rem;cursor:pointer;font-family:inherit;transition:all .15s}
 .toggle-btn.active{background:#1a2e45;border-color:#c9a227;color:#c9a227;font-weight:700}
 .toggle-btn:hover{border-color:#c9a227;color:#c9a227}
+/* ─── BANNER LIVE ─── */
+.banner-live{padding:10px 14px 0;display:flex;flex-direction:column;gap:8px}
+.banner-row{display:flex;gap:8px;flex-wrap:wrap}
+.banner-card{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;flex:1;min-width:130px;text-align:left}
+.bc-label{font-size:0.58rem;text-transform:uppercase;letter-spacing:1px;color:#7a8fa6;display:block;margin-bottom:3px}
+.bl-name{font-size:1rem;font-weight:800;color:#c9a227;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bl-pts{font-size:0.68rem;color:#aaa}
+.bm-teams{font-size:0.8rem;font-weight:700;color:#fff;display:block;line-height:1.4}
+.bm-score{color:#c9a227;font-size:1rem;font-weight:900;margin:0 4px}
+.bm-correct{font-size:0.63rem;color:#4caf50;display:block;margin-top:2px}
+.bp-dots{display:flex;gap:3px;flex-wrap:wrap;margin:4px 0 2px}
+.bp-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+.bp-done{background:#4caf50}
+.bp-live{background:#c0392b;animation:blink 1.2s infinite}
+.bp-sched{background:#1a2e45;border:1px solid #2a4060}
+.bp-count{font-size:0.63rem;color:#7a8fa6}
+.banner-ticker-wrap{overflow:hidden;position:relative;border-top:1px solid rgba(255,255,255,0.07);margin-top:4px;padding:7px 0}
+.banner-ticker-wrap::before,.banner-ticker-wrap::after{content:'';position:absolute;top:0;width:32px;height:100%;z-index:1;pointer-events:none}
+.banner-ticker-wrap::before{left:0;background:linear-gradient(to right,#0a1929,transparent)}
+.banner-ticker-wrap::after{right:0;background:linear-gradient(to left,#0a1929,transparent)}
+.bt-track{display:inline-flex;align-items:center;white-space:nowrap;animation:ticker-scroll 50s linear infinite}
+.banner-ticker-wrap:hover .bt-track{animation-play-state:paused}
+.bt-item{font-size:0.73rem;color:#c8d8e8;padding:0 14px}
+.bt-item b{color:#c9a227}
+.bt-sep{color:#2a4060;font-size:0.8rem}
+@keyframes ticker-scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 /* ─── RESPONSIVE ─── */
 @media(max-width:600px){
   .pool-title{font-size:1.2rem}
   .lb-table td,.lb-table th{padding:7px 6px}
   .match-row{padding:7px 10px}
+  .banner-card{min-width:calc(50% - 4px);flex:unset}
+  .bt-item{font-size:0.68rem;padding:0 10px}
 }
 </style>
 </head>
@@ -129,6 +157,14 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
   <div class="scoring-note">
     <b>Win correct = 1 pt</b> &nbsp;|&nbsp; <b>Tie correct = 2 pts</b><br>
     <span style="white-space:nowrap">Payouts: 🥇 $275 &nbsp;🥈 $100 &nbsp;🥉 $50</span>
+  </div>
+  <div class="banner-live">
+    <div class="banner-row">
+      <div class="banner-card" id="banner-leader"><span class="bc-label">👑 Leading</span><span class="bl-name">—</span></div>
+      <div class="banner-card" id="banner-motd"><span class="bc-label">⚽ Latest Result</span><span class="bm-teams" style="color:#7a8fa6">—</span></div>
+      <div class="banner-card" id="banner-progress"><span class="bc-label">Today's Games</span><div class="bp-dots"></div><span class="bp-count">—</span></div>
+    </div>
+    <div class="banner-ticker-wrap"><div class="bt-track" id="banner-ticker"><span class="bt-item" style="color:#7a8fa6">Loading…</span></div></div>
   </div>
 </header>
 
@@ -2178,9 +2214,77 @@ function calcTotals(){
 
 function renderAll(){
   renderLeaderboard();
+  renderBanner();
   const activeTab=document.querySelector('.tab-content.active');
   if(activeTab&&activeTab.id==='tab-matches') renderMatches();
   if(activeTab&&activeTab.id==='tab-picks') renderPicks();
+}
+
+function renderBanner(){
+  renderBannerLeader();
+  renderBannerMotd();
+  renderBannerProgress();
+  renderBannerTicker();
+}
+
+function renderBannerLeader(){
+  const el=document.getElementById('banner-leader');
+  if(!el) return;
+  const totals=calcTotals().sort((a,b)=>b.pts-a.pts||(a.pending-b.pending));
+  if(!totals.length) return;
+  const top=totals[0];
+  const tied=totals.filter(t=>t.pts===top.pts);
+  const nameStr=tied.length>1?tied.map(t=>t.name).join(' & '):top.name;
+  el.innerHTML=`<span class="bc-label">👑 Leading</span><span class="bl-name">${nameStr}</span><span class="bl-pts">${top.pts} pts</span>`;
+}
+
+function renderBannerMotd(){
+  const el=document.getElementById('banner-motd');
+  if(!el) return;
+  const done=MATCHES.filter(m=>results[m.id]&&results[m.id].done);
+  if(!done.length){el.innerHTML='<span class="bc-label">⚽ Latest Result</span><span class="bm-teams" style="color:#7a8fa6">No results yet</span>';return;}
+  const maxTs=Math.max(...done.map(m=>matchTimestamps[m.id]||0));
+  const m=done.find(mm=>(matchTimestamps[mm.id]||0)===maxTs)||done[done.length-1];
+  const res=results[m.id];
+  const s1=res.t1===m.t1?res.s1:res.s2;
+  const s2=res.t1===m.t1?res.s2:res.s1;
+  let correct=0;
+  PLAYERS.forEach((_,pi)=>{if(pts(m.p[pi],res)>0)correct++;});
+  el.innerHTML=`<span class="bc-label">⚽ Latest Result</span>
+    <span class="bm-teams">${m.t1}<span class="bm-score">${s1}–${s2}</span>${m.t2}</span>
+    <span class="bm-correct">✅ ${correct}/${PLAYERS.length} correct</span>`;
+}
+
+function renderBannerProgress(){
+  const el=document.getElementById('banner-progress');
+  if(!el) return;
+  const todayStr=new Date().toLocaleDateString('en-US',{timeZone:'America/Los_Angeles',month:'short',day:'numeric'});
+  const todayM=MATCHES.filter(m=>MATCH_DATES[m.id]===todayStr);
+  if(!todayM.length){el.innerHTML='<span class="bc-label">Today\'s Games</span><span class="bp-count" style="color:#7a8fa6">None scheduled</span>';return;}
+  const dots=todayM.map(m=>{
+    const res=results[m.id];
+    if(res&&res.done) return '<span class="bp-dot bp-done"></span>';
+    if(res&&res.live) return '<span class="bp-dot bp-live"></span>';
+    return '<span class="bp-dot bp-sched"></span>';
+  }).join('');
+  const doneC=todayM.filter(m=>results[m.id]&&results[m.id].done).length;
+  const liveC=todayM.filter(m=>results[m.id]&&results[m.id].live).length;
+  el.innerHTML=`<span class="bc-label">Today's Games</span><div class="bp-dots">${dots}</div><span class="bp-count">${doneC}/${todayM.length} done${liveC?' · '+liveC+' LIVE':''}`;
+}
+
+function renderBannerTicker(){
+  const el=document.getElementById('banner-ticker');
+  if(!el) return;
+  const done=MATCHES.filter(m=>results[m.id]&&results[m.id].done)
+    .sort((a,b)=>(matchTimestamps[b.id]||0)-(matchTimestamps[a.id]||0));
+  if(!done.length){el.innerHTML='<span style="color:#7a8fa6;padding:0 16px;font-size:0.73rem">No results yet</span>';return;}
+  const items=done.map(m=>{
+    const res=results[m.id];
+    const s1=res.t1===m.t1?res.s1:res.s2;
+    const s2=res.t1===m.t1?res.s2:res.s1;
+    return `<span class="bt-item">${m.t1} <b>${s1}–${s2}</b> ${m.t2}</span><span class="bt-sep">·</span>`;
+  }).join('');
+  el.innerHTML=items+items;
 }
 
 function calcLiveTrends(){
