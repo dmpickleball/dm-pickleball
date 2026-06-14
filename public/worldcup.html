@@ -2499,7 +2499,7 @@ function matchRowHtml(m){
   if(res&&res.done) PLAYERS.forEach((_,pi)=>{if(pts(m.p[pi],res)>0)correctCount++;});
   const correctStr=res&&res.done?`<span class="correct-count">✅ ${correctCount}/${PLAYERS.length} correct</span>`:'';
   const groupBadge=matchView==='chrono'?`<span class="md-badge">Grp ${m.group}</span>`:'';
-  const watchHtml=res&&res.live?`<div class="action-links"><a class="action-link watch-link" href="https://www.foxsports.com/live/fs1" target="_blank" rel="noopener">📺 Watch</a></div>`:'';
+  const watchHtml=res&&res.live?`<div class="action-links"><a class="action-link watch-link" href="https://www.foxsports.com/live/fs1" target="_blank" rel="noopener">📺 Watch</a><a class="action-link" href="https://www.espn.com/soccer/match/_/gameId/${m.id}" target="_blank" rel="noopener">📊 Stats</a></div>`:'';
   const actionHtml=res&&res.done?`<div class="action-links">
     <a class="action-link" href="#" onclick="jumpToPicks('${m.group}');return false">📋 Picks</a>
     <a class="action-link" href="https://www.espn.com/soccer/match/_/gameId/${m.id}" target="_blank" rel="noopener">🎬 Recap</a>
