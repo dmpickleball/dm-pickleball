@@ -127,8 +127,8 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
     <button class="refresh-btn" onclick="fetchScores()">⟳ Refresh</button>
   </div>
   <div class="scoring-note">
-    <b>Win correct = 1 pt</b> &nbsp;|&nbsp; <b>Tie correct = 2 pts</b> &nbsp;|&nbsp; 
-    Payouts: 🥇 $275 &nbsp;🥈 $100 &nbsp;🥉 $50
+    <b>Win correct = 1 pt</b> &nbsp;|&nbsp; <b>Tie correct = 2 pts</b><br>
+    <span style="white-space:nowrap">Payouts: 🥇 $275 &nbsp;🥈 $100 &nbsp;🥉 $50</span>
   </div>
 </header>
 
@@ -2260,6 +2260,10 @@ function renderLeaderboard(){
   // Post-game pts (only when no live games)
   const lastPts = (!anyLive) ? calcLastGamePoints() : null;
 
+  // Last-place player name for the "wrong" stat label
+  const lastPlayer = totals[totals.length-1];
+  const wrongLabel = lastPlayer ? lastPlayer.name+'s' : 'Wrong';
+
   const medals={1:'🥇',2:'🥈',3:'🥉'};
   let denseRank=0,prevPts=null;
   let html='';
@@ -2287,7 +2291,7 @@ function renderLeaderboard(){
       <td class="rank">${badge}</td>
       <td class="player-name">${t.name}${trendHtml}</td>
       <td class="pts">${t.pts}</td>
-      <td><div style="display:flex;align-items:center;gap:6px"><span style="font-size:1.15rem;font-weight:700;color:#fff">${t.correct}</span><div style="line-height:1.5"><span style="display:block;font-size:0.68rem;color:#4caf50">Wins ${t.wins}</span><span style="display:block;font-size:0.68rem;color:#c9a227">Ties ${t.ties}</span></div></div></td>
+      <td><div style="display:flex;align-items:center;gap:6px"><span style="font-size:1.15rem;font-weight:700;color:#fff">${t.correct}</span><div style="line-height:1.5"><span style="display:block;font-size:0.68rem;color:#4caf50">Wins ${t.wins}</span><span style="display:block;font-size:0.68rem;color:#c9a227">Ties ${t.ties}</span><span style="display:block;font-size:0.68rem;color:#c0392b">${wrongLabel} ${t.wrong}</span></div></div></td>
     </tr>`;
   });
   document.getElementById('lb-body').innerHTML=html||'<tr><td colspan="4">No data</td></tr>';
