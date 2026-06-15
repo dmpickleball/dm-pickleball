@@ -53,6 +53,8 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
 .halftime-badge{background:#2a2400;color:#c9a227}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
 /* ─── MATCHES ─── */
+.today-divider{display:flex;align-items:center;gap:10px;padding:8px 14px;margin:4px 0;color:#c9a227;font-size:0.70rem;font-weight:700;letter-spacing:2px;text-transform:uppercase}
+.today-divider::before,.today-divider::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,#c9a227,transparent)}
 .group-card{background:#111d2c;border-radius:8px;margin-bottom:12px;overflow:hidden;border:1px solid #1e3050}
 .group-header{background:#1a2e45;padding:10px 14px;display:flex;align-items:center;gap:8px}
 .group-letter{background:#c9a227;color:#0d1b2a;font-weight:900;border-radius:4px;padding:2px 8px;font-size:0.85rem}
@@ -266,7 +268,8 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
   <div id="tab-matches" class="tab-content">
     <div class="filter-bar" style="margin-bottom:10px">
       <button class="toggle-btn" id="view-group" onclick="setMatchView('group',this)">📁 By Group</button>
-      <button class="toggle-btn active" id="view-chrono" onclick="setMatchView('chrono',this)">🕐 Chronological</button>
+      <button class="toggle-btn active" id="view-chrono" onclick="setMatchView('chrono',this)">📅 By Date</button>
+      <button class="action-link" id="today-btn" onclick="scrollToToday()" style="padding:5px 10px;font-size:0.8rem;margin-left:auto">📅 Today</button>
     </div>
     <div id="matches-content"><div style="text-align:center;padding:30px;color:#7a8fa6">Loading…</div></div>
   </div>
@@ -2539,13 +2542,28 @@ const MATCH_DATES={
   '760481':'Jun 27','760482':'Jun 27','760484':'Jun 27','760483':'Jun 27'
 };
 
+function scrollToToday(){
+  const el=document.getElementById('today-anchor');
+  if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
 function renderMatches(){
   let html='';
   if(matchView==='chrono'){
     const sorted=[...MATCHES].sort((a,b)=>(matchTimestamps[a.id]||0)-(matchTimestamps[b.id]||0));
+    const todayStr=new Date().toLocaleDateString('en-US',{timeZone:'America/Los_Angeles',month:'short',day:'numeric'});
+    const now=Date.now();
     let lastDate='';
+    let dividerInserted=false;
     for(const m of sorted){
       const date=MATCH_DATES[m.id]||'';
+      // Insert today divider before today's games (or next upcoming if no games today)
+      if(!dividerInserted && date && (date===todayStr || (matchTimestamps[m.id]||0)>now)){
+        if(lastDate) html+='</div>';
+        html+=`<div class="today-divider" id="today-anchor">Today · ${todayStr}</div>`;
+        lastDate='';
+        dividerInserted=true;
+      }
       if(date!==lastDate){
         if(lastDate) html+='</div>';
         html+=`<div class="group-card"><div class="group-header"><span class="group-letter">${date}</span></div>`;
@@ -2758,7 +2776,7 @@ function showTab(id,btn){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('tab-'+id).classList.add('active');
   if(btn) btn.classList.add('active');
-  if(id==='matches') renderMatches();
+  if(id==='matches'){renderMatches();setTimeout(scrollToToday,80);}
   if(id==='picks'){autoSelectMatchday();renderPicks();}
 }
 
