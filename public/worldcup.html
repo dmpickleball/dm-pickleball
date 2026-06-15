@@ -127,6 +127,7 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
 .bm-live-dot{position:absolute;left:1px;top:50%;transform:translateY(-50%);width:6px;height:6px;border-radius:50%;background:#e53935;flex-shrink:0;animation:blink 1.2s infinite}
 .bm-clock{font-size:0.60rem;color:#e53935;font-weight:700;margin-left:auto;padding-left:6px;white-space:nowrap;flex-shrink:0}
 .bm-clock-ft{font-size:0.58rem;color:#4caf50;font-weight:700;margin-left:auto;padding-left:6px;white-space:nowrap;flex-shrink:0}
+.bm-clock-soon{font-size:0.58rem;color:#7a9ab8;font-weight:600;margin-left:auto;padding-left:6px;white-space:nowrap;flex-shrink:0}
 .banner-ticker-wrap{overflow:hidden;position:relative;border-top:1px solid rgba(201,162,39,0.2);margin-top:4px;padding:7px 0}
 .banner-ticker-wrap::before,.banner-ticker-wrap::after{content:'';position:absolute;top:0;width:40px;height:100%;z-index:1;pointer-events:none}
 .banner-ticker-wrap::before{left:0;background:linear-gradient(to right,#020812,transparent)}
@@ -2322,39 +2323,40 @@ function renderBannerMotd(){
   const el=document.getElementById('banner-motd');
   if(!el) return;
   const todayStr=new Date().toLocaleDateString('en-US',{timeZone:'America/Los_Angeles',month:'short',day:'numeric'});
-  const todayLive=MATCHES.filter(m=>MATCH_DATES[m.id]===todayStr&&results[m.id]&&results[m.id].live);
-  const todayDone=MATCHES.filter(m=>MATCH_DATES[m.id]===todayStr&&results[m.id]&&results[m.id].done);
+  const todayAll=MATCHES.filter(m=>MATCH_DATES[m.id]===todayStr);
 
-  if(todayLive.length||todayDone.length){
-    const liveRows=todayLive.map(m=>{
+  if(todayAll.length){
+    const rows=todayAll.map(m=>{
       const res=results[m.id];
-      const s1=res.t1===m.t1?res.s1:res.s2;
-      const s2=res.t1===m.t1?res.s2:res.s1;
-      const isHalf=res.status==='Halftime';
-      const clock=isHalf?'HT':(matchClocks[m.id]||'LIVE');
-      return `<div class="bm-teams bm-row"><span class="bm-live-dot"></span><span>${m.t1}<span class="bm-score">${s1}–${s2}</span>${m.t2}</span><span class="bm-clock">${clock}</span></div>`;
+      if(res&&res.live){
+        const s1=res.t1===m.t1?res.s1:res.s2;
+        const s2=res.t1===m.t1?res.s2:res.s1;
+        const clock=res.status==='Halftime'?'HT':(matchClocks[m.id]||'LIVE');
+        return `<div class="bm-teams bm-row"><span class="bm-live-dot"></span><span>${m.t1}<span class="bm-score">${s1}–${s2}</span>${m.t2}</span><span class="bm-clock">${clock}</span></div>`;
+      }
+      if(res&&res.done){
+        const s1=res.t1===m.t1?res.s1:res.s2;
+        const s2=res.t1===m.t1?res.s2:res.s1;
+        return `<div class="bm-teams bm-row"><span>${m.t1}<span class="bm-score">${s1}–${s2}</span>${m.t2}</span><span class="bm-clock-ft">FT</span></div>`;
+      }
+      // Upcoming — show kickoff time
+      const time=(matchTimes[m.id]||'').replace(' PT','');
+      return `<div class="bm-teams bm-row"><span>${m.t1}<span style="color:#7a8fa6;margin:0 3px">vs</span>${m.t2}</span><span class="bm-clock-soon">${time}</span></div>`;
     }).join('');
-    const doneRows=todayDone.map(m=>{
-      const res=results[m.id];
-      const s1=res.t1===m.t1?res.s1:res.s2;
-      const s2=res.t1===m.t1?res.s2:res.s1;
-      return `<div class="bm-teams bm-row"><span>${m.t1}<span class="bm-score">${s1}–${s2}</span>${m.t2}</span><span class="bm-clock-ft">FT</span></div>`;
-    }).join('');
-    const label=todayLive.length?'⚽ Today\'s Games':'⚽ Today\'s Results';
-    el.innerHTML=`<span class="bc-label">${label}</span>${liveRows}${doneRows}`;
+    el.innerHTML=`<span class="bc-label">⚽ Today's Games</span>${rows}`;
     return;
   }
 
-  // Fall back to latest completed result from any day
+  // No games today — fall back to latest result
   const allDone=MATCHES.filter(m=>results[m.id]&&results[m.id].done);
-  if(!allDone.length){el.innerHTML='<span class="bc-label">⚽ Today\'s Games</span><span class="bm-teams" style="color:#7a8fa6;font-size:0.7rem">No results yet</span>';return;}
+  if(!allDone.length){el.innerHTML='<span class="bc-label">⚽ Today\'s Games</span><span class="bm-teams" style="color:#7a8fa6;font-size:0.7rem">No games today</span>';return;}
   const maxTs=Math.max(...allDone.map(m=>matchTimestamps[m.id]||0));
-  const m=allDone.find(mm=>(matchTimestamps[mm.id]||0)===maxTs)||allDone[allDone.length-1];
-  const res=results[m.id];
-  const s1=res.t1===m.t1?res.s1:res.s2;
-  const s2=res.t1===m.t1?res.s2:res.s1;
+  const last=allDone.find(mm=>(matchTimestamps[mm.id]||0)===maxTs)||allDone[allDone.length-1];
+  const res=results[last.id];
+  const s1=res.t1===last.t1?res.s1:res.s2;
+  const s2=res.t1===last.t1?res.s2:res.s1;
   el.innerHTML=`<span class="bc-label">⚽ Latest Result</span>
-    <div class="bm-teams bm-row"><span>${m.t1}<span class="bm-score">${s1}–${s2}</span>${m.t2}</span><span class="bm-clock-ft">FT</span></div>`;
+    <div class="bm-teams bm-row"><span>${last.t1}<span class="bm-score">${s1}–${s2}</span>${last.t2}</span><span class="bm-clock-ft">FT</span></div>`;
 }
 
 
