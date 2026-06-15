@@ -40,7 +40,8 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
 .lb-table td{padding:9px 10px;border-bottom:1px solid #1a2e45}
 .lb-table tr:hover td{background:#1a2e45}
 .rank{font-weight:900;font-size:1rem;width:36px}
-.player-name{font-weight:700}
+.player-name{font-weight:700;cursor:pointer;transition:color .15s}
+.player-name:hover{color:#c9a227;text-decoration:underline}
 .player-name.me{color:#c9a227}
 .pts{font-weight:900;font-size:1.1rem;color:#fff}
 .medal-1{color:#FFD700;font-size:1.2rem}
@@ -2492,7 +2493,7 @@ function renderLeaderboard(){
     }
     html+=`<tr>
       <td class="rank">${badge}</td>
-      <td class="player-name">${t.name}${trendHtml}</td>
+      <td class="player-name" onclick="viewPlayerPicks('${t.name}')">${t.name}${trendHtml}</td>
       <td class="pts">${t.pts}</td>
       <td><div style="display:flex;align-items:center;gap:6px"><span style="font-size:1.15rem;font-weight:700;color:#c0392b">${t.wrong}</span><div style="line-height:1.5"><span style="display:block;font-size:0.68rem;color:#4caf50">Wins ${t.wins}</span><span style="display:block;font-size:0.68rem;color:#c9a227">Ties ${t.ties}</span></div></div></td>
     </tr>`;
@@ -2692,6 +2693,19 @@ function clearAllFilters(){
   document.getElementById('filter-group').value='';
   document.getElementById('filter-md').value='';
   clearPlayerFilter();
+}
+
+function viewPlayerPicks(name){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-picks').classList.add('active');
+  document.querySelectorAll('.tab-btn')[2].classList.add('active');
+  selectedPlayers.clear();
+  selectedPlayers.add(name);
+  document.querySelectorAll('#player-dd-panel input').forEach(cb=>cb.checked=cb.value===name);
+  updateDropdownLabel();
+  renderPicks();
+  window.scrollTo(0,0);
 }
 
 function jumpToPicks(group){
