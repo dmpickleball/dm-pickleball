@@ -55,6 +55,7 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
 /* ─── MATCHES ─── */
 .today-divider{display:flex;align-items:center;gap:10px;padding:8px 14px;margin:4px 0;color:#c9a227;font-size:0.70rem;font-weight:700;letter-spacing:2px;text-transform:uppercase}
 .today-divider::before,.today-divider::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,#c9a227,transparent)}
+.picks-today-divider{background:#0f1923;color:#c9a227;font-size:0.68rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:7px 10px;text-align:center;border-top:1px solid rgba(201,162,39,0.5);border-bottom:1px solid rgba(201,162,39,0.5)}
 .group-card{background:#111d2c;border-radius:8px;margin-bottom:12px;overflow:hidden;border:1px solid #1e3050}
 .group-header{background:#1a2e45;padding:10px 14px;display:flex;align-items:center;gap:8px}
 .group-letter{background:#c9a227;color:#0d1b2a;font-weight:900;border-radius:4px;padding:2px 8px;font-size:0.85rem}
@@ -269,7 +270,7 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
     <div class="filter-bar" style="margin-bottom:10px">
       <button class="toggle-btn" id="view-group" onclick="setMatchView('group',this)">📁 By Group</button>
       <button class="toggle-btn active" id="view-chrono" onclick="setMatchView('chrono',this)">📅 By Date</button>
-      <button class="action-link" id="today-btn" onclick="scrollToToday()" style="padding:5px 10px;font-size:0.8rem;margin-left:auto">📅 Today</button>
+      <button class="action-link" id="today-btn" onclick="scrollToToday()" style="padding:5px 10px;font-size:0.8rem">📅 Today</button>
     </div>
     <div id="matches-content"><div style="text-align:center;padding:30px;color:#7a8fa6">Loading…</div></div>
   </div>
@@ -288,6 +289,7 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
         <option value="2">Matchday 2</option>
         <option value="3">Matchday 3</option>
       </select>
+      <button class="action-link" onclick="scrollToPicksToday()" style="padding:5px 10px;font-size:0.8rem">📅 Today</button>
       <button class="action-link" onclick="clearAllFilters()" style="padding:5px 10px;font-size:0.8rem">✕ Clear Filters</button>
     </div>
     <div id="player-chips"></div>
@@ -2546,6 +2548,10 @@ function scrollToToday(){
   const el=document.getElementById('today-anchor');
   if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
 }
+function scrollToPicksToday(){
+  const el=document.getElementById('picks-today-anchor');
+  if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+}
 
 function renderMatches(){
   let html='';
@@ -2641,10 +2647,19 @@ function renderPicks(){
   });
   document.getElementById('picks-header').innerHTML=hdr;
 
+  const todayStrP=new Date().toLocaleDateString('en-US',{timeZone:'America/Los_Angeles',month:'short',day:'numeric'});
+  const nowP=Date.now();
+  let picksDividerInserted=false;
   let body='';
   for(const m of filtered){
     const res=results[m.id];
     const date=MATCH_DATES[m.id]||'';
+    // Insert today divider before today's or next upcoming game
+    if(!picksDividerInserted && date && (date===todayStrP||(matchTimestamps[m.id]||0)>nowP)){
+      const cols=1+(showAll?PLAYERS.length:selectedPlayers.size);
+      body+=`<tr id="picks-today-anchor"><td colspan="${cols}" class="picks-today-divider">Today · ${todayStrP}</td></tr>`;
+      picksDividerInserted=true;
+    }
     const timeStr=matchTimes[m.id]?` · ${matchTimes[m.id]}`:'';
     body+=`<tr><td class="match-info">${m.t1} v ${m.t2}<span>Grp ${m.group} MD${m.md} · ${date}${timeStr}</span></td>`;
     PLAYERS.forEach((p,pi)=>{
@@ -2777,7 +2792,7 @@ function showTab(id,btn){
   document.getElementById('tab-'+id).classList.add('active');
   if(btn) btn.classList.add('active');
   if(id==='matches'){renderMatches();setTimeout(scrollToToday,80);}
-  if(id==='picks'){autoSelectMatchday();renderPicks();}
+  if(id==='picks'){renderPicks();setTimeout(scrollToPicksToday,80);}
 }
 
 let autoTimer;
