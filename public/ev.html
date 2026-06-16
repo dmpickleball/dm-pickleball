@@ -26,6 +26,18 @@ select{background:#0d1b2a;border:1px solid #25415f;color:#e8eaf6;padding:8px 10p
 .live-status.ok{border-color:#274d38;background:#0e2018;color:#bfe3cc}
 .live-status.ok b{color:#6fd69a}
 .live-status.off{border-color:#4a3a1a;background:#1c1606;color:#d8c79a}
+/* GUIDE */
+.guide{background:#10202f;border:1px solid #1e3050;border-left:3px solid #c9a227;border-radius:8px;margin-bottom:12px;overflow:hidden}
+.guide-toggle{width:100%;background:none;border:none;color:#c9a227;font-size:0.78rem;font-weight:700;padding:10px 12px;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center}
+.guide-body{padding:0 12px 12px;display:none}
+.guide-body.open{display:block}
+.guide-row{display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-bottom:1px solid #1a2e45;font-size:0.78rem;line-height:1.4}
+.guide-row:last-child{border-bottom:none}
+.guide-term{color:#c9a227;font-weight:700;min-width:90px;flex-shrink:0}
+.guide-def{color:#c2d2e2}
+/* FLAGGED BANNER */
+.flagged-banner{background:#1a2d00;border:1px solid #4a6a00;border-left:3px solid #c9a227;border-radius:7px;padding:10px 13px;margin-bottom:12px;font-size:0.82rem;color:#d8e8a0;font-weight:600;display:none}
+.flagged-banner.has-flags{display:block}
 /* MATCH CARD */
 .match-card{background:#111d2c;border:1px solid #1e3050;border-radius:8px;margin-bottom:9px;overflow:hidden}
 .match-head{display:flex;align-items:center;gap:10px;padding:11px 12px;cursor:pointer;min-height:52px}
@@ -83,6 +95,20 @@ select{background:#0d1b2a;border:1px solid #25415f;color:#e8eaf6;padding:8px 10p
 </div>
 <main>
   <div id="liveStatus" class="live-status">Loading Kalshi prices…</div>
+
+  <div class="guide">
+    <button class="guide-toggle" onclick="toggleGuide()">📖 How to read this &nbsp;<span id="guide-arrow">▼</span></button>
+    <div class="guide-body" id="guide-body">
+      <div class="guide-row"><span class="guide-term">Fair %</span><span class="guide-def">The "true" probability after removing the house's cut. If Fair % is 52%, the market thinks this team has a 52% chance of winning.</span></div>
+      <div class="guide-row"><span class="guide-term">Kalshi ¢</span><span class="guide-def">What you pay per $1 to bet on this outcome. 55¢ means you risk 55¢ to win 45¢ profit (pays out $1 total).</span></div>
+      <div class="guide-row"><span class="guide-term">House cut</span><span class="guide-def">The platform's profit margin. 0% = no cut (rare, great deal). 2–3% = normal. The lower the better for you.</span></div>
+      <div class="guide-row"><span class="guide-term">The slider</span><span class="guide-def">Drag toward the team you think will win. If your view is 5+ points off from Fair %, the tool flags it as worth considering. Example: Fair % says Iran 52%, you think 65% → that's a 13pt gap on Iran ML.</span></div>
+      <div class="guide-row"><span class="guide-term">What to do</span><span class="guide-def">Look at Fair % — does it match your gut? If you think a team is better or worse than the market says, slide to your estimate. The tool tells you which market to look at and by how much you disagree.</span></div>
+    </div>
+  </div>
+
+  <div class="flagged-banner" id="flagged-banner"></div>
+
   <div class="filter-bar">
     <label for="dayFilter">Date</label>
     <select id="dayFilter" onchange="renderMatches()"></select>
@@ -349,7 +375,7 @@ function recHTML(m,myPct,marketPct,dv,hasView){
 }
 
 function onSlider(mid,v,marketPct,awayPct){
-  state.winPct[mid]=parseInt(v,10);save();
+  state.winPct[mid]=parseInt(v,10);save();updateFlaggedBanner();
   var el=document.getElementById('mvval-'+mid);if(el)el.textContent=v+'%';
   var m=MATCHES.find(function(x){return x.id===mid;});
   var dv=getMlFair(m);
@@ -366,7 +392,7 @@ function onSlider(mid,v,marketPct,awayPct){
 }
 
 function resetView(mid){
-  delete state.winPct[mid];save();
+  delete state.winPct[mid];save();updateFlaggedBanner();
   var m=MATCHES.find(function(x){return x.id===mid;});
   var card=document.getElementById('card-'+mid);if(!card)return;
   card.querySelector('.match-body').innerHTML=marketsHTML(m);
@@ -379,6 +405,33 @@ function stamp(){
   document.getElementById('last-updated').textContent='Updated '+s+' PT';
 }
 function recalcAll(){fetchKalshi();}
+
+function toggleGuide(){
+  var b=document.getElementById('guide-body');
+  var a=document.getElementById('guide-arrow');
+  var open=b.classList.toggle('open');
+  a.textContent=open?'▲':'▼';
+}
+
+function updateFlaggedBanner(){
+  var flagged=[];
+  MATCHES.forEach(function(m){
+    if(state.winPct[m.id]===undefined)return;
+    var dv=getMlFair(m);
+    if(!dv||dv.fair['home']===null)return;
+    var marketPct=Math.round(dv.fair['home']*100);
+    var myPct=state.winPct[m.id];
+    var gap=myPct-marketPct;
+    if(Math.abs(gap)>=5){
+      var side=gap>0?m.t1:m.t2;
+      flagged.push(side+' ML ('+m.t1+' v '+m.t2+', '+Math.abs(gap)+'pp gap)');
+    }
+  });
+  var el=document.getElementById('flagged-banner');
+  if(!flagged.length){el.className='flagged-banner';return;}
+  el.className='flagged-banner has-flags';
+  el.innerHTML='💡 <b>'+flagged.length+' match'+(flagged.length>1?'es':'')+' flagged</b> based on your views: '+flagged.join(' · ');
+}
 
 /* ---------- INIT ---------- */
 buildDayFilter();
