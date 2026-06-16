@@ -81,6 +81,13 @@ input[type=range]{flex:1;accent-color:#c9a227;height:30px}
 .hold{color:#8aa0b6}
 .mkt-empty{font-size:0.72rem;color:#5e7a96;font-style:italic}
 .read-discl{font-size:0.69rem;color:#8aa0b6;font-style:italic;margin-top:6px;line-height:1.4}
+.live-status{font-size:0.74rem;padding:8px 11px;border-radius:6px;margin-bottom:12px;border:1px solid #1e3050;background:#10202f;color:#9fb2c6}
+.live-status.ok{border-color:#274d38;background:#0e2018;color:#bfe3cc}
+.live-status.ok b{color:#6fd69a}
+.live-status.off{border-color:#4a3a1a;background:#1c1606;color:#d8c79a}
+.live-status.loading{color:#9fb2c6}
+.mkt-table input.auto{border-color:#2e7d4f;background:#0e2018;color:#cdeed8}
+.live-dot{color:#4caf50;font-size:0.7rem;vertical-align:middle}
 /* BET LOG */
 .section-title{font-family:'Anton',sans-serif;font-size:1.15rem;color:#f3f5fb;letter-spacing:0.5px;margin:4px 0 10px}
 .bet-form{background:#10202f;border:1px solid #1e3050;border-radius:8px;padding:13px;margin-bottom:16px}
@@ -135,7 +142,7 @@ input[type=range]{flex:1;accent-color:#c9a227;height:30px}
 <main>
   <!-- MATCHES -->
   <div class="tab-content active" id="tab-matches">
-    <div class="note">This tool does <b>not</b> claim to beat the market or find mispricings. It saves you time gathering numbers, shows the house's cut honestly, lets you record your own opinion, and tracks your real results so you can learn whether you have an edge.</div>
+    <div class="note">This tool does <b>not</b> claim to beat the market or find mispricings. It auto-loads live Kalshi prices to save you time, shows the house's cut honestly, lets you record your own opinion, and tracks your real results so you can learn whether you have an edge. Live values are real market prices; you can type over any of them.</div>
     <div class="filter-bar">
       <div class="fb-row">
         <label for="dayFilter">Date</label>
@@ -155,6 +162,7 @@ input[type=range]{flex:1;accent-color:#c9a227;height:30px}
       <div class="clear-count" id="clearCount"></div>
       <div class="read-discl">Lowering the threshold shows more matches, but most of those gaps are noise; raising it shows fewer, larger disagreements. No value here is a "smart" or "sweet spot" setting &mdash; it's just a filter.</div>
     </div>
+    <div id="liveStatus" class="live-status"></div>
     <div id="matchList"></div>
   </div>
   <!-- BET LOG -->
@@ -223,6 +231,84 @@ function devig(outcomes){
 }
 
 /* market definitions for a match */
+/* ---------- LIVE KALSHI PRICES (auto-fill; manual entry always overrides) ---------- */
+var AUTO={}, KALSHI_TS=null;
+function canon(n){
+  n=(n||'').toLowerCase().replace(/[^a-z]/g,'');
+  var map={congodr:'congo',drcongo:'congo',drc:'congo',congo:'congo',
+    korearepublic:'korea',southkorea:'korea',korea:'korea',
+    turkiye:'turkey',turkey:'turkey',
+    bosniaandherzegovina:'bosnia',bosnia:'bosnia',
+    caboverde:'capeverde',capeverde:'capeverde',
+    cotedivoire:'ivorycoast',ivorycoast:'ivorycoast',
+    unitedstates:'usa',us:'usa',usa:'usa',
+    czechrepublic:'czechia',czechia:'czechia'};
+  return map[n]||n;
+}
+function buildAuto(feed){
+  AUTO={};
+  if(!feed||!feed.matches)return;
+  var idx={};
+  feed.matches.forEach(function(fm){
+    if(!fm.teams||!fm.date)return;
+    idx[fm.date+'|'+[canon(fm.teams[0]),canon(fm.teams[1])].sort().join('|')]=fm;
+  });
+  MATCHES.forEach(function(m){
+    var fm=idx[m.date+'|'+[canon(m.t1),canon(m.t2)].sort().join('|')];
+    if(!fm)return;
+    var a={};
+    if(fm.ml){
+      var ml={};Object.keys(fm.ml).forEach(function(nm){ if(/tie/i.test(nm)) ml.tie=fm.ml[nm]; else ml[canon(nm)]=fm.ml[nm]; });
+      a.ml={home:ml[canon(m.t1)],away:ml[canon(m.t2)],draw:ml.tie};
+    }
+    if(fm.spread){
+      var t1key=Object.keys(fm.spread).filter(function(nm){return canon(nm)===canon(m.t1);})[0];
+      a.spread={};
+      if(t1key){Object.keys(fm.spread[t1key]).forEach(function(L){var c=fm.spread[t1key][L];a.spread[L]={home:c.y,away:c.n};});}
+    }
+    if(fm.total){a.total={};Object.keys(fm.total).forEach(function(L){a.total[L]={over:fm.total[L].over,under:fm.total[L].under};});}
+    if(fm.btts){a.btts={yes:fm.btts.yes,no:fm.btts.no};}
+    AUTO[m.id]=a;
+  });
+}
+function autoVals(m,def){
+  var a=AUTO[m.id]; if(!a)return {};
+  if(def.id==='ml')   return a.ml?{home:a.ml.home,draw:a.ml.draw,away:a.ml.away}:{};
+  if(def.id==='btts') return a.btts?{yes:a.btts.yes,no:a.btts.no}:{};
+  if(def.id==='spread'){var s=a.spread&&a.spread[String(def.line)];return s?{home:s.home,away:s.away}:{};}
+  if(def.id==='total'){var t=a.total&&a.total[String(def.line)];return t?{over:t.over,under:t.under}:{};}
+  return {};
+}
+/* merged price view: manual wins, else live; src tags origin per outcome */
+function effPrices(m,def){
+  var man=(state.prices[m.id]||{})[def.id]||{};
+  var auto=autoVals(m,def);
+  var vals={},src={};
+  def.outs.forEach(function(o){
+    if(man[o.key]!==undefined&&man[o.key]!==''){vals[o.key]=man[o.key];src[o.key]='manual';}
+    else if(auto[o.key]!==undefined&&auto[o.key]!==null){vals[o.key]=auto[o.key];src[o.key]='auto';}
+    else {vals[o.key]=undefined;src[o.key]=null;}
+  });
+  return {vals:vals,src:src};
+}
+function countAutoMatches(){return Object.keys(AUTO).length;}
+function fetchKalshi(cb){
+  var s=document.getElementById('liveStatus');
+  if(s){s.className='live-status loading';s.textContent='Fetching live Kalshi prices…';}
+  fetch('/api/places-search?source=kalshi').then(function(r){return r.json();}).then(function(d){
+    if(d&&d.matches&&d.matches.length){
+      buildAuto(d);KALSHI_TS=d.updated;
+      if(s){s.className='live-status ok';s.innerHTML='● Live Kalshi prices loaded for <b>'+countAutoMatches()+'</b> matches. Manual entries override live values.';}
+    } else {
+      if(s){s.className='live-status off';s.textContent='Live prices unavailable right now — manual entry still works.';}
+    }
+    renderMatches();updateClearCount();stamp();if(cb)cb();
+  }).catch(function(){
+    if(s){s.className='live-status off';s.textContent='Live prices unavailable right now — manual entry still works.';}
+    renderMatches();stamp();if(cb)cb();
+  });
+}
+
 function marketDefs(m){
   var ln=state.lines[m.id]||{};
   var sp=ln.spread!==undefined?ln.spread:1.5;
@@ -243,7 +329,7 @@ function marketDefs(m){
 function matchMaxGap(m){
   var defs=marketDefs(m),maxg=0;
   defs.forEach(function(def){
-    var pr=(state.prices[m.id]||{})[def.id]||{};
+    var pr=effPrices(m,def).vals;
     var rd=(state.reads[m.id]||{})[def.id]||{};
     var dv=devig(def.outs.map(function(o){return {key:o.key,price:num(pr[o.key])};}));
     if(!dv)return;
@@ -326,7 +412,7 @@ function marketsHTML(m){
   return out;
 }
 function marketHTML(m,def){
-  var pr=(state.prices[m.id]||{})[def.id]||{};
+  var eff=effPrices(m,def);var pr=eff.vals;
   var rd=(state.reads[m.id]||{})[def.id]||{};
   var dv=devig(def.outs.map(function(o){return {key:o.key,price:num(pr[o.key])};}));
   var h='<div class="market"><div class="market-title"><span>'+def.title+'</span>';
@@ -340,8 +426,9 @@ function marketHTML(m,def){
     var r=num(rd[o.key]);
     var gap=(r!==null&&fair!==null)?(r/100-fair):null;
     var gapClass=gap!==null&&Math.abs(gap)>=state.threshold/100?'gap-flag':'gap-none';
-    h+='<tr><td class="lbl">'+o.label+'</td>';
-    h+='<td><input type="number" min="1" max="99" inputmode="numeric" value="'+(pr[o.key]!==undefined?pr[o.key]:'')+'" onchange="setPrice(\''+m.id+'\',\''+def.id+'\',\''+o.key+'\',this.value)"></td>';
+    var isAuto=eff.src[o.key]==='auto';
+    h+='<tr><td class="lbl">'+o.label+(isAuto?' <span class="live-dot" title="Live from Kalshi">●</span>':'')+'</td>';
+    h+='<td><input type="number" min="1" max="99" inputmode="numeric" class="'+(isAuto?'auto':'')+'" value="'+(pr[o.key]!==undefined?pr[o.key]:'')+'" onchange="setPrice(\''+m.id+'\',\''+def.id+'\',\''+o.key+'\',this.value)"></td>';
     h+='<td class="cell-raw">'+(raw!==null?(raw*100).toFixed(1):'—')+'</td>';
     h+='<td class="cell-fair">'+(fair!==null?(fair*100).toFixed(1):'—')+'</td>';
     h+='<td><input type="number" min="1" max="99" inputmode="numeric" value="'+(rd[o.key]!==undefined?rd[o.key]:'')+'" onchange="setRead(\''+m.id+'\',\''+def.id+'\',\''+o.key+'\',this.value)"></td>';
@@ -352,7 +439,7 @@ function marketHTML(m,def){
     h+='<div class="mkt-foot"><span class="overround">House cut (overround): <b>'+(dv.over*100).toFixed(1)+'%</b></span>';
     h+='<span class="hold">implied hold '+(dv.hold*100).toFixed(1)+'% &middot; prices sum to '+(dv.sum*100).toFixed(1)+'%</span></div>';
   } else {
-    h+='<div class="mkt-empty">Enter the Kalshi YES price (in cents) for each outcome to see the de-vigged fair line and the house cut.</div>';
+    h+='<div class="mkt-empty">No live price for this market yet (Kalshi often posts spreads/totals/BTTS closer to kickoff). Enter the Kalshi YES price in cents to see the de-vigged fair line and house cut.</div>';
   }
   h+='<div class="read-discl">Gap to investigate = your % &minus; fair %. A gap usually means your estimate is off, not that the market is. Treat it as a question, not a signal.</div>';
   h+='</div>';
@@ -502,13 +589,15 @@ function stamp(){
   document.getElementById('last-updated').textContent='Last updated: '+s+' ET';
 }
 function recalcAll(){
-  renderMatches();renderBetList();renderResults();stamp();save();
+  renderBetList();renderResults();save();
+  fetchKalshi();           /* re-pull live prices, then re-renders + restamps */
 }
 
 /* ---------- INIT ---------- */
 document.getElementById('threshSlider').value=state.threshold;
 document.getElementById('threshVal').textContent=state.threshold+'%';
 buildDayFilter();buildBetMatchSelect();renderMatches();renderBetList();stamp();
+fetchKalshi();
 </script>
 </body>
 </html>
