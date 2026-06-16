@@ -61,6 +61,20 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
 .today-divider{display:flex;align-items:center;gap:10px;padding:8px 14px;margin:4px 0;color:#c9a227;font-size:0.70rem;font-weight:700;letter-spacing:2px;text-transform:uppercase}
 .today-divider::before,.today-divider::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,#c9a227,transparent)}
 .picks-today-divider{background:#0f1923;color:#c9a227;font-size:0.68rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:7px 10px;text-align:center;border-top:1px solid rgba(201,162,39,0.5);border-bottom:1px solid rgba(201,162,39,0.5)}
+/* LOVELY LOSERS */
+.losers-header{text-align:center;padding:18px 14px 8px}
+.losers-title{font-family:'Anton',sans-serif;font-size:1.5rem;letter-spacing:1px;color:#f3f5fb}
+.losers-sub{font-size:0.74rem;color:#7a8fa6;margin-top:4px}
+.losers-list{padding:8px 12px 24px;max-width:500px;margin:0 auto}
+.loser-row{display:flex;align-items:center;gap:12px;padding:11px 14px;margin-bottom:8px;background:#111d2c;border:1px solid #1e3050;border-radius:8px;position:relative;overflow:hidden}
+.loser-row.top-loser{border-color:#c9a227;background:#14211a}
+.loser-rank{font-size:1.4rem;flex-shrink:0;width:36px;text-align:center}
+.loser-name{font-weight:700;font-size:1rem;color:#e8eaf6;flex:1}
+.loser-count{font-size:0.82rem;color:#9fb2c6;flex-shrink:0;text-align:right;line-height:1.3}
+.loser-count b{display:block;font-size:1.1rem;color:#e53935;font-weight:800}
+.loser-zero{opacity:0.45}
+.losers-note{font-size:0.7rem;color:#5e7a96;text-align:center;padding:4px 14px 20px;font-style:italic}
+.losers-none{text-align:center;color:#5e7a96;padding:40px 14px;font-size:0.85rem}
 .group-card{background:#111d2c;border-radius:8px;margin-bottom:12px;overflow:hidden;border:1px solid #1e3050}
 .group-header{background:#1a2e45;padding:10px 14px;display:flex;align-items:center;gap:8px}
 .group-letter{background:#c9a227;color:#0d1b2a;font-weight:900;border-radius:4px;padding:2px 8px;font-size:0.85rem}
@@ -205,6 +219,7 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
   <button class="tab-btn active" onclick="showTab('leaderboard',this)">🏆 Leaderboard<span id="tab-live-dot" class="tab-live-dot hidden"></span></button>
   <button class="tab-btn" onclick="showTab('matches',this)">⚽ Results</button>
   <button class="tab-btn" onclick="showTab('picks',this)">📋 All Picks</button>
+  <button class="tab-btn" onclick="showTab('losers',this)">🪑 Lovely Losers</button>
 </nav>
 
 <main>
@@ -306,6 +321,12 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
       </table>
     </div>
   </div>
+
+  <!-- LOVELY LOSERS -->
+  <div id="tab-losers" class="tab-content">
+    <div id="losers-content"></div>
+  </div>
+
 </main>
 
 <script>
@@ -2311,6 +2332,7 @@ function renderAll(){
   const activeTab=document.querySelector('.tab-content.active');
   if(activeTab&&activeTab.id==='tab-matches') renderMatches();
   if(activeTab&&activeTab.id==='tab-picks') renderPicks();
+  if(activeTab&&activeTab.id==='tab-losers') renderLosers();
 }
 
 function renderBanner(){
@@ -2805,6 +2827,86 @@ function autoSelectMatchday(){
   if(next) sel.value=String(next.md);
 }
 
+/* ---------- LOVELY LOSERS ---------- */
+function calcLastPlaceHistory(){
+  // Replay game results in chronological order; after each game, find who's in last
+  const done = MATCHES
+    .filter(m=>results[m.id]&&results[m.id].done)
+    .sort((a,b)=>(matchTimestamps[a.id]||0)-(matchTimestamps[b.id]||0));
+
+  const running = {}; // player → cumulative pts so far
+  PLAYERS.forEach(p=>running[p]=0);
+  const lastCount = {}; // player → games spent in last place
+  PLAYERS.forEach(p=>lastCount[p]=0);
+
+  for(const m of done){
+    const res=results[m.id];
+    PLAYERS.forEach((p,pi)=>{
+      const earned=pts(m.p[pi],res);
+      if(earned>0) running[p]+=earned;
+    });
+    const minPts=Math.min(...PLAYERS.map(p=>running[p]));
+    PLAYERS.forEach(p=>{ if(running[p]===minPts) lastCount[p]++; });
+  }
+  return {lastCount, gamesPlayed:done.length};
+}
+
+function renderLosers(){
+  const el=document.getElementById('losers-content');
+  const {lastCount,gamesPlayed}=calcLastPlaceHistory();
+  if(gamesPlayed===0){
+    el.innerHTML='<div class="losers-none">No games played yet — check back once the tournament kicks off! ⚽</div>';
+    return;
+  }
+
+  const funnyLabels=['','🏆 Grand Champion of Losing','🥈 Silver Stinker','🥉 Bronze Bottom-Dweller'];
+  const suffixes=['s',''];  // "games" vs "game"
+  const roasts=[
+    p=>`Spent <b>${lastCount[p]}</b> game${lastCount[p]===1?'':'s'} in the basement. The floor knows them by name.`,
+    p=>`<b>${lastCount[p]}</b> game${lastCount[p]===1?'':'s'} at the bottom. A true pioneer of mediocrity.`,
+    p=>`<b>${lastCount[p]}</b> game${lastCount[p]===1?'':'s'} in last. Bravely holding down the floor.`,
+    p=>`<b>${lastCount[p]}</b> game${lastCount[p]===1?'':'s'} dead last. Friends say they have "potential."`,
+    p=>`<b>${lastCount[p]}</b> game${lastCount[p]===1?'':'s'} at the bottom of the barrel.`,
+  ];
+
+  const sorted=PLAYERS
+    .map(p=>({name:p,count:lastCount[p]}))
+    .sort((a,b)=>b.count-a.count||(a.name>b.name?1:-1));
+
+  const emojis=['😭','😩','😬','😅','😶','🫠','🤡','🐢','🥴','🦺','😵','🫣','🤷','💤','🙈','💀','🪑'];
+  const topCount=sorted[0].count;
+
+  let html=`<div class="losers-header">
+    <div class="losers-title">🪑 Lovely Losers</div>
+    <div class="losers-sub">Last-place appearances through ${gamesPlayed} game${gamesPlayed===1?'':'s'} · ties count for everyone involved</div>
+  </div><div class="losers-list">`;
+
+  sorted.forEach((item,i)=>{
+    if(item.count===0){
+      html+=`<div class="loser-row loser-zero">
+        <span class="loser-rank">😇</span>
+        <span class="loser-name">${item.name}</span>
+        <span class="loser-count" style="color:#4caf50;font-weight:700">Clean record ✅</span>
+      </div>`;
+      return;
+    }
+    const isTop=item.count===topCount;
+    const emoji=emojis[i%emojis.length];
+    const roast=roasts[i%roasts.length](item.name);
+    html+=`<div class="loser-row${isTop?' top-loser':''}">
+      <span class="loser-rank">${i===0&&topCount>0?'🏆':emoji}</span>
+      <div style="flex:1;min-width:0">
+        <div class="loser-name">${item.name}${isTop?' <span style="font-size:0.72rem;color:#c9a227;font-weight:600">(reigning champ 👑)</span>':''}</div>
+        <div style="font-size:0.73rem;color:#7a8fa6;margin-top:2px">${roast}</div>
+      </div>
+      <span class="loser-count"><b>${item.count}</b>${item.count===1?'game':'games'}<br>last place</span>
+    </div>`;
+  });
+
+  html+=`</div><div class="losers-note">Updated live as games finish · being in last when others tie still counts · shared last place = everyone gets the point (or blame)</div>`;
+  el.innerHTML=html;
+}
+
 function showTab(id,btn){
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
@@ -2812,6 +2914,7 @@ function showTab(id,btn){
   if(btn) btn.classList.add('active');
   if(id==='matches'){renderMatches();setTimeout(scrollToToday,80);}
   if(id==='picks'){renderPicks();setTimeout(scrollToPicksToday,80);}
+  if(id==='losers'){renderLosers();}
 }
 
 let autoTimer;
