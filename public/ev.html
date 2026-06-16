@@ -3,226 +3,120 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>World Cup 2026 Bet Tracker &amp; Line Tool</title>
+<title>World Cup 2026 · Live Odds</title>
 <link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',Arial,sans-serif;background:#0d1b2a;color:#e8eaf6;min-height:100vh;-webkit-text-size-adjust:100%}
-/* HEADER */
-.header{background:#0a1521;padding:16px 14px 0;border-bottom:3px solid #c9a227}
-.title-row{display:flex;flex-direction:column;gap:3px;text-align:center}
-.kicker{font-size:0.66rem;letter-spacing:3px;color:#c9a227;font-weight:700;text-transform:uppercase}
-.app-title{font-family:'Anton',sans-serif;font-size:1.65rem;letter-spacing:1px;color:#f3f5fb;line-height:1.05}
-.subtitle{font-size:0.74rem;color:#8aa0b6;margin-top:2px}
-.header-meta{display:flex;align-items:center;justify-content:center;gap:10px;margin:11px 0 12px;flex-wrap:wrap}
+.header{background:#0a1521;padding:14px 14px 12px;border-bottom:3px solid #c9a227;text-align:center}
+.kicker{font-size:0.65rem;letter-spacing:3px;color:#c9a227;font-weight:700;text-transform:uppercase}
+.app-title{font-family:'Anton',sans-serif;font-size:1.55rem;letter-spacing:1px;color:#f3f5fb;line-height:1.05;margin-top:2px}
+.subtitle{font-size:0.72rem;color:#8aa0b6;margin-top:3px}
+.header-meta{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:10px;flex-wrap:wrap}
 #last-updated{font-size:0.72rem;color:#9fb2c6}
-.refresh-btn{background:#c9a227;color:#0d1b2a;border:none;border-radius:6px;padding:8px 14px;font-size:0.78rem;font-weight:700;cursor:pointer;min-height:38px}
+.refresh-btn{background:#c9a227;color:#0d1b2a;border:none;border-radius:6px;padding:8px 14px;font-size:0.78rem;font-weight:700;cursor:pointer;min-height:36px}
 .refresh-btn:active{background:#e8c040}
-/* TABS */
-.tabs{display:flex;background:#0a1521;border-bottom:2px solid #1e3050;position:sticky;top:0;z-index:30}
-.tab-btn{flex:1;padding:13px 4px;background:none;border:none;color:#7a8fa6;font-size:0.82rem;font-weight:700;cursor:pointer;border-bottom:3px solid transparent;min-height:46px}
-.tab-btn.active{color:#c9a227;border-bottom-color:#c9a227;background:#0d1b2a}
-main{max-width:760px;margin:0 auto;padding:12px 10px 60px}
-.tab-content{display:none}.tab-content.active{display:block}
-/* DISCLAIMER / NOTES */
-.note{background:#10202f;border:1px solid #1e3050;border-left:3px solid #c9a227;border-radius:6px;padding:10px 12px;font-size:0.78rem;color:#c2d2e2;line-height:1.5;margin-bottom:12px}
-.note b{color:#f0c840}
-.note.plain{border-left-color:#3a5170}
-/* FILTER BAR */
-.filter-bar{display:flex;flex-direction:column;gap:12px;background:#10202f;border:1px solid #1e3050;border-radius:8px;padding:12px;margin-bottom:14px}
-.fb-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.fb-row label{font-size:0.74rem;color:#9fb2c6;font-weight:600;min-width:74px}
-select,input[type=number],input[type=text]{background:#0d1b2a;border:1px solid #25415f;color:#e8eaf6;padding:9px 10px;border-radius:6px;font-size:0.92rem;font-family:inherit}
-select{flex:1;min-height:40px}
-.slider-wrap{flex:1;display:flex;align-items:center;gap:10px}
-input[type=range]{flex:1;accent-color:#c9a227;height:30px}
-.thresh-val{font-weight:800;color:#c9a227;font-size:0.95rem;min-width:40px;text-align:right}
-.toggle-row{display:flex;align-items:center;gap:9px}
-.toggle-row input{width:18px;height:18px;accent-color:#c9a227}
-.toggle-row span{font-size:0.78rem;color:#c2d2e2}
-.clear-count{font-size:0.76rem;color:#9fb2c6}
-.clear-count b{color:#c9a227}
-/* DAY GROUP */
-.day-divider{display:flex;align-items:center;gap:10px;padding:6px 2px;margin:14px 0 8px;color:#c9a227;font-size:0.72rem;font-weight:700;letter-spacing:2px;text-transform:uppercase}
-.day-divider::before,.day-divider::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,#c9a227,transparent)}
+main{max-width:720px;margin:0 auto;padding:12px 10px 60px}
+/* FILTER */
+.filter-bar{display:flex;align-items:center;gap:10px;background:#10202f;border:1px solid #1e3050;border-radius:8px;padding:10px 12px;margin-bottom:12px;flex-wrap:wrap}
+.filter-bar label{font-size:0.74rem;color:#9fb2c6;font-weight:600}
+select{background:#0d1b2a;border:1px solid #25415f;color:#e8eaf6;padding:8px 10px;border-radius:6px;font-size:0.9rem;font-family:inherit;min-height:38px}
+/* STATUS */
+.live-status{font-size:0.74rem;padding:7px 11px;border-radius:6px;margin-bottom:10px;border:1px solid #1e3050;background:#10202f;color:#9fb2c6}
+.live-status.ok{border-color:#274d38;background:#0e2018;color:#bfe3cc}
+.live-status.ok b{color:#6fd69a}
+.live-status.off{border-color:#4a3a1a;background:#1c1606;color:#d8c79a}
 /* MATCH CARD */
 .match-card{background:#111d2c;border:1px solid #1e3050;border-radius:8px;margin-bottom:9px;overflow:hidden}
-.match-head{display:flex;align-items:center;gap:10px;padding:12px 13px;cursor:pointer;min-height:54px}
+.match-head{display:flex;align-items:center;gap:10px;padding:11px 12px;cursor:pointer;min-height:52px}
 .match-head:active{background:#15263a}
-.mh-group{background:#1a2e45;color:#c9a227;font-weight:800;border-radius:5px;padding:3px 8px;font-size:0.72rem;flex-shrink:0}
-.mh-teams{flex:1;min-width:0;font-size:0.95rem;font-weight:700;line-height:1.25}
-.mh-time{font-size:0.68rem;color:#8aa0b6;margin-top:2px;font-weight:500}
-.mh-flag{font-size:0.66rem;color:#c9a227;background:#1a2400;border:1px solid #3a3000;border-radius:4px;padding:2px 6px;flex-shrink:0;display:none}
-.mh-flag.on{display:inline-block}
+.mh-group{background:#1a2e45;color:#c9a227;font-weight:800;border-radius:5px;padding:3px 8px;font-size:0.7rem;flex-shrink:0}
+.mh-info{flex:1;min-width:0}
+.mh-teams{font-size:0.93rem;font-weight:700;line-height:1.2}
+.mh-time{font-size:0.67rem;color:#8aa0b6;margin-top:2px}
+.mh-ml{font-size:0.7rem;color:#9fb2c6;margin-top:4px;line-height:1.3}
+.mh-ml b{color:#f3f5fb;font-size:0.82rem}
 .mh-caret{color:#5e7a96;font-size:1.1rem;flex-shrink:0;transition:transform .2s}
 .match-card.open .mh-caret{transform:rotate(90deg)}
 .match-body{display:none;padding:4px 12px 14px;border-top:1px solid #1a2e45}
 .match-card.open .match-body{display:block}
 /* MARKET */
 .market{margin-top:13px}
-.market-title{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:0.8rem;font-weight:800;color:#dfe8f2;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:7px}
+.market-title{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:0.78rem;font-weight:800;color:#dfe8f2;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
 .line-edit{display:flex;align-items:center;gap:5px;font-size:0.7rem;color:#9fb2c6;font-weight:600;text-transform:none;letter-spacing:0}
-.line-edit input{width:58px;padding:5px 6px;font-size:0.82rem}
-.mkt-table{width:100%;border-collapse:collapse;font-size:0.8rem}
-.mkt-table th{color:#7f95ab;font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;padding:3px 4px;text-align:center;border-bottom:1px solid #1e3050}
+.line-edit input{width:56px;padding:5px 6px;font-size:0.82rem;background:#0d1b2a;border:1px solid #25415f;color:#e8eaf6;border-radius:5px}
+.mkt-table{width:100%;border-collapse:collapse;font-size:0.82rem}
+.mkt-table th{color:#7f95ab;font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;padding:3px 6px;text-align:center;border-bottom:1px solid #1e3050}
 .mkt-table th.lbl{text-align:left}
-.mkt-table td{padding:5px 4px;text-align:center;border-bottom:1px solid #14263a}
-.mkt-table td.lbl{text-align:left;font-weight:700;color:#e8eaf6;font-size:0.82rem}
-.mkt-table input{width:54px;padding:7px 4px;text-align:center;font-size:0.9rem;-moz-appearance:textfield}
-.mkt-table input::-webkit-outer-spin-button,.mkt-table input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-.cell-raw{color:#9fb2c6}
-.cell-fair{color:#f3f5fb;font-weight:700}
-.cell-gap{font-weight:800}
-.gap-flag{color:#f0c840}
-.gap-none{color:#5e7a96}
-.mkt-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:7px;font-size:0.72rem;flex-wrap:wrap}
-.overround{color:#c2d2e2}
-.overround b{color:#f0c840;font-size:0.86rem}
-.hold{color:#8aa0b6}
-.mkt-empty{font-size:0.72rem;color:#5e7a96;font-style:italic}
-.read-discl{font-size:0.69rem;color:#8aa0b6;font-style:italic;margin-top:6px;line-height:1.4}
-.live-status{font-size:0.74rem;padding:8px 11px;border-radius:6px;margin-bottom:12px;border:1px solid #1e3050;background:#10202f;color:#9fb2c6}
-.live-status.ok{border-color:#274d38;background:#0e2018;color:#bfe3cc}
-.live-status.ok b{color:#6fd69a}
-.live-status.off{border-color:#4a3a1a;background:#1c1606;color:#d8c79a}
-.live-status.loading{color:#9fb2c6}
-.mkt-table input.auto{border-color:#2e7d4f;background:#0e2018;color:#cdeed8}
-.live-dot{color:#4caf50;font-size:0.7rem;vertical-align:middle}
-/* BET LOG */
-.section-title{font-family:'Anton',sans-serif;font-size:1.15rem;color:#f3f5fb;letter-spacing:0.5px;margin:4px 0 10px}
-.bet-form{background:#10202f;border:1px solid #1e3050;border-radius:8px;padding:13px;margin-bottom:16px}
-.bf-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.bf-grid .full{grid-column:1/-1}
-.bf-field{display:flex;flex-direction:column;gap:4px}
-.bf-field label{font-size:0.68rem;color:#9fb2c6;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
-.bf-field input,.bf-field select{width:100%}
-.btn{background:#c9a227;color:#0d1b2a;border:none;border-radius:6px;padding:11px 16px;font-size:0.86rem;font-weight:800;cursor:pointer;min-height:44px;width:100%;margin-top:12px}
-.btn:active{background:#e8c040}
-.btn.sec{background:#1a2e45;color:#c9a227;border:1px solid #25415f;margin-top:0}
-.bet-item{background:#111d2c;border:1px solid #1e3050;border-radius:8px;padding:11px 12px;margin-bottom:9px}
-.bi-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
-.bi-match{font-weight:700;font-size:0.9rem;color:#f3f5fb}
-.bi-sub{font-size:0.72rem;color:#9fb2c6;margin-top:2px}
-.bi-pl{font-weight:800;font-size:0.95rem;white-space:nowrap}
-.pos{color:#4caf50}.neg{color:#e0635a}.neu{color:#9fb2c6}
-.bi-settle{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-top:9px;align-items:end}
-.bi-settle .bf-field label{font-size:0.62rem}
-.bi-settle input,.bi-settle select{padding:7px 8px;font-size:0.85rem}
-.bi-meta{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;font-size:0.72rem;color:#9fb2c6}
-.bi-meta b{color:#dfe8f2}
-.del-bet{background:none;border:none;color:#7a4a4a;font-size:0.7rem;cursor:pointer;text-decoration:underline;padding:0;margin-top:6px}
-.empty-state{text-align:center;color:#5e7a96;font-size:0.85rem;padding:30px 10px}
-/* RESULTS */
-.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
-.stat-card{background:#111d2c;border:1px solid #1e3050;border-radius:8px;padding:13px 12px;text-align:center}
-.stat-card.wide{grid-column:1/-1;border-left:3px solid #c9a227}
-.stat-label{font-size:0.64rem;color:#8aa0b6;text-transform:uppercase;letter-spacing:1px;font-weight:700}
-.stat-val{font-size:1.5rem;font-weight:800;color:#f3f5fb;margin-top:4px;font-family:'Anton',sans-serif;letter-spacing:0.5px}
-.stat-sub{font-size:0.68rem;color:#8aa0b6;margin-top:3px}
-.footer-note{font-size:0.7rem;color:#6f879d;text-align:center;padding:18px 12px 0;line-height:1.5}
+.mkt-table td{padding:6px 6px;text-align:center;border-bottom:1px solid #14263a}
+.mkt-table td.lbl{text-align:left;font-weight:700;color:#e8eaf6;font-size:0.83rem}
+.cell-cents{font-size:0.88rem;color:#c2d2e2;font-weight:600}
+.cell-fair{color:#f3f5fb;font-weight:800;font-size:0.9rem}
+.live-dot{color:#4caf50;font-size:0.68rem;vertical-align:middle}
+.mkt-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:5px;font-size:0.7rem;color:#6f879d;flex-wrap:wrap}
+.mkt-foot b{color:#c9a227}
+.mkt-empty{font-size:0.72rem;color:#5e7a96;font-style:italic;margin-top:5px}
+/* MY VIEW SLIDER */
+.my-view{margin-top:16px;background:#0d1b2a;border:1px solid #1e3050;border-radius:7px;padding:11px 12px}
+.mv-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.mv-label{font-size:0.72rem;color:#9fb2c6;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+.mv-val{color:#c9a227;font-size:0.9rem;font-weight:800;margin-left:6px}
+.mv-reset{background:none;border:1px solid #25415f;color:#7a8fa6;font-size:0.66rem;padding:2px 7px;border-radius:4px;cursor:pointer}
+.mv-reset:active{background:#15263a}
+.mv-teams{display:flex;justify-content:space-between;font-size:0.68rem;color:#7a8fa6;margin-bottom:3px}
+.mv-slider{width:100%;accent-color:#c9a227;height:28px;cursor:pointer}
+.rec-badge{margin-top:8px;background:#1a2d00;border:1px solid #4a6a00;border-left:3px solid #c9a227;border-radius:5px;padding:7px 10px;font-size:0.78rem;color:#d8e8a0;font-weight:600}
+.rec-none{margin-top:8px;font-size:0.74rem;color:#5e7a96;text-align:center;padding:4px 0}
+.rec-hint{margin-top:8px;font-size:0.73rem;color:#5e7a96;text-align:center;padding:4px 0;font-style:italic}
+.mkt-table input::-webkit-outer-spin-button,.mkt-table input::-webkit-inner-spin-button{-webkit-appearance:none}
 </style>
 </head>
 <body>
 <div class="header">
-  <div class="title-row">
-    <span class="kicker">FIFA World Cup 2026 &middot; Group Stage</span>
-    <span class="app-title">Bet Tracker &amp; Line Tool</span>
-    <span class="subtitle">Personal tool &middot; not an edge-finder &middot; numbers come only from prices you enter</span>
-  </div>
+  <div class="kicker">FIFA World Cup 2026 &middot; Group Stage</div>
+  <div class="app-title">Live Odds</div>
+  <div class="subtitle">Auto-loaded from Kalshi &middot; prices are de-vigged fair values</div>
   <div class="header-meta">
-    <button class="refresh-btn" onclick="recalcAll()">&#8635; Refresh / Recalculate</button>
-    <span id="last-updated">Last updated: &mdash;</span>
+    <span id="last-updated"></span>
+    <button class="refresh-btn" onclick="recalcAll()">&#8635; Refresh</button>
   </div>
-</div>
-<div class="tabs">
-  <button class="tab-btn active" data-tab="matches" onclick="switchTab('matches')">Matches</button>
-  <button class="tab-btn" data-tab="log" onclick="switchTab('log')">Bet Log</button>
-  <button class="tab-btn" data-tab="results" onclick="switchTab('results')">Results &amp; CLV</button>
 </div>
 <main>
-  <!-- MATCHES -->
-  <div class="tab-content active" id="tab-matches">
-    <div class="note">This tool does <b>not</b> claim to beat the market or find mispricings. It auto-loads live Kalshi prices to save you time, shows the house's cut honestly, lets you record your own opinion, and tracks your real results so you can learn whether you have an edge. Live values are real market prices; you can type over any of them.</div>
-    <div class="filter-bar">
-      <div class="fb-row">
-        <label for="dayFilter">Date</label>
-        <select id="dayFilter" onchange="renderMatches()"></select>
-      </div>
-      <div class="fb-row">
-        <label for="threshSlider">Gap filter</label>
-        <div class="slider-wrap">
-          <input type="range" id="threshSlider" min="2" max="15" step="1" value="7" oninput="onThresh()">
-          <span class="thresh-val" id="threshVal">7%</span>
-        </div>
-      </div>
-      <div class="toggle-row">
-        <input type="checkbox" id="gapOnly" onchange="renderMatches()">
-        <span>Show only matches with a gap &ge; threshold</span>
-      </div>
-      <div class="clear-count" id="clearCount"></div>
-      <div class="read-discl">Lowering the threshold shows more matches, but most of those gaps are noise; raising it shows fewer, larger disagreements. No value here is a "smart" or "sweet spot" setting &mdash; it's just a filter.</div>
-    </div>
-    <div id="liveStatus" class="live-status"></div>
-    <div id="matchList"></div>
+  <div id="liveStatus" class="live-status">Loading Kalshi prices…</div>
+  <div class="filter-bar">
+    <label for="dayFilter">Date</label>
+    <select id="dayFilter" onchange="renderMatches()"></select>
   </div>
-  <!-- BET LOG -->
-  <div class="tab-content" id="tab-log">
-    <div class="section-title">Log a bet</div>
-    <div class="note plain">Log the bet when you place it. Always enter the price of the <b>exact side you took</b> (Kalshi YES price, in cents). Later, come back and fill in the closing price and result so the tool can measure your closing line value.</div>
-    <div class="bet-form">
-      <div class="bf-grid">
-        <div class="bf-field full"><label>Match</label><select id="betMatch"></select></div>
-        <div class="bf-field"><label>Market</label>
-          <select id="betMarket"><option>Moneyline</option><option>Spread</option><option>Total goals</option><option>Both teams to score</option><option>Other</option></select></div>
-        <div class="bf-field"><label>Side / outcome taken</label><input type="text" id="betSide" placeholder="e.g. Brazil ML, Over 2.5"></div>
-        <div class="bf-field"><label>Entry price (&cent; YES)</label><input type="number" id="betEntry" min="1" max="99" placeholder="e.g. 58"></div>
-        <div class="bf-field"><label>Stake ($)</label><input type="number" id="betStake" min="0" step="0.01" placeholder="e.g. 25"></div>
-        <div class="bf-field"><label>Date placed</label><input type="date" id="betDate"></div>
-        <div class="bf-field"><label>My fair est. (% &mdash; optional)</label><input type="number" id="betMyEst" min="1" max="99" placeholder="opt"></div>
-      </div>
-      <button class="btn" onclick="addBet()">+ Add bet to log</button>
-    </div>
-    <div class="section-title">Open &amp; settled bets</div>
-    <div id="betList"></div>
-  </div>
-  <!-- RESULTS -->
-  <div class="tab-content" id="tab-results">
-    <div class="section-title">Results &amp; closing line value</div>
-    <div class="stat-grid" id="statGrid"></div>
-    <div class="note" style="margin-top:14px"><b>Why CLV is the number that matters.</b> Beating the closing line &mdash; consistently getting a better price than where the market settled &mdash; is the only reliable evidence of skill over a large sample. A positive bankroll over a handful of bets is mostly variance; it does not prove an edge. Aim to judge yourself on average CLV across many bets, not on short-run profit.</div>
-    <div id="settledList"></div>
-  </div>
+  <div id="matchList"></div>
 </main>
-<div class="footer-note">Every figure is computed from prices and results you enter. No automated predictions, confidence scores, or sentiment. For your eyes only.</div>
 <script>
 const MATCHES=[{"id":"760415","group":"A","md":1,"t1":"Mexico","t2":"South Africa","date":"2026-06-11","utc":"2026-06-11T19:00"},{"id":"760414","group":"A","md":1,"t1":"South Korea","t2":"Czechia","date":"2026-06-11","utc":"2026-06-12T02:00"},{"id":"760416","group":"B","md":1,"t1":"Canada","t2":"Bosnia","date":"2026-06-12","utc":"2026-06-12T19:00"},{"id":"760417","group":"D","md":1,"t1":"USA","t2":"Paraguay","date":"2026-06-12","utc":"2026-06-13T01:00"},{"id":"760420","group":"B","md":1,"t1":"Qatar","t2":"Switzerland","date":"2026-06-13","utc":"2026-06-13T19:00"},{"id":"760419","group":"C","md":1,"t1":"Brazil","t2":"Morocco","date":"2026-06-13","utc":"2026-06-13T22:00"},{"id":"760418","group":"C","md":1,"t1":"Haiti","t2":"Scotland","date":"2026-06-13","utc":"2026-06-14T01:00"},{"id":"760421","group":"D","md":1,"t1":"Australia","t2":"Turkey","date":"2026-06-13","utc":"2026-06-14T04:00"},{"id":"760422","group":"E","md":1,"t1":"Germany","t2":"Curacao","date":"2026-06-14","utc":"2026-06-14T17:00"},{"id":"760425","group":"F","md":1,"t1":"Netherlands","t2":"Japan","date":"2026-06-14","utc":"2026-06-14T20:00"},{"id":"760423","group":"E","md":1,"t1":"Ivory Coast","t2":"Ecuador","date":"2026-06-14","utc":"2026-06-14T23:00"},{"id":"760424","group":"F","md":1,"t1":"Sweden","t2":"Tunisia","date":"2026-06-14","utc":"2026-06-15T02:00"},{"id":"760428","group":"H","md":1,"t1":"Spain","t2":"Cape Verde","date":"2026-06-15","utc":"2026-06-15T16:00"},{"id":"760426","group":"G","md":1,"t1":"Belgium","t2":"Egypt","date":"2026-06-15","utc":"2026-06-15T19:00"},{"id":"760429","group":"H","md":1,"t1":"Saudi Arabia","t2":"Uruguay","date":"2026-06-15","utc":"2026-06-15T22:00"},{"id":"760427","group":"G","md":1,"t1":"Iran","t2":"New Zealand","date":"2026-06-15","utc":"2026-06-16T01:00"},{"id":"760432","group":"I","md":1,"t1":"France","t2":"Senegal","date":"2026-06-16","utc":"2026-06-16T19:00"},{"id":"760430","group":"I","md":1,"t1":"Iraq","t2":"Norway","date":"2026-06-16","utc":"2026-06-16T22:00"},{"id":"760433","group":"J","md":1,"t1":"Argentina","t2":"Algeria","date":"2026-06-16","utc":"2026-06-17T01:00"},{"id":"760431","group":"J","md":1,"t1":"Austria","t2":"Jordan","date":"2026-06-16","utc":"2026-06-17T04:00"},{"id":"760435","group":"K","md":1,"t1":"Portugal","t2":"Congo","date":"2026-06-17","utc":"2026-06-17T17:00"},{"id":"760437","group":"L","md":1,"t1":"England","t2":"Croatia","date":"2026-06-17","utc":"2026-06-17T20:00"},{"id":"760434","group":"L","md":1,"t1":"Ghana","t2":"Panama","date":"2026-06-17","utc":"2026-06-17T23:00"},{"id":"760436","group":"K","md":1,"t1":"Uzbekistan","t2":"Colombia","date":"2026-06-17","utc":"2026-06-18T02:00"},{"id":"760438","group":"A","md":2,"t1":"Czechia","t2":"South Africa","date":"2026-06-18","utc":"2026-06-18T16:00"},{"id":"760439","group":"B","md":2,"t1":"Switzerland","t2":"Bosnia","date":"2026-06-18","utc":"2026-06-18T19:00"},{"id":"760440","group":"B","md":2,"t1":"Canada","t2":"Qatar","date":"2026-06-18","utc":"2026-06-18T22:00"},{"id":"760441","group":"A","md":2,"t1":"Mexico","t2":"South Korea","date":"2026-06-18","utc":"2026-06-19T01:00"},{"id":"760442","group":"D","md":2,"t1":"USA","t2":"Australia","date":"2026-06-19","utc":"2026-06-19T19:00"},{"id":"760445","group":"C","md":2,"t1":"Scotland","t2":"Morocco","date":"2026-06-19","utc":"2026-06-19T22:00"},{"id":"760444","group":"C","md":2,"t1":"Brazil","t2":"Haiti","date":"2026-06-19","utc":"2026-06-20T00:30"},{"id":"760443","group":"D","md":2,"t1":"Turkey","t2":"Paraguay","date":"2026-06-19","utc":"2026-06-20T03:00"},{"id":"760447","group":"F","md":2,"t1":"Netherlands","t2":"Sweden","date":"2026-06-20","utc":"2026-06-20T17:00"},{"id":"760448","group":"E","md":2,"t1":"Germany","t2":"Ivory Coast","date":"2026-06-20","utc":"2026-06-20T20:00"},{"id":"760446","group":"E","md":2,"t1":"Ecuador","t2":"Curacao","date":"2026-06-20","utc":"2026-06-21T03:00"},{"id":"760449","group":"F","md":2,"t1":"Tunisia","t2":"Japan","date":"2026-06-20","utc":"2026-06-21T04:00"},{"id":"760453","group":"H","md":2,"t1":"Spain","t2":"Saudi Arabia","date":"2026-06-21","utc":"2026-06-21T16:00"},{"id":"760451","group":"G","md":2,"t1":"Belgium","t2":"Iran","date":"2026-06-21","utc":"2026-06-21T19:00"},{"id":"760450","group":"H","md":2,"t1":"Uruguay","t2":"Cape Verde","date":"2026-06-21","utc":"2026-06-21T22:00"},{"id":"760452","group":"G","md":2,"t1":"New Zealand","t2":"Egypt","date":"2026-06-21","utc":"2026-06-22T01:00"},{"id":"760456","group":"J","md":2,"t1":"Argentina","t2":"Austria","date":"2026-06-22","utc":"2026-06-22T17:00"},{"id":"760457","group":"I","md":2,"t1":"France","t2":"Iraq","date":"2026-06-22","utc":"2026-06-22T21:00"},{"id":"760454","group":"I","md":2,"t1":"Norway","t2":"Senegal","date":"2026-06-22","utc":"2026-06-23T00:00"},{"id":"760455","group":"J","md":2,"t1":"Jordan","t2":"Algeria","date":"2026-06-22","utc":"2026-06-23T03:00"},{"id":"760461","group":"K","md":2,"t1":"Portugal","t2":"Uzbekistan","date":"2026-06-23","utc":"2026-06-23T17:00"},{"id":"760458","group":"L","md":2,"t1":"England","t2":"Ghana","date":"2026-06-23","utc":"2026-06-23T20:00"},{"id":"760460","group":"L","md":2,"t1":"Panama","t2":"Croatia","date":"2026-06-23","utc":"2026-06-23T23:00"},{"id":"760459","group":"K","md":2,"t1":"Colombia","t2":"Congo","date":"2026-06-23","utc":"2026-06-24T02:00"},{"id":"760463","group":"B","md":3,"t1":"Switzerland","t2":"Canada","date":"2026-06-24","utc":"2026-06-24T19:00"},{"id":"760462","group":"B","md":3,"t1":"Bosnia","t2":"Qatar","date":"2026-06-24","utc":"2026-06-24T19:00"},{"id":"760465","group":"C","md":3,"t1":"Scotland","t2":"Brazil","date":"2026-06-24","utc":"2026-06-24T22:00"},{"id":"760464","group":"C","md":3,"t1":"Morocco","t2":"Haiti","date":"2026-06-24","utc":"2026-06-24T22:00"},{"id":"760467","group":"A","md":3,"t1":"Czechia","t2":"Mexico","date":"2026-06-24","utc":"2026-06-25T01:00"},{"id":"760466","group":"A","md":3,"t1":"South Africa","t2":"South Korea","date":"2026-06-24","utc":"2026-06-25T01:00"},{"id":"760468","group":"E","md":3,"t1":"Ecuador","t2":"Germany","date":"2026-06-25","utc":"2026-06-25T20:00"},{"id":"760473","group":"E","md":3,"t1":"Curacao","t2":"Ivory Coast","date":"2026-06-25","utc":"2026-06-25T20:00"},{"id":"760472","group":"F","md":3,"t1":"Tunisia","t2":"Netherlands","date":"2026-06-25","utc":"2026-06-25T23:00"},{"id":"760471","group":"F","md":3,"t1":"Japan","t2":"Sweden","date":"2026-06-25","utc":"2026-06-25T23:00"},{"id":"760470","group":"D","md":3,"t1":"Turkey","t2":"USA","date":"2026-06-25","utc":"2026-06-26T02:00"},{"id":"760469","group":"D","md":3,"t1":"Paraguay","t2":"Australia","date":"2026-06-25","utc":"2026-06-26T02:00"},{"id":"760475","group":"I","md":3,"t1":"Norway","t2":"France","date":"2026-06-26","utc":"2026-06-26T19:00"},{"id":"760474","group":"I","md":3,"t1":"Senegal","t2":"Iraq","date":"2026-06-26","utc":"2026-06-26T19:00"},{"id":"760479","group":"H","md":3,"t1":"Uruguay","t2":"Spain","date":"2026-06-26","utc":"2026-06-27T00:00"},{"id":"760478","group":"H","md":3,"t1":"Cape Verde","t2":"Saudi Arabia","date":"2026-06-26","utc":"2026-06-27T00:00"},{"id":"760477","group":"G","md":3,"t1":"New Zealand","t2":"Belgium","date":"2026-06-26","utc":"2026-06-27T03:00"},{"id":"760476","group":"G","md":3,"t1":"Egypt","t2":"Iran","date":"2026-06-26","utc":"2026-06-27T03:00"},{"id":"760485","group":"L","md":3,"t1":"Panama","t2":"England","date":"2026-06-27","utc":"2026-06-27T21:00"},{"id":"760480","group":"L","md":3,"t1":"Croatia","t2":"Ghana","date":"2026-06-27","utc":"2026-06-27T21:00"},{"id":"760481","group":"K","md":3,"t1":"Colombia","t2":"Portugal","date":"2026-06-27","utc":"2026-06-27T23:30"},{"id":"760482","group":"K","md":3,"t1":"Congo","t2":"Uzbekistan","date":"2026-06-27","utc":"2026-06-27T23:30"},{"id":"760483","group":"J","md":3,"t1":"Jordan","t2":"Argentina","date":"2026-06-27","utc":"2026-06-28T02:00"},{"id":"760484","group":"J","md":3,"t1":"Algeria","t2":"Austria","date":"2026-06-27","utc":"2026-06-28T02:00"}];
+
 /* ---------- STATE ---------- */
-var KEY='wc26_bettracker_v1';
-var state={prices:{},reads:{},lines:{},bets:[],threshold:7};
-try{var saved=JSON.parse(localStorage.getItem(KEY));if(saved)state=Object.assign(state,saved);}catch(e){}
-if(!state.prices)state.prices={};if(!state.reads)state.reads={};if(!state.lines)state.lines={};if(!state.bets)state.bets=[];
+var KEY='wc26_odds_v2';
+var state={lines:{},winPct:{}};
+try{var saved=JSON.parse(localStorage.getItem(KEY));if(saved)state=Object.assign({lines:{},winPct:{}},saved);}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
 
 /* ---------- HELPERS ---------- */
+function num(v){var n=parseFloat(v);return isNaN(n)?null:n;}
+function pct(x){return (x*100).toFixed(1)+'%';}
 function etLabel(utc){
   var d=new Date(utc+':00Z');
-  var s=d.toLocaleString('en-US',{timeZone:'America/New_York',weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
-  return s+' ET';
+  return d.toLocaleString('en-US',{timeZone:'America/Los_Angeles',weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' PT';
 }
 function dayName(iso){
   var d=new Date(iso+'T12:00:00Z');
   return d.toLocaleDateString('en-US',{timeZone:'UTC',weekday:'long',month:'long',day:'numeric'});
 }
-function num(v){var n=parseFloat(v);return isNaN(n)?null:n;}
-function pct(x){return (x*100).toFixed(1)+'%';}
 
-/* de-vig: outcomes = [{key,price_cents}], returns {fair:{key:p}, raw:{key:p}, sum, over, hold} */
+/* ---------- DE-VIG ---------- */
 function devig(outcomes){
   var raw={},sum=0,have=false;
   outcomes.forEach(function(o){
-    var c=o.price;
-    if(c!==null&&c>0){raw[o.key]=c/100;sum+=c/100;have=true;}
-    else raw[o.key]=null;
+    var p=num(o.price);
+    raw[o.key]=p!==null?p/100:null;
+    if(p!==null){sum+=p/100;have=true;}
   });
   if(!have||sum<=0)return null;
   var fair={};
@@ -230,8 +124,7 @@ function devig(outcomes){
   return {raw:raw,fair:fair,sum:sum,over:sum-1,hold:(sum-1)/sum};
 }
 
-/* market definitions for a match */
-/* ---------- LIVE KALSHI PRICES (auto-fill; manual entry always overrides) ---------- */
+/* ---------- KALSHI AUTO-FILL ---------- */
 var AUTO={}, KALSHI_TS=null;
 function canon(n){
   n=(n||'').toLowerCase().replace(/[^a-z]/g,'');
@@ -259,7 +152,7 @@ function buildAuto(feed){
     if(!fm)return;
     var a={};
     if(fm.ml){
-      var ml={};Object.keys(fm.ml).forEach(function(nm){ if(/tie/i.test(nm)) ml.tie=fm.ml[nm]; else ml[canon(nm)]=fm.ml[nm]; });
+      var ml={};Object.keys(fm.ml).forEach(function(nm){if(/tie/i.test(nm))ml.tie=fm.ml[nm];else ml[canon(nm)]=fm.ml[nm];});
       a.ml={home:ml[canon(m.t1)],away:ml[canon(m.t2)],draw:ml.tie};
     }
     if(fm.spread){
@@ -273,85 +166,61 @@ function buildAuto(feed){
   });
 }
 function autoVals(m,def){
-  var a=AUTO[m.id]; if(!a)return {};
+  var a=AUTO[m.id];if(!a)return {};
   if(def.id==='ml')   return a.ml?{home:a.ml.home,draw:a.ml.draw,away:a.ml.away}:{};
   if(def.id==='btts') return a.btts?{yes:a.btts.yes,no:a.btts.no}:{};
   if(def.id==='spread'){var s=a.spread&&a.spread[String(def.line)];return s?{home:s.home,away:s.away}:{};}
   if(def.id==='total'){var t=a.total&&a.total[String(def.line)];return t?{over:t.over,under:t.under}:{};}
   return {};
 }
-/* merged price view: manual wins, else live; src tags origin per outcome */
 function effPrices(m,def){
-  var man=(state.prices[m.id]||{})[def.id]||{};
   var auto=autoVals(m,def);
   var vals={},src={};
   def.outs.forEach(function(o){
-    if(man[o.key]!==undefined&&man[o.key]!==''){vals[o.key]=man[o.key];src[o.key]='manual';}
-    else if(auto[o.key]!==undefined&&auto[o.key]!==null){vals[o.key]=auto[o.key];src[o.key]='auto';}
-    else {vals[o.key]=undefined;src[o.key]=null;}
+    if(auto[o.key]!==undefined&&auto[o.key]!==null){vals[o.key]=auto[o.key];src[o.key]='auto';}
+    else{vals[o.key]=undefined;src[o.key]=null;}
   });
   return {vals:vals,src:src};
 }
 function countAutoMatches(){return Object.keys(AUTO).length;}
-function fetchKalshi(cb){
+
+function fetchKalshi(){
   var s=document.getElementById('liveStatus');
   if(s){s.className='live-status loading';s.textContent='Fetching live Kalshi prices…';}
   fetch('/api/places-search?feed=kalshi').then(function(r){return r.json();}).then(function(d){
     if(d&&d.matches&&d.matches.length){
       buildAuto(d);KALSHI_TS=d.updated;
-      if(s){s.className='live-status ok';s.innerHTML='● Live Kalshi prices loaded for <b>'+countAutoMatches()+'</b> matches. Manual entries override live values.';}
+      if(s){s.className='live-status ok';s.innerHTML='● Live Kalshi prices for <b>'+countAutoMatches()+'</b> matches. <span style="color:#9fb2c6;font-size:0.68rem;font-weight:400">Fair % = de-vigged price (vig removed). Slide to express your view.</span>';}
     } else {
-      if(s){s.className='live-status off';s.textContent='Live prices unavailable right now — manual entry still works.';}
+      if(s){s.className='live-status off';s.textContent='Live prices unavailable right now — try refreshing.';}
     }
-    renderMatches();updateClearCount();stamp();if(cb)cb();
+    renderMatches();stamp();
   }).catch(function(){
-    if(s){s.className='live-status off';s.textContent='Live prices unavailable right now — manual entry still works.';}
-    renderMatches();stamp();if(cb)cb();
+    if(s){s.className='live-status off';s.textContent='Live prices unavailable — try refreshing.';}
+    renderMatches();stamp();
   });
 }
 
+/* ---------- MARKET DEFS ---------- */
 function marketDefs(m){
   var ln=state.lines[m.id]||{};
   var sp=ln.spread!==undefined?ln.spread:1.5;
   var tot=ln.total!==undefined?ln.total:2.5;
   return [
-    {id:'ml',title:'Moneyline',outs:[
-      {key:'home',label:m.t1},{key:'draw',label:'Draw'},{key:'away',label:m.t2}]},
-    {id:'spread',title:'Spread',line:sp,lineLabel:'goals',outs:[
-      {key:'home',label:m.t1+' −'+sp},{key:'away',label:m.t2+' +'+sp}]},
-    {id:'total',title:'Total goals',line:tot,lineLabel:'O/U',outs:[
-      {key:'over',label:'Over '+tot},{key:'under',label:'Under '+tot}]},
-    {id:'btts',title:'Both teams to score',outs:[
-      {key:'yes',label:'Yes'},{key:'no',label:'No'}]}
+    {id:'ml',title:'Moneyline',outs:[{key:'home',label:m.t1},{key:'draw',label:'Draw'},{key:'away',label:m.t2}]},
+    {id:'spread',title:'Spread',line:sp,lineLabel:'goals',outs:[{key:'home',label:m.t1+' &minus;'+sp},{key:'away',label:m.t2+' +'+sp}]},
+    {id:'total',title:'Total Goals',line:tot,lineLabel:'O/U',outs:[{key:'over',label:'Over '+tot},{key:'under',label:'Under '+tot}]},
+    {id:'btts',title:'Both Teams Score',outs:[{key:'yes',label:'Yes'},{key:'no',label:'No'}]}
   ];
 }
-
-/* compute whether match clears gap threshold (any outcome with read & |read-fair|>=thr) */
-function matchMaxGap(m){
-  var defs=marketDefs(m),maxg=0;
-  defs.forEach(function(def){
-    var pr=effPrices(m,def).vals;
-    var rd=(state.reads[m.id]||{})[def.id]||{};
-    var dv=devig(def.outs.map(function(o){return {key:o.key,price:num(pr[o.key])};}));
-    if(!dv)return;
-    def.outs.forEach(function(o){
-      var r=num(rd[o.key]);var f=dv.fair[o.key];
-      if(r!==null&&f!==null){var g=Math.abs(r/100-f);if(g>maxg)maxg=g;}
-    });
-  });
-  return maxg;
+function setLine(mid,def,v){
+  state.lines[mid]=state.lines[mid]||{};state.lines[mid][def]=parseFloat(v);save();
+  var m=MATCHES.find(function(x){return x.id===mid;});
+  var card=document.getElementById('card-'+mid);if(!card)return;
+  card.querySelector('.match-body').innerHTML=marketsHTML(m);
 }
 
-/* ---------- TABS ---------- */
-function switchTab(t){
-  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.toggle('active',b.dataset.tab===t);});
-  document.querySelectorAll('.tab-content').forEach(function(c){c.classList.remove('active');});
-  document.getElementById('tab-'+t).classList.add('active');
-  if(t==='results')renderResults();
-  if(t==='log')renderBetList();
-}
-
-/* ---------- DATE FILTER ---------- */
+/* ---------- RENDER ---------- */
 function buildDayFilter(){
   var days=[];MATCHES.forEach(function(m){if(days.indexOf(m.date)<0)days.push(m.date);});
   days.sort();
@@ -362,43 +231,26 @@ function buildDayFilter(){
     html+='<option value="'+d+'">'+dayName(d)+' ('+n+')</option>';
   });
   sel.innerHTML=html;
+  /* auto-select today */
+  var today=new Date().toLocaleDateString('en-CA',{timeZone:'America/Los_Angeles'});
+  if(days.indexOf(today)>=0)sel.value=today;
 }
 
-/* ---------- MATCH LIST ---------- */
-function onThresh(){
-  state.threshold=parseInt(document.getElementById('threshSlider').value,10);
-  document.getElementById('threshVal').textContent=state.threshold+'%';
-  save();renderMatches();
-}
 function renderMatches(){
   var day=document.getElementById('dayFilter').value;
-  var gapOnly=document.getElementById('gapOnly').checked;
-  var thr=state.threshold/100;
   var list=MATCHES.filter(function(m){return day==='all'||m.date===day;});
-  var cleared=0;
-  MATCHES.forEach(function(m){if(matchMaxGap(m)>=thr)cleared++;});
-  document.getElementById('clearCount').innerHTML='At a <b>'+state.threshold+'%</b> threshold, <b>'+cleared+'</b> of '+MATCHES.length+' matches currently show a gap that large (across all markets you\'ve entered).';
-  if(gapOnly)list=list.filter(function(m){return matchMaxGap(m)>=thr;});
   var html='',curDay='';
-  if(!list.length){html='<div class="empty-state">No matches match this filter.</div>';}
+  if(!list.length){html='<div style="text-align:center;color:#5e7a96;padding:30px 10px;font-size:0.85rem">No matches for this day.</div>';}
   list.forEach(function(m){
-    if(m.date!==curDay){curDay=m.date;html+='<div class="day-divider">'+dayName(m.date)+'</div>';}
+    if(m.date!==curDay){
+      curDay=m.date;
+      html+='<div style="color:#c9a227;font-size:0.7rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:10px 2px 6px">'+dayName(m.date)+'</div>';
+    }
     html+=matchCardHTML(m);
   });
   document.getElementById('matchList').innerHTML=html;
 }
-function matchCardHTML(m){
-  var open=openMatches[m.id];
-  var g=matchMaxGap(m);var flag=g>=state.threshold/100;
-  var h='<div class="match-card'+(open?' open':'')+'" id="card-'+m.id+'">';
-  h+='<div class="match-head" onclick="toggleMatch(\''+m.id+'\')">';
-  h+='<span class="mh-group">'+m.group+'</span>';
-  h+='<div class="mh-teams">'+m.t1+' v '+m.t2+'<div class="mh-time">'+etLabel(m.utc)+' &middot; MD'+m.md+'</div></div>';
-  h+='<span class="mh-flag'+(flag?' on':'')+'">gap '+(g*100).toFixed(0)+'%</span>';
-  h+='<span class="mh-caret">&#9656;</span></div>';
-  h+='<div class="match-body">'+(open?marketsHTML(m):'')+'</div></div>';
-  return h;
-}
+
 var openMatches={};
 function toggleMatch(id){
   openMatches[id]=!openMatches[id];
@@ -407,197 +259,130 @@ function toggleMatch(id){
   card.classList.toggle('open',openMatches[id]);
   card.querySelector('.match-body').innerHTML=openMatches[id]?marketsHTML(m):'';
 }
+
+function getMlFair(m){
+  var def=marketDefs(m)[0];
+  var eff=effPrices(m,def);
+  var dv=devig(def.outs.map(function(o){return {key:o.key,price:num(eff.vals[o.key])};}));
+  return dv;
+}
+
+function matchCardHTML(m){
+  var open=openMatches[m.id];
+  var dv=getMlFair(m);
+  var mlLine='';
+  if(dv&&dv.fair['home']!==null){
+    var h=Math.round(dv.fair['home']*100),dr=Math.round((dv.fair['draw']||0)*100),a=Math.round(dv.fair['away']*100);
+    mlLine='<div class="mh-ml">'+m.t1+' <b>'+h+'%</b>&ensp;Draw <b>'+dr+'%</b>&ensp;'+m.t2+' <b>'+a+'%</b></div>';
+  }
+  var h='<div class="match-card'+(open?' open':'')+'" id="card-'+m.id+'">';
+  h+='<div class="match-head" onclick="toggleMatch(\''+m.id+'\')">';
+  h+='<span class="mh-group">'+m.group+'</span>';
+  h+='<div class="mh-info"><div class="mh-teams">'+m.t1+' v '+m.t2+'</div>';
+  h+='<div class="mh-time">'+etLabel(m.utc)+' &middot; MD'+m.md+'</div>';
+  h+=mlLine+'</div>';
+  h+='<span class="mh-caret">&#9656;</span></div>';
+  h+='<div class="match-body">'+(open?marketsHTML(m):'')+'</div></div>';
+  return h;
+}
+
 function marketsHTML(m){
   var defs=marketDefs(m);var out='';
   defs.forEach(function(def){out+=marketHTML(m,def);});
+  out+=sliderHTML(m);
   return out;
 }
+
 function marketHTML(m,def){
   var eff=effPrices(m,def);var pr=eff.vals;
-  var rd=(state.reads[m.id]||{})[def.id]||{};
   var dv=devig(def.outs.map(function(o){return {key:o.key,price:num(pr[o.key])};}));
   var h='<div class="market"><div class="market-title"><span>'+def.title+'</span>';
   if(def.line!==undefined){
     h+='<span class="line-edit">'+def.lineLabel+' line <input type="number" step="0.5" value="'+def.line+'" onchange="setLine(\''+m.id+'\',\''+def.id+'\',this.value)"></span>';
   }
   h+='</div>';
-  h+='<table class="mkt-table"><tr><th class="lbl">Outcome</th><th>Kalshi&nbsp;&cent;</th><th>Raw&nbsp;%</th><th>Fair&nbsp;%</th><th>My&nbsp;%</th><th>Gap</th></tr>';
+  h+='<table class="mkt-table"><tr><th class="lbl">Outcome</th><th>Kalshi&nbsp;&cent;</th><th>Fair&nbsp;%</th></tr>';
   def.outs.forEach(function(o){
-    var raw=dv?dv.raw[o.key]:null;var fair=dv?dv.fair[o.key]:null;
-    var r=num(rd[o.key]);
-    var gap=(r!==null&&fair!==null)?(r/100-fair):null;
-    var gapClass=gap!==null&&Math.abs(gap)>=state.threshold/100?'gap-flag':'gap-none';
+    var fair=dv?dv.fair[o.key]:null;
     var isAuto=eff.src[o.key]==='auto';
-    h+='<tr><td class="lbl">'+o.label+(isAuto?' <span class="live-dot" title="Live from Kalshi">●</span>':'')+'</td>';
-    h+='<td><input type="number" min="1" max="99" inputmode="numeric" class="'+(isAuto?'auto':'')+'" value="'+(pr[o.key]!==undefined?pr[o.key]:'')+'" onchange="setPrice(\''+m.id+'\',\''+def.id+'\',\''+o.key+'\',this.value)"></td>';
-    h+='<td class="cell-raw">'+(raw!==null?(raw*100).toFixed(1):'—')+'</td>';
-    h+='<td class="cell-fair">'+(fair!==null?(fair*100).toFixed(1):'—')+'</td>';
-    h+='<td><input type="number" min="1" max="99" inputmode="numeric" value="'+(rd[o.key]!==undefined?rd[o.key]:'')+'" onchange="setRead(\''+m.id+'\',\''+def.id+'\',\''+o.key+'\',this.value)"></td>';
-    h+='<td class="cell-gap '+gapClass+'">'+(gap!==null?(gap>=0?'+':'')+(gap*100).toFixed(1):'—')+'</td></tr>';
+    h+='<tr><td class="lbl">'+o.label+(isAuto?' <span class="live-dot">●</span>':'')+'</td>';
+    h+='<td class="cell-cents">'+(pr[o.key]!==undefined?pr[o.key]+'&cent;':'—')+'</td>';
+    h+='<td class="cell-fair">'+(fair!==null?(fair*100).toFixed(1)+'%':'—')+'</td></tr>';
   });
   h+='</table>';
   if(dv){
-    h+='<div class="mkt-foot"><span class="overround">House cut (overround): <b>'+(dv.over*100).toFixed(1)+'%</b></span>';
-    h+='<span class="hold">implied hold '+(dv.hold*100).toFixed(1)+'% &middot; prices sum to '+(dv.sum*100).toFixed(1)+'%</span></div>';
+    h+='<div class="mkt-foot"><span>House cut: <b>'+(dv.over*100).toFixed(1)+'%</b></span><span>prices sum to '+(dv.sum*100).toFixed(1)+'%</span></div>';
   } else {
-    h+='<div class="mkt-empty">No live price for this market yet (Kalshi often posts spreads/totals/BTTS closer to kickoff). Enter the Kalshi YES price in cents to see the de-vigged fair line and house cut.</div>';
+    h+='<div class="mkt-empty">No Kalshi price yet — usually opens closer to kickoff.</div>';
   }
-  h+='<div class="read-discl">Gap to investigate = your % &minus; fair %. A gap usually means your estimate is off, not that the market is. Treat it as a question, not a signal.</div>';
   h+='</div>';
   return h;
 }
-function setPrice(mid,def,key,v){
-  state.prices[mid]=state.prices[mid]||{};state.prices[mid][def]=state.prices[mid][def]||{};
-  state.prices[mid][def][key]=v===''?undefined:v;save();
-  refreshOpenCard(mid);updateClearCount();
+
+function sliderHTML(m){
+  var dv=getMlFair(m);
+  if(!dv||dv.fair['home']===null)return '';
+  var marketPct=Math.round(dv.fair['home']*100);
+  var hasView=state.winPct[m.id]!==undefined;
+  var myPct=hasView?state.winPct[m.id]:marketPct;
+  var rec=recHTML(m,myPct,marketPct,dv,hasView);
+  var h='<div class="my-view">';
+  h+='<div class="mv-header">';
+  h+='<span class="mv-label">My view on <b>'+m.t1+'</b> win &nbsp;<span class="mv-val" id="mvval-'+m.id+'">'+myPct+'%</span></span>';
+  if(hasView)h+='<button class="mv-reset" onclick="resetView(\''+m.id+'\')">reset</button>';
+  h+='</div>';
+  h+='<div class="mv-teams"><span>← '+m.t2+' wins</span><span>'+m.t1+' wins →</span></div>';
+  h+='<input type="range" class="mv-slider" min="1" max="99" value="'+myPct+'" oninput="onSlider(\''+m.id+'\',this.value,'+marketPct+','+Math.round((dv.fair['away']||0)*100)+')">';
+  h+='<div id="mv-rec-'+m.id+'">'+rec+'</div>';
+  h+='</div>';
+  return h;
 }
-function setRead(mid,def,key,v){
-  state.reads[mid]=state.reads[mid]||{};state.reads[mid][def]=state.reads[mid][def]||{};
-  state.reads[mid][def][key]=v===''?undefined:v;save();
-  refreshOpenCard(mid);updateClearCount();
+
+function recHTML(m,myPct,marketPct,dv,hasView){
+  if(!hasView)return '<div class="rec-hint">Slide to compare your view with the market</div>';
+  var gap=myPct-marketPct;
+  if(Math.abs(gap)<5)return '<div class="rec-none">Your view is close to market — no clear edge on '+m.t1+' ML</div>';
+  var side=gap>0?m.t1:m.t2;
+  var mktForSide=gap>0?marketPct:Math.round((dv.fair['away']||0)*100);
+  var myForSide=gap>0?myPct:(100-myPct-(Math.round((dv.fair['draw']||0)*100)));
+  return '<div class="rec-badge">💡 Consider <b>'+side+' ML</b> — market fair value is <b>'+mktForSide+'%</b>, your view is ~<b>'+Math.abs(gap>0?myPct:(100-myPct))+'%</b> ('+Math.abs(gap)+'pp gap)</div>';
 }
-function setLine(mid,def,v){
-  state.lines[mid]=state.lines[mid]||{};state.lines[mid][def]=parseFloat(v);save();
-  refreshOpenCard(mid);
+
+function onSlider(mid,v,marketPct,awayPct){
+  state.winPct[mid]=parseInt(v,10);save();
+  var el=document.getElementById('mvval-'+mid);if(el)el.textContent=v+'%';
+  var m=MATCHES.find(function(x){return x.id===mid;});
+  var dv=getMlFair(m);
+  var rec=recHTML(m,parseInt(v,10),marketPct,dv,true);
+  var rel=document.getElementById('mv-rec-'+mid);if(rel)rel.innerHTML=rec;
+  /* show reset button if not already there */
+  var card=document.getElementById('card-'+mid);
+  var header=card&&card.querySelector('.mv-header');
+  if(header&&!header.querySelector('.mv-reset')){
+    var btn=document.createElement('button');btn.className='mv-reset';btn.textContent='reset';
+    btn.onclick=function(){resetView(mid);};
+    header.appendChild(btn);
+  }
 }
-function refreshOpenCard(mid){
+
+function resetView(mid){
+  delete state.winPct[mid];save();
   var m=MATCHES.find(function(x){return x.id===mid;});
   var card=document.getElementById('card-'+mid);if(!card)return;
   card.querySelector('.match-body').innerHTML=marketsHTML(m);
-  var g=matchMaxGap(m);var fl=card.querySelector('.mh-flag');
-  fl.textContent='gap '+(g*100).toFixed(0)+'%';fl.classList.toggle('on',g>=state.threshold/100);
-}
-function updateClearCount(){
-  var thr=state.threshold/100,cleared=0;
-  MATCHES.forEach(function(m){if(matchMaxGap(m)>=thr)cleared++;});
-  document.getElementById('clearCount').innerHTML='At a <b>'+state.threshold+'%</b> threshold, <b>'+cleared+'</b> of '+MATCHES.length+' matches currently show a gap that large (across all markets you\'ve entered).';
 }
 
-/* ---------- BET LOG ---------- */
-function buildBetMatchSelect(){
-  var sel=document.getElementById('betMatch');var html='';
-  MATCHES.forEach(function(m){html+='<option value="'+m.id+'">'+m.group+' &middot; '+m.t1+' v '+m.t2+' ('+m.date.slice(5)+')</option>';});
-  sel.innerHTML=html;
-  document.getElementById('betDate').value=new Date().toISOString().slice(0,10);
-}
-function addBet(){
-  var mid=document.getElementById('betMatch').value;
-  var entry=num(document.getElementById('betEntry').value);
-  var stake=num(document.getElementById('betStake').value);
-  var side=document.getElementById('betSide').value.trim();
-  if(entry===null||entry<=0||entry>=100){alert('Enter a valid entry price in cents (1-99).');return;}
-  if(stake===null||stake<0){alert('Enter a valid stake.');return;}
-  var m=MATCHES.find(function(x){return x.id===mid;});
-  state.bets.push({
-    id:'b'+Date.now(),mid:mid,
-    matchLabel:m.t1+' v '+m.t2,
-    market:document.getElementById('betMarket').value,
-    side:side||document.getElementById('betMarket').value,
-    entry:entry,stake:stake,
-    date:document.getElementById('betDate').value,
-    myEst:num(document.getElementById('betMyEst').value),
-    close:null,result:null
-  });
-  save();
-  document.getElementById('betSide').value='';document.getElementById('betEntry').value='';
-  document.getElementById('betStake').value='';document.getElementById('betMyEst').value='';
-  renderBetList();
-}
-function betPL(b){
-  if(b.result==='win')return b.stake*(100-b.entry)/b.entry;
-  if(b.result==='loss')return -b.stake;
-  return null; /* push or pending */
-}
-function betCLV(b){
-  if(b.close===null||b.close===undefined)return null;
-  return b.close-b.entry; /* cents, YES side: higher close = beat the line */
-}
-function renderBetList(){
-  var el=document.getElementById('betList');
-  if(!state.bets.length){el.innerHTML='<div class="empty-state">No bets logged yet. Add one above when you place it.</div>';return;}
-  var bets=state.bets.slice().sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
-  var html='';
-  bets.forEach(function(b){
-    var pl=betPL(b);var clv=betCLV(b);
-    var plClass=pl===null?'neu':(pl>0?'pos':(pl<0?'neg':'neu'));
-    var plTxt=pl===null?(b.result==='push'?'Push':'Open'):((pl>=0?'+':'−')+'$'+Math.abs(pl).toFixed(2));
-    html+='<div class="bet-item">';
-    html+='<div class="bi-top"><div><div class="bi-match">'+b.matchLabel+'</div><div class="bi-sub">'+b.market+' &middot; '+b.side+' &middot; '+(b.date||'')+'</div></div><div class="bi-pl '+plClass+'">'+plTxt+'</div></div>';
-    html+='<div class="bi-meta"><span>Entry <b>'+b.entry+'&cent;</b></span><span>Stake <b>$'+b.stake.toFixed(2)+'</b></span>';
-    if(clv!==null)html+='<span>CLV <b class="'+(clv>0?'pos':(clv<0?'neg':'neu'))+'">'+(clv>=0?'+':'')+clv.toFixed(0)+'&cent;</b></span>';
-    if(b.myEst!==null&&b.myEst!==undefined)html+='<span>My est <b>'+b.myEst+'%</b></span>';
-    html+='</div>';
-    html+='<div class="bi-settle">';
-    html+='<div class="bf-field"><label>Closing &cent;</label><input type="number" min="1" max="99" value="'+(b.close!==null&&b.close!==undefined?b.close:'')+'" onchange="setClose(\''+b.id+'\',this.value)"></div>';
-    html+='<div class="bf-field"><label>Result</label><select onchange="setResult(\''+b.id+'\',this.value)">'+
-      '<option value=""'+(!b.result?' selected':'')+'>Pending</option>'+
-      '<option value="win"'+(b.result==='win'?' selected':'')+'>Win</option>'+
-      '<option value="loss"'+(b.result==='loss'?' selected':'')+'>Loss</option>'+
-      '<option value="push"'+(b.result==='push'?' selected':'')+'>Push</option></select></div>';
-    html+='<button class="btn sec" style="margin:0;width:auto;padding:9px 12px" onclick="renderResults();switchTab(\'results\')">Stats</button>';
-    html+='</div>';
-    html+='<button class="del-bet" onclick="delBet(\''+b.id+'\')">delete</button>';
-    html+='</div>';
-  });
-  el.innerHTML=html;
-}
-function setClose(id,v){var b=state.bets.find(function(x){return x.id===id;});if(b){b.close=v===''?null:num(v);save();renderBetList();}}
-function setResult(id,v){var b=state.bets.find(function(x){return x.id===id;});if(b){b.result=v||null;save();renderBetList();}}
-function delBet(id){if(confirm('Delete this bet?')){state.bets=state.bets.filter(function(x){return x.id!==id;});save();renderBetList();}}
-
-/* ---------- RESULTS ---------- */
-function renderResults(){
-  var settled=state.bets.filter(function(b){return b.result==='win'||b.result==='loss';});
-  var wins=settled.filter(function(b){return b.result==='win';}).length;
-  var losses=settled.filter(function(b){return b.result==='loss';}).length;
-  var winRate=(wins+losses)>0?wins/(wins+losses):null;
-  var pl=0,staked=0;
-  state.bets.forEach(function(b){var p=betPL(b);if(p!==null){pl+=p;staked+=b.stake;}});
-  var roi=staked>0?pl/staked:null;
-  var clvBets=state.bets.filter(function(b){return betCLV(b)!==null;});
-  var avgClv=null,beatRate=null;
-  if(clvBets.length){
-    var sum=0,beat=0;clvBets.forEach(function(b){var c=betCLV(b);sum+=c;if(c>0)beat++;});
-    avgClv=sum/clvBets.length;beatRate=beat/clvBets.length;
-  }
-  function card(label,val,sub,cls){return '<div class="stat-card'+(cls||'')+'"><div class="stat-label">'+label+'</div><div class="stat-val">'+val+'</div>'+(sub?'<div class="stat-sub">'+sub+'</div>':'')+'</div>';}
-  var plClass=pl>0?'pos':(pl<0?'neg':'');
-  var h='';
-  h+=card('Closing line value','<span class="'+(avgClv!==null?(avgClv>0?'pos':(avgClv<0?'neg':'')):'')+'">'+(avgClv!==null?(avgClv>=0?'+':'')+avgClv.toFixed(1)+'¢':'—')+'</span>','avg per bet &middot; '+(clvBets.length||0)+' with closing price','wide');
-  h+=card('Beat the close','<span class="'+(beatRate!==null?(beatRate>=0.5?'pos':'neg'):'')+'">'+(beatRate!==null?(beatRate*100).toFixed(0)+'%':'—')+'</span>','of bets with a closing price');
-  h+=card('Win rate',winRate!==null?(winRate*100).toFixed(0)+'%':'—',wins+'W &ndash; '+losses+'L');
-  h+=card('Net P/L','<span class="'+plClass+'">'+(pl>=0?'+':'−')+'$'+Math.abs(pl).toFixed(2)+'</span>',settled.length+' settled bets');
-  h+=card('ROI',roi!==null?((roi>=0?'+':'−')+(Math.abs(roi)*100).toFixed(1)+'%'):'—','on $'+staked.toFixed(2)+' staked');
-  document.getElementById('statGrid').innerHTML=h;
-  /* settled list */
-  var sl=document.getElementById('settledList');
-  if(!settled.length){sl.innerHTML='<div class="empty-state">No settled bets yet. Win rate, P/L and CLV fill in as you settle bets in the Bet Log.</div>';return;}
-  var rows=settled.slice().sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
-  var t='<div class="section-title" style="font-size:0.95rem;margin-top:18px">Settled bets</div>';
-  rows.forEach(function(b){
-    var p=betPL(b);var clv=betCLV(b);
-    t+='<div class="bet-item"><div class="bi-top"><div><div class="bi-match">'+b.matchLabel+'</div><div class="bi-sub">'+b.market+' &middot; '+b.side+'</div></div>';
-    t+='<div class="bi-pl '+(p>0?'pos':(p<0?'neg':'neu'))+'">'+(p>=0?'+':'−')+'$'+Math.abs(p).toFixed(2)+'</div></div>';
-    t+='<div class="bi-meta"><span>Entry <b>'+b.entry+'&cent;</b></span>'+(b.close!==null&&b.close!==undefined?'<span>Close <b>'+b.close+'&cent;</b></span>':'')+(clv!==null?'<span>CLV <b class="'+(clv>0?'pos':(clv<0?'neg':'neu'))+'">'+(clv>=0?'+':'')+clv.toFixed(0)+'&cent;</b></span>':'')+'<span>'+b.result.toUpperCase()+'</span></div></div>';
-  });
-  sl.innerHTML=t;
-}
-
-/* ---------- REFRESH ---------- */
+/* ---------- UTILS ---------- */
 function stamp(){
   var now=new Date();
-  var s=now.toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
-  document.getElementById('last-updated').textContent='Last updated: '+s+' ET';
+  var s=now.toLocaleString('en-US',{timeZone:'America/Los_Angeles',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  document.getElementById('last-updated').textContent='Updated '+s+' PT';
 }
-function recalcAll(){
-  renderBetList();renderResults();save();
-  fetchKalshi();           /* re-pull live prices, then re-renders + restamps */
-}
+function recalcAll(){fetchKalshi();}
 
 /* ---------- INIT ---------- */
-document.getElementById('threshSlider').value=state.threshold;
-document.getElementById('threshVal').textContent=state.threshold+'%';
-buildDayFilter();buildBetMatchSelect();renderMatches();renderBetList();stamp();
+buildDayFilter();
+renderMatches();
 fetchKalshi();
 </script>
 </body>
