@@ -344,7 +344,10 @@ function flagInfo(m){
   if(fav<=state.favMax)reasons.push({type:'open'});
   if(state.winPct[m.id]!==undefined){
     var gap=state.winPct[m.id]-h;
-    if(Math.abs(gap)>=VIEW_GAP)reasons.push({type:'view',side:gap>0?m.t1:m.t2,abs:Math.abs(gap)});
+    if(Math.abs(gap)>=VIEW_GAP){
+      var mlv=effPrices(m,marketDefs(m)[0]).vals;          // Kalshi ¢ for each ML side
+      reasons.push({type:'view',side:gap>0?m.t1:m.t2,abs:Math.abs(gap),price:gap>0?mlv.home:mlv.away});
+    }
   }
   return reasons.length?{reasons:reasons,fav:fav}:null;
 }
@@ -356,7 +359,7 @@ function flagPill(fi){
 function flagLabel(m,fi){
   return fi.reasons.map(function(r){
     return r.type==='view'
-      ? r.side+' ML ('+r.abs+'pp vs fair)'
+      ? 'Consider '+r.side+' ML'+(r.price!=null?' @ '+r.price+'¢':'')+' ('+r.abs+'pp vs fair)'
       : 'close game (top pick '+fi.fav+'%)';
   }).join(' + ')+' — '+m.t1+' v '+m.t2;
 }
