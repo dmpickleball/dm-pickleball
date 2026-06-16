@@ -112,6 +112,10 @@ select{background:#0d1b2a;border:1px solid #25415f;color:#e8eaf6;padding:8px 10p
   <div class="filter-bar">
     <label for="dayFilter">Date</label>
     <select id="dayFilter" onchange="renderMatches()"></select>
+    <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
+      <label for="stakeInput" style="white-space:nowrap">My stake $</label>
+      <input type="number" id="stakeInput" min="1" step="1" placeholder="e.g. 50" style="width:80px;padding:8px 8px;background:#0d1b2a;border:1px solid #c9a227;color:#f3f5fb;border-radius:6px;font-size:0.9rem;font-family:inherit" oninput="onStake(this.value)">
+    </div>
   </div>
   <div id="matchList"></div>
 </main>
@@ -120,8 +124,8 @@ const MATCHES=[{"id":"760415","group":"A","md":1,"t1":"Mexico","t2":"South Afric
 
 /* ---------- STATE ---------- */
 var KEY='wc26_odds_v2';
-var state={lines:{},winPct:{}};
-try{var saved=JSON.parse(localStorage.getItem(KEY));if(saved)state=Object.assign({lines:{},winPct:{}},saved);}catch(e){}
+var state={lines:{},winPct:{},stake:null};
+try{var saved=JSON.parse(localStorage.getItem(KEY));if(saved)state=Object.assign({lines:{},winPct:{},stake:null},saved);}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
 
 /* ---------- HELPERS ---------- */
@@ -327,13 +331,24 @@ function marketHTML(m,def){
     h+='<span class="line-edit">'+def.lineLabel+' line <input type="number" step="0.5" value="'+def.line+'" onchange="setLine(\''+m.id+'\',\''+def.id+'\',this.value)"></span>';
   }
   h+='</div>';
-  h+='<table class="mkt-table"><tr><th class="lbl">Outcome</th><th>Kalshi&nbsp;&cent;</th><th>Fair&nbsp;%</th></tr>';
+  var showStake=state.stake&&state.stake>0;
+  h+='<table class="mkt-table"><tr><th class="lbl">Outcome</th><th>Kalshi&nbsp;&cent;</th><th>Fair&nbsp;%</th>'+(showStake?'<th>Win</th>':'')+'</tr>';
   def.outs.forEach(function(o){
     var fair=dv?dv.fair[o.key]:null;
     var isAuto=eff.src[o.key]==='auto';
+    var winStr='—';
+    if(showStake&&pr[o.key]!==undefined){
+      var p=num(pr[o.key]);
+      if(p!==null&&p>0&&p<100){
+        var profit=state.stake*(100-p)/p;
+        winStr='<span style="color:#4caf50;font-weight:800">+$'+profit.toFixed(2)+'</span>';
+      }
+    }
     h+='<tr><td class="lbl">'+o.label+(isAuto?' <span class="live-dot">●</span>':'')+'</td>';
     h+='<td class="cell-cents">'+(pr[o.key]!==undefined?pr[o.key]+'&cent;':'—')+'</td>';
-    h+='<td class="cell-fair">'+(fair!==null?(fair*100).toFixed(1)+'%':'—')+'</td></tr>';
+    h+='<td class="cell-fair">'+(fair!==null?(fair*100).toFixed(1)+'%':'—')+'</td>';
+    if(showStake)h+='<td>'+winStr+'</td>';
+    h+='</tr>';
   });
   h+='</table>';
   if(dv){
@@ -405,6 +420,15 @@ function stamp(){
   document.getElementById('last-updated').textContent='Updated '+s+' PT';
 }
 function recalcAll(){fetchKalshi();}
+function onStake(v){
+  state.stake=v===''?null:parseFloat(v);save();
+  // Re-render open cards so Win column appears/updates instantly
+  MATCHES.forEach(function(m){
+    var card=document.getElementById('card-'+m.id);
+    if(card&&card.classList.contains('open'))
+      card.querySelector('.match-body').innerHTML=marketsHTML(m);
+  });
+}
 
 function toggleGuide(){
   var b=document.getElementById('guide-body');
@@ -437,6 +461,7 @@ function updateFlaggedBanner(){
 buildDayFilter();
 renderMatches();
 fetchKalshi();
+if(state.stake){var si=document.getElementById('stakeInput');if(si)si.value=state.stake;}
 </script>
 </body>
 </html>
