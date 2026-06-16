@@ -242,7 +242,8 @@ function canon(n){
     caboverde:'capeverde',capeverde:'capeverde',
     cotedivoire:'ivorycoast',ivorycoast:'ivorycoast',
     unitedstates:'usa',us:'usa',usa:'usa',
-    czechrepublic:'czechia',czechia:'czechia'};
+    czechrepublic:'czechia',czechia:'czechia',
+    iriran:'iran',islamicrepublicofiran:'iran'};
   return map[n]||n;
 }
 function buildAuto(feed){
@@ -250,11 +251,11 @@ function buildAuto(feed){
   if(!feed||!feed.matches)return;
   var idx={};
   feed.matches.forEach(function(fm){
-    if(!fm.teams||!fm.date)return;
-    idx[fm.date+'|'+[canon(fm.teams[0]),canon(fm.teams[1])].sort().join('|')]=fm;
+    if(!fm.teams)return;
+    idx[[canon(fm.teams[0]),canon(fm.teams[1])].sort().join('|')]=fm;
   });
   MATCHES.forEach(function(m){
-    var fm=idx[m.date+'|'+[canon(m.t1),canon(m.t2)].sort().join('|')];
+    var fm=idx[[canon(m.t1),canon(m.t2)].sort().join('|')];
     if(!fm)return;
     var a={};
     if(fm.ml){
