@@ -29,8 +29,9 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#0d1b2a;color:#e8eaf6;mi
 .tp-fill{display:block;height:100%;background:linear-gradient(90deg,#c9a227,#f0c840);border-radius:4px;transition:width .4s}
 .wc-title{font-size:0.78rem;letter-spacing:3px;color:#c9a227;font-weight:700;text-transform:uppercase;text-shadow:0 1px 4px rgba(0,0,0,0.9)}
 /* ─── TABS ─── */
-.tabs{display:flex;background:#111d2c;border-bottom:2px solid #1e3050;position:sticky;top:0;z-index:100}
-.tab-btn{flex:1;padding:12px 4px;background:none;border:none;color:#7a8fa6;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all .2s;border-bottom:3px solid transparent}
+.tabs{display:flex;background:#111d2c;border-bottom:2px solid #1e3050;position:sticky;top:0;z-index:100;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab-btn{flex:1 0 auto;padding:12px 8px;background:none;border:none;color:#7a8fa6;font-size:0.80rem;font-weight:600;cursor:pointer;transition:all .2s;border-bottom:3px solid transparent;white-space:nowrap}
 .tab-btn.active,.tab-btn:hover{color:#c9a227;border-bottom-color:#c9a227;background:#0d1b2a}
 /* ─── MAIN ─── */
 main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
@@ -2299,7 +2300,7 @@ async function fetchScores(){
     const now=new Date();
     const gamesPlayed=MATCHES.filter(m=>results[m.id]&&results[m.id].done).length;
     const gamesLeft=MATCHES.filter(m=>!results[m.id]||(!results[m.id].done&&!results[m.id].live)).length;
-    document.getElementById('last-updated').textContent=`Updated ${now.toLocaleTimeString()}${liveIds.size?' · '+liveIds.size+' LIVE':''} · ${gamesPlayed} played · ${gamesLeft} left`;
+    document.getElementById('last-updated').textContent=`Updated ${now.toLocaleTimeString()}${liveIds.size?' · '+liveIds.size+' LIVE':''}`;
     renderAll();
     // auto-refresh faster if live matches
     clearInterval(autoTimer);
