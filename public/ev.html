@@ -295,7 +295,7 @@ function countAutoMatches(){return Object.keys(AUTO).length;}
 function fetchKalshi(cb){
   var s=document.getElementById('liveStatus');
   if(s){s.className='live-status loading';s.textContent='Fetching live Kalshi prices…';}
-  fetch('/api/places-search?source=kalshi').then(function(r){return r.json();}).then(function(d){
+  fetch('/api/places-search?feed=kalshi').then(function(r){return r.json();}).then(function(d){
     if(d&&d.matches&&d.matches.length){
       buildAuto(d);KALSHI_TS=d.updated;
       if(s){s.className='live-status ok';s.innerHTML='● Live Kalshi prices loaded for <b>'+countAutoMatches()+'</b> matches. Manual entries override live values.';}

@@ -1,7 +1,7 @@
 // ────────────────────────────────────────────────────────────────────────────
 // This function serves TWO jobs to stay within the Vercel Hobby 12-function cap:
 //   1) Default: Google Places text search (used by location pickers).
-//   2) ?source=kalshi : read-only proxy for 2026 World Cup market prices on Kalshi
+//   2) ?feed=kalshi : read-only proxy for 2026 World Cup market prices on Kalshi
 //      (used by /ev). Kalshi's public market-data API blocks direct browser calls
 //      (CORS), so the page reads it through this server-side relay instead.
 // ────────────────────────────────────────────────────────────────────────────
@@ -125,7 +125,8 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   // World Cup price proxy branch (keeps us at 12 Vercel functions).
-  if (req.query.source === 'kalshi') return kalshiHandler(req, res);
+  // NOTE: param is "feed" not "source" — Vercel strips a "source" query param in routing.
+  if (req.query.feed === 'kalshi') return kalshiHandler(req, res);
 
   // ── Default behavior: Google Places text search ──────────────────────────────
   const { query } = req.query;
