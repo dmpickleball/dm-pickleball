@@ -22,6 +22,11 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#0d1b2a;color:#e8eaf6;mi
 .scoring-note{font-size:0.72rem;color:#d0dbe8;padding:6px 0 12px;text-shadow:0 1px 4px rgba(0,0,0,0.95)}
 .scoring-note-inner{display:inline-block;background:rgba(0,0,0,0.42);border-radius:20px;padding:5px 18px;border:1px solid rgba(201,162,39,0.18)}
 .scoring-note b{color:#f0c840}
+.tourney-progress{text-align:center;padding:0 14px 12px}
+.tp-text{font-size:0.72rem;color:#d0dbe8;text-shadow:0 1px 4px rgba(0,0,0,0.95)}
+.tp-text b{color:#f0c840}
+.tp-bar{display:block;max-width:320px;margin:6px auto 0;height:6px;border-radius:4px;background:rgba(255,255,255,0.12);overflow:hidden}
+.tp-fill{display:block;height:100%;background:linear-gradient(90deg,#c9a227,#f0c840);border-radius:4px;transition:width .4s}
 .wc-title{font-size:0.78rem;letter-spacing:3px;color:#c9a227;font-weight:700;text-transform:uppercase;text-shadow:0 1px 4px rgba(0,0,0,0.9)}
 /* ─── TABS ─── */
 .tabs{display:flex;background:#111d2c;border-bottom:2px solid #1e3050;position:sticky;top:0;z-index:100}
@@ -182,10 +187,11 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
   </div>
   <div class="scoring-note">
     <div class="scoring-note-inner">
-      <b>Win correct = 1 pt</b> &nbsp;|&nbsp; <b>Tie correct = 2 pts</b><br>
+      <b>Win correct = 1 pt</b> &nbsp;|&nbsp; <b>Tie correct = 2 pts</b> &nbsp;|&nbsp; <b>Tiebreak: fewest wrong</b><br>
       <span style="white-space:nowrap">Payouts: 🥇 $275 &nbsp;🥈 $100 &nbsp;🥉 $50</span>
     </div>
   </div>
+  <div class="tourney-progress" id="tourney-progress"></div>
   <div class="banner-live">
     <div class="banner-row">
       <div class="banner-card" id="banner-leader"><span class="bc-label">👑 Leading</span><span class="bl-name">—</span></div>
@@ -2308,18 +2314,30 @@ function renderAll(){
 }
 
 function renderBanner(){
+  renderProgress();
   renderBannerLeader();
   renderBannerMotd();
   renderBannerTicker();
 }
 
+function renderProgress(){
+  const el=document.getElementById('tourney-progress');
+  if(!el) return;
+  const total=MATCHES.length;
+  const played=MATCHES.filter(m=>results[m.id]&&results[m.id].done).length;
+  const remaining=total-played;
+  const pct=total?Math.round(played/total*100):0;
+  el.innerHTML=`<span class="tp-text">⚽ <b>${played}</b>/${total} games played (<b>${pct}%</b>) &middot; <b>${remaining}</b> remaining (${100-pct}%)</span>`+
+    `<span class="tp-bar"><span class="tp-fill" style="width:${pct}%"></span></span>`;
+}
+
 function renderBannerLeader(){
   const el=document.getElementById('banner-leader');
   if(!el) return;
-  const totals=calcTotals().sort((a,b)=>b.pts-a.pts||(a.pending-b.pending));
+  const totals=calcTotals().sort((a,b)=>b.pts-a.pts||(a.wrong-b.wrong)||(a.pending-b.pending));
   if(!totals.length) return;
   const top=totals[0];
-  const tied=totals.filter(t=>t.pts===top.pts);
+  const tied=totals.filter(t=>t.pts===top.pts&&t.wrong===top.wrong);  // fewer wrong picks breaks the tie
   const nameStr=tied.length>1?tied.map(t=>t.name).join(' & '):top.name;
   el.innerHTML=`<span class="bc-label">👑 Leading</span><span class="bl-name">${nameStr}</span><span class="bl-pts">${top.pts} pts</span>`;
 }
@@ -2402,7 +2420,7 @@ function calcLiveTrends(){
     return extra;
   });
 
-  const totals=calcTotals().sort((a,b)=>b.pts-a.pts||(a.pending-b.pending));
+  const totals=calcTotals().sort((a,b)=>b.pts-a.pts||(a.wrong-b.wrong)||(a.pending-b.pending));
   let rank=0,prevPts=null;
   totals.forEach(t=>{ if(t.pts!==prevPts){rank++;prevPts=t.pts;} t.curRank=rank; });
 
@@ -2445,7 +2463,7 @@ function calcLastGamePoints(){
 }
 
 function renderLeaderboard(){
-  const totals=calcTotals().sort((a,b)=>b.pts-a.pts||(a.pending-b.pending));
+  const totals=calcTotals().sort((a,b)=>b.pts-a.pts||(a.wrong-b.wrong)||(a.pending-b.pending));
 
   // Determine live state
   const anyLive = MATCHES.some(m=>results[m.id]&&results[m.id].live);
@@ -2467,10 +2485,11 @@ function renderLeaderboard(){
   if(hdr) hdr.textContent = wrongLabel;
 
   const medals={1:'🥇',2:'🥈',3:'🥉'};
-  let denseRank=0,prevPts=null;
+  let denseRank=0,prevKey=null;
   let html='';
   totals.forEach((t,i)=>{
-    if(t.pts!==prevPts){ denseRank++; prevPts=t.pts; }
+    const rankKey=t.pts+'|'+t.wrong;            // ties only when points AND wrong picks match
+    if(rankKey!==prevKey){ denseRank++; prevKey=rankKey; }
     const isLast = t.pts===lastPlacePts && denseRank>3;
     const badge=denseRank<=3
       ?`<span class="medal-${denseRank}">${medals[denseRank]}</span>`
