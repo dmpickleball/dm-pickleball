@@ -127,7 +127,7 @@ select{background:#0d1b2a;border:1px solid #25415f;color:#e8eaf6;padding:8px 10p
       <div class="guide-row"><span class="guide-term">Fair %</span><span class="guide-def">The "true" probability after removing the house's cut. If Fair % is 52%, the market thinks this team has a 52% chance of winning.</span></div>
       <div class="guide-row"><span class="guide-term">Kalshi ¢</span><span class="guide-def">What you pay per $1 to bet on this outcome. 55¢ means you risk 55¢ to win 45¢ profit (pays out $1 total).</span></div>
       <div class="guide-row"><span class="guide-term">House cut</span><span class="guide-def">The platform's profit margin. 0% = no cut (rare, great deal). 2–3% = normal. The lower the better for you.</span></div>
-      <div class="guide-row"><span class="guide-term">Edge filter</span><span class="guide-def">The slider at the top sets how big a disagreement counts. Lower = looser (more games flagged, more noise); higher = stricter (only big, riskier calls). Flip "Show flagged only" to hide everything else.</span></div>
+      <div class="guide-row"><span class="guide-term">Edge filter</span><span class="guide-def">The top slider flags a game two ways at once: if any market is cheaply priced (small house cut) OR your view differs from the market enough. Lower = looser (more games); higher = stricter (only the best prices / biggest disagreements). "Show flagged only" hides the rest.</span></div>
       <div class="guide-row"><span class="guide-term">Per-game slider</span><span class="guide-def">Inside a game, drag toward the team you think will win. If your view is off from Fair % by at least the edge filter, the game gets flagged. Example: Fair % says Iran 52%, you think 65% → a 13pt gap flags Iran ML.</span></div>
       <div class="guide-row"><span class="guide-term">What to do</span><span class="guide-def">Look at Fair % — does it match your gut? If you think a team is better or worse than the market says, slide to your estimate. The tool tells you which market to look at and by how much you disagree.</span></div>
     </div>
@@ -331,15 +331,54 @@ function getMlFair(m){
   return dv;
 }
 
-/* Does this match clear the current edge threshold? Needs a "my view" set on it. */
+/* Slider (3=loose .. 15=strict) maps to the max house cut we'll call "good value".
+   Loose => allow up to ~6% cut (lots qualify); strict => only <=1% (few). */
+function priceCutFor(edge){
+  var c=6-(edge-3)*(6-1)/(15-3);
+  return Math.round(c*10)/10;
+}
+/* House cut (overround %) for one fully-priced market, else null */
+function marketCut(m,def){
+  var eff=effPrices(m,def);
+  var priced=def.outs.filter(function(o){return num(eff.vals[o.key])!==null;}).length;
+  if(priced<def.outs.length)return null;           // need every side priced for a real cut
+  var dv=devig(def.outs.map(function(o){return {key:o.key,price:num(eff.vals[o.key])};}));
+  return dv?dv.over*100:null;
+}
+/* A game flags if (a) any market is cheaply priced OR (b) your view diverges from fair. */
 function flagInfo(m){
-  if(state.winPct[m.id]===undefined)return null;
-  var dv=getMlFair(m);
-  if(!dv||dv.fair['home']===null)return null;
-  var marketPct=Math.round(dv.fair['home']*100);
-  var gap=state.winPct[m.id]-marketPct;
-  if(Math.abs(gap)<state.edge)return null;
-  return {gap:gap,abs:Math.abs(gap),side:gap>0?m.t1:m.t2};
+  var reasons=[];
+  // (a) price quality across all markets — keep the cheapest
+  var best=null;
+  marketDefs(m).forEach(function(def){
+    var cut=marketCut(m,def);
+    if(cut===null)return;
+    if(best===null||cut<best.cut)best={title:def.title,cut:cut};
+  });
+  if(best&&best.cut<=priceCutFor(state.edge))reasons.push({type:'price',title:best.title,cut:Math.max(0,best.cut)});
+  // (b) your own read vs market on the moneyline
+  if(state.winPct[m.id]!==undefined){
+    var dv=getMlFair(m);
+    if(dv&&dv.fair['home']!==null){
+      var marketPct=Math.round(dv.fair['home']*100);
+      var gap=state.winPct[m.id]-marketPct;
+      if(Math.abs(gap)>=state.edge)reasons.push({type:'view',side:gap>0?m.t1:m.t2,abs:Math.abs(gap)});
+    }
+  }
+  return reasons.length?{reasons:reasons}:null;
+}
+function flagPill(fi){
+  var v=fi.reasons.filter(function(r){return r.type==='view';})[0];
+  if(v)return '⚑ '+v.side.toUpperCase()+' '+v.abs+'pp';
+  var p=fi.reasons.filter(function(r){return r.type==='price';})[0];
+  return '⚑ VALUE '+p.cut.toFixed(1)+'%';
+}
+function flagLabel(m,fi){
+  return fi.reasons.map(function(r){
+    return r.type==='view'
+      ? r.side+' ML ('+r.abs+'pp vs fair)'
+      : r.title+' ('+r.cut.toFixed(1)+'% cut)';
+  }).join(' + ')+' — '+m.t1+' v '+m.t2;
 }
 function countFlagged(){return MATCHES.filter(flagInfo).length;}
 
@@ -358,7 +397,7 @@ function matchCardHTML(m){
   h+='<div class="mh-info"><div class="mh-teams">'+m.t1+' v '+m.t2+'</div>';
   h+='<div class="mh-time">'+etLabel(m.utc)+' &middot; MD'+m.md+'</div>';
   h+=mlLine+'</div>';
-  h+=(fi?'<span class="flag-pill">⚑ '+fi.side.toUpperCase()+' '+fi.abs+'pp</span>':'');
+  h+=(fi?'<span class="flag-pill">'+flagPill(fi)+'</span>':'');
   h+='<span class="mh-caret">&#9656;</span></div>';
   h+='<div class="match-body">'+(open?marketsHTML(m):'')+'</div></div>';
   return h;
@@ -446,7 +485,7 @@ function updateCardFlag(mid){
   var pill=head.querySelector('.flag-pill');
   if(fi){
     if(!pill){pill=document.createElement('span');pill.className='flag-pill';head.insertBefore(pill,head.querySelector('.mh-caret'));}
-    pill.textContent='⚑ '+fi.side.toUpperCase()+' '+fi.abs+'pp';
+    pill.textContent=flagPill(fi);
   } else if(pill){pill.remove();}
 }
 function onSlider(mid,v,marketPct,awayPct){
@@ -483,18 +522,19 @@ function stamp(){
 function recalcAll(){fetchKalshi();}
 
 function edgeWord(v){
-  if(v<=4)return 'very loose — flags lots of small disagreements (more bets, more noise)';
-  if(v<=7)return 'balanced — a sensible base setting';
-  if(v<=10)return 'selective — only clear disagreements get flagged';
-  return 'strict — only big, higher-risk calls get flagged';
+  if(v<=4)return 'loose — lots of games qualify (more noise)';
+  if(v<=7)return 'balanced base setting';
+  if(v<=10)return 'selective — only the better spots';
+  return 'strict — only the best prices / biggest disagreements';
 }
 function updateEdgeUI(){
   var vEl=document.getElementById('edgeVal');if(vEl)vEl.textContent=state.edge+'%';
   var sEl=document.getElementById('edgeSlider');if(sEl&&+sEl.value!==state.edge)sEl.value=state.edge;
+  var cut=priceCutFor(state.edge);
   var n=countFlagged();
   var dEl=document.getElementById('edgeDesc');
-  if(dEl)dEl.innerHTML='Flagging a game when your view differs from the market by <b>'+state.edge+'%</b> or more — '+edgeWord(state.edge)+'.<br>'+
-    '<span class="edge-flagcount">'+n+'</span> game'+(n===1?'':'s')+' flagged right now. <span style="color:#8aa0b6">Set your view with the slider inside each game.</span>';
+  if(dEl)dEl.innerHTML='Flags a game if <b>any market’s house cut is &le;'+cut.toFixed(1)+'%</b> (a good price) <b>or</b> your view differs from the market by <b>&ge;'+state.edge+'%</b> — '+edgeWord(state.edge)+'.<br>'+
+    '<span class="edge-flagcount">'+n+'</span> game'+(n===1?'':'s')+' flagged now. <span style="color:#8aa0b6">Open a game and drag its slider to add your own read.</span>';
 }
 function onEdge(v){
   state.edge=parseInt(v,10);save();
@@ -526,12 +566,12 @@ function updateFlaggedBanner(){
   var flagged=[];
   MATCHES.forEach(function(m){
     var fi=flagInfo(m);
-    if(fi)flagged.push(fi.side+' ML ('+m.t1+' v '+m.t2+', '+fi.abs+'pp gap)');
+    if(fi)flagged.push(flagLabel(m,fi));
   });
   var el=document.getElementById('flagged-banner');
   if(!flagged.length){el.className='flagged-banner';el.innerHTML='';return;}
   el.className='flagged-banner has-flags';
-  el.innerHTML='💡 <b>'+flagged.length+' game'+(flagged.length>1?'s':'')+' flagged</b> at your '+state.edge+'% edge filter: '+flagged.join(' · ');
+  el.innerHTML='💡 <b>'+flagged.length+' game'+(flagged.length>1?'s':'')+' flagged</b>: '+flagged.join(' · ');
 }
 
 /* ---------- INIT ---------- */
