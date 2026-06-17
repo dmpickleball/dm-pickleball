@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Strike · BillionToOne Equity Planner</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eef3f6; --panel:#ffffff; --panel2:#f7fafc; --ink:#15242f; --muted:#5e6e7c;
+  --line:#e2e9ee; --line2:#eef3f6; --accent:#00aeef; --accent-dk:#0089bd; --deep:#0a2c3d;
+  --high:#e5484d; --med:#e0922f; --low:#16a06a;
+  --shadow:0 1px 2px rgba(16,40,58,.06),0 6px 20px rgba(16,40,58,.05);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;-webkit-text-size-adjust:100%}
+a{color:var(--accent-dk)}
+.gold{color:var(--accent-dk)} .muted{color:var(--muted)}
+
+/* ---- LOGO ---- */
+.logo{display:inline-flex;align-items:center;font-weight:800;letter-spacing:-.3px;line-height:1;font-size:1.15rem}
+.logo .b{color:#fff} .logo .one{background:var(--accent);color:#fff;border-radius:6px;padding:3px 7px;margin-left:3px}
+.logo.dark .b{color:var(--deep)}
+
+/* ---- HEADER ---- */
+.header{background:var(--deep);color:#fff;padding:0}
+.hbar{max-width:1120px;margin:0 auto;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.hbar .tool{font-size:.72rem;letter-spacing:2.5px;text-transform:uppercase;color:#7fd4f3;font-weight:700}
+.hbar .who{display:flex;align-items:center;gap:9px;font-size:.8rem;color:#cfe6f1}
+.hbar .who img{width:28px;height:28px;border-radius:50%}
+.hbar .signout{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:7px;padding:6px 11px;font-size:.74rem;font-weight:600;cursor:pointer}
+.subbar{background:#0e3850;color:#bfe6f5;font-size:.78rem}
+.subbar .in{max-width:1120px;margin:0 auto;padding:8px 18px;display:flex;gap:18px;flex-wrap:wrap;align-items:center}
+.subbar b{color:#fff} .subbar .dot{color:#4fc5ef}
+
+main{max-width:1120px;margin:0 auto;padding:18px 16px 90px}
+
+/* ---- LOGIN ---- */
+#login{min-height:72vh;display:flex;align-items:center;justify-content:center}
+.login-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:34px 30px;max-width:430px;width:100%;text-align:center}
+.login-card .mark{display:inline-flex;background:var(--deep);border-radius:10px;padding:12px 16px;margin-bottom:18px}
+.login-card h1{font-size:1.35rem;font-weight:800;letter-spacing:-.4px;margin-bottom:7px}
+.login-card p{color:var(--muted);font-size:.86rem;line-height:1.5;margin-bottom:20px}
+#gbtn{display:flex;justify-content:center;min-height:44px}
+.login-note{font-size:.72rem;color:var(--muted);margin-top:18px;line-height:1.5}
+.login-err{background:#fdecec;border:1px solid #f5c2c2;color:#b3343a;border-radius:9px;padding:11px 13px;font-size:.8rem;margin-top:16px;display:none;line-height:1.45}
+.login-err.show{display:block}
+
+/* ---- SECTIONS ---- */
+h2.sec{font-size:1.02rem;font-weight:800;letter-spacing:-.3px;margin:24px 0 12px;display:flex;align-items:center;gap:9px}
+h2.sec .n{width:23px;height:23px;border-radius:6px;background:var(--accent);color:#fff;font-size:.78rem;display:inline-flex;align-items:center;justify-content:center;font-weight:800}
+.disclaimer{background:#eaf7fd;border:1px solid #bfe6f5;border-left:3px solid var(--accent);border-radius:10px;padding:12px 14px;margin-bottom:6px;font-size:.78rem;color:#2a5566;line-height:1.5}
+.disclaimer b{color:var(--accent-dk)}
+
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:16px}
+.cardgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:13px 15px}
+.stat .lbl{font-size:.68rem;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:700}
+.stat .val{font-size:1.32rem;font-weight:800;letter-spacing:-.5px;margin-top:5px}
+.stat .sub{font-size:.72rem;color:var(--muted);margin-top:3px}
+
+label.fld{display:block;font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:5px}
+input,select{background:#fff;border:1px solid #cdd9e1;color:var(--ink);padding:9px 10px;border-radius:8px;font-size:.95rem;font-family:inherit;min-height:40px;width:100%}
+input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,174,239,.15)}
+input.flagged{border-color:var(--med);background:#fff8ee}
+input[type=range]{padding:0;height:30px;accent-color:var(--accent);box-shadow:none}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:760px){.grid3,.grid4{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){.grid3,.grid4{grid-template-columns:1fr}}
+.hint{font-size:.7rem;color:var(--muted);margin-top:5px;line-height:1.4}
+
+/* ---- GRANT TABLE ---- */
+.gtab{width:100%;border-collapse:collapse;font-size:.84rem}
+.gtab th{font-size:.64rem;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;text-align:right;padding:7px 8px;border-bottom:1px solid var(--line)}
+.gtab th.l,.gtab td.l{text-align:left}
+.gtab td{padding:8px;text-align:right;border-bottom:1px solid var(--line2)}
+.gtab tr:last-child td{border-bottom:none}
+.gtab tfoot td{font-weight:800;border-top:2px solid var(--line);border-bottom:none}
+.badge{display:inline-block;font-size:.62rem;font-weight:800;letter-spacing:.4px;padding:2px 7px;border-radius:5px}
+.badge.ISO{background:#e7f7ef;color:#0f7a4f;border:1px solid #b6e6cd}
+.badge.NSO{background:#eef1f4;color:#566576;border:1px solid #d7dee5}
+
+/* ---- SCENARIOS ---- */
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.btn{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:10px 16px;font-size:.86rem;font-weight:700;cursor:pointer;min-height:42px}
+.btn:hover{background:var(--accent-dk)}
+.btn-ghost{background:#fff;color:var(--accent-dk);border:1px solid #cce8f5}
+.btn-ghost:hover{background:#f0fafe}
+.btn-sm{padding:7px 12px;font-size:.78rem;min-height:36px}
+.scn-wrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:13px}
+.scn{background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);padding:14px;display:flex;flex-direction:column}
+.scn-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:11px}
+.scn-name{font-weight:800;font-size:.96rem;color:var(--ink);background:none;border:none;border-bottom:1px dashed #bcd3df;border-radius:0;min-height:auto;padding:3px 2px;width:78%}
+.scn-x{color:#c2545a;cursor:pointer;font-size:1.15rem;background:none;border:none}
+.ctrl{margin-bottom:10px}
+.ctrl label{font-size:.64rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700;display:block;margin-bottom:4px}
+.exval{float:right;color:var(--accent-dk);font-weight:800}
+.seg{display:flex;gap:4px;flex-wrap:wrap}
+.seg button{flex:1;background:#f3f7fa;border:1px solid #d6e1e8;color:var(--muted);font-size:.72rem;font-weight:700;padding:7px 4px;border-radius:7px;cursor:pointer;min-height:34px}
+.seg button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+
+.res{border-top:1px solid var(--line);margin-top:4px;padding-top:9px}
+.rrow{display:flex;justify-content:space-between;gap:8px;font-size:.81rem;padding:3px 0;line-height:1.3}
+.rrow .k{color:var(--muted)} .rrow .v{font-weight:700;text-align:right}
+.rrow.head{font-size:.62rem;color:var(--accent-dk);text-transform:uppercase;letter-spacing:.7px;font-weight:800;border:none;padding-top:9px}
+.rrow.big{border-top:1px solid var(--line2);margin-top:4px;padding-top:7px}
+.rrow.big .k{font-weight:700} .rrow.big .v{color:var(--ink);font-weight:800;font-size:1.02rem}
+.rrow.net .v{color:var(--low)} .rrow.oop .v{color:#c2545a}
+.flagbox{background:#fff6e9;border:1px solid #f0d39a;color:#8a5b16;font-size:.73rem;border-radius:8px;padding:7px 10px;margin-top:8px;line-height:1.45}
+
+.adviser{background:#f1fbf6;border:1px solid #c5ead7;border-left:3px solid var(--low);border-radius:9px;padding:11px 12px;margin-top:11px;font-size:.8rem;color:#28543f;line-height:1.5}
+.adviser .lead{display:block;font-weight:800;color:#1c7a52;margin-bottom:4px;font-size:.83rem}
+.adviser b{color:#13643f}
+
+.risk{margin-top:10px}
+.risk .head{font-size:.62rem;color:var(--accent-dk);text-transform:uppercase;letter-spacing:.7px;font-weight:800;margin-bottom:3px}
+.risk-item{display:flex;gap:8px;align-items:flex-start;font-size:.76rem;padding:6px 0;border-bottom:1px solid var(--line2);line-height:1.45}
+.risk-item:last-child{border-bottom:none}
+.risk-badge{flex-shrink:0;font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.4px;padding:3px 7px;border-radius:5px;min-width:54px;text-align:center}
+.risk-High{background:#fdecec;border:1px solid #f3bcbc;color:var(--high)}
+.risk-Medium{background:#fcf2e2;border:1px solid #f0d39a;color:var(--med)}
+.risk-Low{background:#e9f8f0;border:1px solid #bfe7d2;color:var(--low)}
+.risk-txt b{color:var(--ink)}
+
+.cmp-scroll{overflow-x:auto}
+table.cmp{width:100%;border-collapse:collapse;font-size:.83rem;min-width:520px}
+table.cmp th,table.cmp td{padding:9px 11px;text-align:right;border-bottom:1px solid var(--line2)}
+table.cmp th{color:var(--accent-dk);font-size:.74rem;font-weight:800;border-bottom:2px solid var(--line)}
+table.cmp td.lbl,table.cmp th.lbl{text-align:left;color:var(--muted);font-weight:700;font-size:.72rem;text-transform:uppercase;letter-spacing:.3px}
+table.cmp .win{color:var(--low);font-weight:800}
+
+.chart-box{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px}
+canvas{width:100%;display:block}
+.chart-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.72rem;color:var(--muted);margin-top:8px;justify-content:center}
+.chart-legend span{display:flex;align-items:center;gap:5px}
+.chart-legend i{width:14px;height:3px;display:inline-block;border-radius:2px}
+
+.save-list{display:flex;gap:7px;flex-wrap:wrap;margin-top:4px}
+.save-chip{background:#eef6fb;border:1px solid #cce8f5;color:#236;font-size:.72rem;border-radius:14px;padding:5px 11px;cursor:pointer;display:flex;gap:6px;align-items:center}
+.save-chip .del{color:#c2545a;font-weight:800}
+.hide{display:none!important}
+.foot{text-align:center;font-size:.7rem;color:var(--muted);margin-top:34px;line-height:1.6}
+</style>
+</head>
+<body>
+
+<!-- ===================== LOGIN ===================== -->
+<div id="login">
+  <div class="login-card">
+    <div class="mark"><span class="logo"><span class="b">Billion</span><span class="one">One</span></span></div>
+    <h1>Equity Planner</h1>
+    <p>A private tool to think through when and how to exercise your BillionToOne options — and what it really costs after tax. Sign in to continue.</p>
+    <div id="gbtn"></div>
+    <div class="login-err" id="loginErr"></div>
+    <div class="login-note">🔒 Access is limited to authorized accounts. Your equity details are never stored in the page — they're served only after Google verifies it's you.</div>
+  </div>
+</div>
+
+<!-- ===================== APP ===================== -->
+<div id="app" class="hide">
+  <div class="header">
+    <div class="hbar">
+      <span class="logo"><span class="b">Billion</span><span class="one">One</span></span>
+      <span class="tool">Equity&nbsp;Planner · Strike</span>
+      <span class="who"><img id="uPic" alt=""><span id="uName"></span><button class="signout" onclick="signOut()">Sign out</button></span>
+    </div>
+    <div class="subbar"><div class="in" id="subbar"></div></div>
+  </div>
+
+  <main>
+    <h2 class="sec"><span class="n">1</span>Your situation</h2>
+    <div class="disclaimer" style="margin-bottom:14px">
+      <b>Heads up — this is a planning tool, not tax advice.</b> Almost all your exercisable options are <b>ISOs</b>, so the big lever here is the <b>Alternative Minimum Tax (AMT)</b>: you can owe tax on a paper gain before you've sold anything. The math below uses 2026 federal rates + the latest California schedule and is a good-faith estimate. Given the size of this position, run any real exercise by a CPA first.
+    </div>
+    <div class="cardgrid" id="statCards"></div>
+
+    <div class="panel" style="margin-top:14px">
+      <div class="grid4">
+        <div><label class="fld">Current BLLN price</label><input type="number" id="fmv" step="0.5" oninput="recalc()"><div class="hint">Editable — set to today's price.</div></div>
+        <div><label class="fld">Your other income (yr)</label><input type="number" id="income" step="1000" oninput="recalc()"><div class="hint" id="incomeHint"></div></div>
+        <div><label class="fld">Filing status</label><select id="status" onchange="recalc()">
+          <option value="single">Single</option><option value="mfj">Married filing jointly</option>
+          <option value="hoh">Head of household</option><option value="mfs">Married filing separately</option></select></div>
+        <div><label class="fld">Stock volatility (annual %)</label><input type="number" id="vol" step="5" oninput="recalc()"><div class="hint">Used to size risk likelihood, not predict price.</div></div>
+      </div>
+      <div class="grid4" style="margin-top:12px">
+        <div><label class="fld">Already exercised in 2026</label><input type="number" id="priorShares" step="50" oninput="recalc()"><div class="hint" id="priorHint"></div></div>
+        <div><label class="fld">…at strike $</label><input type="number" id="priorStrike" step="0.01" oninput="recalc()"></div>
+        <div style="grid-column:span 2"><label class="fld">Net worth incl. this position (optional)</label><input type="number" id="networth" step="10000" placeholder="for concentration risk" oninput="recalc()"></div>
+      </div>
+    </div>
+
+    <details class="panel" style="margin-top:14px">
+      <summary style="cursor:pointer;font-weight:700;font-size:.9rem">Your grants (from Fidelity) — tap to view / edit</summary>
+      <div style="overflow-x:auto;margin-top:12px"><table class="gtab" id="grantTab"></table></div>
+      <div class="hint" style="margin-top:8px">Scenarios below exercise a percentage across these exercisable lots (lowest-strike first — the biggest spreads). The lone NSO tranche has 0 shares exercisable today, so it doesn't affect current decisions.</div>
+    </details>
+
+    <h2 class="sec"><span class="n">2</span>Compare your options</h2>
+    <div class="toolbar">
+      <button class="btn btn-ghost btn-sm" onclick="addScenario()">+ Add scenario</button>
+      <button class="btn btn-ghost btn-sm" onclick="loadPresets()">↻ Reset to key scenarios</button>
+      <button class="btn btn-ghost btn-sm" onclick="saveScenarios()">💾 Save</button>
+      <span id="saveList" class="save-list"></span>
+    </div>
+    <div id="scnWrap" class="scn-wrap"></div>
+
+    <h2 class="sec"><span class="n">3</span>Head to head</h2>
+    <div class="panel cmp-scroll"><table class="cmp" id="cmpTable"></table></div>
+
+    <h2 class="sec"><span class="n">4</span>What if BLLN moves?</h2>
+    <div class="panel">
+      <div class="hint" style="margin-bottom:10px">After-tax net for each scenario across future sale prices. A higher price isn't automatically better — watch how much of each extra dollar the tax bill takes. Dashed line = today's price.</div>
+      <div class="chart-box"><canvas id="chart" height="300"></canvas></div>
+      <div class="chart-legend" id="chartLegend"></div>
+    </div>
+
+    <div class="foot">
+      Strike · a private equity planner. Tax parameters live in <span class="gold">TAX_CONFIG</span> in this file; her grant data is served securely from <span class="gold">/api/strike-data</span>.<br>
+      Educational estimate only — not tax or financial advice. Confirm with a CPA before acting.
+    </div>
+  </main>
+</div>
+
+<script>
+const CLIENT_ID = '708565807163-uu8teuc876ufboujut8vhdo34ro27v8s.apps.googleusercontent.com';
+const $=id=>document.getElementById(id);
+
+/* ===================================================================
+   TAX CONFIG — tax year 2026 (federal) + latest CA schedule. Edit yearly.
+   =================================================================== */
+const TAX_CONFIG = {
+  federal: {
+    standardDeduction:{ single:16100, mfj:32200, mfs:16100, hoh:24150 },
+    ordinaryBrackets:{
+      single:[[0,.10],[12400,.12],[50400,.22],[105700,.24],[201775,.32],[256225,.35],[640600,.37]],
+      mfj:[[0,.10],[24800,.12],[100800,.22],[211400,.24],[403550,.32],[512450,.35],[768700,.37]],
+      mfs:[[0,.10],[12400,.12],[50400,.22],[105700,.24],[201775,.32],[256225,.35],[384350,.37]],
+      hoh:[[0,.10],[17700,.12],[67450,.22],[105700,.24],[201775,.32],[256225,.35],[640600,.37]],
+    },
+    ltcgBreaks:{ single:[[0,0],[49450,.15],[545500,.20]], mfj:[[0,0],[98900,.15],[613700,.20]],
+      mfs:[[0,0],[49450,.15],[306850,.20]], hoh:[[0,0],[66200,.15],[579050,.20]] },
+    amt:{ exemption:{ single:90100, mfj:140200, mfs:70100, hoh:90100 },
+      phaseoutStart:{ single:500000, mfj:1000000, mfs:500000, hoh:500000 },
+      phaseoutRate:.50, rate26Cap:244500, rate26:.26, rate28:.28 },
+    niit:{ rate:.038, threshold:{ single:200000, mfj:250000, mfs:125000, hoh:200000 } },
+    addlMedicare:{ rate:.009, threshold:{ single:200000, mfj:250000, mfs:125000, hoh:200000 } },
+  },
+  ca: {
+    standardDeduction:{ single:5540, mfj:11080, mfs:5540, hoh:11080 },
+    ordinaryBrackets:{
+      single:[[0,.01],[11079,.02],[26264,.04],[41452,.06],[57542,.08],[72724,.093],[371479,.103],[445771,.113],[742953,.123]],
+      mfj:[[0,.01],[22158,.02],[52528,.04],[82904,.06],[115084,.08],[145448,.093],[742958,.103],[891542,.113],[1485906,.123]],
+      mfs:[[0,.01],[11079,.02],[26264,.04],[41452,.06],[57542,.08],[72724,.093],[371479,.103],[445771,.113],[742953,.123]],
+      hoh:[[0,.01],[22171,.02],[52528,.04],[67699,.06],[83823,.08],[99006,.093],[505131,.103],[606339,.113],[1010399,.123]],
+    },
+    mentalHealthSurcharge:{ rate:.01, threshold:1000000 },
+    amt:{ rate:.07, exemption:{ single:95600, mfj:127400, mfs:63700, hoh:95600 },
+      phaseoutStart:{ single:359000, mfj:478600, mfs:239300, hoh:359000 }, phaseoutRate:.25 },
+  },
+};
+
+/* ===================== ENGINE ===================== */
+function progressiveTax(income,b){ if(income<=0)return 0; let t=0;
+  for(let i=0;i<b.length;i++){ const f=b[i][0],r=b[i][1],c=i+1<b.length?b[i+1][0]:Infinity;
+    if(income>f)t+=(Math.min(income,c)-f)*r; else break; } return t; }
+function ltcgTax(ordT,gain,br){ if(gain<=0)return 0; let rem=gain,t=0,pos=Math.max(0,ordT);
+  for(let i=0;i<br.length;i++){ const r=br[i][1],c=i+1<br.length?br[i+1][0]:Infinity;
+    if(pos>=c)continue; const room=c-pos,a=Math.min(rem,room); if(a>0){t+=a*r;rem-=a;pos+=a;} if(rem<=0)break; } return t; }
+function fedAMTraw(amti,st,regTax,cfg){ const a=cfg.federal.amt;
+  const ex=Math.max(0,a.exemption[st]-a.phaseoutRate*Math.max(0,amti-a.phaseoutStart[st]));
+  const base=Math.max(0,amti-ex);
+  const tmt=a.rate26*Math.min(base,a.rate26Cap)+a.rate28*Math.max(0,base-a.rate26Cap);
+  return { ex, base, tmt, due:Math.max(0,tmt-regTax) }; }
+function caAMTraw(amti,st,caReg,cfg){ const a=cfg.ca.amt;
+  const ex=Math.max(0,a.exemption[st]-a.phaseoutRate*Math.max(0,amti-a.phaseoutStart[st]));
+  const tmt=Math.max(0,amti-ex)*a.rate; return Math.max(0,tmt-caReg); }
+
+/* p = { status, otherIncome, priorIsoPref, fmv, lots:[{shares,strike,type}],
+        action:'hold'|'sellNow'|'sellLater', salePrice, qualifying, longTerm } */
+function computePlan(p,cfg=TAX_CONFIG){
+  const st=p.status, fmv=p.fmv, prior=Math.max(0,p.priorIsoPref||0);
+  const fedOrd=cfg.federal.ordinaryBrackets[st], fedStd=cfg.federal.standardDeduction[st];
+  const caOrd=cfg.ca.ordinaryBrackets[st], caStd=cfg.ca.standardDeduction[st], ltB=cfg.federal.ltcgBreaks[st];
+  const salePrice=p.action==='sellNow'?fmv:p.salePrice;
+
+  let bargain=0,exerciseCost=0,ordinaryAdd=0,isoPref=0,capGain=0,proceeds=0,sharesEx=0;
+  let capGainLT = p.action==='sellLater' ? !!p.longTerm : false;
+  p.lots.forEach(l=>{ if(!l.shares||l.shares<=0)return; sharesEx+=l.shares;
+    const lb=Math.max(0,(fmv-l.strike)*l.shares); bargain+=lb; exerciseCost+=l.strike*l.shares;
+    if(l.type==='NSO'){ ordinaryAdd+=lb;
+      if(p.action!=='hold'){ proceeds+=salePrice*l.shares; capGain+=(salePrice-fmv)*l.shares; }
+    } else { // ISO
+      if(p.action==='sellNow'||(p.action==='sellLater'&&!p.qualifying)){
+        ordinaryAdd+=lb; proceeds+=salePrice*l.shares; capGain+=(salePrice-l.strike)*l.shares-lb;
+      } else { isoPref+=lb; if(p.action==='sellLater'){ proceeds+=salePrice*l.shares; capGain+=(salePrice-l.strike)*l.shares; } }
+    }});
+
+  // ---- baseline = income + the ISO already exercised/held this year (no new decision) ----
+  const baseFedReg=progressiveTax(Math.max(0,p.otherIncome-fedStd),fedOrd);
+  const baseFedAmt=fedAMTraw(p.otherIncome+prior,st,baseFedReg,cfg).due;
+  let baseCaReg=progressiveTax(Math.max(0,p.otherIncome-caStd),caOrd);
+  const baseCaAmt=caAMTraw(p.otherIncome+prior,st,baseCaReg,cfg);
+  const baseFedTotal=baseFedReg+baseFedAmt, baseCaTotal=baseCaReg+baseCaAmt;
+
+  // ---- scenario ----
+  const fedTaxOrd=Math.max(0,p.otherIncome+ordinaryAdd-fedStd);
+  const fedOrdTax=progressiveTax(fedTaxOrd,fedOrd);
+  let fedCapTax=0;
+  if(capGain>0) fedCapTax = capGainLT? ltcgTax(fedTaxOrd,capGain,ltB) : progressiveTax(fedTaxOrd+capGain,fedOrd)-fedOrdTax;
+  const fedReg=fedOrdTax+fedCapTax;
+  const amti=p.otherIncome+ordinaryAdd+isoPref+prior+Math.max(0,capGain);
+  const amtRaw=fedAMTraw(amti,st,fedReg,cfg);
+  const amtMarginal=Math.max(0,amtRaw.due-baseFedAmt);
+
+  let caReg=progressiveTax(Math.max(0,p.otherIncome+ordinaryAdd+Math.max(0,capGain)-caStd),caOrd);
+  if((p.otherIncome+ordinaryAdd+Math.max(0,capGain))>cfg.ca.mentalHealthSurcharge.threshold)
+    caReg+=((p.otherIncome+ordinaryAdd+Math.max(0,capGain))-cfg.ca.mentalHealthSurcharge.threshold)*cfg.ca.mentalHealthSurcharge.rate;
+  const caAmtScn=caAMTraw(p.otherIncome+ordinaryAdd+Math.max(0,capGain)+isoPref+prior,st,caReg,cfg);
+  const caTotalScn=caReg+caAmtScn;
+
+  const magi=p.otherIncome+ordinaryAdd+Math.max(0,capGain);
+  const niit=capGain>0? cfg.federal.niit.rate*Math.min(capGain,Math.max(0,magi-cfg.federal.niit.threshold[st])) : 0;
+  const addlMed=ordinaryAdd>0? cfg.federal.addlMedicare.rate*Math.max(0,Math.min(ordinaryAdd,(p.otherIncome+ordinaryAdd)-cfg.federal.addlMedicare.threshold[st])) : 0;
+
+  const fedTotal=fedReg+amtRaw.due+niit+addlMed;
+  const fedMarginal=fedTotal-baseFedTotal;
+  const fedIncMarginal=fedReg-baseFedReg;
+  const caMarginal=caTotalScn-baseCaTotal;
+  const totalTax=fedMarginal+caMarginal;
+
+  const paperValue=fmv*sharesEx;
+  const netAfterTax = p.action==='hold' ? paperValue-exerciseCost-totalTax : proceeds-exerciseCost-totalTax;
+
+  return { sharesEx,bargain,exerciseCost,ordinaryAdd,isoPref,capGain,capGainLT,proceeds,salePrice,
+    fedIncMarginal, amtDue:amtMarginal, amtExemption:amtRaw.ex, niit, addlMed,
+    caMarginal, fedMarginal, totalTax,
+    cashToExercise:exerciseCost, cashForTaxes:totalTax, cashOutOfPocket:exerciseCost+totalTax,
+    paperValue, netAfterTax, effRate: bargain>0? totalTax/bargain:0 };
+}
+
+/* ===================== PROBABILITY ===================== */
+function erf(x){ const s=x<0?-1:1; x=Math.abs(x); const t=1/(1+0.3275911*x);
+  return s*(1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-x*x)); }
+function normCdf(z){ return .5*(1+erf(z/Math.SQRT2)); }
+function probDrop(dropPct,vol,T){ const d=dropPct/100,s=vol/100; if(s<=0||T<=0)return 0;
+  return normCdf((Math.log(1-d)+.5*s*s*T)/(s*Math.sqrt(T))); }
+function tier(p){ return p>=35?['High','var(--high)']:p>=15?['Medium','var(--med)']:['Low','var(--low)']; }
+
+/* ===================== STATE ===================== */
+let PLAN=null, CRED=null, SCENARIOS=[], SID=1;
+const fmt0=n=>(n<0?'-$':'$')+Math.abs(Math.round(n)).toLocaleString();
+const pct=n=>(n*100).toFixed(1)+'%';
+
+/* ===================== AUTH ===================== */
+window.onGoogleCred = async function(resp){
+  try{
+    const r=await fetch('/api/strike-data',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({credential:resp.credential})});
+    if(r.status===403){ showLoginErr("That account isn't authorized for this tool. Sign in with the approved Google account."); return; }
+    if(!r.ok){ showLoginErr('Sign-in failed. Please try again.'); return; }
+    const data=await r.json();
+    CRED=resp.credential;
+    startApp(data.user, data.plan);
+  }catch(e){ showLoginErr('Network error during sign-in. Please try again.'); }
+};
+function showLoginErr(m){ const e=$('loginErr'); e.textContent=m; e.classList.add('show'); }
+function initGoogle(){
+  if(!(window.google&&google.accounts&&google.accounts.id)){ return setTimeout(initGoogle,200); }
+  google.accounts.id.initialize({ client_id:CLIENT_ID, callback:window.onGoogleCred });
+  google.accounts.id.renderButton($('gbtn'),{theme:'filled_blue',size:'large',text:'signin_with',shape:'pill',width:300});
+}
+initGoogle();
+function signOut(){ try{google.accounts.id.disableAutoSelect();}catch(e){} location.reload(); }
+
+/* ===================== START ===================== */
+function startApp(user, plan){
+  PLAN=plan;
+  $('login').classList.add('hide'); $('app').classList.remove('hide');
+  if(user.picture) $('uPic').src=user.picture; else $('uPic').style.display='none';
+  $('uName').textContent=user.name||user.email;
+  // seed inputs
+  $('fmv').value=plan.currentPrice; $('income').value=plan.expectedIncome;
+  $('status').value=plan.filingStatus||'single'; $('vol').value=55;
+  $('priorShares').value=plan.priorIsoExerciseThisYear?.shares||0;
+  $('priorStrike').value=plan.priorIsoExerciseThisYear?.strike||0;
+  if(plan.expectedIncomeIsEstimate){ $('income').classList.add('flagged'); $('incomeHint').innerHTML='⚠ Estimate — set your real W-2 income.'; }
+  $('priorHint').textContent='ISO shares already exercised & held in 2026 (AMT preference already booked).';
+  renderSubbar(); renderGrants();
+  loadPresets(); renderSavedList();
+}
+function renderSubbar(){
+  const ex=exercisableLots(); const totSh=ex.reduce((a,l)=>a+l.shares,0);
+  const spread=ex.reduce((a,l)=>a+Math.max(0,(PLAN.currentPrice-l.strike)*l.shares),0);
+  $('subbar').innerHTML=`<span><b>${PLAN.company}</b> (${PLAN.ticker})</span>
+    <span class="dot">•</span><span>Price <b>${fmt0(PLAN.currentPrice)}</b></span>
+    <span class="dot">•</span><span><b>${totSh.toLocaleString()}</b> options exercisable</span>
+    <span class="dot">•</span><span>Spread <b>${fmt0(spread)}</b></span>
+    <span class="dot">•</span><span>as of ${PLAN.asOfDate}</span>`;
+}
+
+/* lots currently exercisable, sorted lowest strike first (biggest spread first) */
+function exercisableLots(){ return PLAN.grants.filter(g=>g.exercisable>0)
+  .map(g=>({shares:g.exercisable,strike:g.strike,type:g.type,id:g.id}))
+  .sort((a,b)=>a.strike-b.strike); }
+
+function priorPref(){ const sh=+$('priorShares').value||0, k=+$('priorStrike').value||0, fmv=+$('fmv').value||0;
+  return Math.max(0,(fmv-k)*sh); }
+
+/* ===================== STAT CARDS + GRANT TABLE ===================== */
+function renderStats(){
+  const fmv=+$('fmv').value||0, ex=exercisableLots();
+  const totSh=ex.reduce((a,l)=>a+l.shares,0);
+  const spread=ex.reduce((a,l)=>a+Math.max(0,(fmv-l.strike)*l.shares),0);
+  const cost=ex.reduce((a,l)=>a+l.strike*l.shares,0);
+  const isoSh=ex.filter(l=>l.type==='ISO').reduce((a,l)=>a+l.shares,0);
+  $('statCards').innerHTML=`
+    <div class="stat"><div class="lbl">Exercisable now</div><div class="val">${totSh.toLocaleString()}</div><div class="sub">${isoSh.toLocaleString()} ISO · ${(totSh-isoSh).toLocaleString()} NSO</div></div>
+    <div class="stat"><div class="lbl">In-the-money spread</div><div class="val">${fmt0(spread)}</div><div class="sub">at ${fmt0(fmv)}/share</div></div>
+    <div class="stat"><div class="lbl">Cash to exercise all</div><div class="val">${fmt0(cost)}</div><div class="sub">strike cost out of pocket</div></div>
+    <div class="stat"><div class="lbl">Paper value if all held</div><div class="val">${fmt0(fmv*totSh)}</div><div class="sub">before any tax</div></div>`;
+}
+function renderGrants(){
+  const fmv=+$('fmv').value||PLAN.currentPrice;
+  let rows='', tSh=0, tSp=0;
+  PLAN.grants.forEach(g=>{ const sp=Math.max(0,(fmv-g.strike)*g.exercisable); tSh+=g.exercisable; tSp+=sp;
+    rows+=`<tr><td class="l">${g.year} <span class="badge ${g.type}">${g.type}</span></td>
+      <td>$${g.strike.toFixed(2)}</td><td>${g.granted.toLocaleString()}</td>
+      <td>${g.exercisable.toLocaleString()}</td><td>${g.exercisable? fmt0(sp):'—'}</td></tr>`; });
+  $('grantTab').innerHTML=`<thead><tr><th class="l">Grant</th><th>Strike</th><th>Granted</th><th>Exercisable</th><th>Spread</th></tr></thead>
+    <tbody>${rows}</tbody><tfoot><tr><td class="l">Total</td><td></td><td></td><td>${tSh.toLocaleString()}</td><td>${fmt0(tSp)}</td></tr></tfoot>`;
+}
+
+/* ===================== SCENARIOS ===================== */
+function mkScenario(name,action,pctEx,target,qualifying,longTerm,timing){
+  return { id:SID++, name, action, pctEx, target, qualifying:!!qualifying, longTerm:!!longTerm, timing:timing||'now' }; }
+function loadPresets(){
+  const fmv=+$('fmv').value||PLAN.currentPrice; const t2=Math.round(fmv*2);
+  SCENARIOS=[
+    mkScenario('Exercise & hold all (ISO)','hold',100,t2),
+    mkScenario('Exercise & sell all now','sellNow',100,fmv),
+    mkScenario('Hold 25%, split 2 yrs','hold',25,t2,false,false,'split'),
+    mkScenario('Hold all → qualifying sale','sellLater',100,t2,true,true),
+  ];
+  recalc();
+}
+function addScenario(){ if(SCENARIOS.length>=4){alert('Up to 4 keeps it readable.');return;}
+  const fmv=+$('fmv').value||PLAN.currentPrice; SCENARIOS.push(mkScenario('New scenario','hold',50,Math.round(fmv*2))); recalc(); }
+function removeScenario(id){ SCENARIOS=SCENARIOS.filter(s=>s.id!==id); recalc(); }
+function setField(id,k,v){ const s=SCENARIOS.find(x=>x.id===id); if(!s)return; s[k]=v; recalc(); }
+
+function inputs(){ return { status:$('status').value, otherIncome:+$('income').value||0,
+  fmv:+$('fmv').value||0, vol:+$('vol').value||55, networth:+$('networth').value||0, priorIsoPref:priorPref() }; }
+
+function evalScenario(s){
+  const inp=inputs(); const frac=s.pctEx/100;
+  const lots=exercisableLots().map(l=>({shares:Math.round(l.shares*frac),strike:l.strike,type:l.type}));
+  const base={ status:inp.status, otherIncome:inp.otherIncome, priorIsoPref:inp.priorIsoPref, fmv:inp.fmv,
+    lots, action:s.action, salePrice:s.target, qualifying:s.qualifying, longTerm:s.longTerm };
+  if(s.timing==='split'){
+    const half=lots.map(l=>({shares:Math.round(l.shares/2),strike:l.strike,type:l.type}));
+    const y1=computePlan({...base,lots:half}); const y2=computePlan({...base,lots:half});
+    const m={...y1};
+    ['bargain','exerciseCost','ordinaryAdd','isoPref','capGain','proceeds','amtDue','niit','addlMed',
+     'fedIncMarginal','fedMarginal','caMarginal','totalTax','cashToExercise','cashForTaxes','cashOutOfPocket','paperValue','netAfterTax','sharesEx']
+      .forEach(k=>m[k]=(y1[k]||0)+(y2[k]||0));
+    m.split=true; m.splitAllAtOnce=computePlan(base).amtDue; return m;
+  }
+  return computePlan(base);
+}
+
+/* ===================== ADVISER + RISK ===================== */
+function adviser(s,r){
+  const cash=fmt0(r.cashOutOfPocket), tax=fmt0(r.totalTax), net=fmt0(r.netAfterTax);
+  if(s.action==='hold') return { lead:'Exercise and hold — start the clock, take the AMT bet.',
+    body:`Costs <b>${cash}</b> out of pocket now (${fmt0(r.cashToExercise)} for the strike`+(r.amtDue>500?` + ~${fmt0(r.amtDue)} federal AMT`:` with little/no AMT`)+`). Nothing's sold, so that's real cash against a <b>paper</b> gain. Upside: starts the long-term clock, and a future qualifying sale is taxed at the lower long-term rate. `+(r.amtDue>500?`The risk is the AMT — you'd pay real tax now on a gain that could shrink if BLLN falls before you sell (you recover it slowly as an AMT credit).`:`Nice — you stay under the AMT line here.`) };
+  if(s.action==='sellNow') return { lead:'Exercise and sell now — cash and go.',
+    body:`Lowest-risk path: the sale itself covers the strike and tax, so no real money rides on the stock. You'd owe about <b>${tax}</b> (ordinary/short-term — no long-term discount) and walk away with roughly <b>${net}</b>. What you give up is the lower long-term rate and any future upside.` };
+  return { lead: s.qualifying?'Hold for the long-term rate, then sell at your target.':'Exercise now, sell before the long-term window.',
+    body:`At ${fmt0(s.target)} you'd net about <b>${net}</b> after ~<b>${tax}</b> total tax. `+(s.qualifying?`As a qualifying disposition the gain gets the long-term federal rate (California still treats it as ordinary). `:`As a disqualifying sale the original spread is ordinary income and only the rest is capital gain. `)+`The target is a <b>guess, not a forecast</b> — slide it to see how sensitive you are.` };
+}
+function risks(s,r){
+  const inp=inputs(), out=[];
+  if(s.action!=='sellNow'){
+    if(inp.networth>0){ const share=r.paperValue/(inp.networth); const lvl=share>.5?'High':share>.25?'Medium':'Low';
+      out.push({lvl,t:`<b>Concentration.</b> ~${(share*100).toFixed(0)}% of your net worth would sit in one stock. Single-stock concentration is a steady, high-probability drag — not a rare event.`}); }
+    else out.push({lvl:'Medium',t:`<b>Concentration.</b> ${fmt0(r.paperValue)} in one stock. Add net worth above to size it. Concentration is a high-probability drag, not a tail risk.`});
+  }
+  if(s.action==='hold'){ const lvl=r.cashOutOfPocket>200000?'High':r.cashOutOfPocket>50000?'Medium':'Low';
+    out.push({lvl,t:`<b>Liquidity.</b> Needs <b>${fmt0(r.cashOutOfPocket)}</b> cash now`+(r.amtDue>500?` (incl. ~${fmt0(r.amtDue)} AMT)`:'')+` with nothing sold to cover it. Make sure that cash is genuinely spare.`}); }
+  else if(s.action==='sellLater') out.push({lvl:'Medium',t:`<b>Liquidity.</b> You front <b>${fmt0(r.cashToExercise)}</b> to exercise now and wait — that cash is tied up and at risk until you sell.`});
+  else out.push({lvl:'Low',t:`<b>Liquidity.</b> The sale funds the strike and taxes — minimal out-of-pocket strain.`});
+  if(s.action!=='sellNow'){ const p=probDrop(30,inp.vol,1)*100,[lv]=tier(p);
+    out.push({lvl:lv,t:`<b>Timing / price.</b> Holding bets BLLN holds up. At ${inp.vol}% volatility a 30%+ drop within a year is roughly a <b>${p.toFixed(0)}% probability</b> — ${lv.toLowerCase()} likelihood, not negligible. You can't know the future price.`}); }
+  if(s.action==='hold'&&r.amtDue>500){ const p=probDrop(30,inp.vol,1)*100;
+    out.push({lvl:r.amtDue>75000?'High':'Medium',t:`<b>AMT trap.</b> You'd pay <b>${fmt0(r.amtDue)}</b> AMT on a paper gain. If BLLN drops before you sell, that's real tax on value that vanished — recoverable later as a credit, but slowly. With ~${p.toFixed(0)}% odds of a 30% drop in a year, it's a live risk.`}); }
+  return out;
+}
+
+/* ===================== RENDER ===================== */
+function recalc(){
+  if(!PLAN) return;
+  renderStats(); renderGrants();
+  const wrap=$('scnWrap'); wrap.innerHTML='';
+  const fmv=+$('fmv').value||0;
+  SCENARIOS.forEach(s=>{
+    const r=evalScenario(s); const isHold=s.action==='hold', isLater=s.action==='sellLater';
+    const adv=adviser(s,r), fl=risks(s,r);
+    const card=document.createElement('div'); card.className='scn';
+    card.innerHTML=`
+      <div class="scn-head"><input class="scn-name" value="${s.name}" onchange="setField(${s.id},'name',this.value)">
+        <button class="scn-x" onclick="removeScenario(${s.id})">×</button></div>
+      <div class="ctrl"><label>Exercise <span class="exval">${s.pctEx}% · ${r.sharesEx.toLocaleString()} sh</span></label>
+        <input type="range" min="5" max="100" step="5" value="${s.pctEx}" oninput="setField(${s.id},'pctEx',+this.value)"></div>
+      <div class="ctrl"><label>Action</label><div class="seg">
+        <button class="${isHold?'on':''}" onclick="setField(${s.id},'action','hold')">Hold</button>
+        <button class="${s.action==='sellNow'?'on':''}" onclick="setField(${s.id},'action','sellNow')">Sell now</button>
+        <button class="${isLater?'on':''}" onclick="setField(${s.id},'action','sellLater')">Sell later</button></div></div>
+      ${isLater?`<div class="ctrl"><label>Target price <span class="exval">${fmt0(s.target)}</span></label>
+        <input type="range" min="${Math.max(1,Math.round(fmv*.3))}" max="${Math.round(fmv*4)}" step="1" value="${s.target}" oninput="setField(${s.id},'target',+this.value)">
+        <div class="seg" style="margin-top:6px">
+          <button class="${s.qualifying?'on':''}" onclick="setField(${s.id},'qualifying',true)">Long-term / qualifying</button>
+          <button class="${!s.qualifying?'on':''}" onclick="setField(${s.id},'qualifying',false)">Short / disqualifying</button></div></div>`:''}
+      <div class="ctrl"><label>Timing</label><div class="seg">
+        <button class="${s.timing!=='split'?'on':''}" onclick="setField(${s.id},'timing','now')">All this year</button>
+        <button class="${s.timing==='split'?'on':''}" onclick="setField(${s.id},'timing','split')">Split over 2 yrs</button></div></div>
+
+      <div class="res">
+        <div class="rrow head">The numbers</div>
+        <div class="rrow"><span class="k">Bargain element (spread)</span><span class="v">${fmt0(r.bargain)}</span></div>
+        ${r.ordinaryAdd>0?`<div class="rrow"><span class="k">Ordinary income added</span><span class="v">${fmt0(r.ordinaryAdd)}</span></div>`:''}
+        ${r.isoPref>0?`<div class="rrow"><span class="k">ISO AMT preference</span><span class="v">${fmt0(r.isoPref)}</span></div>`:''}
+        ${r.capGain>0?`<div class="rrow"><span class="k">Capital gain (${r.capGainLT?'LT':'ST'})</span><span class="v">${fmt0(r.capGain)}</span></div>`:''}
+        <div class="rrow head">Tax (vs. doing nothing more)</div>
+        <div class="rrow"><span class="k">Federal income/cap-gains</span><span class="v">${fmt0(r.fedIncMarginal)}</span></div>
+        ${r.amtDue>0?`<div class="rrow"><span class="k">Federal AMT</span><span class="v">${fmt0(r.amtDue)}</span></div>`:''}
+        ${r.niit>0?`<div class="rrow"><span class="k">NIIT (3.8%)</span><span class="v">${fmt0(r.niit)}</span></div>`:''}
+        ${r.addlMed>0?`<div class="rrow"><span class="k">Add'l Medicare</span><span class="v">${fmt0(r.addlMed)}</span></div>`:''}
+        <div class="rrow"><span class="k">California</span><span class="v">${fmt0(r.caMarginal)}</span></div>
+        <div class="rrow big"><span class="k">Total added tax</span><span class="v">${fmt0(r.totalTax)}</span></div>
+        <div class="rrow"><span class="k muted">Effective rate on spread</span><span class="v muted">${r.bargain>0?pct(r.effRate):'—'}</span></div>
+        <div class="rrow head">Cash</div>
+        <div class="rrow"><span class="k">Cash to exercise</span><span class="v">${fmt0(r.cashToExercise)}</span></div>
+        <div class="rrow"><span class="k">Cash for taxes</span><span class="v">${fmt0(r.cashForTaxes)}</span></div>
+        <div class="rrow oop"><span class="k">Out of pocket now</span><span class="v">${fmt0(r.cashOutOfPocket)}</span></div>
+        <div class="rrow big net"><span class="k">${isHold?'Net (paper, after tax)':'Net after-tax cash'}</span><span class="v">${fmt0(r.netAfterTax)}</span></div>
+        ${r.split?`<div class="flagbox">Splitting over two years softens AMT bunching: all-at-once AMT ≈ ${fmt0(r.splitAllAtOnce)} vs ≈ ${fmt0(r.amtDue)} split. Smaller base each year.</div>`:''}
+        ${isHold&&r.amtDue>500?`<div class="flagbox">That ${fmt0(r.amtDue)} AMT becomes an <b>AMT credit</b> you recover in future years when regular tax exceeds your tentative minimum tax — but recovery is often slow.</div>`:''}
+      </div>
+      <div class="adviser"><span class="lead">${adv.lead}</span>${adv.body}</div>
+      <div class="risk"><div class="head">Vulnerabilities</div>
+        ${fl.map(f=>`<div class="risk-item"><span class="risk-badge risk-${f.lvl}">${f.lvl}</span><span class="risk-txt">${f.t}</span></div>`).join('')}</div>`;
+    wrap.appendChild(card);
+  });
+  renderComparison(); drawChart();
+}
+
+function renderComparison(){
+  const rows=SCENARIOS.map(s=>({s,r:evalScenario(s)})); if(!rows.length){$('cmpTable').innerHTML='';return;}
+  const bestNet=Math.max(...rows.map(x=>x.r.netAfterTax)), minTax=Math.min(...rows.map(x=>x.r.totalTax)), minCash=Math.min(...rows.map(x=>x.r.cashOutOfPocket));
+  const inp=inputs();
+  const row=(lab,fn,win)=>`<tr><td class="lbl">${lab}</td>`+rows.map(x=>`<td class="${win&&win(x.r)?'win':''}">${fn(x.r,x.s)}</td>`).join('')+'</tr>';
+  let h=`<tr><th class="lbl">Scenario</th>`+rows.map(x=>`<th>${x.s.name}</th>`).join('')+'</tr>';
+  h+=row('Total added tax',r=>fmt0(r.totalTax),r=>r.totalTax===minTax);
+  h+=row('Cash out of pocket',r=>fmt0(r.cashOutOfPocket),r=>r.cashOutOfPocket===minCash);
+  h+=row('After-tax net',r=>fmt0(r.netAfterTax),r=>r.netAfterTax===bestNet);
+  h+=row('Eff. rate on spread',r=>r.bargain>0?pct(r.effRate):'—');
+  h+=row('Risk',(r,s)=>{ if(s.action==='sellNow')return '<span style="color:var(--low)">Lowest</span>';
+    const p=probDrop(30,inp.vol,1)*100,b=[]; if(s.action==='hold'&&r.amtDue>500)b.push('AMT on paper');
+    b.push(`~${p.toFixed(0)}% 30% drop`); return `<span style="color:var(--med)">${b.join(' · ')}</span>`; });
+  $('cmpTable').innerHTML=h;
+}
+
+function drawChart(){
+  const inp=inputs(); const cv=$('chart'); if(!cv) return; const dpr=window.devicePixelRatio||1;
+  const W=cv.clientWidth||600,H=300; cv.width=W*dpr; cv.height=H*dpr; const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr); ctx.clearRect(0,0,W,H);
+  const padL=70,padR=14,padT=14,padB=34; const pxMin=Math.max(1,inp.fmv*.2),pxMax=inp.fmv*3.5,steps=40;
+  const colors=['#00aeef','#16a06a','#7b61ff','#e0922f'];
+  const series=SCENARIOS.map(s=>{ const pts=[]; const frac=s.pctEx/100;
+    const lots=exercisableLots().map(l=>({shares:Math.round(l.shares*frac),strike:l.strike,type:l.type}));
+    for(let i=0;i<=steps;i++){ const px=pxMin+(pxMax-pxMin)*i/steps;
+      const qual=s.action==='sellNow'?false:(s.action==='hold'?true:s.qualifying);
+      const r=computePlan({status:inp.status,otherIncome:inp.otherIncome,priorIsoPref:inp.priorIsoPref,fmv:inp.fmv,lots,
+        action:'sellLater',salePrice:px,qualifying:qual,longTerm:s.action!=='sellNow'}); pts.push({px,net:r.netAfterTax}); }
+    return {name:s.name,pts}; });
+  const all=series.flatMap(s=>s.pts.map(p=>p.net)); let yMin=Math.min(0,...all),yMax=Math.max(...all,1);
+  const pad=(yMax-yMin)*.08; yMin-=pad; yMax+=pad;
+  const X=px=>padL+(px-pxMin)/(pxMax-pxMin)*(W-padL-padR), Y=v=>padT+(1-(v-yMin)/(yMax-yMin))*(H-padT-padB);
+  ctx.strokeStyle='#e2e9ee'; ctx.fillStyle='#8a98a5'; ctx.font='10px Inter'; ctx.lineWidth=1;
+  for(let g=0;g<=4;g++){ const v=yMin+(yMax-yMin)*g/4,y=Y(v); ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(W-padR,y);ctx.stroke();
+    ctx.textAlign='right'; ctx.fillText(fmt0(v),padL-6,y+3); }
+  ctx.textAlign='center'; for(let g=0;g<=5;g++){ const px=pxMin+(pxMax-pxMin)*g/5; ctx.fillText('$'+Math.round(px),X(px),H-padB+16); }
+  if(yMin<0&&yMax>0){ ctx.strokeStyle='#c2ccd4'; ctx.beginPath();ctx.moveTo(padL,Y(0));ctx.lineTo(W-padR,Y(0));ctx.stroke(); }
+  ctx.strokeStyle='#9fb2c6'; ctx.setLineDash([4,4]); ctx.beginPath();ctx.moveTo(X(inp.fmv),padT);ctx.lineTo(X(inp.fmv),H-padB);ctx.stroke();
+  ctx.setLineDash([]); ctx.fillStyle='#5e6e7c'; ctx.fillText('today '+fmt0(inp.fmv),X(inp.fmv),padT+10);
+  series.forEach((s,i)=>{ ctx.strokeStyle=colors[i%colors.length]; ctx.lineWidth=2.3; ctx.beginPath();
+    s.pts.forEach((p,j)=>{ const x=X(p.px),y=Y(p.net); j?ctx.lineTo(x,y):ctx.moveTo(x,y); }); ctx.stroke(); });
+  $('chartLegend').innerHTML=series.map((s,i)=>`<span><i style="background:${colors[i%colors.length]}"></i>${s.name}</span>`).join('');
+}
+window.addEventListener('resize',()=>{ if(PLAN&&!$('app').classList.contains('hide')) drawChart(); });
+
+/* ===================== SAVE / LOAD ===================== */
+const SKEY='strike_bto_saves_v1';
+function saveScenarios(){ const n=prompt('Name this set:','Plan '+new Date().toLocaleDateString()); if(!n)return;
+  const all=JSON.parse(localStorage.getItem(SKEY)||'{}');
+  all[n]={ inputs:{status:$('status').value,income:$('income').value,fmv:$('fmv').value,vol:$('vol').value,networth:$('networth').value,priorShares:$('priorShares').value,priorStrike:$('priorStrike').value}, scenarios:SCENARIOS };
+  localStorage.setItem(SKEY,JSON.stringify(all)); renderSavedList(); }
+function renderSavedList(){ const all=JSON.parse(localStorage.getItem(SKEY)||'{}'); const names=Object.keys(all);
+  $('saveList').innerHTML=names.length?names.map(n=>`<span class="save-chip" onclick="loadSave('${encodeURIComponent(n)}')">${n}<span class="del" onclick="event.stopPropagation();delSave('${encodeURIComponent(n)}')">×</span></span>`).join(''):'<span class="muted" style="font-size:.72rem">No saved plans yet.</span>'; }
+function loadSave(enc){ const n=decodeURIComponent(enc); const all=JSON.parse(localStorage.getItem(SKEY)||'{}'); const d=all[n]; if(!d)return;
+  const i=d.inputs; $('status').value=i.status;$('income').value=i.income;$('fmv').value=i.fmv;$('vol').value=i.vol;$('networth').value=i.networth||'';
+  $('priorShares').value=i.priorShares||0;$('priorStrike').value=i.priorStrike||0;
+  SCENARIOS=d.scenarios.map(s=>({...s,id:SID++})); recalc(); }
+function delSave(enc){ const n=decodeURIComponent(enc); const all=JSON.parse(localStorage.getItem(SKEY)||'{}'); delete all[n]; localStorage.setItem(SKEY,JSON.stringify(all)); renderSavedList(); }
+
+/* test hook (no data embedded; used only for offline render verification) */
+window.__startApp=startApp;
+</script>
+</body>
+</html>
