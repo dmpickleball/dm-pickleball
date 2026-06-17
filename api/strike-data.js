@@ -1,13 +1,15 @@
 // /api/strike-data — gated equity data for the Strike planner.
 //
-// Amanda's real grant data lives ONLY in this server-side function. It is never
-// shipped in the public HTML. The endpoint returns data only after verifying a
-// Google ID token (JWT) AND confirming the signed-in email is on the allowlist.
+// Runs on Vercel's EDGE runtime so it does NOT count against the Hobby plan's
+// 12 Serverless Function limit (the rest of the site's /api functions are
+// serverless and untouched).
 //
-// Verification is done with zero npm dependencies: we hand the ID token to
-// Google's own tokeninfo endpoint, which validates the signature + expiry and
-// returns the decoded claims only if the token is genuine. We then check the
-// audience matches our OAuth client and the email is allowlisted + verified.
+// Amanda's real grant data lives ONLY in this server-side function — never in
+// the public HTML. It is returned only after Google verifies the ID token and
+// the signed-in email is on the allowlist. Verification uses Google's own
+// tokeninfo endpoint (built-in fetch), so there are zero npm dependencies.
+
+export const config = { runtime: 'edge' };
 
 // Same OAuth client already used by the site (authorized for dmpickleball.com).
 const CLIENT_ID = '708565807163-uu8teuc876ufboujut8vhdo34ro27v8s.apps.googleusercontent.com';
@@ -22,7 +24,7 @@ const PLAN = {
   company: 'BillionToOne',
   ticker: 'BLLN',
   asOfDate: '2026-06-17',
-  currentPrice: 99.38,          // implied by every grant's Fidelity exercisable value
+  currentPrice: 99.38,
   filingStatus: 'single',
   state: 'CA',
   // Ordinary income before any option event. Amanda's own estimate for 2026
@@ -43,36 +45,30 @@ const PLAN = {
   ],
 };
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-  try {
-    const body = req.body || {};
-    const credential = body.credential;
-    if (!credential) return res.status(401).json({ error: 'Missing credential' });
+const json = (obj, status = 200) =>
+  new Response(JSON.stringify(obj), { status, headers: { 'content-type': 'application/json' } });
 
-    // Verify the ID token with Google. Returns claims only if the token is valid.
+export default async function handler(req) {
+  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+
+  let body = {};
+  try { body = await req.json(); } catch (e) { /* ignore */ }
+  const credential = body && body.credential;
+  if (!credential) return json({ error: 'Missing credential' }, 401);
+
+  try {
     const r = await fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(credential));
-    if (!r.ok) return res.status(401).json({ error: 'Invalid token' });
+    if (!r.ok) return json({ error: 'Invalid token' }, 401);
     const p = await r.json();
 
     const email = (p.email || '').toLowerCase();
-    const audOk = p.aud === CLIENT_ID;
     const verified = p.email_verified === true || p.email_verified === 'true';
 
-    if (!audOk) return res.status(401).json({ error: 'Wrong audience' });
-    if (!verified || !ALLOWLIST.includes(email)) {
-      return res.status(403).json({ error: 'Not authorized' });
-    }
+    if (p.aud !== CLIENT_ID) return json({ error: 'Wrong audience' }, 401);
+    if (!verified || !ALLOWLIST.includes(email)) return json({ error: 'Not authorized' }, 403);
 
-    return res.status(200).json({
-      ok: true,
-      user: { email, name: p.name || '', picture: p.picture || '' },
-      plan: PLAN,
-    });
-  } catch (err) {
-    console.error('strike-data auth error:', err?.message);
-    return res.status(401).json({ error: 'Auth failed' });
+    return json({ ok: true, user: { email, name: p.name || '', picture: p.picture || '' }, plan: PLAN });
+  } catch (e) {
+    return json({ error: 'Auth failed' }, 401);
   }
 }
