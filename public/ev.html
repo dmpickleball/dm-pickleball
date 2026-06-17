@@ -14,6 +14,10 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#0d1b2a;color:#e8eaf6;mi
 .subtitle{font-size:0.72rem;color:#8aa0b6;margin-top:3px}
 .header-meta{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:10px;flex-wrap:wrap}
 #last-updated{font-size:0.72rem;color:#9fb2c6}
+.lingo-toggle{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:9px}
+.lingo-lbl{font-size:0.66rem;color:#7a8fa6;text-transform:uppercase;letter-spacing:1px;margin-right:2px}
+.lingo-btn{background:#0d1b2a;border:1px solid #25415f;color:#9fb2c6;font-size:0.74rem;font-weight:700;padding:5px 14px;border-radius:6px;cursor:pointer;min-height:32px}
+.lingo-btn.active{background:#c9a227;border-color:#c9a227;color:#0d1b2a}
 .refresh-btn{background:#c9a227;color:#0d1b2a;border:none;border-radius:6px;padding:8px 14px;font-size:0.78rem;font-weight:700;cursor:pointer;min-height:36px}
 .refresh-btn:active{background:#e8c040}
 main{max-width:720px;margin:0 auto;padding:12px 10px 60px}
@@ -82,6 +86,19 @@ select{background:#0d1b2a;border:1px solid #25415f;color:#e8eaf6;padding:8px 10p
 .mkt-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:5px;font-size:0.7rem;color:#6f879d;flex-wrap:wrap}
 .mkt-foot b{color:#c9a227}
 .mkt-empty{font-size:0.72rem;color:#5e7a96;font-style:italic;margin-top:5px}
+/* BET SCAN */
+.scan{background:#0d1b2a;border:1px solid #1e3050;border-radius:7px;padding:9px 11px;margin-top:12px}
+.scan-title{font-size:0.64rem;color:#9fb2c6;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;margin-bottom:6px}
+.scan-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #14263a;font-size:0.8rem}
+.scan-row:last-child{border-bottom:none}
+.scan-mkt{color:#8aa0b6;min-width:84px;flex-shrink:0;font-weight:700;font-size:0.72rem}
+.scan-lead{flex:1;color:#e8eaf6}
+.scan-lead b{color:#f3f5fb}
+.scan-na{color:#5e7a96;font-style:italic}
+.scan-note{font-size:0.64rem;color:#7a8fa6;flex-shrink:0;text-align:right}
+.scan-toss .scan-lead{color:#cbe88a}
+.scan-toss .scan-note{color:#9bc24a;font-weight:700}
+.scan-one{opacity:0.45}
 /* MY VIEW SLIDER */
 .my-view{margin-top:16px;background:#0d1b2a;border:1px solid #1e3050;border-radius:7px;padding:11px 12px}
 .mv-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
@@ -105,6 +122,11 @@ select{background:#0d1b2a;border:1px solid #25415f;color:#e8eaf6;padding:8px 10p
   <div class="header-meta">
     <span id="last-updated"></span>
     <button class="refresh-btn" onclick="recalcAll()">&#8635; Refresh</button>
+  </div>
+  <div class="lingo-toggle">
+    <span class="lingo-lbl">Labels</span>
+    <button id="lingo-simple" class="lingo-btn" onclick="setLingo('simple')">Simple</button>
+    <button id="lingo-pro" class="lingo-btn" onclick="setLingo('pro')">Pro</button>
   </div>
 </div>
 <main>
@@ -151,12 +173,13 @@ const MATCHES=[{"id":"760415","group":"A","md":1,"t1":"Mexico","t2":"South Afric
 /* ---------- STATE ---------- */
 var KEY='wc26_odds_v2';
 var VIEW_GAP=7;   // how far your own view must sit from the market (points) to flag a game
-var state={lines:{},winPct:{},stake:null,favMax:55,flagOnly:false};
-try{var saved=JSON.parse(localStorage.getItem(KEY));if(saved)state=Object.assign({lines:{},winPct:{},stake:null,favMax:55,flagOnly:false},saved);}catch(e){}
+var state={lines:{},winPct:{},stake:null,favMax:55,flagOnly:false,lingo:'simple'};
+try{var saved=JSON.parse(localStorage.getItem(KEY));if(saved)state=Object.assign({lines:{},winPct:{},stake:null,favMax:55,flagOnly:false,lingo:'simple'},saved);}catch(e){}
 if(!(state.favMax>=45&&state.favMax<=70))state.favMax=55;
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
 
 /* ---------- HELPERS ---------- */
+function lingo(pro,simple){return state.lingo==='pro'?pro:simple;}
 function num(v){var n=parseFloat(v);return isNaN(n)?null:n;}
 function pct(x){return (x*100).toFixed(1)+'%';}
 function etLabel(utc){
@@ -264,11 +287,19 @@ function marketDefs(m){
   var ln=state.lines[m.id]||{};
   var sp=ln.spread!==undefined?ln.spread:1.5;
   var tot=ln.total!==undefined?ln.total:2.5;
+  var spWin=Math.floor(sp)+1, spKeep=Math.floor(sp);
+  var totOver=Math.floor(tot)+1, totUnder=Math.floor(tot);
   return [
-    {id:'ml',title:'Moneyline',outs:[{key:'home',label:m.t1},{key:'draw',label:'Draw'},{key:'away',label:m.t2}]},
-    {id:'spread',title:'Spread',line:sp,lineLabel:'goals',outs:[{key:'home',label:m.t1+' &minus;'+sp},{key:'away',label:m.t2+' +'+sp}]},
-    {id:'total',title:'Total Goals',line:tot,lineLabel:'O/U',outs:[{key:'over',label:'Over '+tot},{key:'under',label:'Under '+tot}]},
-    {id:'btts',title:'Both Teams Score',outs:[{key:'yes',label:'Yes'},{key:'no',label:'No'}]}
+    {id:'ml',title:lingo('Moneyline','Who wins (moneyline)'),outs:[
+      {key:'home',label:m.t1},{key:'draw',label:'Draw'},{key:'away',label:m.t2}]},
+    {id:'spread',title:lingo('Spread','Winning margin (spread)'),line:sp,lineLabel:'goals',outs:[
+      {key:'home',label:lingo(m.t1+' &minus;'+sp, m.t1+' wins by '+spWin+'+')},
+      {key:'away',label:lingo(m.t2+' +'+sp, m.t2+' within '+spKeep+' (or wins)')}]},
+    {id:'total',title:lingo('Total Goals','Total goals — both teams'),line:tot,lineLabel:'O/U',outs:[
+      {key:'over',label:lingo('Over '+tot, totOver+'+ goals')},
+      {key:'under',label:lingo('Under '+tot, totUnder+' or fewer')}]},
+    {id:'btts',title:lingo('Both Teams Score','Both teams score?'),outs:[
+      {key:'yes',label:lingo('Yes','Yes — both score')},{key:'no',label:lingo('No','No')}]}
   ];
 }
 function setLine(mid,def,v){
@@ -332,36 +363,57 @@ function getMlFair(m){
   return dv;
 }
 
-/* A game flags if (a) it's a real CONTEST — the market's most-likely result is at or
-   below your cutoff (so blowouts are skipped) — OR (b) your own view diverges from
-   the market moneyline by VIEW_GAP+ points. */
+var MKT_SHORT={ml:'Winner',spread:'Margin',total:'Total goals',btts:'Both score'};
+/* Leading (most-likely) side of one market at its current line, from de-vigged fair %. */
+function marketLead(m,def){
+  var eff=effPrices(m,def);
+  var dv=devig(def.outs.map(function(o){return {key:o.key,price:num(eff.vals[o.key])};}));
+  if(!dv)return null;
+  var bk=null,bp=-1;
+  def.outs.forEach(function(o){var f=dv.fair[o.key];if(f!=null&&f>bp){bp=f;bk=o;}});
+  if(!bk)return null;
+  return {key:bk.key,label:bk.label,pct:Math.round(bp*100),id:def.id};
+}
+function leadTier(pct){
+  if(pct<=state.favMax)return 'toss';                       // undecided — your read matters most
+  if(pct<=Math.min(state.favMax+13,80))return 'lean';
+  return 'one';
+}
+/* Scan EVERY market: flag a game if any market is still undecided (leading side <= slider)
+   OR your own moneyline view diverges from the market. */
 function flagInfo(m){
-  var dv=getMlFair(m);
-  if(!dv||dv.fair['home']===null)return null;
-  var h=Math.round(dv.fair['home']*100),a=Math.round(dv.fair['away']*100),d=Math.round((dv.fair['draw']||0)*100);
-  var fav=Math.max(h,a,d);            // probability of the single most-likely outcome
+  var defs=marketDefs(m);
   var reasons=[];
-  if(fav<=state.favMax)reasons.push({type:'open'});
+  defs.forEach(function(def){
+    var lead=marketLead(m,def);
+    if(lead&&lead.pct<=state.favMax)reasons.push({type:'market',id:def.id,label:lead.label,pct:lead.pct});
+  });
   if(state.winPct[m.id]!==undefined){
-    var gap=state.winPct[m.id]-h;
-    if(Math.abs(gap)>=VIEW_GAP){
-      var mlv=effPrices(m,marketDefs(m)[0]).vals;          // Kalshi ¢ for each ML side
-      reasons.push({type:'view',side:gap>0?m.t1:m.t2,abs:Math.abs(gap),price:gap>0?mlv.home:mlv.away});
+    var dv=getMlFair(m);
+    if(dv&&dv.fair['home']!==null){
+      var h=Math.round(dv.fair['home']*100);
+      var gap=state.winPct[m.id]-h;
+      if(Math.abs(gap)>=VIEW_GAP){
+        var mlv=effPrices(m,defs[0]).vals;
+        reasons.push({type:'view',side:gap>0?m.t1:m.t2,abs:Math.abs(gap),price:gap>0?mlv.home:mlv.away});
+      }
     }
   }
-  return reasons.length?{reasons:reasons,fav:fav}:null;
+  return reasons.length?{reasons:reasons}:null;
 }
 function flagPill(fi){
   var v=fi.reasons.filter(function(r){return r.type==='view';})[0];
   if(v)return '⚑ '+v.side.toUpperCase()+' '+v.abs+'pp';
-  return '⚑ CLOSE '+fi.fav+'%';
+  var n=fi.reasons.filter(function(r){return r.type==='market';}).length;
+  return '⚑ '+n+' BET'+(n>1?'S':'');
 }
 function flagLabel(m,fi){
-  return fi.reasons.map(function(r){
+  var parts=fi.reasons.map(function(r){
     return r.type==='view'
-      ? 'Consider '+r.side+' ML'+(r.price!=null?' @ '+r.price+'¢':'')+' ('+r.abs+'pp vs fair)'
-      : 'close game (top pick '+fi.fav+'%)';
-  }).join(' + ')+' — '+m.t1+' v '+m.t2;
+      ? 'your read '+r.side+' '+lingo('ML','to win')+(r.price!=null?' @ '+r.price+'¢':'')
+      : MKT_SHORT[r.id]+' '+r.label+' '+r.pct+'%';
+  });
+  return m.t1+' v '+m.t2+' — '+parts.join(' · ');
 }
 function countFlagged(){return MATCHES.filter(flagInfo).length;}
 
@@ -386,8 +438,20 @@ function matchCardHTML(m){
   return h;
 }
 
+function scanHTML(m){
+  var defs=marketDefs(m);
+  var rows=defs.map(function(def){
+    var lead=marketLead(m,def);
+    if(!lead)return '<div class="scan-row"><span class="scan-mkt">'+MKT_SHORT[def.id]+'</span><span class="scan-lead scan-na">no price yet</span><span class="scan-note"></span></div>';
+    var t=leadTier(lead.pct);
+    var dot=t==='toss'?'🔥':t==='lean'?'◐':'▪';
+    var note=t==='toss'?'undecided — your call':t==='lean'?'slight lean':'one-sided · skip';
+    return '<div class="scan-row scan-'+t+'"><span class="scan-mkt">'+MKT_SHORT[def.id]+'</span><span class="scan-lead">'+dot+' '+lead.label+' <b>'+lead.pct+'%</b></span><span class="scan-note">'+note+'</span></div>';
+  }).join('');
+  return '<div class="scan"><div class="scan-title">Bet scan &middot; 🔥 undecided (your read matters) &middot; ▪ one-sided</div>'+rows+'</div>';
+}
 function marketsHTML(m){
-  var defs=marketDefs(m);var out='';
+  var defs=marketDefs(m);var out=scanHTML(m);
   defs.forEach(function(def){out+=marketHTML(m,def);});
   out+=sliderHTML(m);
   return out;
@@ -452,11 +516,11 @@ function sliderHTML(m){
 function recHTML(m,myPct,marketPct,dv,hasView){
   if(!hasView)return '<div class="rec-hint">Slide to compare your view with the market</div>';
   var gap=myPct-marketPct;
-  if(Math.abs(gap)<VIEW_GAP)return '<div class="rec-none">Your view is within '+VIEW_GAP+'% of the market — not flagged on '+m.t1+' ML</div>';
+  if(Math.abs(gap)<VIEW_GAP)return '<div class="rec-none">Your view is within '+VIEW_GAP+'% of the market — not flagged on '+m.t1+' '+lingo('ML','to win')+'</div>';
   var side=gap>0?m.t1:m.t2;
   var mktForSide=gap>0?marketPct:Math.round((dv.fair['away']||0)*100);
   var myForSide=gap>0?myPct:(100-myPct-(Math.round((dv.fair['draw']||0)*100)));
-  return '<div class="rec-badge">💡 Consider <b>'+side+' ML</b> — market fair value is <b>'+mktForSide+'%</b>, your view is ~<b>'+Math.abs(gap>0?myPct:(100-myPct))+'%</b> ('+Math.abs(gap)+'pp gap)</div>';
+  return '<div class="rec-badge">💡 Consider <b>'+side+' '+lingo('ML','to win')+'</b> — market fair value is <b>'+mktForSide+'%</b>, your view is ~<b>'+Math.abs(gap>0?myPct:(100-myPct))+'%</b> ('+Math.abs(gap)+'pp gap)</div>';
 }
 
 function updateCardFlag(mid){
@@ -504,6 +568,16 @@ function stamp(){
 }
 function recalcAll(){fetchKalshi();}
 
+function syncLingoButtons(){
+  var s=document.getElementById('lingo-simple'),p=document.getElementById('lingo-pro');
+  if(s)s.classList.toggle('active',state.lingo!=='pro');
+  if(p)p.classList.toggle('active',state.lingo==='pro');
+}
+function setLingo(v){
+  state.lingo=v;save();syncLingoButtons();
+  renderMatches();updateFlaggedBanner();
+}
+
 function edgeWord(v){
   if(v<=48)return 'tight — only true toss-ups';
   if(v<=56)return 'close games — a sensible base';
@@ -515,8 +589,8 @@ function updateEdgeUI(){
   var sEl=document.getElementById('edgeSlider');if(sEl&&+sEl.value!==state.favMax)sEl.value=state.favMax;
   var n=countFlagged();
   var dEl=document.getElementById('edgeDesc');
-  if(dEl)dEl.innerHTML='Flags real <b>contests</b> — games where the most-likely result is <b>&le;'+state.favMax+'%</b> — and <b>skips blowouts</b> above that. '+edgeWord(state.favMax)+'.<br>'+
-    '<span class="edge-flagcount">'+n+'</span> game'+(n===1?'':'s')+' flagged now. <span style="color:#8aa0b6">Open a game and drag its slider — disagreeing with the market by '+VIEW_GAP+'%+ also flags it.</span>';
+  if(dEl)dEl.innerHTML='Scans <b>every bet</b> (winner, margin, total goals, both-teams-score) and flags a game when any of them is still <b>undecided</b> — leading side <b>&le;'+state.favMax+'%</b> — skipping the one-sided ones. '+edgeWord(state.favMax)+'.<br>'+
+    '<span class="edge-flagcount">'+n+'</span> game'+(n===1?'':'s')+' flagged now. <span style="color:#8aa0b6">Open a game to see the full Bet scan; your own moneyline view ('+VIEW_GAP+'%+ off) also flags it.</span>';
 }
 function onEdge(v){
   state.favMax=parseInt(v,10);save();
@@ -559,6 +633,7 @@ function updateFlaggedBanner(){
 /* ---------- INIT ---------- */
 document.getElementById('edgeSlider').value=state.favMax;
 document.getElementById('flagOnly').checked=!!state.flagOnly;
+syncLingoButtons();
 buildDayFilter();
 renderMatches();
 updateEdgeUI();
