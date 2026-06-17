@@ -51,6 +51,20 @@ select{background:#0d1b2a;border:1px solid #25415f;color:#e8eaf6;padding:8px 10p
 .edge-flagcount{color:#6fd69a;font-weight:700}
 .edge-toggle{display:flex;align-items:center;gap:7px;margin-top:10px;font-size:0.78rem;color:#c2d2e2;cursor:pointer;user-select:none}
 .edge-toggle input{width:17px;height:17px;accent-color:#c9a227}
+/* COMBO SLIP */
+.combo-add{background:#1a2e45;border:1px solid #25415f;color:#9fb2c6;font-size:0.6rem;font-weight:700;border-radius:4px;padding:2px 7px;cursor:pointer;margin-left:7px;vertical-align:middle}
+.combo-add.on{background:#c9a227;border-color:#c9a227;color:#0d1b2a}
+.combo-slip{background:#10202f;border:1px solid #4a6a00;border-left:3px solid #c9a227;border-radius:8px;padding:11px 12px;margin-bottom:12px;display:none}
+.combo-slip.on{display:block}
+.combo-title{font-size:0.82rem;font-weight:800;color:#f3f5fb;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center}
+.combo-clear{background:none;border:1px solid #25415f;color:#7a8fa6;font-size:0.64rem;padding:3px 9px;border-radius:4px;cursor:pointer}
+.combo-leg{display:flex;justify-content:space-between;gap:8px;font-size:0.76rem;color:#c2d2e2;padding:4px 0;border-bottom:1px solid #14263a}
+.combo-leg .x{color:#9c5a5a;cursor:pointer;flex-shrink:0;font-size:0.68rem}
+.combo-stat{font-size:0.9rem;color:#cbe88a;font-weight:800;margin-top:8px}
+.combo-sub{font-size:0.72rem;color:#9fb2c6;margin-top:3px}
+.combo-sub b{color:#f3f5fb}
+.combo-note{font-size:0.7rem;color:#8aa0b6;margin-top:7px;line-height:1.45}
+.combo-note b{color:#d8c79a}
 /* FLAGGED BANNER */
 .flagged-banner{background:#1a2d00;border:1px solid #4a6a00;border-left:3px solid #c9a227;border-radius:7px;padding:10px 13px;margin-bottom:12px;font-size:0.82rem;color:#d8e8a0;font-weight:600;display:none}
 .flagged-banner.has-flags{display:block}
@@ -66,6 +80,8 @@ select{background:#0d1b2a;border:1px solid #25415f;color:#e8eaf6;padding:8px 10p
 .mh-ml b{color:#f3f5fb;font-size:0.82rem}
 .mh-caret{color:#5e7a96;font-size:1.1rem;flex-shrink:0;transition:transform .2s}
 .flag-pill{background:#1a2d00;border:1px solid #4a6a00;color:#cbe88a;font-size:0.62rem;font-weight:800;border-radius:5px;padding:2px 6px;flex-shrink:0;letter-spacing:0.3px}
+.live-now{color:#ff5a5a;font-size:0.62rem;font-weight:800;letter-spacing:0.5px;margin-left:5px;animation:livepulse 1.4s infinite}
+@keyframes livepulse{0%,100%{opacity:1}50%{opacity:.35}}
 .match-card.flagged{border-color:#4a6a00;box-shadow:0 0 0 1px rgba(74,106,0,0.5)}
 .match-card.open .mh-caret{transform:rotate(90deg)}
 .match-body{display:none;padding:4px 12px 14px;border-top:1px solid #1a2e45}
@@ -156,6 +172,7 @@ select{background:#0d1b2a;border:1px solid #25415f;color:#e8eaf6;padding:8px 10p
   </div>
 
   <div class="flagged-banner" id="flagged-banner"></div>
+  <div class="combo-slip" id="combo-slip"></div>
 
   <div class="filter-bar">
     <label for="dayFilter">Date</label>
@@ -173,8 +190,9 @@ const MATCHES=[{"id":"760415","group":"A","md":1,"t1":"Mexico","t2":"South Afric
 /* ---------- STATE ---------- */
 var KEY='wc26_odds_v2';
 var VIEW_GAP=7;   // how far your own view must sit from the market (points) to flag a game
-var state={lines:{},winPct:{},stake:null,favMax:55,flagOnly:false,lingo:'simple'};
-try{var saved=JSON.parse(localStorage.getItem(KEY));if(saved)state=Object.assign({lines:{},winPct:{},stake:null,favMax:55,flagOnly:false,lingo:'simple'},saved);}catch(e){}
+var state={lines:{},winPct:{},stake:null,favMax:55,flagOnly:false,lingo:'simple',combo:[]};
+try{var saved=JSON.parse(localStorage.getItem(KEY));if(saved)state=Object.assign({lines:{},winPct:{},stake:null,favMax:55,flagOnly:false,lingo:'simple',combo:[]},saved);}catch(e){}
+if(!Array.isArray(state.combo))state.combo=[];
 if(!(state.favMax>=45&&state.favMax<=70))state.favMax=55;
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
 
@@ -275,10 +293,10 @@ function fetchKalshi(){
     } else {
       if(s){s.className='live-status off';s.textContent='Live prices unavailable right now — try refreshing.';}
     }
-    renderMatches();stamp();
+    renderMatches();renderCombo();stamp();
   }).catch(function(){
     if(s){s.className='live-status off';s.textContent='Live prices unavailable — try refreshing.';}
-    renderMatches();stamp();
+    renderMatches();renderCombo();stamp();
   });
 }
 
@@ -428,8 +446,10 @@ function matchCardHTML(m){
   }
   var h='<div class="match-card'+(open?' open':'')+(fi?' flagged':'')+'" id="card-'+m.id+'">';
   h+='<div class="match-head" onclick="toggleMatch(\''+m.id+'\')">';
+  var ko=new Date(m.utc+':00Z').getTime(),nw=Date.now();
+  var live=nw>=ko&&nw<ko+2.5*3600*1000;
   h+='<span class="mh-group">'+m.group+'</span>';
-  h+='<div class="mh-info"><div class="mh-teams">'+m.t1+' v '+m.t2+'</div>';
+  h+='<div class="mh-info"><div class="mh-teams">'+m.t1+' v '+m.t2+(live?' <span class="live-now">● LIVE</span>':'')+'</div>';
   h+='<div class="mh-time">'+etLabel(m.utc)+' &middot; MD'+m.md+'</div>';
   h+=mlLine+'</div>';
   h+=(fi?'<span class="flag-pill">'+flagPill(fi)+'</span>':'');
@@ -478,7 +498,9 @@ function marketHTML(m,def){
         winStr='<span style="color:#4caf50;font-weight:800">+$'+profit.toFixed(2)+'</span>';
       }
     }
-    h+='<tr><td class="lbl">'+o.label+(isAuto?' <span class="live-dot">●</span>':'')+'</td>';
+    var ck=m.id+'|'+def.id+'|'+o.key,inC=comboHas(ck);
+    var cbtn=(pr[o.key]!==undefined)?' <button class="combo-add'+(inC?' on':'')+'" onclick="toggleCombo(\''+m.id+'\',\''+def.id+'\',\''+o.key+'\')">'+(inC?'✓ in combo':'+ combo')+'</button>':'';
+    h+='<tr><td class="lbl">'+o.label+(isAuto?' <span class="live-dot">●</span>':'')+cbtn+'</td>';
     h+='<td class="cell-cents">'+(pr[o.key]!==undefined?pr[o.key]+'&cent;':'—')+'</td>';
     h+='<td class="cell-fair">'+(fair!==null?(fair*100).toFixed(1)+'%':'—')+'</td>';
     if(showStake)h+='<td>'+winStr+'</td>';
@@ -560,11 +582,62 @@ function resetView(mid){
   updateCardFlag(mid);
 }
 
+/* ---------- COMBO (parlay) ---------- */
+function comboHas(ck){return state.combo.indexOf(ck)>=0;}
+function rerenderCard(mid){
+  var card=document.getElementById('card-'+mid);
+  if(card&&card.classList.contains('open'))
+    card.querySelector('.match-body').innerHTML=marketsHTML(MATCHES.find(function(x){return x.id===mid;}));
+}
+function toggleCombo(mid,defId,key){
+  var ck=mid+'|'+defId+'|'+key,i=state.combo.indexOf(ck);
+  if(i>=0)state.combo.splice(i,1);else state.combo.push(ck);
+  save();rerenderCard(mid);renderCombo();
+}
+function removeLeg(ck){
+  var i=state.combo.indexOf(ck);if(i>=0)state.combo.splice(i,1);save();
+  renderCombo();rerenderCard(ck.split('|')[0]);
+}
+function clearCombo(){state.combo=[];save();renderCombo();renderMatches();}
+function legStats(ck){
+  var p=ck.split('|'),mid=p[0],defId=p[1],key=p[2];
+  var m=MATCHES.find(function(x){return x.id===mid;});if(!m)return null;
+  var def=marketDefs(m).filter(function(d){return d.id===defId;})[0];if(!def)return null;
+  var eff=effPrices(m,def);
+  var dv=devig(def.outs.map(function(o){return {key:o.key,price:num(eff.vals[o.key])};}));
+  var out=def.outs.filter(function(o){return o.key===key;})[0];
+  return {ck:ck,matchup:m.t1+' v '+m.t2,side:out?out.label:key,price:num(eff.vals[key]),fair:dv?dv.fair[key]:null};
+}
+function renderCombo(){
+  var el=document.getElementById('combo-slip');if(!el)return;
+  if(!state.combo.length){el.className='combo-slip';el.innerHTML='';return;}
+  el.className='combo-slip on';
+  var legsHTML='',implied=1,fairP=1,payout=1,fairPay=1,priced=true;
+  state.combo.forEach(function(ck){
+    var s=legStats(ck);if(!s)return;
+    legsHTML+='<div class="combo-leg"><span>'+s.matchup+' — '+s.side+(s.price!=null?' @ '+s.price+'¢':' <i>(no live price)</i>')+'</span><span class="x" onclick="removeLeg(\''+ck+'\')">✕</span></div>';
+    if(s.price!=null&&s.price>0&&s.fair!=null&&s.fair>0){implied*=s.price/100;fairP*=s.fair;payout*=100/s.price;fairPay*=1/s.fair;}
+    else priced=false;
+  });
+  var n=state.combo.length;
+  var stake=(state.stake&&state.stake>0)?state.stake:null;
+  var head='<div class="combo-title">🎟️ Combo &middot; '+n+' leg'+(n>1?'s':'')+'<button class="combo-clear" onclick="clearCombo()">clear</button></div>';
+  var body;
+  if(priced){
+    body='<div class="combo-stat">If all '+n+' hit → pays <b>'+payout.toFixed(2)+'×</b>'+(stake?' &nbsp;($'+stake+' → $'+(stake*payout).toFixed(2)+')':'')+'</div>'+
+      '<div class="combo-sub">Market-implied chance all hit: <b>'+(implied*100).toFixed(1)+'%</b> &middot; de-vigged fair: <b>'+(fairP*100).toFixed(1)+'%</b> &middot; fair (no-vig) payout would be <b>'+fairPay.toFixed(2)+'×</b></div>';
+  } else {
+    body='<div class="combo-sub">Some legs have no live price yet — payout shows once all legs are priced.</div>';
+  }
+  var note='<div class="combo-note">⚠️ A combo pays only if <b>every</b> leg hits, and each leg stacks the house\'s cut — so combos are usually <b>worse</b> value than singles. They\'re only smart if you genuinely have an edge on <b>each</b> leg. Legs in the <b>same game are correlated</b>, so the true odds aren\'t a simple multiply.</div>';
+  el.innerHTML=head+legsHTML+body+note;
+}
+
 /* ---------- UTILS ---------- */
 function stamp(){
   var now=new Date();
-  var s=now.toLocaleString('en-US',{timeZone:'America/Los_Angeles',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
-  document.getElementById('last-updated').textContent='Updated '+s+' PT';
+  var s=now.toLocaleString('en-US',{timeZone:'America/Los_Angeles',hour:'numeric',minute:'2-digit',second:'2-digit'});
+  document.getElementById('last-updated').textContent='Updated '+s+' PT · auto-refreshes';
 }
 function recalcAll(){fetchKalshi();}
 
@@ -638,7 +711,9 @@ buildDayFilter();
 renderMatches();
 updateEdgeUI();
 updateFlaggedBanner();
+renderCombo();
 fetchKalshi();
+setInterval(fetchKalshi,45000);   /* keep live prices fresh for in-play games */
 if(state.stake){var si=document.getElementById('stakeInput');if(si)si.value=state.stake;}
 </script>
 </body>

@@ -112,7 +112,7 @@ async function kalshiHandler(req, res) {
     });
 
     const matches = Object.values(byKey).filter(r => r.date && r.teams);
-    res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=60');
+    res.setHeader('Cache-Control', 's-maxage=10, stale-while-revalidate=20');
     return res.status(200).json({ updated: new Date().toISOString(), count: matches.length, matches });
   } catch (err) {
     console.error('kalshi proxy error', err);
