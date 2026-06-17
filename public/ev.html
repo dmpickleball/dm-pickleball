@@ -65,6 +65,19 @@ select{background:#0d1b2a;border:1px solid #25415f;color:#e8eaf6;padding:8px 10p
 .combo-sub b{color:#f3f5fb}
 .combo-note{font-size:0.7rem;color:#8aa0b6;margin-top:7px;line-height:1.45}
 .combo-note b{color:#d8c79a}
+/* COMBO IDEAS */
+.combo-ideas{display:none;margin-bottom:12px}
+.combo-ideas.on{display:block}
+.ci-title{font-size:0.7rem;color:#c9a227;text-transform:uppercase;letter-spacing:1px;font-weight:800;margin-bottom:7px}
+.ci-row{background:#111d2c;border:1px solid #1e3050;border-left:3px solid #6a5a00;border-radius:7px;padding:9px 11px;margin-bottom:7px}
+.ci-head{font-size:0.82rem;font-weight:800;color:#f3f5fb;display:flex;justify-content:space-between;align-items:center}
+.ci-x{color:#cbe88a;font-family:'Anton',sans-serif;font-size:1rem}
+.ci-legs{font-size:0.8rem;color:#dfe8f2;margin-top:4px}
+.ci-why{font-size:0.7rem;color:#8aa0b6;margin-top:3px;font-style:italic}
+.ci-load{margin-top:7px;background:#1a2e45;border:1px solid #25415f;color:#c9a227;font-size:0.7rem;font-weight:700;padding:5px 11px;border-radius:5px;cursor:pointer}
+.ci-load:active{background:#22354d}
+.ci-note{font-size:0.69rem;color:#8aa0b6;line-height:1.45;margin-top:4px}
+.ci-note b{color:#d8c79a}
 /* FLAGGED BANNER */
 .flagged-banner{background:#1a2d00;border:1px solid #4a6a00;border-left:3px solid #c9a227;border-radius:7px;padding:10px 13px;margin-bottom:12px;font-size:0.82rem;color:#d8e8a0;font-weight:600;display:none}
 .flagged-banner.has-flags{display:block}
@@ -173,6 +186,7 @@ select{background:#0d1b2a;border:1px solid #25415f;color:#e8eaf6;padding:8px 10p
 
   <div class="flagged-banner" id="flagged-banner"></div>
   <div class="combo-slip" id="combo-slip"></div>
+  <div class="combo-ideas" id="combo-ideas"></div>
 
   <div class="filter-bar">
     <label for="dayFilter">Date</label>
@@ -293,10 +307,10 @@ function fetchKalshi(){
     } else {
       if(s){s.className='live-status off';s.textContent='Live prices unavailable right now — try refreshing.';}
     }
-    renderMatches();renderCombo();stamp();
+    renderMatches();renderCombo();renderComboIdeas();stamp();
   }).catch(function(){
     if(s){s.className='live-status off';s.textContent='Live prices unavailable — try refreshing.';}
-    renderMatches();renderCombo();stamp();
+    renderMatches();renderCombo();renderComboIdeas();stamp();
   });
 }
 
@@ -382,6 +396,22 @@ function getMlFair(m){
 }
 
 var MKT_SHORT={ml:'Winner',spread:'Margin',total:'Total goals',btts:'Both score'};
+/* Name a bet the way it reads on the Kalshi app, so you can find & tap it */
+function kBet(m,defId,key){
+  var def=marketDefs(m).filter(function(d){return d.id===defId;})[0];
+  var L=def?def.line:null;
+  if(defId==='ml')return (key==='home'?m.t1:key==='away'?m.t2:'Tie')+' — Winner?';
+  if(defId==='spread')return m.t1+' wins by over '+L+' goals — '+(key==='home'?'Yes':'No');
+  if(defId==='total')return 'Over '+L+' goals scored — '+(key==='over'?'Yes':'No');
+  if(defId==='btts')return 'Both teams to score — '+(key==='yes'?'Yes':'No');
+  return key;
+}
+function fairOf(m,defId,key){
+  var def=marketDefs(m).filter(function(d){return d.id===defId;})[0];if(!def)return null;
+  var eff=effPrices(m,def);
+  var dv=devig(def.outs.map(function(o){return {key:o.key,price:num(eff.vals[o.key])};}));
+  return dv?dv.fair[key]:null;
+}
 /* Leading (most-likely) side of one market at its current line, from de-vigged fair %. */
 function marketLead(m,def){
   var eff=effPrices(m,def);
@@ -404,7 +434,7 @@ function flagInfo(m){
   var reasons=[];
   defs.forEach(function(def){
     var lead=marketLead(m,def);
-    if(lead&&lead.pct<=state.favMax)reasons.push({type:'market',id:def.id,label:lead.label,pct:lead.pct});
+    if(lead&&lead.pct<=state.favMax)reasons.push({type:'market',id:def.id,key:lead.key,pct:lead.pct});
   });
   if(state.winPct[m.id]!==undefined){
     var dv=getMlFair(m);
@@ -428,8 +458,8 @@ function flagPill(fi){
 function flagLabel(m,fi){
   var parts=fi.reasons.map(function(r){
     return r.type==='view'
-      ? 'your read '+r.side+' '+lingo('ML','to win')+(r.price!=null?' @ '+r.price+'¢':'')
-      : MKT_SHORT[r.id]+' '+r.label+' '+r.pct+'%';
+      ? 'your read: '+kBet(m,'ml',r.side===m.t1?'home':'away')+(r.price!=null?' @ '+r.price+'¢':'')
+      : kBet(m,r.id,r.key)+' ('+r.pct+'%)';
   });
   return m.t1+' v '+m.t2+' — '+parts.join(' · ');
 }
@@ -542,7 +572,7 @@ function recHTML(m,myPct,marketPct,dv,hasView){
   var side=gap>0?m.t1:m.t2;
   var mktForSide=gap>0?marketPct:Math.round((dv.fair['away']||0)*100);
   var myForSide=gap>0?myPct:(100-myPct-(Math.round((dv.fair['draw']||0)*100)));
-  return '<div class="rec-badge">💡 Consider <b>'+side+' '+lingo('ML','to win')+'</b> — market fair value is <b>'+mktForSide+'%</b>, your view is ~<b>'+Math.abs(gap>0?myPct:(100-myPct))+'%</b> ('+Math.abs(gap)+'pp gap)</div>';
+  return '<div class="rec-badge">💡 Consider <b>'+kBet(m,'ml',gap>0?'home':'away')+'</b> — market fair value is <b>'+mktForSide+'%</b>, your view is ~<b>'+Math.abs(gap>0?myPct:(100-myPct))+'%</b> ('+Math.abs(gap)+'pp gap)</div>';
 }
 
 function updateCardFlag(mid){
@@ -605,8 +635,7 @@ function legStats(ck){
   var def=marketDefs(m).filter(function(d){return d.id===defId;})[0];if(!def)return null;
   var eff=effPrices(m,def);
   var dv=devig(def.outs.map(function(o){return {key:o.key,price:num(eff.vals[o.key])};}));
-  var out=def.outs.filter(function(o){return o.key===key;})[0];
-  return {ck:ck,matchup:m.t1+' v '+m.t2,side:out?out.label:key,price:num(eff.vals[key]),fair:dv?dv.fair[key]:null};
+  return {ck:ck,matchup:m.t1+' v '+m.t2,side:kBet(m,defId,key),price:num(eff.vals[key]),fair:dv?dv.fair[key]:null};
 }
 function renderCombo(){
   var el=document.getElementById('combo-slip');if(!el)return;
@@ -631,6 +660,49 @@ function renderCombo(){
   }
   var note='<div class="combo-note">⚠️ A combo pays only if <b>every</b> leg hits, and each leg stacks the house\'s cut — so combos are usually <b>worse</b> value than singles. They\'re only smart if you genuinely have an edge on <b>each</b> leg. Legs in the <b>same game are correlated</b>, so the true odds aren\'t a simple multiply.</div>';
   el.innerHTML=head+legsHTML+body+note;
+}
+
+/* ---------- AUTO COMBO IDEAS (correlated same-game legs) ---------- */
+var IDEAS=[];
+function comboIdeas(){
+  var out=[];
+  MATCHES.forEach(function(m){
+    if(!flagInfo(m))return;                       // only among flagged games
+    var dvh=fairOf(m,'ml','home'),dva=fairOf(m,'ml','away'),dvd=fairOf(m,'ml','draw');
+    var ov=fairOf(m,'total','over'),by=fairOf(m,'btts','yes');
+    if(dvh==null||dva==null||ov==null)return;
+    var favKey=dvh>=dva?'home':'away',favPct=Math.round(Math.max(dvh,dva)*100);
+    if(favPct>=52&&favPct<=78&&ov>=0.5){
+      out.push({m:m,legs:[[m.id,'ml',favKey],[m.id,'total','over']],why:(favKey==='home'?m.t1:m.t2)+' to win a game that has goals'});
+    } else if(ov<0.45&&by!=null&&by<0.5){
+      out.push({m:m,legs:[[m.id,'total','under'],[m.id,'btts','no']],why:'profiles as a tight, low-scoring game'});
+    } else if(favPct<=52&&dvd!=null){
+      out.push({m:m,legs:[[m.id,'ml','draw'],[m.id,'total','under']],why:'evenly matched — a draw and a low score tend to go together'});
+    }
+  });
+  return out.slice(0,6);
+}
+function renderComboIdeas(){
+  var el=document.getElementById('combo-ideas');if(!el)return;
+  IDEAS=comboIdeas();
+  if(!IDEAS.length){el.className='combo-ideas';el.innerHTML='';return;}
+  el.className='combo-ideas on';
+  var rows=IDEAS.map(function(idea,i){
+    var payout=1,priced=true;
+    idea.legs.forEach(function(l){var s=legStats(l.join('|'));if(s&&s.price>0)payout*=100/s.price;else priced=false;});
+    var legtxt=idea.legs.map(function(l){return kBet(idea.m,l[1],l[2]);}).join('  +  ');
+    return '<div class="ci-row"><div class="ci-head">'+idea.m.t1+' v '+idea.m.t2+(priced?' <span class="ci-x">'+payout.toFixed(1)+'×</span>':'')+'</div>'+
+      '<div class="ci-legs">'+legtxt+'</div><div class="ci-why">'+idea.why+'</div>'+
+      '<button class="ci-load" onclick="loadComboIdea('+i+')">Load into slip ▸</button></div>';
+  }).join('');
+  el.innerHTML='<div class="ci-title">🎟️ Combo ideas · correlated same-game legs</div>'+rows+
+    '<div class="ci-note">⚠️ These are <b>ideas based on each game\'s shape, not detected edges.</b> Same-game legs move together, so the real odds can differ from a simple multiply — and combos still stack the house\'s cut. Your judgment decides.</div>';
+}
+function loadComboIdea(i){
+  var idea=IDEAS[i];if(!idea)return;
+  state.combo=idea.legs.map(function(l){return l.join('|');});save();
+  renderCombo();renderMatches();
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 /* ---------- UTILS ---------- */
@@ -667,7 +739,7 @@ function updateEdgeUI(){
 }
 function onEdge(v){
   state.favMax=parseInt(v,10);save();
-  updateEdgeUI();updateFlaggedBanner();
+  updateEdgeUI();updateFlaggedBanner();renderComboIdeas();
   renderMatches();           /* re-render so badges + (optional) flag-only filter update */
 }
 function onFlagOnly(c){
@@ -712,6 +784,7 @@ renderMatches();
 updateEdgeUI();
 updateFlaggedBanner();
 renderCombo();
+renderComboIdeas();
 fetchKalshi();
 setInterval(fetchKalshi,45000);   /* keep live prices fresh for in-play games */
 if(state.stake){var si=document.getElementById('stakeInput');if(si)si.value=state.stake;}
