@@ -4,11 +4,10 @@
 // shipped in the public HTML. The endpoint returns data only after verifying a
 // Google ID token (JWT) AND confirming the signed-in email is on the allowlist.
 //
-// Auth flow: client signs in with Google Identity Services -> gets an ID token
-// -> POSTs it here -> we verify signature + audience with google-auth-library
-// -> check email is allowlisted + verified -> return the plan.
-
-import { OAuth2Client } from 'google-auth-library';
+// Verification is done with zero npm dependencies: we hand the ID token to
+// Google's own tokeninfo endpoint, which validates the signature + expiry and
+// returns the decoded claims only if the token is genuine. We then check the
+// audience matches our OAuth client and the email is allowlisted + verified.
 
 // Same OAuth client already used by the site (authorized for dmpickleball.com).
 const CLIENT_ID = '708565807163-uu8teuc876ufboujut8vhdo34ro27v8s.apps.googleusercontent.com';
@@ -16,10 +15,8 @@ const CLIENT_ID = '708565807163-uu8teuc876ufboujut8vhdo34ro27v8s.apps.googleuser
 // Only these two Google accounts may ever see the data.
 const ALLOWLIST = ['davidmokblock@gmail.com', 'amandale91@gmail.com'];
 
-const client = new OAuth2Client(CLIENT_ID);
-
 // ---- Amanda's BillionToOne (BLLN) equity, from Fidelity NetBenefits ----
-// "Exercisable" = shares still available to exercise right now (after the 600
+// "exercisable" = shares still available to exercise right now (after the 600
 // $2.80 ISOs already exercised in 2026). Spread is computed live from price.
 const PLAN = {
   company: 'BillionToOne',
@@ -33,9 +30,8 @@ const PLAN = {
   expectedIncome: 240000,
   expectedIncomeIsEstimate: false,
   // ISO spread already realized & held in 2026 (the 600 $2.80 options) -> already
-  // an AMT preference item for this tax year. 600 * (99.38 - 2.80) = 57,948.
+  // an AMT preference item for this tax year.
   priorIsoExerciseThisYear: { strike: 2.80, shares: 600, type: 'ISO' },
-  // Grants with shares still exercisable. Strikes/quantities from the award detail.
   grants: [
     { id: '2021',     year: 2021, type: 'ISO', strike: 2.80,  granted: 8000,  exercisable: 7400, grantDate: '2021-06-08', expires: '2031-06-07' },
     { id: '2022',     year: 2022, type: 'ISO', strike: 10.92, granted: 7000,  exercisable: 7000, grantDate: '2022-08-02', expires: '2032-08-01' },
@@ -56,23 +52,27 @@ export default async function handler(req, res) {
     const credential = body.credential;
     if (!credential) return res.status(401).json({ error: 'Missing credential' });
 
-    const ticket = await client.verifyIdToken({ idToken: credential, audience: CLIENT_ID });
-    const payload = ticket.getPayload();
+    // Verify the ID token with Google. Returns claims only if the token is valid.
+    const r = await fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(credential));
+    if (!r.ok) return res.status(401).json({ error: 'Invalid token' });
+    const p = await r.json();
 
-    const email = (payload?.email || '').toLowerCase();
-    const verified = payload?.email_verified === true || payload?.email_verified === 'true';
+    const email = (p.email || '').toLowerCase();
+    const audOk = p.aud === CLIENT_ID;
+    const verified = p.email_verified === true || p.email_verified === 'true';
 
+    if (!audOk) return res.status(401).json({ error: 'Wrong audience' });
     if (!verified || !ALLOWLIST.includes(email)) {
-      return res.status(403).json({ error: 'Not authorized', email });
+      return res.status(403).json({ error: 'Not authorized' });
     }
 
     return res.status(200).json({
       ok: true,
-      user: { email, name: payload.name || '', picture: payload.picture || '' },
+      user: { email, name: p.name || '', picture: p.picture || '' },
       plan: PLAN,
     });
   } catch (err) {
     console.error('strike-data auth error:', err?.message);
-    return res.status(401).json({ error: 'Invalid token' });
+    return res.status(401).json({ error: 'Auth failed' });
   }
 }
