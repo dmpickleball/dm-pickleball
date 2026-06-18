@@ -34,6 +34,14 @@ const PLAN = {
   // ISO spread already realized & held in 2026 (the 600 $2.80 options) -> already
   // an AMT preference item for this tax year.
   priorIsoExerciseThisYear: { strike: 2.80, shares: 600, type: 'ISO' },
+  // David's side of the household, for the guided Advisor's affordability picture.
+  // Income is an editable estimate: MCC pays him 70% of each lesson as a 1099, and
+  // he keeps most of it after business deductions (~5% effective). Variable, so a range.
+  household: {
+    davidNetMonthly: '4000-6500',
+    davidFixedCosts: { car: 667, insuranceMonthly: 192, phone: 145 }, // car payment; auto ins. ($1,150 in Apr & Oct); Verizon share
+    davidCashSavings: 12000, // separate small buffer; not AMT-available
+  },
   grants: [
     { id: '2021',     year: 2021, type: 'ISO', strike: 2.80,  granted: 8000,  exercisable: 7400, grantDate: '2021-06-08', expires: '2031-06-07' },
     { id: '2022',     year: 2022, type: 'ISO', strike: 10.92, granted: 7000,  exercisable: 7000, grantDate: '2022-08-02', expires: '2032-08-01' },

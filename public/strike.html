@@ -718,12 +718,14 @@ function parseAmt(str){
 }
 function initAdvisor(){
   const est=Math.round(PLAN.expectedIncome*0.62/12/100)*100;
+  const hh=PLAN.household||{}; const dfc=hh.davidFixedCosts||{};
+  const davidFixed=(dfc.car||0)+(dfc.insuranceMonthly||0)+(dfc.phone||0);
   ADV={ step:0, a:{
-    grossHer:String(PLAN.expectedIncome), netHer:String(est), netHim:"", otherInc:"0",
+    grossHer:String(PLAN.expectedIncome), netHer:String(est), netHim:hh.davidNetMonthly||"", otherInc:"0",
     mortgageHer:"3500", mortgageHim:"2500",
     utilities:"350-550", internet:"150-250", groceries:"800-1200", dining:"600-1000",
     transport:"500-900", health:"200-500", subs:"80-150", personal:"600-1000",
-    vacationAnnual:"8000-15000", otherExp:"0",
+    davidFixed: davidFixed? String(davidFixed):"", vacationAnnual:"8000-15000", otherExp:"0",
     savings:"", emergencyMonths:"6", nearTerm:"0",
     goals:[], goalAmount:"", stockView:"", risk:{}
   }};
@@ -772,7 +774,7 @@ function renderAdvisor(){
       '<div class="wiz-sub">Two different numbers do two different jobs: your <b>annual gross</b> drives the tax math; your <b>monthly take-home</b> is what actually pays the bills.</div>'+
       fieldRow("grossHer","Your annual gross income",["confirm","from you"],"This is your total pay before taxes. It sets your tax bracket and how much AMT an exercise triggers. We pulled the ~$240k you mentioned (about $119k year-to-date at mid-year). Adjust if it is off.")+
       fieldRow("netHer","Your monthly take-home",["est","estimate"],"What actually lands in your account each month after taxes, 401(k), health, etc. We estimated about 62% of your gross divided by 12. Replace it with your real number if you know it, since it drives the budget.")+
-      fieldRow("netHim","David's monthly take-home",["confirm","combined"],"You split the mortgage and bills, so the honest affordability picture is the whole household. This is David's monthly take-home. A range is totally fine.")+
+      fieldRow("netHim","David's monthly take-home",["est","from David · est"],"David's estimated monthly take-home from coaching at Menlo Circus Club. He is paid 70% of each lesson as a 1099 and keeps most of it after business deductions (about 5% effective tax), so this is roughly his full cut. Income varies month to month, so it is pre-filled as a range. Adjust to the real figure any time.")+
       fieldRow("otherInc","Any other monthly income",null,"Side income, rental, etc. Leave at 0 if none.")+
       navButtons();
   }
@@ -790,6 +792,7 @@ function renderAdvisor(){
       fieldRow("health","Health & insurance (out of pocket)",["est","estimate"],"Premiums you pay directly, copays, etc., beyond what is deducted pre-tax.")+
       fieldRow("subs","Subscriptions",["est","estimate"],"Streaming, apps, gym, memberships.")+
       fieldRow("personal","Personal & misc spending",["est","estimate"],"Shopping, gifts, hobbies, the everyday stuff.")+
+      fieldRow("davidFixed","David's car, insurance & phone",["confirm","from David"],"David's fixed personal costs, included so the household picture is complete: car payment about $667/mo, auto insurance about $192/mo (the $1,150 bill lands in April and October), and his Verizon share about $145/mo.")+
       fieldRow("vacationAnnual","Vacations & travel (per year)",["est","estimate"],"Enter the yearly total. We convert it to a monthly figure so it is counted honestly in your budget.")+
       fieldRow("otherExp","Anything else (monthly)",null,"Childcare, loans, support, anything not above.")+
       navButtons();
@@ -858,8 +861,8 @@ function advCompute(){
     "Utilities":P(a.utilities).mid, "Internet & phone":P(a.internet).mid,
     Groceries:P(a.groceries).mid, "Dining out":P(a.dining).mid, Transport:P(a.transport).mid,
     "Health & insurance":P(a.health).mid, Subscriptions:P(a.subs).mid,
-    "Personal spending":P(a.personal).mid, "Vacations (monthly)":P(a.vacationAnnual).mid/12,
-    Other:P(a.otherExp).mid
+    "Personal spending":P(a.personal).mid, "David car/insurance/phone":P(a.davidFixed).mid,
+    "Vacations (monthly)":P(a.vacationAnnual).mid/12, Other:P(a.otherExp).mid
   };
   const monthlyExp=Object.values(exp).reduce(function(x,y){return x+y;},0);
   const surplus=income-monthlyExp;
