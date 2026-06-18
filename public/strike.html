@@ -142,6 +142,73 @@ canvas{width:100%;display:block}
 .save-chip .del{color:#c2545a;font-weight:800}
 .hide{display:none!important}
 .foot{text-align:center;font-size:.7rem;color:var(--muted);margin-top:34px;line-height:1.6}
+
+/* ---- MODE SWITCH ---- */
+.modeswitch{display:inline-flex;background:#e5edf2;border:1px solid var(--line);border-radius:11px;padding:4px;gap:4px;margin:4px 0 16px}
+.modeswitch button{background:none;border:none;color:var(--muted);font-weight:700;font-size:.85rem;padding:8px 16px;border-radius:8px;cursor:pointer}
+.modeswitch button.on{background:#fff;color:var(--accent-dk);box-shadow:var(--shadow)}
+/* ---- WIZARD ---- */
+.wiz{max-width:760px;margin:0 auto}
+.wiz-progress{display:flex;gap:6px;margin-bottom:18px}
+.wiz-progress .seg{flex:1;height:5px;border-radius:3px;background:#dce6ec}
+.wiz-progress .seg.done{background:var(--accent)}
+.wiz-progress .seg.cur{background:var(--accent-dk)}
+.wiz-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:22px}
+.wiz-step-lbl{font-size:.68rem;text-transform:uppercase;letter-spacing:1px;color:var(--accent-dk);font-weight:800}
+.wiz-h{font-size:1.3rem;font-weight:800;letter-spacing:-.4px;margin:5px 0 6px}
+.wiz-sub{color:var(--muted);font-size:.88rem;line-height:1.55;margin-bottom:18px}
+.wiz-sub code,.minitab code{background:#eef3f6;border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:.85em}
+.fieldrow{margin-bottom:15px}
+.fieldrow .top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.fieldrow .name{font-weight:700;font-size:.9rem}
+.tag{font-size:.6rem;font-weight:800;letter-spacing:.3px;padding:2px 7px;border-radius:5px;text-transform:uppercase;white-space:nowrap;display:inline-block}
+.tag.confirm{background:#e8f4fb;color:#0a6e96;border:1px solid #bfe0f1}
+.tag.est{background:#fdf2e2;color:#9a6312;border:1px solid #f0d7a6}
+.why{background:none;border:none;color:var(--accent-dk);font-size:.74rem;font-weight:700;cursor:pointer;padding:0;text-decoration:underline dotted;white-space:nowrap}
+.explain{background:#f3f9fc;border:1px solid #d7eaf4;border-radius:8px;padding:9px 11px;font-size:.78rem;color:#33586b;line-height:1.5;margin:7px 0 0}
+.fieldrow input.amt{margin-top:6px}
+.parsed{font-size:.72rem;color:var(--muted);margin-top:4px}
+.parsed b{color:var(--ink)}
+.parsed.range b{color:var(--accent-dk)}
+.subnote{font-size:.72rem;color:var(--muted);margin-top:2px}
+.choice{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.choice button{text-align:left;background:#f7fafc;border:1px solid #d6e1e8;border-radius:9px;padding:11px 13px;cursor:pointer;font-size:.86rem;color:var(--ink);font-weight:600}
+.choice button .d{display:block;font-weight:400;color:var(--muted);font-size:.78rem;margin-top:2px}
+.choice button.on{border-color:var(--accent);background:#eef9fe;box-shadow:0 0 0 2px rgba(0,174,239,.15)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.chips button{background:#f7fafc;border:1px solid #d6e1e8;border-radius:18px;padding:8px 14px;cursor:pointer;font-size:.82rem;font-weight:600;color:var(--ink)}
+.chips button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.wiz-nav{display:flex;justify-content:space-between;gap:10px;margin-top:20px}
+.wiz-nav .right{display:flex;gap:8px}
+.minitab{font-size:.7rem;color:var(--muted);margin-top:7px}
+/* ---- REPORT ---- */
+.rep-sec{margin-bottom:18px}
+.rep-h{font-size:1.0rem;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.rep-h .ic{width:24px;height:24px;border-radius:7px;background:var(--accent);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem}
+.mathtab{width:100%;border-collapse:collapse;font-size:.84rem}
+.mathtab td{padding:6px 4px;border-bottom:1px solid var(--line2)}
+.mathtab td.r{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.mathtab tr.tot td{border-top:2px solid var(--line);border-bottom:none;font-weight:800;padding-top:9px}
+.mathtab tr.tot td.r{color:var(--ink)}
+.mathtab td .op{color:var(--muted);font-weight:400;font-size:.78rem}
+.verdict{border-radius:12px;padding:16px 18px;margin-bottom:16px;line-height:1.6;font-size:.9rem}
+.verdict.go{background:#eefaf2;border:1px solid #bfe7d0}
+.verdict.caution{background:#fff7e9;border:1px solid #f0d49a}
+.verdict.stop{background:#fdecec;border:1px solid #f3bcbc}
+.verdict .vh{font-weight:800;font-size:1.05rem;margin-bottom:5px;display:block}
+.reco-card{background:var(--deep);color:#eaf6fc;border-radius:13px;padding:18px;margin-bottom:16px}
+.reco-card .rl{font-size:.68rem;letter-spacing:1.5px;text-transform:uppercase;color:#7fd4f3;font-weight:800}
+.reco-card h3{font-size:1.15rem;margin:5px 0 10px;font-weight:800}
+.reco-card .move{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.12);font-size:.88rem;line-height:1.45}
+.reco-card .move:last-child{border-bottom:none}
+.reco-card .move .num{background:var(--accent);color:#04222f;font-weight:800;border-radius:6px;min-width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.82rem}
+.reco-card b{color:#fff}
+.life{background:#f1fbf6;border:1px solid #c5ead7;border-left:3px solid var(--low);border-radius:10px;padding:14px 16px;font-size:.87rem;color:#26543f;line-height:1.6}
+.life b{color:#13643f}
+.life p{margin-bottom:9px}
+.life p:last-child{margin-bottom:0}
+.riskbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:13px 15px;margin-top:8px}
+.riskbox .ri{display:flex;gap:8px;align-items:flex-start;font-size:.8rem;padding:5px 0;line-height:1.45}
 </style>
 </head>
 <body>
@@ -170,6 +237,14 @@ canvas{width:100%;display:block}
   </div>
 
   <main>
+    <div class="modeswitch">
+      <button id="modeAdvisor" class="on" onclick="showMode('advisor')">🧭 Guided Advisor</button>
+      <button id="modePlanner" onclick="showMode('planner')">📊 Scenario Planner</button>
+    </div>
+
+    <div id="advisorView"></div>
+
+    <div id="plannerView" class="hide">
     <h2 class="sec"><span class="n">1</span>Your situation</h2>
     <div class="disclaimer" style="margin-bottom:14px">
       <b>Heads up — this is a planning tool, not tax advice.</b> Almost all your exercisable options are <b>ISOs</b>, so the big lever here is the <b>Alternative Minimum Tax (AMT)</b>: you can owe tax on a paper gain before you've sold anything. The math below uses 2026 federal rates + the latest California schedule and is a good-faith estimate. Given the size of this position, run any real exercise by a CPA first.
@@ -221,6 +296,7 @@ canvas{width:100%;display:block}
       Strike · a private equity planner. Tax parameters live in <span class="gold">TAX_CONFIG</span> in this file; her grant data is served securely from <span class="gold">/api/strike-data</span>.<br>
       Educational estimate only — not tax or financial advice. Confirm with a CPA before acting.
     </div>
+    </div><!-- /plannerView -->
   </main>
 </div>
 
@@ -390,6 +466,16 @@ function startApp(user, plan){
   $('priorHint').textContent='ISO shares already exercised & held in 2026 (AMT preference already booked).';
   renderSubbar(); renderGrants();
   loadPresets(); renderSavedList();
+  initAdvisor();
+}
+function showMode(m){
+  const adv=m==='advisor';
+  $('advisorView').classList.toggle('hide',!adv);
+  $('plannerView').classList.toggle('hide',adv);
+  $('modeAdvisor').classList.toggle('on',adv);
+  $('modePlanner').classList.toggle('on',!adv);
+  if(adv&&!ADV) initAdvisor();
+  if(!adv) recalc();
 }
 function renderSubbar(){
   const ex=exercisableLots(); const totSh=ex.reduce((a,l)=>a+l.shares,0);
@@ -614,6 +700,286 @@ function loadSave(enc){ const n=decodeURIComponent(enc); const all=JSON.parse(lo
   $('priorShares').value=i.priorShares||0;$('priorStrike').value=i.priorStrike||0;
   SCENARIOS=d.scenarios.map(s=>({...s,id:SID++})); recalc(); }
 function delSave(enc){ const n=decodeURIComponent(enc); const all=JSON.parse(localStorage.getItem(SKEY)||'{}'); delete all[n]; localStorage.setItem(SKEY,JSON.stringify(all)); renderSavedList(); }
+
+/* ============================================================
+   GUIDED ADVISOR — tax-aware, life-aware, shows all its math.
+   ============================================================ */
+let ADV=null;
+const STEPS=["welcome","income","expenses","cushion","goals","risk","report"];
+
+function parseAmt(str){
+  if(str==null) return {empty:true,mid:0,low:0,high:0};
+  let s=String(str).trim().replace(/[$,\s]/g,"");
+  if(!s) return {empty:true,mid:0,low:0,high:0};
+  const m=s.match(/^(\d+(?:\.\d+)?)(?:[-–]|to)(\d+(?:\.\d+)?)$/i);
+  if(m){ const lo=+m[1],hi=+m[2]; return {empty:false,isRange:true,low:lo,high:hi,mid:(lo+hi)/2}; }
+  const n=parseFloat(s); if(isNaN(n)) return {empty:true,mid:0,low:0,high:0};
+  return {empty:false,isRange:false,low:n,high:n,mid:n};
+}
+function initAdvisor(){
+  const est=Math.round(PLAN.expectedIncome*0.62/12/100)*100;
+  ADV={ step:0, a:{
+    grossHer:String(PLAN.expectedIncome), netHer:String(est), netHim:"", otherInc:"0",
+    mortgageHer:"3500", mortgageHim:"2500",
+    utilities:"350-550", internet:"150-250", groceries:"800-1200", dining:"600-1000",
+    transport:"500-900", health:"200-500", subs:"80-150", personal:"600-1000",
+    vacationAnnual:"8000-15000", otherExp:"0",
+    savings:"", emergencyMonths:"6", nearTerm:"0",
+    goals:[], goalAmount:"", stockView:"", risk:{}
+  }};
+  renderAdvisor();
+}
+function advSet(k,v){ ADV.a[k]=v; const p=document.getElementById("p_"+k); if(p) p.innerHTML=parsedHtml(k,v); }
+function advWhy(k){ const e=document.getElementById("e_"+k); if(e) e.classList.toggle("hide"); }
+function advGoal(g){ const i=ADV.a.goals.indexOf(g); if(i>=0)ADV.a.goals.splice(i,1); else ADV.a.goals.push(g); renderAdvisor(); }
+function advChoice(k,v){ ADV.a[k]=v; renderAdvisor(); }
+function advRisk(q,v){ ADV.a.risk[q]=v; renderAdvisor(); }
+function advNav(d){ ADV.step=Math.max(0,Math.min(STEPS.length-1,ADV.step+d)); window.scrollTo(0,0); renderAdvisor(); }
+function advRestart(){ initAdvisor(); }
+
+const FIELD_META={ grossHer:{unit:"yr"}, vacationAnnual:{unit:"yr"} };
+function parsedHtml(k,v){
+  const p=parseAmt(v); const meta=FIELD_META[k]||{};
+  if(p.empty) return '<span class="subnote">enter a number or a range like 800-1200</span>';
+  const per = k==="grossHer" ? "/yr (gross, for tax)" : meta.unit==="yr" ? ("/yr  →  "+fmt0(p.mid/12)+"/mo") : "/mo";
+  if(p.isRange) return '<span class="range">→ using <b>'+fmt0(p.mid)+'</b> '+per+' <span class="subnote">(midpoint of '+fmt0(p.low)+'–'+fmt0(p.high)+')</span></span>';
+  return "→ using <b>"+fmt0(p.mid)+"</b> "+per;
+}
+function fieldRow(k,name,tag,explain,ph){
+  const v=ADV.a[k]||"";
+  const tagHtml = tag ? '<span class="tag '+tag[0]+'">'+tag[1]+'</span>' : "";
+  return '<div class="fieldrow"><div class="top">'+
+      '<span class="name">'+name+' '+tagHtml+'</span>'+
+      '<button class="why" onclick="advWhy(\''+k+'\')">ⓘ why</button></div>'+
+    '<input class="amt" id="f_'+k+'" value="'+v+'" placeholder="'+(ph||"e.g. 1000 or 800-1500")+'" oninput="advSet(\''+k+'\',this.value)">'+
+    '<div class="parsed" id="p_'+k+'">'+parsedHtml(k,v)+'</div>'+
+    '<div class="explain hide" id="e_'+k+'">'+explain+'</div></div>';
+}
+function progressBar(){ return '<div class="wiz-progress">'+STEPS.map(function(s,i){return '<div class="seg '+(i<ADV.step?"done":"")+' '+(i===ADV.step?"cur":"")+'"></div>';}).join("")+'</div>'; }
+
+function renderAdvisor(){
+  const v=$("advisorView"); const s=STEPS[ADV.step]; let body="";
+  if(s==="welcome"){
+    body='<div class="wiz-step-lbl">Your private advisor</div>'+
+      '<div class="wiz-h">Let us figure out what is actually right for you.</div>'+
+      '<div class="wiz-sub">I will act like a tax-aware financial adviser who knows California rules and your real life. I will ask about your options, your household money, and what you want, then give you a clear, specific recommendation and explain what it means in real life.<br><br>'+
+      '<b>Two things:</b> every answer can be a <b>range</b> (like <code>800-1200</code>) or an exact number, whatever you have. And anything pre-filled is tagged so you know where it came from: <span class="tag confirm">from you</span> means we already know it, <span class="tag est">estimate</span> means it is a rough placeholder you should adjust.</div>'+
+      '<div class="wiz-nav"><span></span><div class="right"><button class="btn" onclick="advNav(1)">Let us go →</button></div></div>';
+  }
+  else if(s==="income"){
+    body='<div class="wiz-step-lbl">Step 1 of 5 · Money coming in</div>'+
+      '<div class="wiz-h">What does your household bring in?</div>'+
+      '<div class="wiz-sub">Two different numbers do two different jobs: your <b>annual gross</b> drives the tax math; your <b>monthly take-home</b> is what actually pays the bills.</div>'+
+      fieldRow("grossHer","Your annual gross income",["confirm","from you"],"This is your total pay before taxes. It sets your tax bracket and how much AMT an exercise triggers. We pulled the ~$240k you mentioned (about $119k year-to-date at mid-year). Adjust if it is off.")+
+      fieldRow("netHer","Your monthly take-home",["est","estimate"],"What actually lands in your account each month after taxes, 401(k), health, etc. We estimated about 62% of your gross divided by 12. Replace it with your real number if you know it, since it drives the budget.")+
+      fieldRow("netHim","David's monthly take-home",["confirm","combined"],"You split the mortgage and bills, so the honest affordability picture is the whole household. This is David's monthly take-home. A range is totally fine.")+
+      fieldRow("otherInc","Any other monthly income",null,"Side income, rental, etc. Leave at 0 if none.")+
+      navButtons();
+  }
+  else if(s==="expenses"){
+    body='<div class="wiz-step-lbl">Step 2 of 5 · Money going out</div>'+
+      '<div class="wiz-h">Where does it go each month?</div>'+
+      '<div class="wiz-sub">Rough is fine, ranges welcome. We only need the real shape of your spending. The mortgage split is what you told me; the rest are placeholders to adjust.</div>'+
+      fieldRow("mortgageHer","Mortgage — your share",["confirm","from you"],"The ~$3,500/mo you put toward the mortgage. (David's ~$2,500 is the next line, so we see the full housing cost.)")+
+      fieldRow("mortgageHim","Mortgage — David's share",["confirm","from you"],"David's ~$2,500/mo. Together this is your full monthly housing payment.")+
+      fieldRow("utilities","Utilities (electric, gas, water, garbage)",["est","estimate"],"Combined monthly utilities. Bay Area homes often run $350 to $550 across electric, gas, water/sewer, and garbage. Adjust to yours.")+
+      fieldRow("internet","Internet & phone",["est","estimate"],"Internet plus cell phones.")+
+      fieldRow("groceries","Groceries",["est","estimate"],"Food at home, household supplies.")+
+      fieldRow("dining","Dining out",["est","estimate"],"Restaurants, takeout, coffee.")+
+      fieldRow("transport","Transport (car, gas, insurance)",["est","estimate"],"Car payment, fuel, auto insurance, transit, parking.")+
+      fieldRow("health","Health & insurance (out of pocket)",["est","estimate"],"Premiums you pay directly, copays, etc., beyond what is deducted pre-tax.")+
+      fieldRow("subs","Subscriptions",["est","estimate"],"Streaming, apps, gym, memberships.")+
+      fieldRow("personal","Personal & misc spending",["est","estimate"],"Shopping, gifts, hobbies, the everyday stuff.")+
+      fieldRow("vacationAnnual","Vacations & travel (per year)",["est","estimate"],"Enter the yearly total. We convert it to a monthly figure so it is counted honestly in your budget.")+
+      fieldRow("otherExp","Anything else (monthly)",null,"Childcare, loans, support, anything not above.")+
+      navButtons();
+  }
+  else if(s==="cushion"){
+    body='<div class="wiz-step-lbl">Step 3 of 5 · Your safety net</div>'+
+      '<div class="wiz-h">How much cash could you actually tap?</div>'+
+      '<div class="wiz-sub">This is the most important part for ISOs. Exercising-and-holding means writing a real tax check next April with <b>nothing sold</b> to pay it, so it has to come from cash you already have.</div>'+
+      fieldRow("savings","Liquid savings you could use",["confirm","important"],"Cash plus ordinary brokerage you could actually access to pay a tax bill, NOT your 401(k)/retirement. This sets the ceiling on how much you can safely exercise-and-hold. Range is fine.")+
+      fieldRow("emergencyMonths","Emergency cushion (months of expenses)",["est","estimate"],"How many months of expenses you want to keep untouched no matter what. 3 to 6 months is typical; we default to 6. We protect this before recommending anything.")+
+      fieldRow("nearTerm","Big cash needs in the next ~2 years",null,"Wedding, car, house down payment, etc. Money you will need soon should not be risked on an exercise. Leave 0 if none.")+
+      navButtons();
+  }
+  else if(s==="goals"){
+    const g=ADV.a.goals;
+    const chip=function(id,lbl){return '<button class="'+(g.includes(id)?"on":"")+'" onclick="advGoal(\''+id+'\')">'+lbl+'</button>';};
+    const sv=function(id,lbl,d){return '<button class="'+(ADV.a.stockView===id?"on":"")+'" onclick="advChoice(\'stockView\',\''+id+'\')">'+lbl+'<span class="d">'+d+'</span></button>';};
+    body='<div class="wiz-step-lbl">Step 4 of 5 · What you want</div>'+
+      '<div class="wiz-h">What are you hoping this does for you?</div>'+
+      '<div class="wiz-sub">Pick anything that fits. This shapes the recommendation.</div>'+
+      '<div class="fieldrow"><div class="top"><span class="name">My goals</span><button class="why" onclick="advWhy(\'goals\')">ⓘ why</button></div>'+
+        '<div class="chips">'+chip("diversify","Diversify / de-risk")+chip("fund","Fund a specific goal")+chip("growth","Long-term growth / keep upside")+chip("understand","Just understand my options")+'</div>'+
+        '<div class="explain hide" id="e_goals">Diversifying means turning some stock into cash so your net worth is not riding on one company. Fund a goal sizes a sale to a real number you need. Growth leans toward holding for the lower long-term tax rate. There is no wrong answer.</div></div>'+
+      (g.includes("fund")? fieldRow("goalAmount","How much cash do you want (after tax)",null,"The take-home amount you are aiming for. We will size a sale to net roughly this.","e.g. 100000 or 80000-120000"):"")+
+      '<div class="fieldrow" style="margin-top:6px"><div class="top"><span class="name">Your honest view on BLLN</span><button class="why" onclick="advWhy(\'stockView\')">ⓘ why</button></div>'+
+        '<div class="choice">'+
+          sv("up","I think it goes up","Leans toward holding for upside, but we keep you honest about risk.")+
+          sv("flat","Probably flat / unsure","Reasonable to take some chips off the table.")+
+          sv("down","I am worried it drops","Favors selling sooner to lock in value.")+
+          sv("noview","No strong view","We recommend a balanced approach.")+
+        '</div>'+
+        '<div class="explain hide" id="e_stockView">No one can predict the price, including this tool. Your view just tilts the balance between holding (a bet it rises) and selling (certainty now). We always show you what you cannot know.</div></div>'+
+      navButtons();
+  }
+  else if(s==="risk"){
+    const rq=function(q,prompt,opts){return '<div class="fieldrow"><div class="name" style="margin-bottom:6px">'+prompt+'</div><div class="choice">'+opts.map(function(o,i){return '<button class="'+(ADV.a.risk[q]===i?"on":"")+'" onclick="advRisk(\''+q+'\','+i+')">'+o+'</button>';}).join("")+'</div></div>';};
+    body='<div class="wiz-step-lbl">Step 5 of 5 · How you handle risk</div>'+
+      '<div class="wiz-h">A few gut checks.</div>'+
+      '<div class="wiz-sub">No right answers. This just calibrates how aggressive the recommendation should be.</div>'+
+      rq("q1","You exercise, pay the tax, then BLLN drops 40%. How do you feel?",["Sick — I would really regret it","Uneasy, but I could ride it out","Fine — I am in it for the long haul"])+
+      rq("q2","How much of your total net worth are you comfortable having in one company's stock?",["Very little — spread it out","Some is okay","A lot — I believe in it"])+
+      rq("q3","If a surprise five-figure tax bill showed up next April, paying it would be...",["Really tight","Manageable","No problem"])+
+      navButtons(allRisk());
+  }
+  else if(s==="report"){ body=renderReport(); }
+  v.innerHTML='<div class="wiz">'+(s!=="welcome"?progressBar():"")+'<div class="wiz-card">'+body+'</div>'+
+    ((s!=="welcome"&&s!=="report")?'<div class="minitab">Tip: any field takes a range like <code>800-1200</code> or an exact number. Pre-filled tags show where a number came from.</div>':"")+'</div>';
+}
+function allRisk(){ return ADV.a.risk.q1!=null&&ADV.a.risk.q2!=null&&ADV.a.risk.q3!=null; }
+function navButtons(ok){ if(ok===undefined)ok=true;
+  return '<div class="wiz-nav">'+
+    '<button class="btn btn-ghost" onclick="advNav(-1)">← Back</button>'+
+    '<div class="right">'+(ADV.step===STEPS.length-2
+      ? '<button class="btn" '+(ok?"":"disabled style=\"opacity:.5\"")+' onclick="advNav(1)">See my recommendation →</button>'
+      : '<button class="btn" onclick="advNav(1)">Continue →</button>')+'</div></div>';
+}
+
+/* ---------- recommendation engine ---------- */
+function advCompute(){
+  const a=ADV.a, P=parseAmt;
+  const grossHer=P(a.grossHer).mid;
+  const netHer=P(a.netHer).mid, netHim=P(a.netHim).mid, otherInc=P(a.otherInc).mid;
+  const income=netHer+netHim+otherInc;
+  const exp={
+    Mortgage:P(a.mortgageHer).mid+P(a.mortgageHim).mid,
+    "Utilities":P(a.utilities).mid, "Internet & phone":P(a.internet).mid,
+    Groceries:P(a.groceries).mid, "Dining out":P(a.dining).mid, Transport:P(a.transport).mid,
+    "Health & insurance":P(a.health).mid, Subscriptions:P(a.subs).mid,
+    "Personal spending":P(a.personal).mid, "Vacations (monthly)":P(a.vacationAnnual).mid/12,
+    Other:P(a.otherExp).mid
+  };
+  const monthlyExp=Object.values(exp).reduce(function(x,y){return x+y;},0);
+  const surplus=income-monthlyExp;
+  const savings=P(a.savings).mid, emoMonths=P(a.emergencyMonths).mid||6, nearTerm=P(a.nearTerm).mid;
+  const emergencyFund=emoMonths*monthlyExp;
+  const spare=Math.max(0, savings-emergencyFund-nearTerm);
+  const rs=(a.risk.q1||0)+(a.risk.q2||0)+(a.risk.q3||0);
+  const riskLevel=rs<=1?"conservative":rs<=4?"moderate":"aggressive";
+  const safety=riskLevel==="conservative"?0.5:riskLevel==="moderate"?0.7:0.9;
+  const budget=spare*safety;
+
+  const prior=(PLAN.currentPrice-((PLAN.priorIsoExerciseThisYear&&PLAN.priorIsoExerciseThisYear.strike)||0))*((PLAN.priorIsoExerciseThisYear&&PLAN.priorIsoExerciseThisYear.shares)||0);
+  const base={status:PLAN.filingStatus,otherIncome:grossHer,priorIsoPref:prior,fmv:PLAN.currentPrice};
+  const lots=exercisableLots(); const totalEx=lots.reduce(function(s,l){return s+l.shares;},0);
+  const fillLots=function(n){ let rem=Math.round(n),ll=[]; for(const l of lots){ if(rem<=0)break; const t=Math.min(l.shares,rem); ll.push({shares:t,strike:l.strike,type:l.type}); rem-=t; } return ll; };
+  const holdPlanN=function(n){return computePlan(Object.assign({},base,{lots:fillLots(n),action:"hold"}));};
+  const sellPlanN=function(n){return computePlan(Object.assign({},base,{lots:fillLots(n),action:"sellNow"}));};
+
+  let holdN=0; const stp=Math.max(25,Math.round(totalEx/300));
+  for(let n=stp;n<=totalEx;n+=stp){ const r=holdPlanN(n); if(r.cashToExercise+r.totalTax<=budget) holdN=n; else break; }
+  const holdPlan=holdN>0?holdPlanN(holdN):null;
+
+  const sellAll=sellPlanN(totalEx);
+  const netPerShareSold = sellAll.proceeds>0 ? sellAll.netAfterTax/totalEx : 0;
+  return { grossHer:grossHer, income:income, exp:exp, monthlyExp:monthlyExp, surplus:surplus, savings:savings,
+    emoMonths:emoMonths, emergencyFund:emergencyFund, nearTerm:nearTerm, spare:spare, budget:budget,
+    riskLevel:riskLevel, safety:safety, lots:lots, totalEx:totalEx, holdN:holdN, holdPlan:holdPlan,
+    sellAll:sellAll, netPerShareSold:netPerShareSold, fillLots:fillLots, sellPlanN:sellPlanN };
+}
+
+function renderReport(){
+  const c=advCompute(); const a=ADV.a; const f=fmt0;
+  let vClass,vHead,vMsg;
+  if(c.surplus<0 || c.spare<2000){
+    vClass="stop"; vHead="Protect your foundation first.";
+    vMsg= c.surplus<0
+      ? "Right now your monthly spending runs about <b>"+f(-c.surplus)+" over</b> what comes in, so this is not the moment to tie up cash in an exercise. The smart move is to shore up cash flow first, and if you want liquidity from your options, <b>sell</b> (which generates cash) rather than exercise-and-hold (which consumes it)."
+      : "After keeping your "+c.emoMonths+"-month cushion, there is very little spare cash to cover an AMT bill. Exercising-and-holding would put your safety net at risk. If you want value from your equity now, lean toward <b>selling</b> a slice rather than holding.";
+  } else if(c.holdN < c.totalEx*0.15){
+    vClass="caution"; vHead="You can act, but in measured steps.";
+    vMsg="Your budget supports a <b>modest</b> exercise-and-hold without touching your "+c.emoMonths+"-month cushion. Start small, and use selling (not holding) for any larger move so you are never out-of-pocket on a paper gain.";
+  } else {
+    vClass="go"; vHead="You are in a solid position to act thoughtfully.";
+    vMsg="Your income covers your life with <b>"+f(c.surplus)+"/mo to spare</b>, and after a "+c.emoMonths+"-month cushion you have roughly <b>"+f(c.spare)+"</b> in flexible cash. That is enough to make a real, deliberate move on your options.";
+  }
+
+  const moves=[]; const wantFund=a.goals.includes("fund"); const wantDiv=a.goals.includes("diversify");
+  const goalAmt=parseAmt(a.goalAmount).mid;
+
+  if(wantFund && goalAmt>0 && c.netPerShareSold>0){
+    const shares=Math.min(c.totalEx, Math.ceil(goalAmt/c.netPerShareSold));
+    const r=c.sellPlanN(shares);
+    moves.push("<b>Sell ~"+shares.toLocaleString()+" shares now</b> to fund your goal. That nets roughly <b>"+f(r.netAfterTax)+"</b> in cash after about "+f(r.totalTax)+" of tax, close to the "+f(goalAmt)+" you are after. Selling is taxed as ordinary income, but it is certain money in hand.");
+  }
+  if(c.holdN>0 && c.surplus>=0 && c.spare>=2000){
+    const r=c.holdPlan; const grants=c.fillLots(c.holdN).map(function(l){return "$"+l.strike.toFixed(2);}).join(", ");
+    moves.push("<b>Exercise & hold ~"+c.holdN.toLocaleString()+" of your lowest-strike ISOs</b> ("+grants+"). The AMT (~"+f(r.amtDue)+") plus "+f(r.cashToExercise)+" to exercise is about <b>"+f(r.cashToExercise+r.totalTax)+"</b>, which fits inside your ~"+f(c.spare)+" of flexible cash and leaves your "+c.emoMonths+"-month cushion untouched. This starts the 1-year clock toward the much lower long-term tax rate.");
+  }
+  if(wantDiv || a.stockView==="down"){
+    const divShares=Math.round(c.totalEx*0.25);
+    const r=c.sellPlanN(divShares);
+    moves.push("<b>Sell ~"+divShares.toLocaleString()+" shares (about 25%) now to diversify.</b> Nets ~"+f(r.netAfterTax)+" after tax and takes real chips off the table, so your future is not riding entirely on BLLN.");
+  }
+  if(c.holdN>0 && c.holdN<c.totalEx){
+    moves.push("<b>Want to exercise more than that?</b> Do the rest in <b>January</b>, not now. Splitting an exercise across two tax years keeps each year's AMT lower and easier to cover from cash.");
+  }
+  moves.push("<b>Leave the rest alone for now.</b> Your unvested grants and the tiny NSO tranche are not exercisable yet, and there is no rush. Options give you years; you only get taxed when you act.");
+
+  const holdR=c.holdPlan; const lifeP=[];
+  if(holdR && c.surplus>=0 && c.spare>=2000){
+    lifeP.push("<b>The check you would actually write:</b> exercising-and-holding ~"+c.holdN.toLocaleString()+" shares means roughly <b>"+f(holdR.cashToExercise)+"</b> to buy the shares this year and an AMT bill of about <b>"+f(holdR.amtDue)+"</b> when you file in <b>April 2027</b>. That comes out of savings, not your paycheck.");
+    lifeP.push("<b>Your day-to-day does not change.</b> Your "+f(c.income)+"/mo income still covers your "+f(c.monthlyExp)+"/mo of living costs with "+f(c.surplus)+" to spare. The exercise is paid from your cash cushion, and you would still have about <b>"+f(Math.max(0,c.spare-(holdR.cashToExercise+holdR.totalTax)))+"</b> of flexible cash left plus your full "+c.emoMonths+"-month emergency fund.");
+    lifeP.push("<b>What you are buying:</b> you would be starting the long-term clock on shares worth about "+f(holdR.paperValue)+" today. If you hold a year and the price holds, the gain is taxed at the lower long-term rate instead of your ordinary ~37% federal, potentially saving a lot. The trade-off is real: that AMT is paid on a <i>paper</i> gain, and if BLLN falls before you sell, you have paid tax on value that shrank (you recover it slowly as an AMT credit).");
+  } else {
+    lifeP.push("<b>Why not exercise-and-hold right now:</b> holding means paying tax with no shares sold to cover it, and that cash would have to come from a cushion you do not comfortably have yet. In real life that is how people get caught owing the IRS money they cannot easily pay.");
+    lifeP.push("<b>The safer path to value:</b> if you want to benefit from your equity now, <b>selling</b> a slice turns it into certain cash (the sale itself pays the tax) without putting your savings at risk. You give up the lower long-term rate, but you also take zero new risk.");
+  }
+  lifeP.push("<b>The honest unknown:</b> nobody, not me, not anyone, knows where BLLN goes. Every hold is a bet it rises; every sell is certainty now. The right answer depends on how you would feel if it dropped, which is exactly what your risk answers ("+c.riskLevel+") reflect.");
+
+  const p30=(probDrop(30,55,1)*100).toFixed(0);
+  const risksHtml=
+    '<div class="ri"><span class="risk-badge risk-'+(c.holdN>0?"Medium":"Low")+'">'+(c.holdN>0?"Med":"Low")+'</span><span>'+(c.holdN>0?("<b>AMT on a paper gain:</b> the ~"+f(holdR?holdR.amtDue:0)+" you would owe is real tax on stock you have not sold. Recoverable later as a credit, but slowly."):"<b>Little AMT exposure</b> in the recommended path, since it leans on selling rather than holding.")+'</span></div>'+
+    '<div class="ri"><span class="risk-badge risk-High">High</span><span><b>Concentration:</b> BLLN is one company. At ~55% typical single-stock volatility, a 30%+ drop within a year is roughly a <b>'+p30+'%</b> chance. That is the core reason to diversify some no matter what you believe.</span></div>'+
+    '<div class="ri"><span class="risk-badge risk-'+(c.spare>50000?"Low":"Medium")+'">'+(c.spare>50000?"Low":"Med")+'</span><span><b>Liquidity:</b> keep your '+c.emoMonths+'-month cushion ('+f(c.emergencyFund)+') genuinely untouched. The plan above is sized to do exactly that.</span></div>';
+
+  const expRows=Object.entries(c.exp).filter(function(kv){return kv[1]>0;}).map(function(kv){return '<tr><td>'+kv[0]+'</td><td class="r">'+f(kv[1])+'</td></tr>';}).join("");
+  return ''+
+  '<div class="wiz-step-lbl">Your plan</div>'+
+  '<div class="wiz-h">Here is what I would do in your shoes.</div>'+
+  '<div class="wiz-sub">Built from your numbers, California plus 2026 federal tax rules, and your '+c.riskLevel+' risk profile. Every figure below is shown so you can check it.</div>'+
+  '<div class="verdict '+vClass+'"><span class="vh">'+vHead+'</span>'+vMsg+'</div>'+
+  '<div class="reco-card"><div class="rl">Recommended moves</div><h3>Your step-by-step</h3>'+
+    moves.map(function(m,i){return '<div class="move"><span class="num">'+(i+1)+'</span><span>'+m+'</span></div>';}).join("")+'</div>'+
+  '<div class="rep-sec"><div class="rep-h"><span class="ic">$</span>What this means in real life</div>'+
+    '<div class="life">'+lifeP.map(function(p){return "<p>"+p+"</p>";}).join("")+'</div></div>'+
+  '<div class="rep-sec"><div class="rep-h"><span class="ic">1</span>Your monthly cash flow <button class="why" style="margin-left:auto" onclick="document.getElementById(\'cfNote\').classList.toggle(\'hide\')">ⓘ</button></div>'+
+    '<div class="explain hide" id="cfNote" style="margin-bottom:8px">Take-home income minus everyday spending. A positive number is your monthly breathing room.</div>'+
+    '<table class="mathtab">'+
+      '<tr><td>Household take-home income</td><td class="r">'+f(c.income)+'</td></tr>'+
+      expRows+
+      '<tr class="tot"><td>Monthly surplus <span class="op">(income minus spending)</span></td><td class="r" style="color:'+(c.surplus>=0?"var(--low)":"var(--high)")+'">'+f(c.surplus)+'</td></tr>'+
+    '</table></div>'+
+  '<div class="rep-sec"><div class="rep-h"><span class="ic">2</span>Cash you can safely put to work</div>'+
+    '<table class="mathtab">'+
+      '<tr><td>Liquid savings you told me</td><td class="r">'+f(c.savings)+'</td></tr>'+
+      '<tr><td><span class="op">minus</span> Emergency fund ('+c.emoMonths+' mo × '+f(c.monthlyExp)+')</td><td class="r">'+f(c.emergencyFund)+'</td></tr>'+
+      (c.nearTerm>0?'<tr><td><span class="op">minus</span> Near-term cash needs</td><td class="r">'+f(c.nearTerm)+'</td></tr>':"")+
+      '<tr class="tot"><td>Flexible cash for your options</td><td class="r">'+f(c.spare)+'</td></tr>'+
+    '</table>'+
+    '<div class="subnote" style="margin-top:6px">Because you are '+c.riskLevel+', the plan only commits up to <b>'+f(c.budget)+'</b> of this ('+Math.round(c.safety*100)+'%), keeping a buffer even within your spare cash.</div></div>'+
+  '<div class="rep-sec"><div class="rep-h"><span class="ic">!</span>Risks, honestly</div><div class="riskbox">'+risksHtml+'</div></div>'+
+  '<div class="disclaimer" style="margin-top:6px"><b>One real caveat.</b> I have modeled this carefully, but I am a tool, not your CPA. Numbers this size deserve a quick check with a tax professional before you pull the trigger, especially the AMT, which has moving parts specific to your full return.</div>'+
+  '<div class="wiz-nav"><button class="btn btn-ghost" onclick="advNav(-1)">← Back</button>'+
+    '<div class="right">'+
+      '<button class="btn btn-ghost" onclick="advRestart()">Start over</button>'+
+      '<button class="btn" onclick="showMode(\'planner\')">Explore the numbers →</button>'+
+    '</div></div>'+
+  '<div class="minitab" style="text-align:center">Want to stress-test it yourself? The <b>Scenario Planner</b> lets you slide every number.</div>';
+}
+
 
 /* test hook (no data embedded; used only for offline render verification) */
 window.__startApp=startApp;
