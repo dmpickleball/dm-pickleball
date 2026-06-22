@@ -62,6 +62,30 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
 .today-divider{display:flex;align-items:center;gap:10px;padding:8px 14px;margin:4px 0;color:#c9a227;font-size:0.70rem;font-weight:700;letter-spacing:2px;text-transform:uppercase}
 .today-divider::before,.today-divider::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,#c9a227,transparent)}
 .picks-today-divider{background:#0f1923;color:#c9a227;font-size:0.68rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:7px 10px;text-align:center;border-top:1px solid rgba(201,162,39,0.5);border-bottom:1px solid rgba(201,162,39,0.5)}
+/* GROUP STANDINGS */
+.standings-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:12px;padding:12px 10px 8px}
+.sg-card{background:#111d2c;border:1px solid #1e3050;border-radius:8px;overflow:hidden}
+.sg-title{background:#1a2e45;color:#c9a227;font-weight:800;font-size:0.78rem;padding:8px 12px;letter-spacing:1.5px;text-transform:uppercase}
+.sg-table{width:100%;border-collapse:collapse;font-size:0.79rem}
+.sg-table th{color:#7f95ab;font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;padding:4px 6px;text-align:center;border-bottom:1px solid #1e3050}
+.sg-table th.sg-name{text-align:left;padding-left:10px}
+.sg-table td{padding:6px 6px;text-align:center;border-bottom:1px solid #14263a}
+.sg-table td.sg-name{text-align:left;font-weight:700;color:#e8eaf6;padding-left:10px}
+.sg-table tr:last-child td{border-bottom:none}
+.sg-q td.sg-name{border-left:3px solid #4caf50}
+.sg-q{background:rgba(76,175,80,0.07)}
+.sg-b td.sg-name{border-left:3px solid #ffa726}
+.sg-b{background:rgba(255,167,38,0.05)}
+.sg-e td{color:#5e7a96}
+.sg-e td.sg-name{border-left:3px solid #2a3a4a;color:#6a7e96}
+.sg-pts{font-weight:900;color:#f3f5fb;font-size:0.88rem}
+.sg-gd-pos{color:#4caf50;font-weight:700}
+.sg-gd-neg{color:#e53935;font-weight:700}
+.sg-gd-zero{color:#7a8fa6}
+.sg-live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#e53935;margin-left:5px;vertical-align:middle;animation:blink 1.2s infinite}
+.standings-legend{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;padding:4px 10px 16px;font-size:0.68rem;color:#7a8fa6}
+.standings-legend span{display:flex;align-items:center;gap:5px}
+.legend-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
 /* LOVELY LOSERS */
 .losers-header{text-align:center;padding:18px 14px 8px}
 .losers-title{font-family:'Anton',sans-serif;font-size:1.5rem;letter-spacing:1px;color:#f3f5fb}
@@ -219,6 +243,7 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
 <nav class="tabs">
   <button class="tab-btn active" onclick="showTab('leaderboard',this)">🏆 Leaderboard<span id="tab-live-dot" class="tab-live-dot hidden"></span></button>
   <button class="tab-btn" onclick="showTab('matches',this)">⚽ Results</button>
+  <button class="tab-btn" onclick="showTab('standings',this)">📊 Groups</button>
   <button class="tab-btn" onclick="showTab('picks',this)">📋 All Picks</button>
   <button class="tab-btn" onclick="showTab('losers',this)">🪑 Lovely Losers</button>
 </nav>
@@ -295,6 +320,11 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
       <button class="action-link" id="today-btn" onclick="scrollToToday()" style="padding:5px 10px;font-size:0.8rem">📅 Today</button>
     </div>
     <div id="matches-content"><div style="text-align:center;padding:30px;color:#7a8fa6">Loading…</div></div>
+  </div>
+
+  <!-- GROUP STANDINGS -->
+  <div id="tab-standings" class="tab-content">
+    <div id="standings-content"></div>
   </div>
 
   <div id="tab-picks" class="tab-content">
@@ -2332,6 +2362,7 @@ function renderAll(){
   renderBanner();
   const activeTab=document.querySelector('.tab-content.active');
   if(activeTab&&activeTab.id==='tab-matches') renderMatches();
+  if(activeTab&&activeTab.id==='tab-standings') renderStandings();
   if(activeTab&&activeTab.id==='tab-picks') renderPicks();
   if(activeTab&&activeTab.id==='tab-losers') renderLosers();
 }
@@ -2776,7 +2807,7 @@ function viewPlayerPicks(name){
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('tab-picks').classList.add('active');
-  document.querySelectorAll('.tab-btn')[2].classList.add('active');
+  document.querySelector('.tab-btn[onclick*="picks"]').classList.add('active');
   selectedPlayers.clear();
   selectedPlayers.add(name);
   document.querySelectorAll('#player-dd-panel input').forEach(cb=>cb.checked=cb.value===name);
@@ -2789,7 +2820,7 @@ function jumpToPicks(group){
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('tab-picks').classList.add('active');
-  document.querySelectorAll('.tab-btn')[2].classList.add('active');
+  document.querySelector('.tab-btn[onclick*="picks"]').classList.add('active');
   document.getElementById('filter-group').value=group;
   renderPicks();
   window.scrollTo(0,0);
@@ -2826,6 +2857,84 @@ function autoSelectMatchday(){
   const next=MATCHES.filter(m=>(matchTimestamps[m.id]||0)>now)
     .sort((a,b)=>(matchTimestamps[a.id]||0)-(matchTimestamps[b.id]||0))[0];
   if(next) sel.value=String(next.md);
+}
+
+/* ---------- GROUP STANDINGS ---------- */
+function calcGroupStandings(){
+  const groups={};
+  // Init all teams
+  MATCHES.forEach(m=>{
+    if(!groups[m.group])groups[m.group]={};
+    [m.t1,m.t2].forEach(t=>{
+      if(!groups[m.group][t])groups[m.group][t]={p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0};
+    });
+  });
+  // Tally completed results
+  MATCHES.forEach(m=>{
+    const res=results[m.id];
+    if(!res||!res.done)return;
+    // Figure out which score belongs to m.t1 vs m.t2
+    const g1=parseInt(res.t1===m.t1?res.s1:res.s2)||0;
+    const g2=parseInt(res.t1===m.t1?res.s2:res.s1)||0;
+    const a=groups[m.group][m.t1], b=groups[m.group][m.t2];
+    a.p++;b.p++;
+    a.gf+=g1;a.ga+=g2;
+    b.gf+=g2;b.ga+=g1;
+    if(g1>g2){a.w++;a.pts+=3;b.l++;}
+    else if(g2>g1){b.w++;b.pts+=3;a.l++;}
+    else{a.d++;a.pts++;b.d++;b.pts++;}
+  });
+  return groups;
+}
+
+function renderStandings(){
+  const el=document.getElementById('standings-content');
+  const groups=calcGroupStandings();
+  const letters=Object.keys(groups).sort();
+  const hasAnyResults=MATCHES.some(m=>results[m.id]&&results[m.id].done);
+
+  let html='<div class="standings-grid">';
+  letters.forEach(letter=>{
+    const liveInGroup=MATCHES.some(m=>m.group===letter&&results[m.id]&&results[m.id].live);
+    const teams=Object.entries(groups[letter])
+      .map(([name,s])=>({name,...s,gd:s.gf-s.ga}))
+      .sort((a,b)=>b.pts-a.pts||b.gd-a.gd||b.gf-a.gf||a.name.localeCompare(b.name));
+
+    html+=`<div class="sg-card"><div class="sg-title">Group ${letter}${liveInGroup?'<span class="sg-live-dot"></span>':''}</div>`;
+    html+=`<table class="sg-table"><thead><tr>
+      <th class="sg-name">Team</th>
+      <th title="Played">P</th><th title="Won">W</th><th title="Drawn">D</th><th title="Lost">L</th>
+      <th title="Goals For">GF</th><th title="Goals Against">GA</th>
+      <th title="Goal Difference">GD</th><th title="Points">Pts</th>
+    </tr></thead><tbody>`;
+
+    teams.forEach((t,i)=>{
+      const rowCls=i<2?'sg-q':i===2?'sg-b':'sg-e';
+      const gdStr=t.gd>0?'+'+t.gd:String(t.gd);
+      const gdCls=t.gd>0?'sg-gd-pos':t.gd<0?'sg-gd-neg':'sg-gd-zero';
+      html+=`<tr class="${rowCls}">
+        <td class="sg-name">${t.name}</td>
+        <td>${t.p}</td><td>${t.w}</td><td>${t.d}</td><td>${t.l}</td>
+        <td>${t.gf}</td><td>${t.ga}</td>
+        <td class="${gdCls}">${t.p>0?gdStr:'—'}</td>
+        <td class="sg-pts">${t.pts}</td>
+      </tr>`;
+    });
+    html+=`</tbody></table></div>`;
+  });
+  html+=`</div>`;
+  html+=`<div class="standings-legend">
+    <span><span class="legend-dot" style="background:#4caf50"></span>Advances (top 2)</span>
+    <span><span class="legend-dot" style="background:#ffa726"></span>May advance (best 3rd)</span>
+    <span><span class="legend-dot" style="background:#2a3a4a"></span>Eliminated</span>
+    <span style="color:#5e7a96">Tiebreaker: Pts → GD → GF (FIFA official)</span>
+  </div>`;
+
+  if(!hasAnyResults){
+    el.innerHTML='<div style="text-align:center;color:#5e7a96;padding:40px 14px;font-size:0.85rem">Standings will fill in as games are played ⚽</div>';
+    return;
+  }
+  el.innerHTML=html;
 }
 
 /* ---------- LOVELY LOSERS ---------- */
@@ -2914,6 +3023,7 @@ function showTab(id,btn){
   document.getElementById('tab-'+id).classList.add('active');
   if(btn) btn.classList.add('active');
   if(id==='matches'){renderMatches();setTimeout(scrollToToday,80);}
+  if(id==='standings'){renderStandings();}
   if(id==='picks'){renderPicks();setTimeout(scrollToPicksToday,80);}
   if(id==='losers'){renderLosers();}
 }
