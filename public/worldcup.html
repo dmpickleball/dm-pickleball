@@ -32,6 +32,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#0d1b2a;color:#e8eaf6;mi
 .tabs{display:flex;background:#111d2c;border-bottom:2px solid #1e3050;position:sticky;top:0;z-index:100;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tab-btn{flex:1 0 auto;padding:12px 8px;background:none;border:none;color:#7a8fa6;font-size:0.80rem;font-weight:600;cursor:pointer;transition:all .2s;border-bottom:3px solid transparent;white-space:nowrap}
+.tab-divider{width:1px;background:#2a3e56;margin:7px 3px;flex-shrink:0}
 .tab-btn.active,.tab-btn:hover{color:#c9a227;border-bottom-color:#c9a227;background:#0d1b2a}
 /* ─── MAIN ─── */
 main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
@@ -242,10 +243,11 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
 
 <nav class="tabs">
   <button class="tab-btn active" onclick="showTab('leaderboard',this)">🏆 Leaderboard<span id="tab-live-dot" class="tab-live-dot hidden"></span></button>
-  <button class="tab-btn" onclick="showTab('matches',this)">⚽ Results</button>
-  <button class="tab-btn" onclick="showTab('standings',this)">📊 Groups</button>
   <button class="tab-btn" onclick="showTab('picks',this)">📋 All Picks</button>
   <button class="tab-btn" onclick="showTab('losers',this)">🪑 Lovely Losers</button>
+  <div class="tab-divider"></div>
+  <button class="tab-btn" onclick="showTab('matches',this)">⚽ Results</button>
+  <button class="tab-btn" onclick="showTab('standings',this)">📊 Groups</button>
 </nav>
 
 <main>
@@ -2860,6 +2862,22 @@ function autoSelectMatchday(){
 }
 
 /* ---------- GROUP STANDINGS ---------- */
+const FLAGS={
+  'Mexico':'🇲🇽','South Africa':'🇿🇦','South Korea':'🇰🇷','Czechia':'🇨🇿',
+  'Canada':'🇨🇦','Bosnia':'🇧🇦','USA':'🇺🇸','Paraguay':'🇵🇾',
+  'Qatar':'🇶🇦','Switzerland':'🇨🇭','Brazil':'🇧🇷','Morocco':'🇲🇦',
+  'Haiti':'🇭🇹','Scotland':'🏴󠁧󠁢󠁳󠁣󠁴󠁿','Australia':'🇦🇺','Turkey':'🇹🇷',
+  'Germany':'🇩🇪','Curacao':'🇨🇼','Netherlands':'🇳🇱','Japan':'🇯🇵',
+  'Ivory Coast':'🇨🇮','Ecuador':'🇪🇨','Sweden':'🇸🇪','Tunisia':'🇹🇳',
+  'Spain':'🇪🇸','Cape Verde':'🇨🇻','Belgium':'🇧🇪','Egypt':'🇪🇬',
+  'Saudi Arabia':'🇸🇦','Uruguay':'🇺🇾','Iran':'🇮🇷','New Zealand':'🇳🇿',
+  'France':'🇫🇷','Senegal':'🇸🇳','Iraq':'🇮🇶','Norway':'🇳🇴',
+  'Argentina':'🇦🇷','Algeria':'🇩🇿','Austria':'🇦🇹','Jordan':'🇯🇴',
+  'Portugal':'🇵🇹','Congo':'🇨🇩','England':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','Croatia':'🇭🇷',
+  'Ghana':'🇬🇭','Panama':'🇵🇦','Uzbekistan':'🇺🇿','Colombia':'🇨🇴'
+};
+function flag(name){return FLAGS[name]?FLAGS[name]+' ':'';}
+
 function calcGroupStandings(){
   const groups={};
   // Init all teams
@@ -2913,7 +2931,7 @@ function renderStandings(){
       const gdStr=t.gd>0?'+'+t.gd:String(t.gd);
       const gdCls=t.gd>0?'sg-gd-pos':t.gd<0?'sg-gd-neg':'sg-gd-zero';
       html+=`<tr class="${rowCls}">
-        <td class="sg-name">${t.name}</td>
+        <td class="sg-name">${flag(t.name)}${t.name}</td>
         <td>${t.p}</td><td>${t.w}</td><td>${t.d}</td><td>${t.l}</td>
         <td>${t.gf}</td><td>${t.ga}</td>
         <td class="${gdCls}">${t.p>0?gdStr:'—'}</td>
