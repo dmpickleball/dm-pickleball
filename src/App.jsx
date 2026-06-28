@@ -409,7 +409,7 @@ function Nav({user,onLogin,onLogout,setPage,currentPage}){
     window.addEventListener("resize",h);
     return()=>window.removeEventListener("resize",h);
   },[]);
-  const links=[["pricing","Rates"],["gear","Paddle/Gear"],["news","News"],["resources","Watch/Links"],["contact","Contact"]];
+  const links=[["pricing","Rates"],["gear","Paddle/Gear"],["news","News"],["resources","Watch/Links"],["standings","Standings"],["contact","Contact"]];
   const navTo=(p)=>{setPage(p);setMenuOpen(false);};
   if(mob){
     return(
@@ -6838,12 +6838,154 @@ function loadAdminSession(){
 function clearAdminSession(){try{localStorage.removeItem(ADMIN_SESSION_KEY);localStorage.removeItem('dm_admin_token_store');sessionStorage.removeItem('dm_admin_token');}catch{}}
 
 // ─── URL routing map ──────────────────────────────────────────────────────────
+// ─── STANDINGS PAGE ──────────────────────────────────────────────────────────
+function StandingsPage(){
+  const[mob,setMob]=useState(window.innerWidth<=768);
+  const[miLPData,setMiLPData]=useState(null);
+  const[loading,setLoading]=useState(true);
+  const[loadError,setLoadError]=useState(null);
+  const[activeDiv,setActiveDiv]=useState('Combined');
+  const[fetchedAt,setFetchedAt]=useState(null);
+
+  useEffect(()=>{const h=()=>setMob(window.innerWidth<=768);window.addEventListener('resize',h);return()=>window.removeEventListener('resize',h);},[]);
+
+  useEffect(()=>{
+    fetch('/api/standings')
+      .then(r=>r.json())
+      .then(d=>{
+        if(d.error)throw new Error(d.error);
+        setMiLPData(d.milp||{});
+        setFetchedAt(d.fetchedAt);
+        setLoading(false);
+      })
+      .catch(e=>{setLoadError(e.message);setLoading(false);});
+  },[]);
+
+  const PRO_LEAGUES=[
+    {name:'PPA Tour',full:'Professional Pickleball Association',desc:"The premier pro tour featuring the world's top singles and doubles players. Rankings updated after every event.",link:'https://ppatour.com/player-rankings/',btn:'PPA Rankings ↗',accent:'#1e3a5f'},
+    {name:'APP Tour',full:'Association of Pickleball Professionals',desc:'A major pro tour offering paths from emerging to elite players. APP rankings cover singles, doubles, and mixed doubles.',link:'https://theapp.global/rankings',btn:'APP Rankings ↗',accent:'#b91c1c'},
+    {name:'Major League Pickleball',full:'MLP — Franchise Team League',desc:'24 franchise city teams competing in team-format events. MLP standings determine playoff seeding across the season.',link:'https://majorleaguepickleball.co/standings/',btn:'MLP Standings ↗',accent:'#0e4f35'},
+    {name:'Senior Pro Tour',full:'50+ World Rankings (SPT)',desc:'The most comprehensive 50+ ranking system — combines results from PPA, APP, SPT, US Open, and Nationals in a rolling 52-week format.',link:'https://theseniorprotour.com/rankings-1',btn:'50+ Rankings ↗',accent:'#4f46e5'},
+  ];
+
+  const divOrder=miLPData?['Combined',...Object.keys(miLPData).filter(k=>k!=='Combined')]:['Combined'];
+  const players=miLPData?.[activeDiv]||[];
+  const timeStr=fetchedAt?`· Updated ${new Date(fetchedAt).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`:'';
+
+  return(
+    <div style={{maxWidth:960,margin:'0 auto',padding:mob?'24px 16px 64px':'44px 40px 88px'}}>
+      {/* Header */}
+      <div style={{textAlign:'center',marginBottom:52}}>
+        <div style={{fontSize:'0.7rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'1.2px',color:G,marginBottom:10}}>Live Rankings</div>
+        <h1 style={{fontSize:mob?'1.9rem':'2.7rem',fontWeight:900,color:'#111',lineHeight:1.1,margin:'0 0 14px'}}>
+          Pro Pickleball <span style={{color:G}}>Standings</span>
+        </h1>
+        <p style={{color:'#6b7280',fontSize:mob?'0.9rem':'1rem',maxWidth:580,margin:'0 auto',lineHeight:1.75}}>
+          Rankings and standings across the PPA, APP, MLP, Senior Pro Tour, and the Minor League Pickleball national leaderboard — where The Hub competes.
+        </p>
+      </div>
+
+      {/* Pro League Cards */}
+      <div style={{marginBottom:60}}>
+        <div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.9px',color:'#9ca3af',marginBottom:14}}>Professional Tours</div>
+        <div style={{display:'grid',gridTemplateColumns:mob?'1fr':'1fr 1fr',gap:14}}>
+          {PRO_LEAGUES.map(lg=>(
+            <div key={lg.name} style={{background:'white',border:'1.5px solid #e5e7eb',borderRadius:16,padding:'22px 24px',display:'flex',flexDirection:'column',gap:10}}>
+              <div>
+                <div style={{fontSize:'0.66rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.8px',color:lg.accent,marginBottom:4}}>{lg.full}</div>
+                <div style={{fontSize:'1.05rem',fontWeight:800,color:'#111'}}>{lg.name}</div>
+              </div>
+              <p style={{color:'#6b7280',fontSize:'0.84rem',lineHeight:1.65,margin:0,flex:1}}>{lg.desc}</p>
+              <a href={lg.link} target="_blank" rel="noopener noreferrer"
+                style={{alignSelf:'flex-start',background:lg.accent,color:'white',padding:'9px 18px',borderRadius:50,fontSize:'0.8rem',fontWeight:700,textDecoration:'none'}}>
+                {lg.btn}
+              </a>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* MiLP Live Leaderboard */}
+      <div>
+        {/* Section header */}
+        <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:12,flexWrap:'wrap',marginBottom:14}}>
+          <div>
+            <div style={{fontSize:'0.68rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.9px',color:'#9ca3af',marginBottom:6}}>Live Data · Refreshes Hourly</div>
+            <h2 style={{fontSize:'1.25rem',fontWeight:800,color:'#111',margin:0}}>Minor League Pickleball</h2>
+            <div style={{fontSize:'0.74rem',color:'#9ca3af',marginTop:4}}>National Leaderboard {timeStr}</div>
+          </div>
+          <a href="https://www.dupr.com/minorleague/leaderboard" target="_blank" rel="noopener noreferrer"
+            style={{flexShrink:0,color:G,fontSize:'0.8rem',fontWeight:700,textDecoration:'none',border:`1.5px solid ${G}`,padding:'7px 14px',borderRadius:50,whiteSpace:'nowrap',alignSelf:'flex-start'}}>
+            Full Leaderboard ↗
+          </a>
+        </div>
+
+        {/* Hub callout */}
+        <div style={{background:'#f0fdf4',border:'1.5px solid #bbf7d0',borderRadius:10,padding:'11px 16px',marginBottom:18,fontSize:'0.82rem',color:'#166534',display:'flex',gap:10,alignItems:'flex-start',lineHeight:1.6}}>
+          <span style={{fontSize:'1rem',flexShrink:0,marginTop:1}}>🏟️</span>
+          <span><strong>The Hub Silicon Valley</strong> (Campbell) and <strong>The Hub Alameda</strong> host and participate in MiLP events — where teams of 4 players from your facility face off against other Bay Area clubs. Local event results feed directly into this national leaderboard.</span>
+        </div>
+
+        {/* Division pills */}
+        {!loading&&!loadError&&miLPData&&(
+          <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:18}}>
+            {divOrder.map(div=>(
+              <button key={div} onClick={()=>setActiveDiv(div)}
+                style={{background:activeDiv===div?G:'white',color:activeDiv===div?'white':'#374151',border:`1.5px solid ${activeDiv===div?G:'#e5e7eb'}`,padding:'5px 13px',borderRadius:50,fontWeight:600,fontSize:'0.76rem',cursor:'pointer',whiteSpace:'nowrap'}}>
+                {div==='Combined'?'Overall':div}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Leaderboard */}
+        {loading?(
+          <div style={{background:'white',border:'1.5px solid #e5e7eb',borderRadius:12,padding:'56px 24px',textAlign:'center',color:'#9ca3af',fontSize:'0.9rem'}}>
+            Loading live leaderboard…
+          </div>
+        ):loadError?(
+          <div style={{background:'white',border:'1.5px solid #e5e7eb',borderRadius:12,padding:'48px 24px',textAlign:'center'}}>
+            <div style={{color:'#9ca3af',fontSize:'0.88rem',marginBottom:12}}>Could not load live data right now</div>
+            <a href="https://www.dupr.com/minorleague/leaderboard" target="_blank" rel="noopener noreferrer"
+              style={{color:G,fontWeight:700,fontSize:'0.9rem',textDecoration:'none'}}>View on DUPR ↗</a>
+          </div>
+        ):players.length===0?(
+          <div style={{background:'white',border:'1.5px solid #e5e7eb',borderRadius:12,padding:'48px 24px',textAlign:'center',color:'#9ca3af',fontSize:'0.88rem'}}>
+            No data available for this division
+          </div>
+        ):(
+          <div style={{background:'white',border:'1.5px solid #e5e7eb',borderRadius:12,overflow:'hidden'}}>
+            <div style={{display:'grid',gridTemplateColumns:'50px 1fr 88px',padding:'10px 20px',background:'#f9fafb',borderBottom:'1px solid #e5e7eb',fontSize:'0.67rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.6px',color:'#6b7280'}}>
+              <span>#</span><span>Player</span><span style={{textAlign:'right'}}>Points</span>
+            </div>
+            {players.map((p,i)=>(
+              <div key={i} style={{display:'grid',gridTemplateColumns:'50px 1fr 88px',padding:'13px 20px',borderBottom:i<players.length-1?'1px solid #f3f4f6':'none',alignItems:'center',background:i%2===0?'white':'#fafafa'}}>
+                <span style={{fontWeight:800,color:p.rank<=3?G:'#9ca3af',fontSize:p.rank<=3?'1rem':'0.9rem'}}>
+                  {p.rank===1?'🥇':p.rank===2?'🥈':p.rank===3?'🥉':p.rank}
+                </span>
+                <span style={{fontWeight:600,color:'#111',fontSize:'0.92rem'}}>{p.name}</span>
+                <span style={{fontWeight:700,color:G,textAlign:'right',fontSize:'0.92rem',fontVariantNumeric:'tabular-nums'}}>{p.points.toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div style={{marginTop:12,fontSize:'0.72rem',color:'#9ca3af',textAlign:'center',lineHeight:1.6}}>
+          Showing top 10 · Official MiLP events Oct 2025–Dec 2026 ·{' '}
+          <a href="https://www.dupr.com/minorleague/leaderboard" target="_blank" rel="noopener noreferrer" style={{color:G,fontWeight:600}}>Full leaderboard on DUPR ↗</a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const PAGE_TO_URL={
   home:"/",
   news:"/news",
   pricing:"/rates",
   gear:"/gear",
   resources:"/resources",
+  standings:"/standings",
   contact:"/contact",
   login:"/login",
   dashboard:"/dashboard",
@@ -7255,6 +7397,7 @@ export default function App(){
       {page==="gear"&&<GearPage/>}
       {page==="news"&&<NewsPage/>}
       {page==="resources"&&<ResourcesPage/>}
+      {page==="standings"&&<StandingsPage/>}
       {page==="contact"&&<ContactPage/>}
       {page==="login"&&<LoginPage onLogin={u=>{setUser(u);setPage("dashboard");}} onAdminLogin={()=>setIsAdmin(true)}/>}
       {page==="account"&&(user?<AccountPage user={user} setPage={setPage} onUpdateUser={updateUser}/>:<LoginPage onLogin={u=>{setUser(u);setPage("dashboard");}} onAdminLogin={()=>setIsAdmin(true)}/>)}
