@@ -43,6 +43,11 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#0d1b2a;color:#e8eaf6;mi
 .pcw-pts{font-size:0.68rem;color:#7a8fa6;margin-top:2px}
 .pcb-venmo{text-align:center;font-size:0.80rem;color:#d0dbe8;background:rgba(76,175,80,0.10);border:1px solid rgba(76,175,80,0.28);border-radius:6px;padding:8px 12px;margin-bottom:9px}
 .pcb-disclaimer{text-align:center;font-size:0.70rem;color:#5a6f85;line-height:1.6;padding:0 6px;font-style:italic}
+.pcb-loser{margin-top:12px;border-top:1px solid rgba(201,162,39,0.15);padding-top:12px;text-align:center}
+.pcb-loser-title{font-size:0.68rem;letter-spacing:2px;color:#5a6f85;text-transform:uppercase;margin-bottom:6px}
+.pcb-loser-card{display:inline-block;background:rgba(180,40,40,0.10);border:1px solid rgba(200,60,60,0.30);border-radius:8px;padding:8px 18px}
+.pcb-loser-name{font-size:1.0rem;font-weight:800;color:#e05555}
+.pcb-loser-sub{font-size:0.72rem;color:#7a8fa6;margin-top:3px;line-height:1.5}
 /* ─── TABS ─── */
 .tabs{display:flex;background:#111d2c;border-bottom:2px solid #1e3050;position:sticky;top:0;z-index:100;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
@@ -262,6 +267,7 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
   <div class="pcb-podium" id="pcw-winners"></div>
   <div class="pcb-venmo">💸 <b>To collect your winnings:</b> Venmo Alex once he manually confirms the final. He's aware. He has read this. He is thinking about it.</div>
   <div class="pcb-disclaimer">⚖️ Results certified by the Al's Pool Official Audit Committee — an independent, fully impartial body staffed, chaired, and solely employed by one Alex (who finished <span id="pcw-alex-rank">somewhere</span>, which he assures everyone is purely coincidental). All disputes, recounts, and complaints are directed to Alex. Rulings by Alex are considered final, and may be appealed to... Alex.</div>
+  <div class="pcb-loser" id="pcw-loser"></div>
 </div>
 
 <nav class="tabs">
@@ -2385,7 +2391,20 @@ function calcTotals(){
 }
 
 function isPoolComplete(){
-  return MATCHES.length>0&&MATCHES.every(m=>results[m.id]&&results[m.id].done);
+  if(!MATCHES.length) return false;
+  // Complete when all games that have a result are done (none live), and any without
+  // a result yet are past their scheduled kickoff time by >3 hours (ESPN hasn't reported yet).
+  const nowMs=Date.now();
+  const anyLive=MATCHES.some(m=>results[m.id]&&results[m.id].live);
+  if(anyLive) return false;
+  const anyPending=MATCHES.some(m=>{
+    if(results[m.id]&&results[m.id].done) return false; // finished — not pending
+    const ts=matchTimestamps[m.id];
+    if(!ts) return true; // no time info — assume pending
+    return nowMs < ts + 3*60*60*1000; // within 3h of kickoff — still plausible
+  });
+  const played=MATCHES.filter(m=>results[m.id]&&results[m.id].done).length;
+  return !anyPending && played >= MATCHES.length * 0.85; // 85%+ done and nothing pending
 }
 
 function renderPoolComplete(){
@@ -2419,6 +2438,25 @@ function renderPoolComplete(){
   const ar=alexEntry?alexEntry.rank:null;
   const sfx={1:'st',2:'nd',3:'rd'};
   document.getElementById('pcw-alex-rank').textContent=ar?(ar+(sfx[ar]||'th'))+' place':'somewhere in the middle';
+
+  // Biggest loser — last place (most wrong, fewest pts)
+  const last=ranked[ranked.length-1];
+  const loserRoasts=[
+    n=>`${n} picked with their heart, which turns out is located nowhere near the brain. Truly historic stuff.`,
+    n=>`${n} finished dead last with ${last.wrong} wrong picks and ${last.pts} points — a score that requires effort to achieve.`,
+    n=>`${n} was technically playing the whole time. The picks were submitted. The results were just... not on board with the plan.`,
+    n=>`The group would like to formally recognize ${n}, who proved that watching a lot of soccer does not, in fact, help.`,
+    n=>`${n} entered this pool with confidence, exited with ${last.pts} points, and will not be taking questions at this time.`,
+  ];
+  const loserEl=document.getElementById('pcw-loser');
+  if(loserEl&&last){
+    const ri=PLAYERS.indexOf(last.name)%loserRoasts.length;
+    loserEl.innerHTML=`<div class="pcb-loser-title">🪑 Special Recognition</div>
+      <div class="pcb-loser-card">
+        <div class="pcb-loser-name">💀 ${last.name}</div>
+        <div class="pcb-loser-sub">${last.pts} pts &middot; ${last.wrong} wrong &middot; Last place<br><em>${loserRoasts[ri](last.name)}</em></div>
+      </div>`;
+  }
 }
 
 function renderAll(){
