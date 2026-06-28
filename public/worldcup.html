@@ -28,6 +28,21 @@ body{font-family:'Segoe UI',Arial,sans-serif;background:#0d1b2a;color:#e8eaf6;mi
 .tp-bar{display:block;max-width:320px;margin:6px auto 0;height:6px;border-radius:4px;background:rgba(255,255,255,0.12);overflow:hidden}
 .tp-fill{display:block;height:100%;background:linear-gradient(90deg,#c9a227,#f0c840);border-radius:4px;transition:width .4s}
 .wc-title{font-size:0.78rem;letter-spacing:3px;color:#c9a227;font-weight:700;text-transform:uppercase;text-shadow:0 1px 4px rgba(0,0,0,0.9)}
+/* ─── POOL COMPLETE ─── */
+.pool-complete-wrap{background:linear-gradient(160deg,#0b1e12 0%,#111d2c 55%,#0b1e38 100%);border-bottom:2px solid rgba(201,162,39,0.45);padding:20px 14px 15px;display:none}
+.pcb-crown{text-align:center;font-size:2.2rem;line-height:1;margin-bottom:2px}
+.pcb-title{text-align:center;font-size:0.78rem;letter-spacing:2.5px;color:#c9a227;font-weight:800;text-transform:uppercase;margin-bottom:14px}
+.pcb-podium{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:13px}
+.pcw-card{text-align:center;padding:10px 14px;border-radius:8px;min-width:82px;flex:1;max-width:130px}
+.pcw-card.pcw-1{background:rgba(201,162,39,0.13);border:2px solid #c9a227}
+.pcw-card.pcw-2{background:rgba(180,180,190,0.09);border:2px solid #9ba3ab}
+.pcw-card.pcw-3{background:rgba(160,100,40,0.11);border:2px solid #cd7f32}
+.pcw-medal{font-size:1.5rem;line-height:1}
+.pcw-name{font-size:0.88rem;font-weight:800;color:#e8edf5;margin:4px 0 2px}
+.pcw-payout{font-size:1.05rem;font-weight:800;color:#4caf50}
+.pcw-pts{font-size:0.68rem;color:#7a8fa6;margin-top:2px}
+.pcb-venmo{text-align:center;font-size:0.80rem;color:#d0dbe8;background:rgba(76,175,80,0.10);border:1px solid rgba(76,175,80,0.28);border-radius:6px;padding:8px 12px;margin-bottom:9px}
+.pcb-disclaimer{text-align:center;font-size:0.70rem;color:#5a6f85;line-height:1.6;padding:0 6px;font-style:italic}
 /* ─── TABS ─── */
 .tabs{display:flex;background:#111d2c;border-bottom:2px solid #1e3050;position:sticky;top:0;z-index:100;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
@@ -240,6 +255,14 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
     <div class="banner-ticker-wrap"><div class="bt-track" id="banner-ticker"><span class="bt-item" style="color:#7a8fa6">Loading…</span></div></div>
   </div>
 </header>
+
+<div class="pool-complete-wrap" id="pool-complete-section">
+  <div class="pcb-crown">🏆</div>
+  <div class="pcb-title">Group Stage Complete &mdash; Final Standings</div>
+  <div class="pcb-podium" id="pcw-winners"></div>
+  <div class="pcb-venmo">💸 <b>To collect your winnings:</b> Venmo Alex once he manually confirms the final. He's aware. He has read this. He is thinking about it.</div>
+  <div class="pcb-disclaimer">⚖️ Results certified by the Al's Pool Official Audit Committee — an independent, fully impartial body staffed, chaired, and solely employed by one Alex (who finished <span id="pcw-alex-rank">somewhere</span>, which he assures everyone is purely coincidental). All disputes, recounts, and complaints are directed to Alex. Rulings by Alex are considered final, and may be appealed to... Alex.</div>
+</div>
 
 <nav class="tabs">
   <button class="tab-btn active" onclick="showTab('leaderboard',this)">🏆 Leaderboard<span id="tab-live-dot" class="tab-live-dot hidden"></span></button>
@@ -2334,9 +2357,11 @@ async function fetchScores(){
     const gamesLeft=MATCHES.filter(m=>!results[m.id]||(!results[m.id].done&&!results[m.id].live)).length;
     document.getElementById('last-updated').textContent=`Updated ${now.toLocaleTimeString()}${liveIds.size?' · '+liveIds.size+' LIVE':''}`;
     renderAll();
-    // auto-refresh faster if live matches
+    // auto-refresh faster if live matches; stop entirely when pool is complete
     clearInterval(autoTimer);
-    autoTimer=setInterval(fetchScores, liveIds.size>0?30000:60000);
+    if(!isPoolComplete()){
+      autoTimer=setInterval(fetchScores, liveIds.size>0?30000:60000);
+    }
   }catch(e){
     document.getElementById('last-updated').textContent='Error loading scores — click Refresh';
   }
@@ -2359,9 +2384,47 @@ function calcTotals(){
   });
 }
 
+function isPoolComplete(){
+  return MATCHES.length>0&&MATCHES.every(m=>results[m.id]&&results[m.id].done);
+}
+
+function renderPoolComplete(){
+  const el=document.getElementById('pool-complete-section');
+  if(!el)return;
+  if(!isPoolComplete()){el.style.display='none';return;}
+  el.style.display='block';
+  const totals=calcTotals().sort((a,b)=>b.pts-a.pts||(a.wrong-b.wrong));
+  let denseRank=0,prevKey=null;
+  const ranked=totals.map(t=>{
+    const rk=t.pts+'|'+t.wrong;
+    if(rk!==prevKey){denseRank++;prevKey=rk;}
+    return {...t,rank:denseRank};
+  });
+  const payouts={1:'$275',2:'$100',3:'$50'};
+  const medals={1:'🥇',2:'🥈',3:'🥉'};
+  const groups={};
+  ranked.filter(t=>t.rank<=3).forEach(t=>{
+    if(!groups[t.rank])groups[t.rank]=[];
+    groups[t.rank].push(t);
+  });
+  const winnerHTML=[1,2,3].map(rank=>{
+    const g=groups[rank]||[];
+    if(!g.length)return '';
+    const names=g.map(t=>t.name).join(' & ');
+    const pts=g[0].pts;
+    return `<div class="pcw-card pcw-${rank}"><div class="pcw-medal">${medals[rank]}</div><div class="pcw-name">${names}</div><div class="pcw-payout">${payouts[rank]}</div><div class="pcw-pts">${pts} pts &middot; ${g[0].wrong} wrong</div></div>`;
+  }).join('');
+  document.getElementById('pcw-winners').innerHTML=winnerHTML;
+  const alexEntry=ranked.find(t=>t.name==='Alex');
+  const ar=alexEntry?alexEntry.rank:null;
+  const sfx={1:'st',2:'nd',3:'rd'};
+  document.getElementById('pcw-alex-rank').textContent=ar?(ar+(sfx[ar]||'th'))+' place':'somewhere in the middle';
+}
+
 function renderAll(){
   renderLeaderboard();
   renderBanner();
+  renderPoolComplete();
   const activeTab=document.querySelector('.tab-content.active');
   if(activeTab&&activeTab.id==='tab-matches') renderMatches();
   if(activeTab&&activeTab.id==='tab-standings') renderStandings();
@@ -2383,6 +2446,11 @@ function renderProgress(){
   const played=MATCHES.filter(m=>results[m.id]&&results[m.id].done).length;
   const remaining=total-played;
   const pct=total?Math.round(played/total*100):0;
+  if(isPoolComplete()){
+    el.innerHTML=`<span class="tp-text">🏁 <b>GROUP STAGE COMPLETE</b> &middot; All ${total} matches played &middot; <b style="color:#4caf50">FINAL</b></span>`+
+      `<span class="tp-bar"><span class="tp-fill" style="width:100%;background:#4caf50"></span></span>`;
+    return;
+  }
   el.innerHTML=`<span class="tp-text">⚽ <b>${played}</b>/${total} games played (<b>${pct}%</b>) &middot; <b>${remaining}</b> remaining (${100-pct}%)</span>`+
     `<span class="tp-bar"><span class="tp-fill" style="width:${pct}%"></span></span>`;
 }
@@ -2395,7 +2463,8 @@ function renderBannerLeader(){
   const top=totals[0];
   const tied=totals.filter(t=>t.pts===top.pts&&t.wrong===top.wrong);  // fewer wrong picks breaks the tie
   const nameStr=tied.length>1?tied.map(t=>t.name).join(' & '):top.name;
-  el.innerHTML=`<span class="bc-label">👑 Leading</span><span class="bl-name">${nameStr}</span><span class="bl-pts">${top.pts} pts</span>`;
+  const label=isPoolComplete()?'🏆 Winner':'👑 Leading';
+  el.innerHTML=`<span class="bc-label">${label}</span><span class="bl-name">${nameStr}</span><span class="bl-pts">${top.pts} pts</span>`;
 }
 
 function renderBannerMotd(){
