@@ -75,6 +75,120 @@ async function getStandings(res) {
   }
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// PPA RANKINGS — scraped from pickleball.com/rankings (Next.js SSR, parseable)
+// GET /api/traffic?resource=ppa  →  public Women's Singles rankings (no auth)
+// ══════════════════════════════════════════════════════════════════════════════
+
+const PPA_TTL = 60 * 60 * 1000; // 1 hour
+let ppaCache = null;
+
+function parsePPARankingsHtml(html) {
+  // Strategy 1: extract from Next.js __NEXT_DATA__ JSON blob
+  const ndMatch = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+  if (ndMatch) {
+    try {
+      const nd = JSON.parse(ndMatch[1]);
+      const pp = nd?.props?.pageProps;
+      for (const key of ['rankings','players','data']) {
+        const list = pp?.[key] ?? pp?.data?.[key];
+        if (Array.isArray(list) && list.length > 0 && (list[0].rank !== undefined || list[0].points !== undefined)) {
+          const mapped = list.slice(0, 10).map((r, i) => ({
+            rank: r.rank ?? r.position ?? (i + 1),
+            name: r.name ?? r.playerName ?? r.fullName ?? r.displayName ?? '',
+            country: r.country ?? r.countryCode ?? r.nationality ?? '',
+            events: r.eventsPlayed ?? r.events ?? r.tournamentsPlayed ?? 0,
+            points: r.points ?? r.totalPoints ?? r.rankingPoints ?? 0,
+          })).filter(r => r.name && r.points > 0);
+          if (mapped.length > 0) return mapped;
+        }
+      }
+    } catch (_) {}
+  }
+
+  // Strategy 2: parse rendered HTML — extract img alts, then scan for row patterns
+  const processed = html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<img[^>]+alt="([^"]*)"[^>]*\/?>/gi, '\nALT:$1\n')
+    .replace(/<[^>]+>/g, '\n')
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ').replace(/&quot;/g, '"')
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n));
+
+  const lines = processed.split('\n').map(l => l.trim()).filter(Boolean);
+  const players = [];
+  const seen = new Set();
+  let i = 0;
+
+  while (i < lines.length && players.length < 10) {
+    if (!/^\d{1,2}$/.test(lines[i])) { i++; continue; }
+    const rank = +lines[i];
+    if (rank < 1 || rank > 10 || seen.has(rank)) { i++; continue; }
+
+    let name = null, country = null;
+    const nums = [];
+
+    for (let j = i + 1; j < Math.min(i + 22, lines.length); j++) {
+      const l = lines[j];
+      // Player full name from img alt "Player Image {Name}"
+      if (!name && l.startsWith('ALT:Player Image ')) {
+        name = l.slice('ALT:Player Image '.length).trim();
+      }
+      // Country code: exactly 2-3 uppercase letters (skip "flag" suffix lines from alts)
+      if (!country && /^[A-Z]{2,3}$/.test(l)) country = l;
+      // Numeric data: age (opt), events played, points
+      if (/^\d+(\.\d+)?$/.test(l) && +l > 0) {
+        nums.push(+l);
+        if (nums.length === 3) break;
+      }
+      // Stop when we reach the next rank
+      if (/^\d{1,2}$/.test(l) && +l > rank && +l <= 10) break;
+    }
+
+    if (name && nums.length >= 2) {
+      seen.add(rank);
+      players.push({
+        rank,
+        name,
+        country: country || '',
+        // If 3 nums: [age, events, points]; if 2: [events, points]
+        events: nums.length >= 3 ? nums[1] : nums[0],
+        points: nums.length >= 3 ? nums[2] : nums[1],
+      });
+    }
+    i++;
+  }
+  return players;
+}
+
+async function fetchPPAData() {
+  if (ppaCache && Date.now() - ppaCache.at < PPA_TTL) return ppaCache;
+  const r = await fetch('https://pickleball.com/rankings', {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.9',
+    },
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!r.ok) throw new Error(`pickleball.com returned ${r.status}`);
+  const players = parsePPARankingsHtml(await r.text());
+  if (!players.length) throw new Error('Parsed 0 PPA players — page structure may have changed');
+  ppaCache = { players, at: Date.now() };
+  return ppaCache;
+}
+
+async function getPPARankings(res) {
+  try {
+    const data = await fetchPPAData();
+    return res.status(200).json({ ppa: { womensSingles: data.players }, fetchedAt: data.at });
+  } catch (e) {
+    if (ppaCache) return res.status(200).json({ ppa: { womensSingles: ppaCache.players }, fetchedAt: ppaCache.at, stale: true });
+    return res.status(500).json({ error: e.message });
+  }
+}
+
 // ── Admin auth ────────────────────────────────────────────────────────────────
 function verifyAdminToken(token) {
   try {
@@ -223,6 +337,8 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     // Public: MiLP standings (no auth)
     if (req.query.resource === 'standings') return getStandings(res);
+    // Public: PPA live rankings via pickleball.com (no auth)
+    if (req.query.resource === 'ppa') return getPPARankings(res);
     // Admin only: traffic analytics
     const token = req.headers['x-admin-token'] || '';
     if (!verifyAdminToken(token)) return res.status(401).json({ error: 'Unauthorized' });
