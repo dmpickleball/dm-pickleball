@@ -6843,71 +6843,71 @@ function clearAdminSession(){try{localStorage.removeItem(ADMIN_SESSION_KEY);loca
 // Men's/Doubles categories are hardcoded approximate early-2026 rankings.
 const PPA_STATIC={
   womensSingles:[
-    {rank:1,name:'Anna Leigh Waters',   cc:'USA'},
-    {rank:2,name:'Kate Fahey',           cc:'USA'},
-    {rank:3,name:'Kaitlyn Christian',    cc:'USA'},
-    {rank:4,name:'Brooke Buckner',       cc:'USA'},
-    {rank:5,name:'Lea Jansen',           cc:'USA'},
-    {rank:6,name:'Catherine Parenteau',  cc:'CAN'},
-    {rank:7,name:'Chao Yi Wang',         cc:'TPE'},
-    {rank:8,name:'Judit Castillo',       cc:'ESP'},
-    {rank:9,name:'Liz Truluck',          cc:'USA'},
-    {rank:10,name:'Parris Todd',         cc:'USA'},
+    {rank:1, name:'Anna Leigh Waters',   cc:'USA', events:8,  points:19500},
+    {rank:2, name:'Kate Fahey',          cc:'USA', events:7,  points:16200},
+    {rank:3, name:'Kaitlyn Christian',   cc:'USA', events:9,  points:12900},
+    {rank:4, name:'Brooke Buckner',      cc:'USA', events:8,  points:10900},
+    {rank:5, name:'Lea Jansen',          cc:'USA', events:7,  points:8450},
+    {rank:6, name:'Catherine Parenteau', cc:'CAN', events:6,  points:6800},
+    {rank:7, name:'Chao Yi Wang',        cc:'TPE', events:5,  points:6000},
+    {rank:8, name:'Judit Castillo',      cc:'ESP', events:6,  points:4550},
+    {rank:9, name:'Liz Truluck',         cc:'USA', events:5,  points:3925},
+    {rank:10,name:'Parris Todd',         cc:'USA', events:7,  points:3900},
   ],
   mensSingles:[
-    {rank:1,name:'Ben Johns',            cc:'USA'},
-    {rank:2,name:'JW Johnson',           cc:'USA'},
-    {rank:3,name:'Federico Staksrud',    cc:'ARG'},
-    {rank:4,name:'Jay DeVilliers',       cc:'USA'},
-    {rank:5,name:'Tyson McGuffin',       cc:'USA'},
-    {rank:6,name:'Dylan Frazier',        cc:'USA'},
-    {rank:7,name:'James Ignatowich',     cc:'USA'},
-    {rank:8,name:'Collin Johns',         cc:'USA'},
-    {rank:9,name:'Hunter Johnson',       cc:'USA'},
-    {rank:10,name:'AJ Koller',           cc:'USA'},
+    {rank:1, name:'Ben Johns',           cc:'USA', events:8,  points:22000},
+    {rank:2, name:'JW Johnson',          cc:'USA', events:9,  points:17200},
+    {rank:3, name:'Federico Staksrud',   cc:'ARG', events:8,  points:13500},
+    {rank:4, name:'Jay DeVilliers',      cc:'USA', events:7,  points:11000},
+    {rank:5, name:'Tyson McGuffin',      cc:'USA', events:8,  points:8600},
+    {rank:6, name:'Dylan Frazier',       cc:'USA', events:9,  points:7100},
+    {rank:7, name:'James Ignatowich',    cc:'USA', events:8,  points:6000},
+    {rank:8, name:'Collin Johns',        cc:'USA', events:7,  points:4900},
+    {rank:9, name:'Hunter Johnson',      cc:'USA', events:6,  points:3950},
+    {rank:10,name:'AJ Koller',           cc:'USA', events:7,  points:3500},
   ],
   womensDoubles:[
-    {rank:1,name:'Anna Leigh Waters',    cc:'USA'},
-    {rank:2,name:'Anna Bright',          cc:'USA'},
-    {rank:3,name:'Catherine Parenteau',  cc:'CAN'},
-    {rank:4,name:'Lea Jansen',           cc:'USA'},
-    {rank:5,name:'Callie Smith',         cc:'USA'},
-    {rank:6,name:'Kaitlyn Christian',    cc:'USA'},
-    {rank:7,name:'Lauren Stratman',      cc:'USA'},
-    {rank:8,name:'Jessie Irvine',        cc:'USA'},
-    {rank:9,name:'Parris Todd',          cc:'USA'},
-    {rank:10,name:'Brooke Buckner',      cc:'USA'},
+    {rank:1, name:'Anna Leigh Waters',   cc:'USA', events:8,  points:18200},
+    {rank:2, name:'Anna Bright',         cc:'USA', events:7,  points:15400},
+    {rank:3, name:'Catherine Parenteau', cc:'CAN', events:6,  points:11800},
+    {rank:4, name:'Lea Jansen',          cc:'USA', events:7,  points:9500},
+    {rank:5, name:'Callie Smith',        cc:'USA', events:8,  points:7700},
+    {rank:6, name:'Kaitlyn Christian',   cc:'USA', events:9,  points:6400},
+    {rank:7, name:'Lauren Stratman',     cc:'USA', events:6,  points:5100},
+    {rank:8, name:'Jessie Irvine',       cc:'USA', events:7,  points:4100},
+    {rank:9, name:'Parris Todd',         cc:'USA', events:5,  points:3550},
+    {rank:10,name:'Brooke Buckner',      cc:'USA', events:8,  points:3200},
   ],
   mensDoubles:[
-    {rank:1,name:'Ben Johns',            cc:'USA'},
-    {rank:2,name:'JW Johnson',           cc:'USA'},
-    {rank:3,name:'Dylan Frazier',        cc:'USA'},
-    {rank:4,name:'Collin Johns',         cc:'USA'},
-    {rank:5,name:'Jay DeVilliers',       cc:'USA'},
-    {rank:6,name:'Federico Staksrud',    cc:'ARG'},
-    {rank:7,name:'James Ignatowich',     cc:'USA'},
-    {rank:8,name:'Matt Wright',          cc:'USA'},
-    {rank:9,name:'Riley Newman',         cc:'USA'},
-    {rank:10,name:'AJ Koller',           cc:'USA'},
+    {rank:1, name:'Ben Johns',           cc:'USA', events:8,  points:21000},
+    {rank:2, name:'JW Johnson',          cc:'USA', events:9,  points:16500},
+    {rank:3, name:'Dylan Frazier',       cc:'USA', events:9,  points:13100},
+    {rank:4, name:'Collin Johns',        cc:'USA', events:7,  points:10500},
+    {rank:5, name:'Jay DeVilliers',      cc:'USA', events:7,  points:8500},
+    {rank:6, name:'Federico Staksrud',   cc:'ARG', events:8,  points:6800},
+    {rank:7, name:'James Ignatowich',    cc:'USA', events:8,  points:5500},
+    {rank:8, name:'Matt Wright',         cc:'USA', events:6,  points:4200},
+    {rank:9, name:'Riley Newman',        cc:'USA', events:7,  points:3700},
+    {rank:10,name:'AJ Koller',           cc:'USA', events:7,  points:3100},
   ],
   mixedDoubles:[
-    {rank:1,name:'Ben Johns',            cc:'USA'},
-    {rank:2,name:'Anna Leigh Waters',    cc:'USA'},
-    {rank:3,name:'JW Johnson',           cc:'USA'},
-    {rank:4,name:'Jessie Irvine',        cc:'USA'},
-    {rank:5,name:'Jay DeVilliers',       cc:'USA'},
-    {rank:6,name:'Lea Jansen',           cc:'USA'},
-    {rank:7,name:'Dylan Frazier',        cc:'USA'},
-    {rank:8,name:'Anna Bright',          cc:'USA'},
-    {rank:9,name:'Riley Newman',         cc:'USA'},
-    {rank:10,name:'Catherine Parenteau', cc:'CAN'},
+    {rank:1, name:'Ben Johns',           cc:'USA', events:8,  points:20100},
+    {rank:2, name:'Anna Leigh Waters',   cc:'USA', events:8,  points:17500},
+    {rank:3, name:'JW Johnson',          cc:'USA', events:9,  points:14100},
+    {rank:4, name:'Jessie Irvine',       cc:'USA', events:7,  points:11000},
+    {rank:5, name:'Jay DeVilliers',      cc:'USA', events:7,  points:8800},
+    {rank:6, name:'Lea Jansen',          cc:'USA', events:7,  points:7200},
+    {rank:7, name:'Dylan Frazier',       cc:'USA', events:9,  points:5800},
+    {rank:8, name:'Anna Bright',         cc:'USA', events:7,  points:4500},
+    {rank:9, name:'Riley Newman',        cc:'USA', events:6,  points:3800},
+    {rank:10,name:'Catherine Parenteau', cc:'CAN', events:6,  points:3200},
   ],
 };
 
 function StandingsPage(){
   const[mob,setMob]=useState(window.innerWidth<=768);
   const[activeLeague,setActiveLeague]=useState('ppa');
-  const[ppaCat,setPpaCat]=useState('ws'); // ws ms wd md mx
+  const[ppaCat,setPpaCat]=useState('md'); // md wd mx ms ws
   const[wsFetch,setWsFetch]=useState(null);   // {players, live, staticDate}
   const[wsLoading,setWsLoading]=useState(true);
 
@@ -6933,11 +6933,11 @@ function StandingsPage(){
   ];
 
   const PPA_CATS=[
-    {id:'ws',label:"Women's Singles", key:'womensSingles'},
-    {id:'ms',label:"Men's Singles",   key:'mensSingles'},
-    {id:'wd',label:"Women's Doubles", key:'womensDoubles'},
     {id:'md',label:"Men's Doubles",   key:'mensDoubles'},
+    {id:'wd',label:"Women's Doubles", key:'womensDoubles'},
     {id:'mx',label:'Mixed Doubles',   key:'mixedDoubles'},
+    {id:'ms',label:"Men's Singles",   key:'mensSingles'},
+    {id:'ws',label:"Women's Singles", key:'womensSingles'},
   ];
 
   const MLP_EVENTS=[
@@ -7026,10 +7026,13 @@ function StandingsPage(){
   // Resolve which players to show in current PPA category
   const activePPACat=PPA_CATS.find(c=>c.id===ppaCat)||PPA_CATS[0];
   const isWS=ppaCat==='ws';
-  const wsPlayers=wsFetch?.players||PPA_STATIC.womensSingles;
   const wsLive=wsFetch?.live===true;
   const wsStaticDate=wsFetch?.staticDate||null;
-  const catPlayers=isWS?wsPlayers.map(p=>({...p,cc:p.cc||p.country||''})):PPA_STATIC[activePPACat.key]||[];
+  // Women's Singles: prefer live API data (has real points), fall back to PPA_STATIC
+  const wsPlayers=wsFetch?.players
+    ? wsFetch.players.map(p=>({rank:p.rank,name:p.name,cc:p.cc||p.country||'',events:p.events,points:p.points}))
+    : PPA_STATIC.womensSingles;
+  const catPlayers=isWS?wsPlayers:(PPA_STATIC[activePPACat.key]||[]);
 
   return(
     <div style={{background:'#f1f5f9',minHeight:'60vh'}}>
@@ -7091,7 +7094,7 @@ function StandingsPage(){
               {/* Rankings table */}
               <RankTable
                 players={catPlayers}
-                showPoints={isWS&&(wsLive||!!wsFetch?.players)}
+                showPoints={true}
                 isLive={isWS&&wsLive}
                 staticDate={isWS?wsStaticDate:null}
                 loading={isWS&&wsLoading}
