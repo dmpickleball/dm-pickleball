@@ -83,6 +83,23 @@ async function getStandings(res) {
 const PPA_TTL = 60 * 60 * 1000; // 1 hour
 let ppaCache = null;
 
+// Static fallback — used when live fetch fails (Vercel Hobby 10s timeout, or site blocked)
+const PPA_STATIC_FALLBACK = {
+  players: [
+    {rank:1, name:'Anna Leigh Waters',    country:'USA', events:8, points:19500},
+    {rank:2, name:'Kate Fahey',            country:'USA', events:7, points:16200},
+    {rank:3, name:'Kaitlyn Christian',     country:'USA', events:9, points:12900},
+    {rank:4, name:'Brooke Buckner',        country:'USA', events:8, points:10900},
+    {rank:5, name:'Lea Jansen',            country:'USA', events:7, points:8450},
+    {rank:6, name:'Catherine Parenteau',   country:'CAN', events:6, points:6800},
+    {rank:7, name:'Chao Yi Wang',          country:'TPE', events:5, points:6000},
+    {rank:8, name:'Judit Castillo',        country:'ESP', events:6, points:4550},
+    {rank:9, name:'Liz Truluck',           country:'USA', events:5, points:3925},
+    {rank:10,name:'Parris Todd',           country:'USA', events:7, points:3900},
+  ],
+  staticDate: 'June 2026',
+};
+
 function parsePPARankingsHtml(html) {
   // Strategy 1: extract from Next.js __NEXT_DATA__ JSON blob
   const ndMatch = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
@@ -170,7 +187,7 @@ async function fetchPPAData() {
       'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       'Accept-Language': 'en-US,en;q=0.9',
     },
-    signal: AbortSignal.timeout(15000),
+    signal: AbortSignal.timeout(7000), // Vercel Hobby has 10s function timeout; keep well under it
   });
   if (!r.ok) throw new Error(`pickleball.com returned ${r.status}`);
   const players = parsePPARankingsHtml(await r.text());
@@ -182,10 +199,17 @@ async function fetchPPAData() {
 async function getPPARankings(res) {
   try {
     const data = await fetchPPAData();
-    return res.status(200).json({ ppa: { womensSingles: data.players }, fetchedAt: data.at });
+    return res.status(200).json({ ppa: { womensSingles: data.players }, fetchedAt: data.at, live: true });
   } catch (e) {
-    if (ppaCache) return res.status(200).json({ ppa: { womensSingles: ppaCache.players }, fetchedAt: ppaCache.at, stale: true });
-    return res.status(500).json({ error: e.message });
+    // First try in-memory cache (from a previous successful fetch this session)
+    if (ppaCache) return res.status(200).json({ ppa: { womensSingles: ppaCache.players }, fetchedAt: ppaCache.at, live: false, stale: true });
+    // Always serve static fallback rather than a 500 — keeps the page useful
+    return res.status(200).json({
+      ppa: { womensSingles: PPA_STATIC_FALLBACK.players },
+      staticDate: PPA_STATIC_FALLBACK.staticDate,
+      live: false,
+      staticFallback: true,
+    });
   }
 }
 

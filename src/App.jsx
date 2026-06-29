@@ -6846,6 +6846,8 @@ function StandingsPage(){
   const[ppaLoading,setPpaLoading]=useState(true);
   const[ppaError,setPpaError]=useState(null);
   const[ppaTime,setPpaTime]=useState(null);
+  const[ppaLive,setPpaLive]=useState(false);
+  const[ppaStaticDate,setPpaStaticDate]=useState(null);
 
   useEffect(()=>{const h=()=>setMob(window.innerWidth<=768);window.addEventListener('resize',h);return()=>window.removeEventListener('resize',h);},[]);
 
@@ -6857,6 +6859,8 @@ function StandingsPage(){
         if(d.error)throw new Error(d.error);
         setPpaPlayers(d.ppa?.womensSingles||[]);
         setPpaTime(d.fetchedAt);
+        setPpaLive(d.live===true);
+        setPpaStaticDate(d.staticDate||null);
         setPpaLoading(false);
       })
       .catch(e=>{setPpaError(e.message);setPpaLoading(false);});
@@ -6958,8 +6962,8 @@ function StandingsPage(){
           <div>
             {/* Live Women's Singles table */}
             <div style={{background:'white',borderRadius:8,border:'1px solid #e2e8f0',overflow:'hidden',marginBottom:16}}>
-              <SectionHeader badge title="Women's Singles — 52-Week Ranking"
-                sub={ppaTime?`· ${new Date(ppaTime).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`:undefined}
+              <SectionHeader badge={ppaLive} title="Women's Singles — 52-Week Ranking"
+                sub={ppaLive&&ppaTime?`· ${new Date(ppaTime).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`:ppaStaticDate?`· as of ${ppaStaticDate}`:''}
                 link="https://pickleball.com/rankings" linkLabel="Full rankings on pickleball.com ↗"/>
               {/* Column headers */}
               {!ppaLoading&&!ppaError&&ppaPlayers?.length>0&&(
@@ -7062,34 +7066,47 @@ function StandingsPage(){
         {/* ══ MLP TAB ══ */}
         {activeLeague==='mlp'&&(
           <div>
-            {/* Season status + standings link */}
+            {/* Live standings iframe — embedded directly from MLP */}
             <div style={{background:'white',borderRadius:8,border:'1px solid #e2e8f0',overflow:'hidden',marginBottom:16}}>
-              <SectionHeader badge title="2026 Season — Team Standings" link="https://majorleaguepickleball.co/standings/" linkLabel="Live standings ↗"/>
-              <div style={{padding:mob?'16px 18px':'18px 24px',borderBottom:'1px solid #f1f5f9',
-                display:'flex',alignItems:'center',justifyContent:'space-between',gap:16,flexWrap:'wrap'}}>
-                <div style={{display:'flex',gap:mob?16:24,flexWrap:'wrap'}}>
-                  <div style={{textAlign:'center'}}>
-                    <div style={{fontSize:'1.6rem',fontWeight:900,color:'#14532d'}}>6</div>
-                    <div style={{fontSize:'0.68rem',color:'#64748b',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.6px'}}>Events Played</div>
-                  </div>
-                  <div style={{textAlign:'center'}}>
-                    <div style={{fontSize:'1.6rem',fontWeight:900,color:'#334155'}}>7</div>
-                    <div style={{fontSize:'0.68rem',color:'#64748b',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.6px'}}>Remaining</div>
-                  </div>
-                  <div style={{textAlign:'center'}}>
-                    <div style={{fontSize:'1.6rem',fontWeight:900,color:'#334155'}}>20</div>
-                    <div style={{fontSize:'0.68rem',color:'#64748b',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.6px'}}>Teams</div>
-                  </div>
+              <div style={{background:'#0f172a',padding:'11px 20px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:12}}>
+                <div style={{display:'flex',alignItems:'center',gap:8}}>
+                  <LiveBadge/>
+                  <span style={{color:'white',fontWeight:700,fontSize:'0.84rem'}}>2026 Team Standings — Major League Pickleball</span>
                 </div>
                 <a href="https://majorleaguepickleball.co/standings/" target="_blank" rel="noopener noreferrer"
-                  style={{background:'#14532d',color:'white',padding:'10px 20px',borderRadius:6,
-                    fontWeight:700,fontSize:'0.82rem',textDecoration:'none',flexShrink:0}}>
-                  Live Standings ↗
+                  style={{color:'rgba(255,255,255,0.55)',fontSize:'0.72rem',fontWeight:600,textDecoration:'none',whiteSpace:'nowrap'}}>
+                  Open on MLP ↗
                 </a>
               </div>
-              {/* 2026 Schedule */}
-              <div style={{padding:mob?'14px 18px':'16px 24px'}}>
-                <div style={{fontSize:'0.68rem',fontWeight:700,color:'#94a3b8',textTransform:'uppercase',letterSpacing:'0.8px',marginBottom:10}}>2026 Schedule</div>
+              {/* Iframe of live MLP standings */}
+              <div style={{width:'100%',height:mob?480:560,background:'#f8fafc',position:'relative'}}>
+                <iframe
+                  src="https://majorleaguepickleball.co/standings/"
+                  title="MLP 2026 Team Standings"
+                  style={{width:'100%',height:'100%',border:'none',display:'block'}}
+                  loading="lazy"
+                  sandbox="allow-scripts allow-same-origin"
+                />
+              </div>
+              <div style={{padding:'10px 20px',background:'#f8fafc',borderTop:'1px solid #e2e8f0',textAlign:'center'}}>
+                <a href="https://majorleaguepickleball.co/standings/" target="_blank" rel="noopener noreferrer"
+                  style={{display:'inline-flex',alignItems:'center',gap:6,background:'#14532d',color:'white',
+                    padding:'9px 22px',borderRadius:6,fontWeight:700,fontSize:'0.82rem',textDecoration:'none'}}>
+                  View Full Standings on MLP ↗
+                </a>
+              </div>
+            </div>
+
+            {/* 2026 Schedule */}
+            <div style={{background:'white',borderRadius:8,border:'1px solid #e2e8f0',overflow:'hidden',marginBottom:16}}>
+              <div style={{background:'#f8fafc',padding:'10px 20px',borderBottom:'1px solid #e2e8f0',
+                display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
+                <div style={{fontSize:'0.68rem',fontWeight:700,color:'#475569',textTransform:'uppercase',letterSpacing:'0.8px'}}>2026 Event Schedule</div>
+                <div style={{display:'flex',gap:12}}>
+                  <span style={{fontSize:'0.68rem',color:'#94a3b8'}}><span style={{background:'#14532d',color:'white',padding:'1px 5px',borderRadius:2,fontWeight:700,marginRight:4}}>NEXT</span>Grand Rapids · Jul 8–12</span>
+                </div>
+              </div>
+              <div style={{padding:mob?'12px 16px':'14px 20px'}}>
                 <div style={{display:'grid',gridTemplateColumns:mob?'1fr 1fr':'repeat(3,1fr)',gap:6}}>
                   {MLP_EVENTS.map((ev,i)=>(
                     <div key={i} style={{background:ev.next?'#f0fdf4':ev.done?'#f8fafc':'white',
@@ -7111,6 +7128,7 @@ function StandingsPage(){
                 </div>
               </div>
             </div>
+
             {/* Team grid */}
             <div style={{background:'white',borderRadius:8,border:'1px solid #e2e8f0',overflow:'hidden'}}>
               <div style={{background:'#f8fafc',padding:'10px 20px',borderBottom:'1px solid #e2e8f0'}}>
@@ -7119,7 +7137,7 @@ function StandingsPage(){
               <div style={{display:'grid',gridTemplateColumns:mob?'1fr 1fr':'repeat(4,1fr)',gap:0}}>
                 {MLP_TEAMS.map((t,i)=>(
                   <div key={i} style={{padding:'10px 14px',borderBottom:i<MLP_TEAMS.length-4?'1px solid #f1f5f9':'none',
-                    borderRight:(i+1)%( mob?2:4)!==0?'1px solid #f1f5f9':'none',
+                    borderRight:(i+1)%(mob?2:4)!==0?'1px solid #f1f5f9':'none',
                     fontSize:'0.82rem',fontWeight:500,color:'#334155',lineHeight:1.3}}>
                     {t}
                   </div>
