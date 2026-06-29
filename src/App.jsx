@@ -6839,54 +6839,121 @@ function clearAdminSession(){try{localStorage.removeItem(ADMIN_SESSION_KEY);loca
 
 // ─── URL routing map ──────────────────────────────────────────────────────────
 // ─── STANDINGS PAGE ──────────────────────────────────────────────────────────
+// Static PPA data — Women's Singles also fetched live (server scrapes pickleball.com)
+// Men's/Doubles categories are hardcoded approximate early-2026 rankings.
+const PPA_STATIC={
+  womensSingles:[
+    {rank:1,name:'Anna Leigh Waters',   cc:'USA'},
+    {rank:2,name:'Kate Fahey',           cc:'USA'},
+    {rank:3,name:'Kaitlyn Christian',    cc:'USA'},
+    {rank:4,name:'Brooke Buckner',       cc:'USA'},
+    {rank:5,name:'Lea Jansen',           cc:'USA'},
+    {rank:6,name:'Catherine Parenteau',  cc:'CAN'},
+    {rank:7,name:'Chao Yi Wang',         cc:'TPE'},
+    {rank:8,name:'Judit Castillo',       cc:'ESP'},
+    {rank:9,name:'Liz Truluck',          cc:'USA'},
+    {rank:10,name:'Parris Todd',         cc:'USA'},
+  ],
+  mensSingles:[
+    {rank:1,name:'Ben Johns',            cc:'USA'},
+    {rank:2,name:'JW Johnson',           cc:'USA'},
+    {rank:3,name:'Federico Staksrud',    cc:'ARG'},
+    {rank:4,name:'Jay DeVilliers',       cc:'USA'},
+    {rank:5,name:'Tyson McGuffin',       cc:'USA'},
+    {rank:6,name:'Dylan Frazier',        cc:'USA'},
+    {rank:7,name:'James Ignatowich',     cc:'USA'},
+    {rank:8,name:'Collin Johns',         cc:'USA'},
+    {rank:9,name:'Hunter Johnson',       cc:'USA'},
+    {rank:10,name:'AJ Koller',           cc:'USA'},
+  ],
+  womensDoubles:[
+    {rank:1,name:'Anna Leigh Waters',    cc:'USA'},
+    {rank:2,name:'Anna Bright',          cc:'USA'},
+    {rank:3,name:'Catherine Parenteau',  cc:'CAN'},
+    {rank:4,name:'Lea Jansen',           cc:'USA'},
+    {rank:5,name:'Callie Smith',         cc:'USA'},
+    {rank:6,name:'Kaitlyn Christian',    cc:'USA'},
+    {rank:7,name:'Lauren Stratman',      cc:'USA'},
+    {rank:8,name:'Jessie Irvine',        cc:'USA'},
+    {rank:9,name:'Parris Todd',          cc:'USA'},
+    {rank:10,name:'Brooke Buckner',      cc:'USA'},
+  ],
+  mensDoubles:[
+    {rank:1,name:'Ben Johns',            cc:'USA'},
+    {rank:2,name:'JW Johnson',           cc:'USA'},
+    {rank:3,name:'Dylan Frazier',        cc:'USA'},
+    {rank:4,name:'Collin Johns',         cc:'USA'},
+    {rank:5,name:'Jay DeVilliers',       cc:'USA'},
+    {rank:6,name:'Federico Staksrud',    cc:'ARG'},
+    {rank:7,name:'James Ignatowich',     cc:'USA'},
+    {rank:8,name:'Matt Wright',          cc:'USA'},
+    {rank:9,name:'Riley Newman',         cc:'USA'},
+    {rank:10,name:'AJ Koller',           cc:'USA'},
+  ],
+  mixedDoubles:[
+    {rank:1,name:'Ben Johns',            cc:'USA'},
+    {rank:2,name:'Anna Leigh Waters',    cc:'USA'},
+    {rank:3,name:'JW Johnson',           cc:'USA'},
+    {rank:4,name:'Jessie Irvine',        cc:'USA'},
+    {rank:5,name:'Jay DeVilliers',       cc:'USA'},
+    {rank:6,name:'Lea Jansen',           cc:'USA'},
+    {rank:7,name:'Dylan Frazier',        cc:'USA'},
+    {rank:8,name:'Anna Bright',          cc:'USA'},
+    {rank:9,name:'Riley Newman',         cc:'USA'},
+    {rank:10,name:'Catherine Parenteau', cc:'CAN'},
+  ],
+};
+
 function StandingsPage(){
   const[mob,setMob]=useState(window.innerWidth<=768);
   const[activeLeague,setActiveLeague]=useState('ppa');
-  const[ppaPlayers,setPpaPlayers]=useState(null);
-  const[ppaLoading,setPpaLoading]=useState(true);
-  const[ppaError,setPpaError]=useState(null);
-  const[ppaTime,setPpaTime]=useState(null);
-  const[ppaLive,setPpaLive]=useState(false);
-  const[ppaStaticDate,setPpaStaticDate]=useState(null);
+  const[ppaCat,setPpaCat]=useState('ws'); // ws ms wd md mx
+  const[wsFetch,setWsFetch]=useState(null);   // {players, live, staticDate}
+  const[wsLoading,setWsLoading]=useState(true);
 
   useEffect(()=>{const h=()=>setMob(window.innerWidth<=768);window.addEventListener('resize',h);return()=>window.removeEventListener('resize',h);},[]);
 
-  // Fetch PPA rankings on mount (used by PPA tab)
+  // Fetch Women's Singles live data on mount
   useEffect(()=>{
     fetch('/api/traffic?resource=ppa')
       .then(r=>r.json())
       .then(d=>{
-        if(d.error)throw new Error(d.error);
-        setPpaPlayers(d.ppa?.womensSingles||[]);
-        setPpaTime(d.fetchedAt);
-        setPpaLive(d.live===true);
-        setPpaStaticDate(d.staticDate||null);
-        setPpaLoading(false);
+        const players=(d.ppa?.womensSingles||[]).map(p=>({rank:p.rank,name:p.name,cc:p.country,points:p.points,events:p.events}));
+        setWsFetch({players:players.length?players:null,live:d.live===true,staticDate:d.staticDate||null});
+        setWsLoading(false);
       })
-      .catch(e=>{setPpaError(e.message);setPpaLoading(false);});
+      .catch(()=>setWsLoading(false));
   },[]);
 
   const TABS=[
-    {id:'ppa', label:'PPA',       accent:'#1d3461'},
-    {id:'app', label:'APP',       accent:'#b91c1c'},
-    {id:'mlp', label:'MLP',       accent:'#14532d'},
-    {id:'spt', label:'50+ PRO',   accent:'#3730a3'},
+    {id:'ppa',label:'PPA',    accent:'#1d3461'},
+    {id:'app',label:'APP',    accent:'#b91c1c'},
+    {id:'mlp',label:'MLP',    accent:'#14532d'},
+    {id:'spt',label:'50+ PRO',accent:'#3730a3'},
+  ];
+
+  const PPA_CATS=[
+    {id:'ws',label:"Women's Singles", key:'womensSingles'},
+    {id:'ms',label:"Men's Singles",   key:'mensSingles'},
+    {id:'wd',label:"Women's Doubles", key:'womensDoubles'},
+    {id:'md',label:"Men's Doubles",   key:'mensDoubles'},
+    {id:'mx',label:'Mixed Doubles',   key:'mixedDoubles'},
   ];
 
   const MLP_EVENTS=[
-    {name:'Dallas',       dates:'May 22–25',    done:true},
-    {name:'Columbus',     dates:'May 28–31',    done:true},
-    {name:'St. Louis',   dates:'Jun 4–7',      done:true},
-    {name:'Austin',       dates:'Jun 11–14',    done:true},
-    {name:'St. Petersburg',dates:'Jun 17–21',  done:true},
-    {name:'New York',     dates:'Jun 25–28',    done:true},
-    {name:'Grand Rapids', dates:'Jul 8–12',     done:false,next:true},
-    {name:'San Diego',    dates:'Jul 16–19',    done:false},
-    {name:'Chicago',      dates:'Jul 23–26',    done:false},
-    {name:'Orlando',      dates:'Jul 30–Aug 2', done:false},
-    {name:'Playoffs — Dallas',      dates:'Aug 7–9',  done:false,playoff:true},
+    {name:'Dallas',              dates:'May 22–25',   done:true},
+    {name:'Columbus',            dates:'May 28–31',   done:true},
+    {name:'St. Louis',           dates:'Jun 4–7',     done:true},
+    {name:'Austin',              dates:'Jun 11–14',   done:true},
+    {name:'St. Petersburg',      dates:'Jun 17–21',   done:true},
+    {name:'New York',            dates:'Jun 25–28',   done:true},
+    {name:'Grand Rapids',        dates:'Jul 8–12',    done:false,next:true},
+    {name:'San Diego',           dates:'Jul 16–19',   done:false},
+    {name:'Chicago',             dates:'Jul 23–26',   done:false},
+    {name:'Orlando',             dates:'Jul 30–Aug 2',done:false},
+    {name:'Playoffs — Dallas',   dates:'Aug 7–9',     done:false,playoff:true},
     {name:'Playoffs — Newport Beach',dates:'Aug 14–16',done:false,playoff:true},
-    {name:'Finals — New York City', dates:'Aug 28–30', done:false,playoff:true},
+    {name:'Finals — New York',   dates:'Aug 28–30',   done:false,playoff:true},
   ];
 
   const MLP_TEAMS=['Atlanta Bouncers','Bay Area Breakers','Brooklyn Pickleball Team',
@@ -6896,10 +6963,10 @@ function StandingsPage(){
     'Phoenix Flames','SoCal Hard Eights','St. Louis Shock','Texas Ranchers','Utah Black Diamonds'];
 
   const SPT_LEADERS=[
-    {cat:"Men's Singles",    name:'Mattias Johansson', note:'4th straight year · 186-week streak at #1'},
-    {cat:"Women's Singles",  name:'Karin Kochis',      note:'2nd straight year · #1 since May 2024'},
-    {cat:"Women's Doubles & Mixed", name:'Lee Whitwell',note:'2nd straight year at #1 in both categories'},
-    {cat:"Men's Doubles & Mixed",   name:'Jamie Oncins', note:'2nd straight year at #1 in both categories'},
+    {cat:"Men's Singles",          name:'Mattias Johansson',note:'4th straight year · 186-week streak at #1'},
+    {cat:"Women's Singles",        name:'Karin Kochis',     note:'2nd straight year · #1 since May 2024'},
+    {cat:"Women's Doubles & Mixed",name:'Lee Whitwell',     note:'2nd straight year at #1 in both categories'},
+    {cat:"Men's Doubles & Mixed",  name:'Jamie Oncins',     note:'2nd straight year at #1 in both categories'},
   ];
 
   const LiveBadge=()=>(
@@ -6910,26 +6977,64 @@ function StandingsPage(){
     </span>
   );
 
-  const SectionHeader=({badge,title,sub,link,linkLabel})=>(
-    <div style={{background:'#0f172a',padding:'11px 20px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap'}}>
-      <div style={{display:'flex',alignItems:'center',gap:8}}>
-        {badge&&<LiveBadge/>}
-        <span style={{color:'white',fontWeight:700,fontSize:'0.84rem'}}>{title}</span>
-        {sub&&<span style={{color:'rgba(255,255,255,0.35)',fontSize:'0.7rem'}}>{sub}</span>}
-      </div>
-      {link&&<a href={link} target="_blank" rel="noopener noreferrer"
-        style={{color:'rgba(255,255,255,0.55)',fontSize:'0.72rem',fontWeight:600,textDecoration:'none',whiteSpace:'nowrap'}}>
-        {linkLabel||'Full rankings ↗'}
-      </a>}
-    </div>
-  );
+  // Shared rankings table renderer
+  const RankTable=({players,showPoints,isLive,staticDate,loading,footerNote,footerLink,footerLinkLabel})=>{
+    if(loading) return <div style={{padding:'44px 20px',textAlign:'center',color:'#94a3b8',fontSize:'0.88rem'}}>Loading…</div>;
+    return(
+      <>
+        {/* Column header */}
+        <div style={{display:'grid',gridTemplateColumns:showPoints?(mob?'38px 1fr 44px 52px':'42px 1fr 50px 52px 76px'):(mob?'38px 1fr 44px':'42px 1fr 50px 52px'),
+          padding:'7px 18px',background:'#f8fafc',borderBottom:'1px solid #e2e8f0',
+          fontSize:'0.6rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.8px',color:'#94a3b8'}}>
+          <span>#</span><span>Player</span>
+          {!mob&&<span>CC</span>}
+          {showPoints&&<span style={{textAlign:'right'}}>Events</span>}
+          {showPoints&&<span style={{textAlign:'right'}}>Points</span>}
+        </div>
+        {players.map((p,i)=>(
+          <div key={i} style={{display:'grid',
+            gridTemplateColumns:showPoints?(mob?'38px 1fr 44px 52px':'42px 1fr 50px 52px 76px'):(mob?'38px 1fr 44px':'42px 1fr 50px 52px'),
+            padding:'11px 18px',borderBottom:i<players.length-1?'1px solid #f1f5f9':'none',
+            alignItems:'center',background:i===0?'#f0f7ff':i%2===0?'white':'#fafafa'}}>
+            <span style={{fontWeight:800,color:p.rank<=3?'#1d3461':'#94a3b8',fontSize:'0.9rem'}}>
+              {p.rank===1?'🥇':p.rank===2?'🥈':p.rank===3?'🥉':p.rank}
+            </span>
+            <span style={{fontWeight:p.rank<=3?700:500,color:'#0f172a',fontSize:mob?'0.82rem':'0.88rem'}}>{p.name}</span>
+            {!mob&&<span style={{color:'#64748b',fontSize:'0.75rem'}}>{p.cc}</span>}
+            {showPoints&&<span style={{textAlign:'right',color:'#475569',fontSize:'0.82rem'}}>{p.events}</span>}
+            {showPoints&&<span style={{textAlign:'right',fontWeight:700,color:p.rank<=3?'#1d3461':'#334155',
+              fontSize:'0.88rem',fontVariantNumeric:'tabular-nums'}}>{(p.points||0).toLocaleString()}</span>}
+          </div>
+        ))}
+        <div style={{padding:'10px 18px',background:'#f8fafc',borderTop:'1px solid #e2e8f0',
+          display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,flexWrap:'wrap'}}>
+          <span style={{fontSize:'0.68rem',color:'#94a3b8'}}>{footerNote||''}
+            {!isLive&&staticDate&&<span style={{marginLeft:4,color:'#cbd5e1'}}>· as of {staticDate}</span>}
+            {!isLive&&!staticDate&&<span style={{marginLeft:4,color:'#cbd5e1'}}>· early 2026 approx.</span>}
+          </span>
+          {footerLink&&<a href={footerLink} target="_blank" rel="noopener noreferrer"
+            style={{fontSize:'0.7rem',color:'#1d3461',fontWeight:700,textDecoration:'none',whiteSpace:'nowrap'}}>
+            {footerLinkLabel||'Full rankings ↗'}
+          </a>}
+        </div>
+      </>
+    );
+  };
 
   const accent=TABS.find(t=>t.id===activeLeague)?.accent||G;
+
+  // Resolve which players to show in current PPA category
+  const activePPACat=PPA_CATS.find(c=>c.id===ppaCat)||PPA_CATS[0];
+  const isWS=ppaCat==='ws';
+  const wsPlayers=wsFetch?.players||PPA_STATIC.womensSingles;
+  const wsLive=wsFetch?.live===true;
+  const wsStaticDate=wsFetch?.staticDate||null;
+  const catPlayers=isWS?wsPlayers.map(p=>({...p,cc:p.cc||p.country||''})):PPA_STATIC[activePPACat.key]||[];
 
   return(
     <div style={{background:'#f1f5f9',minHeight:'60vh'}}>
 
-      {/* ── Dark header + tabs ── */}
+      {/* ── Dark header + league tabs ── */}
       <div style={{background:'#0f172a'}}>
         <div style={{maxWidth:980,margin:'0 auto',padding:mob?'26px 18px 0':'28px 40px 0'}}>
           <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:6}}>
@@ -6939,7 +7044,7 @@ function StandingsPage(){
           <h1 style={{color:'white',fontSize:mob?'1.5rem':'1.95rem',fontWeight:900,margin:'0 0 20px',letterSpacing:'-0.025em'}}>
             Scores &amp; Standings
           </h1>
-          <div style={{display:'flex',overflowX:'auto',WebkitOverflowScrolling:'touch',borderBottom:'1px solid rgba(255,255,255,0.07)',gap:0}}>
+          <div style={{display:'flex',overflowX:'auto',WebkitOverflowScrolling:'touch',borderBottom:'1px solid rgba(255,255,255,0.07)'}}>
             {TABS.map(t=>(
               <button key={t.id} onClick={()=>setActiveLeague(t.id)}
                 style={{background:'none',border:'none',
@@ -6960,69 +7065,40 @@ function StandingsPage(){
         {/* ══ PPA TAB ══ */}
         {activeLeague==='ppa'&&(
           <div>
-            {/* Live Women's Singles table */}
+            {/* PPA category sub-tabs */}
             <div style={{background:'white',borderRadius:8,border:'1px solid #e2e8f0',overflow:'hidden',marginBottom:16}}>
-              <SectionHeader badge={ppaLive} title="Women's Singles — 52-Week Ranking"
-                sub={ppaLive&&ppaTime?`· ${new Date(ppaTime).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`:ppaStaticDate?`· as of ${ppaStaticDate}`:''}
-                link="https://pickleball.com/rankings" linkLabel="Full rankings on pickleball.com ↗"/>
-              {/* Column headers */}
-              {!ppaLoading&&!ppaError&&ppaPlayers?.length>0&&(
-                <div style={{display:'grid',gridTemplateColumns:mob?'44px 1fr 52px 60px':'48px 1fr 56px 60px 80px',
-                  padding:'8px 20px',background:'#f8fafc',borderBottom:'1px solid #e2e8f0',
-                  fontSize:'0.62rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.8px',color:'#94a3b8'}}>
-                  <span>RK</span><span>Player</span>
-                  {!mob&&<span>CC</span>}
-                  <span style={{textAlign:'right'}}>Evts</span>
-                  <span style={{textAlign:'right'}}>Pts</span>
+              {/* Header */}
+              <div style={{background:'#0f172a',padding:'11px 18px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
+                <div style={{display:'flex',alignItems:'center',gap:8}}>
+                  {isWS&&wsLive?<LiveBadge/>:<span style={{display:'inline-flex',alignItems:'center',gap:4,background:'#475569',color:'white',fontSize:'0.58rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'1.2px',padding:'2px 7px',borderRadius:3,lineHeight:1.6}}>2026</span>}
+                  <span style={{color:'white',fontWeight:700,fontSize:'0.84rem'}}>PPA Tour Rankings — {activePPACat.label}</span>
                 </div>
-              )}
-              {ppaLoading?(
-                <div style={{padding:'52px 20px',textAlign:'center',color:'#94a3b8',fontSize:'0.88rem'}}>Loading live rankings…</div>
-              ):ppaError?(
-                <div style={{padding:'44px 20px',textAlign:'center'}}>
-                  <div style={{color:'#94a3b8',fontSize:'0.85rem',marginBottom:12}}>Could not load live data</div>
-                  <a href="https://pickleball.com/rankings" target="_blank" rel="noopener noreferrer"
-                    style={{color:'#1d3461',fontWeight:700,fontSize:'0.88rem',textDecoration:'none'}}>View on pickleball.com ↗</a>
-                </div>
-              ):ppaPlayers?.length===0?(
-                <div style={{padding:'44px 20px',textAlign:'center',color:'#94a3b8',fontSize:'0.85rem'}}>No data available</div>
-              ):(
-                ppaPlayers.map((p,i)=>(
-                  <div key={i} style={{display:'grid',
-                    gridTemplateColumns:mob?'44px 1fr 52px 60px':'48px 1fr 56px 60px 80px',
-                    padding:'12px 20px',borderBottom:i<ppaPlayers.length-1?'1px solid #f1f5f9':'none',
-                    alignItems:'center',background:i===0?'#f0f7ff':i%2===0?'white':'#fafafa'}}>
-                    <span style={{fontWeight:800,color:p.rank<=3?'#1d3461':'#94a3b8',fontSize:'0.95rem',display:'flex',alignItems:'center',gap:5}}>
-                      {p.rank}
-                      {p.rank===1&&<span style={{fontSize:'0.6rem',background:'#1d3461',color:'white',padding:'1px 4px',borderRadius:2,fontWeight:700}}>No.1</span>}
-                    </span>
-                    <span style={{fontWeight:p.rank<=3?700:500,color:'#0f172a',fontSize:'0.9rem'}}>{p.name}</span>
-                    {!mob&&<span style={{color:'#64748b',fontSize:'0.8rem',fontWeight:500}}>{p.country}</span>}
-                    <span style={{textAlign:'right',color:'#475569',fontSize:'0.85rem'}}>{p.events}</span>
-                    <span style={{textAlign:'right',fontWeight:700,color:p.rank<=3?'#1d3461':'#334155',
-                      fontSize:'0.92rem',fontVariantNumeric:'tabular-nums'}}>{(p.points||0).toLocaleString()}</span>
-                  </div>
-                ))
-              )}
-              <div style={{padding:'11px 20px',background:'#f8fafc',borderTop:'1px solid #e2e8f0',
-                display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,flexWrap:'wrap'}}>
-                <span style={{fontSize:'0.7rem',color:'#94a3b8'}}>PPA Women's Singles · 52-week rolling · via pickleball.com</span>
                 <a href="https://ppatour.com/player-rankings/" target="_blank" rel="noopener noreferrer"
-                  style={{fontSize:'0.72rem',color:'#1d3461',fontWeight:700,textDecoration:'none'}}>All categories on ppatour.com ↗</a>
+                  style={{color:'rgba(255,255,255,0.5)',fontSize:'0.7rem',fontWeight:600,textDecoration:'none',whiteSpace:'nowrap'}}>ppatour.com ↗</a>
               </div>
-            </div>
-            {/* Men's singles note */}
-            <div style={{background:'white',borderRadius:8,border:'1px solid #e2e8f0',padding:'16px 20px',
-              display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap'}}>
-              <div>
-                <div style={{fontSize:'0.72rem',fontWeight:700,color:'#94a3b8',textTransform:'uppercase',letterSpacing:'0.8px',marginBottom:4}}>Men's Singles & Doubles</div>
-                <div style={{fontSize:'0.87rem',color:'#334155'}}>Ben Johns has held the #1 Men's Singles ranking for multiple consecutive years. View current men's rankings on the PPA site.</div>
+              {/* Category sub-tabs */}
+              <div style={{display:'flex',overflowX:'auto',WebkitOverflowScrolling:'touch',borderBottom:'1px solid #e2e8f0',background:'#f8fafc'}}>
+                {PPA_CATS.map(c=>(
+                  <button key={c.id} onClick={()=>setPpaCat(c.id)}
+                    style={{background:'none',border:'none',borderBottom:ppaCat===c.id?'2px solid #1d3461':'2px solid transparent',
+                      color:ppaCat===c.id?'#1d3461':'#64748b',fontWeight:ppaCat===c.id?700:500,
+                      fontSize:mob?'0.72rem':'0.78rem',padding:mob?'8px 11px 9px':'8px 16px 9px',
+                      cursor:'pointer',whiteSpace:'nowrap'}}>
+                    {c.label}
+                  </button>
+                ))}
               </div>
-              <a href="https://ppatour.com/player-rankings/" target="_blank" rel="noopener noreferrer"
-                style={{background:'#1d3461',color:'white',padding:'9px 18px',borderRadius:6,
-                  fontWeight:700,fontSize:'0.8rem',textDecoration:'none',whiteSpace:'nowrap',flexShrink:0}}>
-                PPA Rankings ↗
-              </a>
+              {/* Rankings table */}
+              <RankTable
+                players={catPlayers}
+                showPoints={isWS&&(wsLive||!!wsFetch?.players)}
+                isLive={isWS&&wsLive}
+                staticDate={isWS?wsStaticDate:null}
+                loading={isWS&&wsLoading}
+                footerNote={`PPA ${activePPACat.label} · 52-week rolling`}
+                footerLink="https://ppatour.com/player-rankings/"
+                footerLinkLabel="Live rankings on ppatour.com ↗"
+              />
             </div>
           </div>
         )}
@@ -7031,18 +7107,20 @@ function StandingsPage(){
         {activeLeague==='app'&&(
           <div>
             <div style={{background:'white',borderRadius:8,border:'1px solid #e2e8f0',overflow:'hidden',marginBottom:16}}>
-              <SectionHeader title="APP Tour Rankings — 2026 Season" link="https://theapp.global/rankings" linkLabel="Live rankings on theapp.global ↗"/>
-              <div style={{padding:mob?'20px':'24px 28px'}}>
-                <div style={{display:'grid',gridTemplateColumns:mob?'1fr':'1fr 1fr',gap:12,marginBottom:20}}>
+              <div style={{background:'#0f172a',padding:'11px 18px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                <span style={{color:'white',fontWeight:700,fontSize:'0.84rem'}}>APP Tour Rankings — 2026 Season</span>
+                <a href="https://theapp.global/rankings" target="_blank" rel="noopener noreferrer"
+                  style={{color:'rgba(255,255,255,0.5)',fontSize:'0.7rem',fontWeight:600,textDecoration:'none'}}>theapp.global ↗</a>
+              </div>
+              <div style={{padding:mob?'18px':'22px 24px'}}>
+                <div style={{display:'grid',gridTemplateColumns:mob?'1fr':'1fr 1fr',gap:10,marginBottom:20}}>
                   {["Men's Singles","Women's Singles","Men's Doubles","Women's Doubles","Mixed Doubles"].map(cat=>(
-                    <div key={cat} style={{background:'#fafafa',border:'1px solid #e2e8f0',borderRadius:6,padding:'12px 16px',
-                      display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
+                    <a key={cat} href="https://theapp.global/rankings" target="_blank" rel="noopener noreferrer"
+                      style={{background:'#fafafa',border:'1px solid #e2e8f0',borderRadius:6,padding:'12px 16px',
+                        display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,textDecoration:'none'}}>
                       <span style={{fontSize:'0.85rem',fontWeight:600,color:'#334155'}}>{cat}</span>
-                      <a href="https://theapp.global/rankings" target="_blank" rel="noopener noreferrer"
-                        style={{fontSize:'0.72rem',color:'#b91c1c',fontWeight:700,textDecoration:'none',whiteSpace:'nowrap'}}>
-                        View ↗
-                      </a>
-                    </div>
+                      <span style={{fontSize:'0.72rem',color:'#b91c1c',fontWeight:700}}>View ↗</span>
+                    </a>
                   ))}
                 </div>
                 <div style={{textAlign:'center',paddingTop:12,borderTop:'1px solid #f1f5f9'}}>
@@ -7054,73 +7132,67 @@ function StandingsPage(){
                 </div>
               </div>
             </div>
-            <div style={{background:'white',borderRadius:8,border:'1px solid #e2e8f0',padding:'16px 20px'}}>
-              <div style={{fontSize:'0.68rem',fontWeight:700,color:'#94a3b8',textTransform:'uppercase',letterSpacing:'0.8px',marginBottom:6}}>About the APP Tour</div>
-              <p style={{color:'#334155',fontSize:'0.87rem',lineHeight:1.75,margin:0}}>
-                The Association of Pickleball Professionals ranks pro and emerging-pro players across all bracket categories. Points accumulate across the 2026 season and update in real time after each event. The APP Tour is one of the top competitive circuits in professional pickleball.
-              </p>
-            </div>
           </div>
         )}
 
         {/* ══ MLP TAB ══ */}
         {activeLeague==='mlp'&&(
           <div>
-            {/* Live standings iframe — embedded directly from MLP */}
+            {/* Season summary + standings link */}
             <div style={{background:'white',borderRadius:8,border:'1px solid #e2e8f0',overflow:'hidden',marginBottom:16}}>
-              <div style={{background:'#0f172a',padding:'11px 20px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:12}}>
+              <div style={{background:'#0f172a',padding:'11px 18px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
                 <div style={{display:'flex',alignItems:'center',gap:8}}>
                   <LiveBadge/>
-                  <span style={{color:'white',fontWeight:700,fontSize:'0.84rem'}}>2026 Team Standings — Major League Pickleball</span>
+                  <span style={{color:'white',fontWeight:700,fontSize:'0.84rem'}}>2026 Team Standings</span>
                 </div>
                 <a href="https://majorleaguepickleball.co/standings/" target="_blank" rel="noopener noreferrer"
-                  style={{color:'rgba(255,255,255,0.55)',fontSize:'0.72rem',fontWeight:600,textDecoration:'none',whiteSpace:'nowrap'}}>
-                  Open on MLP ↗
+                  style={{color:'rgba(255,255,255,0.5)',fontSize:'0.7rem',fontWeight:600,textDecoration:'none',whiteSpace:'nowrap'}}>
+                  majorleaguepickleball.co ↗
                 </a>
               </div>
-              {/* Iframe of live MLP standings */}
-              <div style={{width:'100%',height:mob?480:560,background:'#f8fafc',position:'relative'}}>
-                <iframe
-                  src="https://majorleaguepickleball.co/standings/"
-                  title="MLP 2026 Team Standings"
-                  style={{width:'100%',height:'100%',border:'none',display:'block'}}
-                  loading="lazy"
-                  sandbox="allow-scripts allow-same-origin"
-                />
-              </div>
-              <div style={{padding:'10px 20px',background:'#f8fafc',borderTop:'1px solid #e2e8f0',textAlign:'center'}}>
+              <div style={{padding:mob?'18px':'22px 28px'}}>
+                <div style={{display:'flex',gap:mob?20:36,marginBottom:22,flexWrap:'wrap'}}>
+                  {[['6','Events Played'],['7','Remaining'],['3','Playoff Rounds'],['20','Teams']].map(([n,label])=>(
+                    <div key={label} style={{textAlign:'center'}}>
+                      <div style={{fontSize:'1.8rem',fontWeight:900,color:'#14532d',lineHeight:1}}>{n}</div>
+                      <div style={{fontSize:'0.65rem',color:'#64748b',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px',marginTop:3}}>{label}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{background:'#f0fdf4',border:'1px solid #bbf7d0',borderRadius:7,padding:'14px 18px',marginBottom:18}}>
+                  <div style={{fontSize:'0.72rem',fontWeight:700,color:'#14532d',marginBottom:4}}>📍 Next Event: Grand Rapids, MI — July 8–12</div>
+                  <div style={{fontSize:'0.82rem',color:'#334155'}}>Six events complete through New York (Jun 25–28). Live team standings, win-loss records, and playoff seeding update on the MLP website after each event.</div>
+                </div>
                 <a href="https://majorleaguepickleball.co/standings/" target="_blank" rel="noopener noreferrer"
-                  style={{display:'inline-flex',alignItems:'center',gap:6,background:'#14532d',color:'white',
-                    padding:'9px 22px',borderRadius:6,fontWeight:700,fontSize:'0.82rem',textDecoration:'none'}}>
-                  View Full Standings on MLP ↗
+                  style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,background:'#14532d',color:'white',
+                    padding:'13px 0',borderRadius:7,fontWeight:800,fontSize:'0.95rem',textDecoration:'none',width:'100%'}}>
+                  View Live MLP Standings &amp; Win-Loss Records ↗
                 </a>
               </div>
             </div>
 
             {/* 2026 Schedule */}
             <div style={{background:'white',borderRadius:8,border:'1px solid #e2e8f0',overflow:'hidden',marginBottom:16}}>
-              <div style={{background:'#f8fafc',padding:'10px 20px',borderBottom:'1px solid #e2e8f0',
-                display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
-                <div style={{fontSize:'0.68rem',fontWeight:700,color:'#475569',textTransform:'uppercase',letterSpacing:'0.8px'}}>2026 Event Schedule</div>
-                <div style={{display:'flex',gap:12}}>
-                  <span style={{fontSize:'0.68rem',color:'#94a3b8'}}><span style={{background:'#14532d',color:'white',padding:'1px 5px',borderRadius:2,fontWeight:700,marginRight:4}}>NEXT</span>Grand Rapids · Jul 8–12</span>
-                </div>
+              <div style={{background:'#f8fafc',padding:'10px 18px',borderBottom:'1px solid #e2e8f0',
+                display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                <div style={{fontSize:'0.68rem',fontWeight:700,color:'#475569',textTransform:'uppercase',letterSpacing:'0.8px'}}>2026 Season Schedule</div>
+                <span style={{fontSize:'0.68rem',color:'#94a3b8'}}>6 of 10 regular events complete</span>
               </div>
-              <div style={{padding:mob?'12px 16px':'14px 20px'}}>
+              <div style={{padding:mob?'12px 14px':'14px 18px'}}>
                 <div style={{display:'grid',gridTemplateColumns:mob?'1fr 1fr':'repeat(3,1fr)',gap:6}}>
                   {MLP_EVENTS.map((ev,i)=>(
                     <div key={i} style={{background:ev.next?'#f0fdf4':ev.done?'#f8fafc':'white',
                       border:`1px solid ${ev.next?'#bbf7d0':ev.done?'#e2e8f0':'#e2e8f0'}`,
                       borderRadius:6,padding:'8px 11px',display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:6}}>
                       <div>
-                        <div style={{fontSize:'0.78rem',fontWeight:ev.next?700:600,
+                        <div style={{fontSize:'0.77rem',fontWeight:ev.next?700:600,
                           color:ev.done?'#94a3b8':ev.next?'#14532d':ev.playoff?'#1d3461':'#334155',
                           textDecoration:ev.done?'line-through':'none'}}>{ev.name}</div>
                         <div style={{fontSize:'0.68rem',color:ev.done?'#cbd5e1':'#64748b'}}>{ev.dates}</div>
                       </div>
                       <span style={{fontSize:'0.6rem',fontWeight:700,padding:'2px 5px',borderRadius:3,flexShrink:0,
                         background:ev.done?'#e2e8f0':ev.next?'#14532d':ev.playoff?'#1d3461':'transparent',
-                        color:ev.done?'#94a3b8':ev.next||ev.playoff?'white':'transparent'}}>
+                        color:ev.done?'#94a3b8':(ev.next||ev.playoff)?'white':'transparent'}}>
                         {ev.done?'✓':ev.next?'NEXT':ev.playoff?'POST':''}
                       </span>
                     </div>
@@ -7131,14 +7203,17 @@ function StandingsPage(){
 
             {/* Team grid */}
             <div style={{background:'white',borderRadius:8,border:'1px solid #e2e8f0',overflow:'hidden'}}>
-              <div style={{background:'#f8fafc',padding:'10px 20px',borderBottom:'1px solid #e2e8f0'}}>
+              <div style={{background:'#f8fafc',padding:'10px 18px',borderBottom:'1px solid #e2e8f0',
+                display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                 <div style={{fontSize:'0.68rem',fontWeight:700,color:'#94a3b8',textTransform:'uppercase',letterSpacing:'0.8px'}}>2026 Franchise Teams</div>
+                <span style={{fontSize:'0.68rem',color:'#94a3b8'}}>20 teams</span>
               </div>
-              <div style={{display:'grid',gridTemplateColumns:mob?'1fr 1fr':'repeat(4,1fr)',gap:0}}>
+              <div style={{display:'grid',gridTemplateColumns:mob?'1fr 1fr':'repeat(4,1fr)'}}>
                 {MLP_TEAMS.map((t,i)=>(
-                  <div key={i} style={{padding:'10px 14px',borderBottom:i<MLP_TEAMS.length-4?'1px solid #f1f5f9':'none',
+                  <div key={i} style={{padding:'9px 14px',
+                    borderBottom:i<MLP_TEAMS.length-(mob?2:4)?'1px solid #f1f5f9':'none',
                     borderRight:(i+1)%(mob?2:4)!==0?'1px solid #f1f5f9':'none',
-                    fontSize:'0.82rem',fontWeight:500,color:'#334155',lineHeight:1.3}}>
+                    fontSize:'0.8rem',fontWeight:500,color:'#334155',lineHeight:1.3}}>
                     {t}
                   </div>
                 ))}
@@ -7152,8 +7227,14 @@ function StandingsPage(){
           <div>
             {/* Year-end leaders */}
             <div style={{background:'white',borderRadius:8,border:'1px solid #e2e8f0',overflow:'hidden',marginBottom:16}}>
-              <SectionHeader title="2025 Year-End World Rankings" sub="· via Senior Pro Tour"
-                link="https://theseniorprotour.com/rankings-1" linkLabel="2026 rankings ↗"/>
+              <div style={{background:'#0f172a',padding:'11px 18px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
+                <div>
+                  <span style={{color:'white',fontWeight:700,fontSize:'0.84rem'}}>2025 Year-End World Rankings</span>
+                  <span style={{color:'rgba(255,255,255,0.35)',fontSize:'0.7rem',marginLeft:8}}>· via Senior Pro Tour</span>
+                </div>
+                <a href="https://theseniorprotour.com/rankings-1" target="_blank" rel="noopener noreferrer"
+                  style={{color:'rgba(255,255,255,0.5)',fontSize:'0.7rem',fontWeight:600,textDecoration:'none',whiteSpace:'nowrap'}}>2026 rankings ↗</a>
+              </div>
               <div style={{padding:mob?'16px 18px':'18px 24px'}}>
                 <div style={{display:'grid',gridTemplateColumns:mob?'1fr':'1fr 1fr',gap:12,marginBottom:20}}>
                   {SPT_LEADERS.map((l,i)=>(
