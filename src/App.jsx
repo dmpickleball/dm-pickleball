@@ -6850,7 +6850,7 @@ function StandingsPage(){
   useEffect(()=>{const h=()=>setMob(window.innerWidth<=768);window.addEventListener('resize',h);return()=>window.removeEventListener('resize',h);},[]);
 
   useEffect(()=>{
-    fetch('/api/standings')
+    fetch('/api/traffic?resource=standings')
       .then(r=>r.json())
       .then(d=>{
         if(d.error)throw new Error(d.error);

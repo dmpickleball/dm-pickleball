@@ -1,6 +1,80 @@
 import { supabase } from './_supabase.js';
 import { createHmac, timingSafeEqual } from 'crypto';
 
+// ══════════════════════════════════════════════════════════════════════════════
+// STANDINGS — merged here to stay within the Vercel Hobby 12-function cap.
+// GET /api/traffic?resource=standings  →  public MiLP leaderboard (no auth)
+// ══════════════════════════════════════════════════════════════════════════════
+
+const MILP_DIVS = ['12','12 (Age 50+)','14','14 (Age 50+)','16','16 (Age 50+)','18','18 (Age 50+)','20','Combined'];
+const STANDINGS_TTL = 60 * 60 * 1000; // 1 hour
+let miLPCache = null;
+
+function parseMiLPHtml(html) {
+  const text = html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<[^>]+>/g, '\n')
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&#(\d+);/g, (_, c) => String.fromCharCode(parseInt(c)))
+    .replace(/&nbsp;/g, ' ');
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  const sectionStarts = [];
+  for (let i = 0; i < lines.length - 2; i++) {
+    if (lines[i] === 'Rank' && lines[i+1] === 'Name' && lines[i+2] === 'Points') {
+      sectionStarts.push(i + 3);
+    }
+  }
+  const result = {};
+  sectionStarts.forEach((startIdx, sIdx) => {
+    if (sIdx >= MILP_DIVS.length) return;
+    const divName = MILP_DIVS[sIdx];
+    const endIdx = sIdx + 1 < sectionStarts.length ? sectionStarts[sIdx+1] - 3 : lines.length;
+    const players = []; let i = startIdx;
+    while (i < endIdx && players.length < 10) {
+      if (/^\d+$/.test(lines[i])) {
+        const rank = parseInt(lines[i], 10);
+        if (rank > 10) break;
+        let ni = i + 1;
+        while (ni < endIdx && ni < i+8 && /^\d+$/.test(lines[ni])) ni++;
+        if (ni >= endIdx) break;
+        const name = lines[ni];
+        if (!name || name.length < 2) { i++; continue; }
+        let pi = ni + 1;
+        while (pi < endIdx && pi < ni+8 && !/^\d+$/.test(lines[pi])) pi++;
+        if (pi >= endIdx) break;
+        players.push({ rank, name, points: parseInt(lines[pi], 10) });
+        i = pi + 1;
+      } else { i++; }
+    }
+    if (players.length > 0) result[divName] = players;
+  });
+  return result;
+}
+
+async function fetchMiLPData() {
+  if (miLPCache && Date.now() - miLPCache.at < STANDINGS_TTL) return miLPCache;
+  const r = await fetch('https://www.dupr.com/minorleague/leaderboard', {
+    headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/124 Safari/537.36', 'Accept': 'text/html' },
+    signal: AbortSignal.timeout(12000),
+  });
+  if (!r.ok) throw new Error(`DUPR returned ${r.status}`);
+  const divisions = parseMiLPHtml(await r.text());
+  if (!Object.keys(divisions).length) throw new Error('Parsed 0 divisions — page structure may have changed');
+  miLPCache = { divisions, at: Date.now() };
+  return miLPCache;
+}
+
+async function getStandings(res) {
+  try {
+    const data = await fetchMiLPData();
+    return res.status(200).json({ milp: data.divisions, fetchedAt: data.at, divisions: MILP_DIVS, cached: true });
+  } catch (e) {
+    if (miLPCache) return res.status(200).json({ milp: miLPCache.divisions, fetchedAt: miLPCache.at, divisions: MILP_DIVS, cached: true, stale: true });
+    return res.status(500).json({ error: e.message });
+  }
+}
+
 // ── Admin auth ────────────────────────────────────────────────────────────────
 function verifyAdminToken(token) {
   try {
@@ -147,6 +221,9 @@ async function getTraffic(req, res) {
 export default async function handler(req, res) {
   if (req.method === 'POST') return trackVisit(req, res);
   if (req.method === 'GET') {
+    // Public: MiLP standings (no auth)
+    if (req.query.resource === 'standings') return getStandings(res);
+    // Admin only: traffic analytics
     const token = req.headers['x-admin-token'] || '';
     if (!verifyAdminToken(token)) return res.status(401).json({ error: 'Unauthorized' });
     return getTraffic(req, res);
