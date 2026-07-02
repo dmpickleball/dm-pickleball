@@ -2326,11 +2326,12 @@ function norm(n){ return ESPN_MAP[n]||n; }
 
 // Determine result from scores
 function getResult(t1,s1,t2,s2,status){
-  const done = status==='Full Time'||status==='Final'||status==='FT'
-    ||status==='After Extra Time'||status==='AET'||status==='Full Time (AET)'
-    ||status==='After Penalties'||status==='Penalties'||status==='Full Time (Penalties)';
-  const live = status==='In Progress'||status==='Halftime'||status==='Second Half'||status==='First Half'
-    ||status==='Extra Time'||status==='Extra Time - Halftime'||status==='Penalty';
+  const s=(status||'').toLowerCase();
+  const done = s==='full time'||s==='ft'||s==='final'
+    ||s.includes('final score')||s.includes('after extra')||s.includes('after penalt')
+    ||s.includes('aet')||s.includes('full time');
+  const live = s==='in progress'||s==='halftime'||s.includes('first half')||s.includes('second half')
+    ||s.includes('extra time')||s.includes('penalty');
   if(!done && !live) return null; // not played
   const n1=parseInt(s1)||0, n2=parseInt(s2)||0;
   if(n1>n2) return {winner:t1,done,live};
