@@ -2309,6 +2309,7 @@ let matchTimestamps = {}; // espnId → epoch ms for sorting
 let matchClocks = {}; // espnId → "46'" (live clock)
 let matchView = 'chrono'; // 'group' | 'chrono'
 let liveIds = new Set();
+let knockoutEvents = []; // non-pool matches from ESPN (knockout stage)
 
 function setMatchView(view, btn){
   matchView = view;
@@ -2326,7 +2327,7 @@ function toPT(utcStr){
 async function fetchScores(){
   document.getElementById('last-updated').textContent='Updating…';
   try{
-    const r = await fetch('https://site.api.espn.com/apis/site/v2/sports/soccer/FIFA.WORLD/scoreboard?dates=20260611-20260628&limit=100');
+    const r = await fetch('https://site.api.espn.com/apis/site/v2/sports/soccer/FIFA.WORLD/scoreboard?dates=20260611-20260727&limit=200');
     const data = await r.json();
     results={};matchTimes={};liveIds=new Set();matchClocks={};
     for(const ev of (data.events||[])){
@@ -2358,16 +2359,37 @@ async function fetchScores(){
         results[ev.id]={winner:null,done:false,live:false,t1,t2,s1,s2,status};
       }
     }
+    // Collect knockout stage events (any ESPN event not in the group-stage MATCHES)
+    const poolIds=new Set(MATCHES.map(m=>String(m.id)));
+    knockoutEvents=[];
+    for(const ev of (data.events||[])){
+      if(poolIds.has(String(ev.id))) continue;
+      const comp=ev.competitions[0];
+      const kt1=norm(comp.competitors[0].team.displayName);
+      const kt2=norm(comp.competitors[1].team.displayName);
+      let round='Knockout Stage';
+      if(comp.notes&&comp.notes.length) round=comp.notes[0].headline||round;
+      const evN=(ev.name||'').toLowerCase();
+      if(round==='Knockout Stage'||round===''){
+        if(/\bfinal\b/i.test(evN)&&!/semi|quarter|third|3rd/i.test(evN)) round='Final';
+        else if(/third|3rd place/i.test(evN)) round='Third Place';
+        else if(/semi.?final/i.test(evN)) round='Semifinal';
+        else if(/quarter.?final/i.test(evN)) round='Quarterfinal';
+        else if(/round of 16|r16/i.test(evN)) round='Round of 16';
+        else if(/round of 32|r32/i.test(evN)) round='Round of 32';
+      }
+      knockoutEvents.push({id:ev.id,t1:kt1,t2:kt2,date:MATCH_DATES[ev.id]||'',ts:matchTimestamps[ev.id]||0,round});
+    }
+    knockoutEvents.sort((a,b)=>a.ts-b.ts);
+
     const now=new Date();
     const gamesPlayed=MATCHES.filter(m=>results[m.id]&&results[m.id].done).length;
     const gamesLeft=MATCHES.filter(m=>!results[m.id]||(!results[m.id].done&&!results[m.id].live)).length;
     document.getElementById('last-updated').textContent=`Updated ${now.toLocaleTimeString()}${liveIds.size?' · '+liveIds.size+' LIVE':''}`;
     renderAll();
-    // auto-refresh faster if live matches; stop entirely when pool is complete
+    // auto-refresh: 30s when live, 90s otherwise; keep running through knockout stage
     clearInterval(autoTimer);
-    if(!isPoolComplete()){
-      autoTimer=setInterval(fetchScores, liveIds.size>0?30000:60000);
-    }
+    autoTimer=setInterval(fetchScores, liveIds.size>0?30000:90000);
   }catch(e){
     document.getElementById('last-updated').textContent='Error loading scores — click Refresh';
   }
@@ -2773,7 +2795,56 @@ function renderMatches(){
       html+='</div>';
     }
   }
+  // Knockout stage section (appended after group stage)
+  if(knockoutEvents.length){
+    html+=`<div class="group-card" style="margin-top:12px">
+      <div class="group-header"><span class="group-letter">🏆 Knockout Stage</span></div>`;
+    const byRound={};
+    knockoutEvents.forEach(e=>{
+      const r=e.round||'Knockout Stage';
+      if(!byRound[r]) byRound[r]=[];
+      byRound[r].push(e);
+    });
+    const roundKeys=ROUND_ORDER.filter(r=>byRound[r]).concat(Object.keys(byRound).filter(r=>!ROUND_ORDER.includes(r)));
+    for(const round of roundKeys){
+      html+=`<div style="padding:6px 12px 2px;font-size:0.70rem;font-weight:700;letter-spacing:1.5px;color:#c9a227;text-transform:uppercase">${round}</div>`;
+      for(const e of byRound[round]) html+=knockoutRowHtml(e);
+    }
+    html+='</div>';
+  }
+
   document.getElementById('matches-content').innerHTML=html;
+}
+
+const ROUND_ORDER=['Round of 32','Round of 16','Quarterfinal','Semifinal','Third Place','Final'];
+
+function knockoutRowHtml(e){
+  const res=results[e.id];
+  let scoreHtml='',statusBadge='';
+  if(res&&res.done){
+    const timeStr=matchTimes[e.id]?`<br><span style="font-size:0.62rem;font-weight:400;color:#7a8fa6">${matchTimes[e.id]}</span>`:'';
+    scoreHtml=`<span class="match-score score-final">${res.s1} – ${res.s2}${timeStr}</span>`;
+    statusBadge=`<span class="status-badge">Final</span>`;
+  } else if(res&&res.live){
+    const clockStr=matchClocks[e.id]?`<br><span style="font-size:0.62rem;font-weight:500;color:#7a9ab8">${matchClocks[e.id]}</span>`:'';
+    scoreHtml=`<span class="match-score score-live">${res.s1}–${res.s2}${clockStr}</span>`;
+    statusBadge=res.status==='Halftime'
+      ?`<span class="status-badge halftime-badge">Half</span>`
+      :`<span class="live-badge">LIVE</span>`;
+  } else {
+    const timeStr=matchTimes[e.id]||'';
+    scoreHtml=`<span class="match-score score-sched">${e.date}${timeStr?'<br><span style="font-size:0.65rem;font-weight:500">'+timeStr+'</span>':''}</span>`;
+  }
+  const watchHtml=res&&res.live?`<div class="action-links"><a class="action-link" href="https://www.espn.com/soccer/match/_/gameId/${e.id}" target="_blank" rel="noopener">📊 Stats</a></div>`:'';
+  const recapHtml=res&&res.done?`<div class="action-links"><a class="action-link" href="https://www.espn.com/soccer/match/_/gameId/${e.id}" target="_blank" rel="noopener">🎬 Recap</a></div>`:'';
+  return `<div class="match-row">
+    <span class="match-date">${e.date}</span>
+    <span class="match-teams">
+      <span>${e.t1} <span style="color:#7a8fa6;font-weight:400">vs</span> ${e.t2}</span>
+    </span>
+    <div class="match-score-col">${scoreHtml}${statusBadge}</div>
+    <div class="match-meta">${watchHtml}${recapHtml}</div>
+  </div>`;
 }
 
 function matchRowHtml(m){
