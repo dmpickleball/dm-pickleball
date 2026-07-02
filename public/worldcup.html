@@ -94,12 +94,11 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
 .res-date-pill.today{background:rgba(201,162,39,0.15);border-color:#c9a227;color:#c9a227}
 .res-date-pill.has-live{background:rgba(224,85,85,0.12);border-color:#e05555;color:#e05555}
 .res-section-hdr{font-size:0.68rem;font-weight:800;letter-spacing:2.5px;color:#c9a227;text-transform:uppercase;padding:4px 0 10px;border-bottom:1px solid rgba(201,162,39,0.18);margin-bottom:10px;display:flex;align-items:center;gap:8px}
-.res-round-lbl{font-size:0.72rem;font-weight:800;letter-spacing:1px;color:#e8edf5;padding:14px 0 8px;display:flex;align-items:center;gap:10px}
-.res-round-lbl::after{content:'';flex:1;height:1px;background:#1e3050}
-.res-day-lbl{font-size:0.76rem;font-weight:800;letter-spacing:0.5px;color:#d0dbe8;padding:14px 0 8px;scroll-margin-top:60px;display:flex;align-items:center;gap:10px}
-.res-day-lbl::after{content:'';flex:1;height:1px;background:#1a2e45}
-.res-day-lbl.today-divider{color:#c9a227}
-.res-day-lbl.today-divider::after{background:linear-gradient(90deg,rgba(201,162,39,0.4),transparent)}
+.res-round-lbl{font-size:0.68rem;font-weight:700;letter-spacing:1px;color:#7a8fa6;text-transform:uppercase;padding:4px 0 2px}
+.res-day-lbl{font-size:0.82rem;font-weight:800;color:#c9a227;padding:16px 0 8px;border-top:1px solid #1a2e45;scroll-margin-top:60px}
+.res-day-lbl:first-child{border-top:none;padding-top:4px}
+.res-day-lbl.is-today{color:#fff;font-size:0.88rem}
+.res-day-lbl.is-today::before{content:'TODAY · ';font-size:0.62rem;letter-spacing:2px;color:#c9a227;vertical-align:middle}
 .res-cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-bottom:4px}
 .res-card{background:#111d2c;border-radius:10px;border:1px solid #1e3050;padding:11px 13px;display:flex;flex-direction:column;gap:7px}
 .res-card.rc-live-card{border-color:rgba(224,85,85,0.7);background:rgba(224,85,85,0.04)}
@@ -2812,50 +2811,84 @@ function scrollToPicksToday(){
 
 function renderMatches(){
   const todayStr=new Date().toLocaleDateString('en-US',{timeZone:'America/Los_Angeles',month:'short',day:'numeric'});
-  const now=Date.now();
-  let html='';
 
-  // ── KNOCKOUT STAGE (latest round first) ───────────────────────
-  if(knockoutEvents.length){
-    html+=`<div class="res-section-hdr">🏆 Knockout Stage</div>`;
-    const byRound={};
-    knockoutEvents.forEach(e=>{
-      const r=e.round||'Knockout Stage';
-      if(!byRound[r]) byRound[r]=[];
-      byRound[r].push(e);
-    });
-    // Reverse so most-recent round shows first
-    const rounds=[...ROUND_ORDER].reverse().filter(r=>byRound[r]);
-    Object.keys(byRound).filter(r=>!ROUND_ORDER.includes(r)).forEach(r=>rounds.push(r));
-    for(const round of rounds){
-      const games=byRound[round].sort((a,b)=>a.ts-b.ts);
-      html+=`<div class="res-round-lbl">${round}</div><div class="res-cards-grid">`;
-      for(const e of games) html+=knockoutCardHtml(e);
-      html+=`</div>`;
-    }
-    html+=`<div style="height:18px"></div>`;
-  }
+  // Build one unified map: date → [{type:'group',m} | {type:'knockout',e}]
+  const byDate={};
+  function addToDate(d,obj){ if(!byDate[d]) byDate[d]=[]; byDate[d].push(obj); }
 
-  // ── GROUP STAGE (dates descending — most recent first) ─────────
-  html+=`<div class="res-section-hdr">⚽ Group Stage — All 72 Matches</div>`;
-  const sorted=[...MATCHES].sort((a,b)=>(matchTimestamps[b.id]||0)-(matchTimestamps[a.id]||0));
-  // Group by date (ordered descending naturally from sort above)
-  const seenDates=[],byDate={};
-  sorted.forEach(m=>{
+  MATCHES.forEach(m=>{
     const d=MATCH_DATES[m.id]||'?';
-    if(!byDate[d]){byDate[d]=[];seenDates.push(d);}
-    byDate[d].push(m);
+    addToDate(d,{type:'group',m});
   });
-  for(const date of seenDates){
+  knockoutEvents.forEach(e=>{
+    const d=e.date||'?';
+    addToDate(d,{type:'knockout',e});
+  });
+
+  // Sort dates ascending (chronological), using earliest known timestamp per date
+  const allTs={};
+  MATCHES.forEach(m=>{ const d=MATCH_DATES[m.id]||'?'; allTs[d]=Math.min(allTs[d]||Infinity, matchTimestamps[m.id]||0); });
+  knockoutEvents.forEach(e=>{ const d=e.date||'?'; allTs[d]=Math.min(allTs[d]||Infinity, e.ts||0); });
+  const dates=Object.keys(byDate).sort((a,b)=>(allTs[a]||0)-(allTs[b]||0));
+
+  let html='';
+  for(const date of dates){
     const anchorId='res-d-'+date.replace(/\s/g,'-');
     const isToday=date===todayStr;
-    html+=`<div class="res-day-lbl${isToday?' today-divider':''}" id="${anchorId}">${isToday?'Today · ':''}${date}</div><div class="res-cards-grid">`;
-    byDate[date].forEach(m=>{ html+=groupCardHtml(m); });
+    html+=`<div class="res-day-lbl${isToday?' is-today':''}" id="${anchorId}">${date}</div>`;
+
+    // Within a day: group stage first (by kickoff time), then knockout
+    const dayItems=byDate[date];
+    dayItems.sort((a,b)=>{
+      const ta=a.type==='group'?(matchTimestamps[a.m.id]||0):(a.e.ts||0);
+      const tb=b.type==='group'?(matchTimestamps[b.m.id]||0):(b.e.ts||0);
+      return ta-tb;
+    });
+
+    // Group consecutive same-round knockout games under a sub-label
+    let currentRound='';
+    html+=`<div class="res-cards-grid">`;
+    for(const item of dayItems){
+      if(item.type==='knockout'){
+        const r=item.e.round||'Knockout';
+        if(r!==currentRound){
+          // Close current grid, add round label, open new grid
+          html+=`</div><div class="res-round-lbl">${r}</div><div class="res-cards-grid">`;
+          currentRound=r;
+        }
+        html+=knockoutCardHtml(item.e);
+      } else {
+        if(currentRound){ html+=`</div><div class="res-cards-grid">`; currentRound=''; }
+        html+=groupCardHtml(item.m);
+      }
+    }
     html+=`</div>`;
   }
 
   document.getElementById('matches-content').innerHTML=html;
-  buildDateNav(todayStr);
+  buildDateNav(todayStr,dates,allTs);
+}
+
+function buildDateNav(todayStr,dates,allTs){
+  const nav=document.getElementById('res-date-nav');
+  if(!nav) return;
+  if(!dates){
+    // Build dates if called independently
+    const dSet=new Set();
+    MATCHES.forEach(m=>{ if(MATCH_DATES[m.id]) dSet.add(MATCH_DATES[m.id]); });
+    knockoutEvents.forEach(e=>{ if(e.date) dSet.add(e.date); });
+    dates=[...dSet];
+  }
+  const hasLiveDate=new Set();
+  MATCHES.forEach(m=>{ if(results[m.id]&&results[m.id].live) hasLiveDate.add(MATCH_DATES[m.id]); });
+  knockoutEvents.forEach(e=>{ if(results[e.id]&&results[e.id].live) hasLiveDate.add(e.date); });
+  nav.innerHTML=dates.map(d=>{
+    const isToday=d===todayStr, isLive=hasLiveDate.has(d);
+    const cls=isLive?'has-live':isToday?'today':'';
+    return `<button class="res-date-pill${cls?' '+cls:''}" onclick="scrollToDate('${d}')">${d}</button>`;
+  }).join('');
+  const pin=nav.querySelector('.res-date-pill.today,.res-date-pill.has-live');
+  if(pin) setTimeout(()=>pin.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'}),120);
 }
 
 function buildDateNav(todayStr){
