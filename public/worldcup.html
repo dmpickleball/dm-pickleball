@@ -83,6 +83,43 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
 .today-divider{display:flex;align-items:center;gap:10px;padding:8px 14px;margin:4px 0;color:#c9a227;font-size:0.70rem;font-weight:700;letter-spacing:2px;text-transform:uppercase}
 .today-divider::before,.today-divider::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,#c9a227,transparent)}
 .picks-today-divider{background:#0f1923;color:#c9a227;font-size:0.68rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:7px 10px;text-align:center;border-top:1px solid rgba(201,162,39,0.5);border-bottom:1px solid rgba(201,162,39,0.5)}
+/* ─── ESPN-STYLE RESULTS CARDS ─── */
+.res-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.res-today-btn{background:#1a2e45;border:1px solid #c9a227;color:#c9a227;padding:6px 14px;border-radius:20px;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}
+.res-today-btn:hover{background:#c9a227;color:#0d1b2a}
+.res-date-nav{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding:2px 0 8px;flex:1}
+.res-date-nav::-webkit-scrollbar{display:none}
+.res-date-pill{background:#111d2c;border:1px solid #1e3050;color:#7a8fa6;padding:4px 12px;border-radius:20px;font-size:0.72rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
+.res-date-pill:hover{border-color:#c9a227;color:#c9a227}
+.res-date-pill.today{background:rgba(201,162,39,0.15);border-color:#c9a227;color:#c9a227}
+.res-date-pill.has-live{background:rgba(224,85,85,0.12);border-color:#e05555;color:#e05555}
+.res-section-hdr{font-size:0.68rem;font-weight:800;letter-spacing:2.5px;color:#c9a227;text-transform:uppercase;padding:4px 0 10px;border-bottom:1px solid rgba(201,162,39,0.18);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.res-round-lbl{font-size:0.64rem;font-weight:700;letter-spacing:1.5px;color:#7a8fa6;text-transform:uppercase;padding:12px 0 6px}
+.res-day-lbl{font-size:0.70rem;font-weight:700;letter-spacing:1px;color:#7a8fa6;text-transform:uppercase;padding:10px 0 6px;scroll-margin-top:60px}
+.res-cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-bottom:4px}
+.res-card{background:#111d2c;border-radius:10px;border:1px solid #1e3050;padding:11px 13px;display:flex;flex-direction:column;gap:7px}
+.res-card.rc-live-card{border-color:rgba(224,85,85,0.7);background:rgba(224,85,85,0.04)}
+.res-card.rc-upcoming{opacity:0.80}
+.rc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:4px}
+.rc-status{font-size:0.65rem;font-weight:700;letter-spacing:.5px;line-height:1.4}
+.rc-status-ft{color:#4a5f75}
+.rc-status-live{color:#e05555;display:flex;align-items:center;gap:4px}
+.rc-status-sched{color:#8a9fb8;line-height:1.5}
+.rc-live-dot{width:6px;height:6px;background:#e05555;border-radius:50%;animation:blink 1s infinite;flex-shrink:0}
+.rc-meta{font-size:0.60rem;color:#3a5068;font-weight:600;text-align:right;line-height:1.4}
+.rc-divider{height:1px;background:#1a2e45;margin:2px 0}
+.rc-teams{display:flex;flex-direction:column;gap:5px}
+.rc-team{display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:7px}
+.rc-flag{font-size:1.05rem;text-align:center}
+.rc-name{font-size:0.84rem;font-weight:600;color:#8aa0b8;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rc-team.rc-w .rc-name{color:#e8edf5;font-weight:800}
+.rc-score{font-size:1.05rem;font-weight:800;color:#4a5f75;text-align:right;min-width:18px}
+.rc-team.rc-w .rc-score{color:#e8edf5}
+.rc-score-tbd{font-size:0.8rem;color:#243040;text-align:right;min-width:18px}
+.rc-footer{display:flex;align-items:center;gap:6px;border-top:1px solid #162030;padding-top:7px;flex-wrap:wrap}
+.rc-correct{font-size:0.66rem;color:#4caf50;flex:1;white-space:nowrap}
+.rc-lnk{font-size:0.66rem;color:#3d6e8a;text-decoration:none;font-weight:700;padding:2px 6px;background:#0f1e2f;border-radius:3px;border:1px solid #1e3050}
+.rc-lnk:hover{color:#c9a227;border-color:#c9a227}
 /* GROUP STANDINGS */
 .standings-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:12px;padding:12px 10px 8px}
 .sg-card{background:#111d2c;border:1px solid #1e3050;border-radius:8px;overflow:hidden}
@@ -345,10 +382,9 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
   </div>
 
   <div id="tab-matches" class="tab-content">
-    <div class="filter-bar" style="margin-bottom:10px">
-      <button class="toggle-btn" id="view-group" onclick="setMatchView('group',this)">📁 By Group</button>
-      <button class="toggle-btn active" id="view-chrono" onclick="setMatchView('chrono',this)">📅 By Date</button>
-      <button class="action-link" id="today-btn" onclick="scrollToToday()" style="padding:5px 10px;font-size:0.8rem">📅 Today</button>
+    <div class="res-toolbar">
+      <div class="res-date-nav" id="res-date-nav"></div>
+      <button class="res-today-btn" onclick="scrollToToday()">📅 Today</button>
     </div>
     <div id="matches-content"><div style="text-align:center;padding:30px;color:#7a8fa6">Loading…</div></div>
   </div>
@@ -2307,7 +2343,7 @@ let results = {}; // espnId → {winner,done,live,score}
 let matchTimes = {}; // espnId → "12:00 PM PT"
 let matchTimestamps = {}; // espnId → epoch ms for sorting
 let matchClocks = {}; // espnId → "46'" (live clock)
-let matchView = 'chrono'; // 'group' | 'chrono'
+let matchView = 'chrono'; // kept for legacy refs
 let liveIds = new Set();
 let knockoutEvents = []; // non-pool matches from ESPN (knockout stage)
 
@@ -2748,9 +2784,19 @@ const MATCH_DATES={
   '760481':'Jun 27','760482':'Jun 27','760484':'Jun 27','760483':'Jun 27'
 };
 
-function scrollToToday(){
-  const el=document.getElementById('today-anchor');
+function scrollToDate(dateStr){
+  const id='res-d-'+dateStr.replace(/\s/g,'-');
+  const el=document.getElementById(id);
   if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function scrollToToday(){
+  const todayStr=new Date().toLocaleDateString('en-US',{timeZone:'America/Los_Angeles',month:'short',day:'numeric'});
+  const id='res-d-'+todayStr.replace(/\s/g,'-');
+  const el=document.getElementById(id);
+  if(el){ el.scrollIntoView({behavior:'smooth',block:'start'}); return; }
+  // Fall back to first upcoming match
+  const up=document.querySelector('.rc-upcoming');
+  if(up) up.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function scrollToPicksToday(){
   const el=document.getElementById('picks-today-anchor');
@@ -2758,130 +2804,171 @@ function scrollToPicksToday(){
 }
 
 function renderMatches(){
+  const todayStr=new Date().toLocaleDateString('en-US',{timeZone:'America/Los_Angeles',month:'short',day:'numeric'});
+  const now=Date.now();
   let html='';
-  if(matchView==='chrono'){
-    const sorted=[...MATCHES].sort((a,b)=>(matchTimestamps[a.id]||0)-(matchTimestamps[b.id]||0));
-    const todayStr=new Date().toLocaleDateString('en-US',{timeZone:'America/Los_Angeles',month:'short',day:'numeric'});
-    const now=Date.now();
-    let lastDate='';
-    let dividerInserted=false;
-    for(const m of sorted){
-      const date=MATCH_DATES[m.id]||'';
-      // Insert today divider before today's games (or next upcoming if no games today)
-      if(!dividerInserted && date && (date===todayStr || (matchTimestamps[m.id]||0)>now)){
-        if(lastDate) html+='</div>';
-        html+=`<div class="today-divider" id="today-anchor">Today · ${todayStr}</div>`;
-        lastDate='';
-        dividerInserted=true;
-      }
-      if(date!==lastDate){
-        if(lastDate) html+='</div>';
-        html+=`<div class="group-card"><div class="group-header"><span class="group-letter">${date}</span></div>`;
-        lastDate=date;
-      }
-      html+=matchRowHtml(m);
-    }
-    if(lastDate) html+='</div>';
-  } else {
-    const groups=[...new Set(MATCHES.map(m=>m.group))];
-    for(const g of groups){
-      const gMatches=MATCHES.filter(m=>m.group===g);
-      html+=`<div class="group-card">
-        <div class="group-header">
-          <span class="group-letter">Group ${g}</span>
-          <span class="group-teams">${GROUP_TEAMS[g]}</span>
-        </div>`;
-      for(const m of gMatches) html+=matchRowHtml(m);
-      html+='</div>';
-    }
-  }
-  // Knockout stage section (appended after group stage)
+
+  // ── KNOCKOUT STAGE (latest round first) ───────────────────────
   if(knockoutEvents.length){
-    html+=`<div class="group-card" style="margin-top:12px">
-      <div class="group-header"><span class="group-letter">🏆 Knockout Stage</span></div>`;
+    html+=`<div class="res-section-hdr">🏆 Knockout Stage</div>`;
     const byRound={};
     knockoutEvents.forEach(e=>{
       const r=e.round||'Knockout Stage';
       if(!byRound[r]) byRound[r]=[];
       byRound[r].push(e);
     });
-    const roundKeys=ROUND_ORDER.filter(r=>byRound[r]).concat(Object.keys(byRound).filter(r=>!ROUND_ORDER.includes(r)));
-    for(const round of roundKeys){
-      html+=`<div style="padding:6px 12px 2px;font-size:0.70rem;font-weight:700;letter-spacing:1.5px;color:#c9a227;text-transform:uppercase">${round}</div>`;
-      for(const e of byRound[round]) html+=knockoutRowHtml(e);
+    // Reverse so most-recent round shows first
+    const rounds=[...ROUND_ORDER].reverse().filter(r=>byRound[r]);
+    Object.keys(byRound).filter(r=>!ROUND_ORDER.includes(r)).forEach(r=>rounds.push(r));
+    for(const round of rounds){
+      const games=byRound[round].sort((a,b)=>a.ts-b.ts);
+      html+=`<div class="res-round-lbl">${round}</div><div class="res-cards-grid">`;
+      for(const e of games) html+=knockoutCardHtml(e,todayStr);
+      html+=`</div>`;
     }
-    html+='</div>';
+    html+=`<div style="height:18px"></div>`;
+  }
+
+  // ── GROUP STAGE (dates descending — most recent first) ─────────
+  html+=`<div class="res-section-hdr">⚽ Group Stage — All 72 Matches</div>`;
+  const sorted=[...MATCHES].sort((a,b)=>(matchTimestamps[b.id]||0)-(matchTimestamps[a.id]||0));
+  // Group by date (ordered descending naturally from sort above)
+  const seenDates=[],byDate={};
+  sorted.forEach(m=>{
+    const d=MATCH_DATES[m.id]||'?';
+    if(!byDate[d]){byDate[d]=[];seenDates.push(d);}
+    byDate[d].push(m);
+  });
+  for(const date of seenDates){
+    const anchorId='res-d-'+date.replace(/\s/g,'-');
+    const isToday=date===todayStr;
+    html+=`<div class="res-day-lbl${isToday?' today-divider':''}" id="${anchorId}">${isToday?'Today · ':''}${date}</div><div class="res-cards-grid">`;
+    byDate[date].forEach(m=>{ html+=groupCardHtml(m); });
+    html+=`</div>`;
   }
 
   document.getElementById('matches-content').innerHTML=html;
+  buildDateNav(todayStr);
+}
+
+function buildDateNav(todayStr){
+  const nav=document.getElementById('res-date-nav');
+  if(!nav) return;
+  // Collect all unique dates across group + knockout
+  const dateSet=new Set();
+  MATCHES.forEach(m=>{ if(MATCH_DATES[m.id]) dateSet.add(MATCH_DATES[m.id]); });
+  knockoutEvents.forEach(e=>{ if(e.date) dateSet.add(e.date); });
+  // Sort all dates chronologically using matchTimestamps
+  const allTs={};
+  MATCHES.forEach(m=>{ allTs[MATCH_DATES[m.id]||'?']=Math.min(allTs[MATCH_DATES[m.id]||'?']||Infinity,matchTimestamps[m.id]||0); });
+  knockoutEvents.forEach(e=>{ allTs[e.date||'?']=Math.min(allTs[e.date||'?']||Infinity,e.ts||0); });
+  const dates=[...dateSet].sort((a,b)=>(allTs[a]||0)-(allTs[b]||0));
+  const hasLiveDate=new Set();
+  knockoutEvents.forEach(e=>{ if(results[e.id]&&results[e.id].live) hasLiveDate.add(e.date); });
+  MATCHES.forEach(m=>{ if(results[m.id]&&results[m.id].live) hasLiveDate.add(MATCH_DATES[m.id]); });
+  nav.innerHTML=dates.map(d=>{
+    const isToday=d===todayStr;
+    const isLive=hasLiveDate.has(d);
+    const cls=isLive?'has-live':isToday?'today':'';
+    return `<button class="res-date-pill${cls?' '+cls:''}" onclick="scrollToDate('${d}')">${d}</button>`;
+  }).join('');
+  // Auto-scroll nav to today
+  const todayPill=nav.querySelector('.res-date-pill.today,.res-date-pill.has-live');
+  if(todayPill) setTimeout(()=>todayPill.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'}),100);
 }
 
 const ROUND_ORDER=['Round of 32','Round of 16','Quarterfinal','Semifinal','Third Place','Final'];
 
-function knockoutRowHtml(e){
+function getFlag(name){ return (typeof COUNTRY_FLAGS!=='undefined'&&COUNTRY_FLAGS[name])||FLAGS[name]||''; }
+
+function knockoutCardHtml(e, todayStr){
   const res=results[e.id];
-  let scoreHtml='',statusBadge='';
-  if(res&&res.done){
-    const timeStr=matchTimes[e.id]?`<br><span style="font-size:0.62rem;font-weight:400;color:#7a8fa6">${matchTimes[e.id]}</span>`:'';
-    scoreHtml=`<span class="match-score score-final">${res.s1} – ${res.s2}${timeStr}</span>`;
-    statusBadge=`<span class="status-badge">Final</span>`;
-  } else if(res&&res.live){
-    const clockStr=matchClocks[e.id]?`<br><span style="font-size:0.62rem;font-weight:500;color:#7a9ab8">${matchClocks[e.id]}</span>`:'';
-    scoreHtml=`<span class="match-score score-live">${res.s1}–${res.s2}${clockStr}</span>`;
-    statusBadge=res.status==='Halftime'
-      ?`<span class="status-badge halftime-badge">Half</span>`
-      :`<span class="live-badge">LIVE</span>`;
+  const f1=getFlag(e.t1), f2=getFlag(e.t2);
+  const anchorId='res-d-'+e.date.replace(/\s/g,'-');
+  let statusHtml='', s1='', s2='', extra='', cardCls='';
+  if(res&&res.live){
+    const clk=matchClocks[e.id]||'LIVE';
+    const ht=res.status==='Halftime';
+    statusHtml=`<span class="rc-status rc-status-live"><span class="rc-live-dot"></span>${ht?'HT':clk}</span>`;
+    s1=res.s1; s2=res.s2; cardCls='rc-live-card';
+    extra=`<a class="rc-lnk" href="https://www.espn.com/soccer/match/_/gameId/${e.id}" target="_blank">Stats ↗</a>`;
+  } else if(res&&res.done){
+    statusHtml=`<span class="rc-status rc-status-ft">FT</span>`;
+    s1=res.s1; s2=res.s2;
+    extra=`<a class="rc-lnk" href="https://www.espn.com/soccer/match/_/gameId/${e.id}" target="_blank">Recap ↗</a>`;
   } else {
-    const timeStr=matchTimes[e.id]||'';
-    scoreHtml=`<span class="match-score score-sched">${e.date}${timeStr?'<br><span style="font-size:0.65rem;font-weight:500">'+timeStr+'</span>':''}</span>`;
+    const t=matchTimes[e.id]||'';
+    statusHtml=`<span class="rc-status rc-status-sched">${t||e.date}</span>`;
+    cardCls='rc-upcoming';
   }
-  const watchHtml=res&&res.live?`<div class="action-links"><a class="action-link" href="https://www.espn.com/soccer/match/_/gameId/${e.id}" target="_blank" rel="noopener">📊 Stats</a></div>`:'';
-  const recapHtml=res&&res.done?`<div class="action-links"><a class="action-link" href="https://www.espn.com/soccer/match/_/gameId/${e.id}" target="_blank" rel="noopener">🎬 Recap</a></div>`:'';
-  return `<div class="match-row">
-    <span class="match-date">${e.date}</span>
-    <span class="match-teams">
-      <span>${e.t1} <span style="color:#7a8fa6;font-weight:400">vs</span> ${e.t2}</span>
-    </span>
-    <div class="match-score-col">${scoreHtml}${statusBadge}</div>
-    <div class="match-meta">${watchHtml}${recapHtml}</div>
+  const n1=parseInt(s1)||0, n2=parseInt(s2)||0;
+  const w1=res&&res.done&&n1>n2, w2=res&&res.done&&n2>n1;
+  const sc=(v,w)=>v!==''?`<span class="rc-score${w?' rc-team rc-w':''}" style="min-width:18px;text-align:right;font-size:1.05rem;font-weight:800;color:${w?'#e8edf5':'#4a5f75'}">${v}</span>`
+    :`<span class="rc-score-tbd">–</span>`;
+  return `<div class="res-card ${cardCls}" id="${anchorId}">
+    <div class="rc-top"><span>${statusHtml}</span><span class="rc-meta">${e.date}</span></div>
+    <div class="rc-divider"></div>
+    <div class="rc-teams">
+      <div class="rc-team${w1?' rc-w':''}">
+        <span class="rc-flag">${f1}</span>
+        <span class="rc-name">${e.t1}</span>
+        ${sc(s1,w1)}
+      </div>
+      <div class="rc-team${w2?' rc-w':''}">
+        <span class="rc-flag">${f2}</span>
+        <span class="rc-name">${e.t2}</span>
+        ${sc(s2,w2)}
+      </div>
+    </div>
+    ${extra?`<div class="rc-footer">${extra}</div>`:''}
   </div>`;
 }
 
-function matchRowHtml(m){
+function groupCardHtml(m){
   const res=results[m.id];
   const date=MATCH_DATES[m.id]||'';
-  let scoreHtml,statusBadge='';
-  if(res&&res.done){
-    const timeStr=matchTimes[m.id]?`<br><span style="font-size:0.62rem;font-weight:400;color:#7a8fa6">${matchTimes[m.id]}</span>`:'';
-    scoreHtml=`<span class="match-score score-final">${res.t1===m.t1?res.s1:res.s2} – ${res.t1===m.t1?res.s2:res.s1}${timeStr}</span>`;
-    statusBadge=`<span class="status-badge">Final</span>`;
-  } else if(res&&res.live){
-    const clockStr=matchClocks[m.id]?`<br><span style="font-size:0.62rem;font-weight:500;color:#7a9ab8">${matchClocks[m.id]}</span>`:'';
-    scoreHtml=`<span class="match-score score-live">${res.s1}–${res.s2}${clockStr}</span>`;
-    statusBadge=res.status==='Halftime'
-      ?`<span class="status-badge halftime-badge">Half</span>`
-      :`<span class="live-badge">LIVE</span>`;
+  const f1=getFlag(m.t1), f2=getFlag(m.t2);
+  const es1=res?(res.t1===m.t1?res.s1:res.s2):'';
+  const es2=res?(res.t1===m.t1?res.s2:res.s1):'';
+  let statusHtml='', cardCls='', footer='';
+  if(res&&res.live){
+    const clk=matchClocks[m.id]||'LIVE';
+    const ht=res.status==='Halftime';
+    statusHtml=`<span class="rc-status rc-status-live"><span class="rc-live-dot"></span>${ht?'HT':clk}</span>`;
+    cardCls='rc-live-card';
+    footer=`<a class="rc-lnk" href="https://www.espn.com/soccer/match/_/gameId/${m.id}" target="_blank">Stats ↗</a>`;
+  } else if(res&&res.done){
+    statusHtml=`<span class="rc-status rc-status-ft">FT</span>`;
+    let correctCount=0;
+    PLAYERS.forEach((_,pi)=>{if(pts(m.p[pi],res)>0)correctCount++;});
+    footer=`<span class="rc-correct">✅ ${correctCount}/${PLAYERS.length}</span>`+
+      `<a class="rc-lnk" href="#" onclick="jumpToPicks('${m.group}');return false">Picks</a>`+
+      `<a class="rc-lnk" href="https://www.espn.com/soccer/match/_/gameId/${m.id}" target="_blank">Recap ↗</a>`;
   } else {
-    const timeStr=matchTimes[m.id]||'';
-    scoreHtml=`<span class="match-score score-sched">${date}${timeStr?'<br><span style="font-size:0.65rem;font-weight:500">'+timeStr+'</span>':''}`;
+    const t=matchTimes[m.id]||'';
+    statusHtml=`<span class="rc-status rc-status-sched">${t}</span>`;
+    cardCls='rc-upcoming';
   }
-  let correctCount=0;
-  if(res&&res.done) PLAYERS.forEach((_,pi)=>{if(pts(m.p[pi],res)>0)correctCount++;});
-  const correctStr=res&&res.done?`<span class="correct-count">✅ ${correctCount}/${PLAYERS.length} correct</span>`:'';
-  const groupBadge=matchView==='chrono'?`<span class="md-badge">Grp ${m.group}</span>`:'';
-  const watchHtml=res&&res.live?`<div class="action-links"><a class="action-link" href="https://www.espn.com/soccer/match/_/gameId/${m.id}" target="_blank" rel="noopener">📊 Stats</a></div>`:'';
-  const actionHtml=res&&res.done?`<div class="action-links">
-    <a class="action-link" href="#" onclick="jumpToPicks('${m.group}');return false">📋 Picks</a>
-    <a class="action-link" href="https://www.espn.com/soccer/match/_/gameId/${m.id}" target="_blank" rel="noopener">🎬 Recap</a>
-  </div>`:'';
-  return `<div class="match-row">
-    <span class="match-date">${date}</span>
-    <span class="match-teams">
-      <span>${m.t1} <span style="color:#7a8fa6;font-weight:400">vs</span> ${m.t2}</span>
-      <span><span class="md-badge">MD${m.md}</span>${groupBadge}</span>
-    </span>
-    <div class="match-score-col">${scoreHtml}${statusBadge}</div>
-    <div class="match-meta">${correctStr}${watchHtml}${actionHtml}</div>
+  const n1=parseInt(es1)||0, n2=parseInt(es2)||0;
+  const w1=res&&res.done&&n1>n2, w2=res&&res.done&&n2>n1;
+  const sc=(v,w)=>v!==''?`<span style="min-width:18px;text-align:right;font-size:1.05rem;font-weight:800;color:${w?'#e8edf5':'#4a5f75'}">${v}</span>`
+    :`<span class="rc-score-tbd">–</span>`;
+  return `<div class="res-card ${cardCls}">
+    <div class="rc-top"><span>${statusHtml}</span><span class="rc-meta">Grp ${m.group} · MD${m.md}</span></div>
+    <div class="rc-divider"></div>
+    <div class="rc-teams">
+      <div class="rc-team${w1?' rc-w':''}">
+        <span class="rc-flag">${f1}</span>
+        <span class="rc-name">${m.t1}</span>
+        ${sc(es1,w1)}
+      </div>
+      <div class="rc-team${w2?' rc-w':''}">
+        <span class="rc-flag">${f2}</span>
+        <span class="rc-name">${m.t2}</span>
+        ${sc(es2,w2)}
+      </div>
+    </div>
+    ${footer?`<div class="rc-footer">${footer}</div>`:''}
   </div>`;
 }
 
