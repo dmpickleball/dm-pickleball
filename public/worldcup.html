@@ -94,8 +94,12 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
 .res-date-pill.today{background:rgba(201,162,39,0.15);border-color:#c9a227;color:#c9a227}
 .res-date-pill.has-live{background:rgba(224,85,85,0.12);border-color:#e05555;color:#e05555}
 .res-section-hdr{font-size:0.68rem;font-weight:800;letter-spacing:2.5px;color:#c9a227;text-transform:uppercase;padding:4px 0 10px;border-bottom:1px solid rgba(201,162,39,0.18);margin-bottom:10px;display:flex;align-items:center;gap:8px}
-.res-round-lbl{font-size:0.64rem;font-weight:700;letter-spacing:1.5px;color:#7a8fa6;text-transform:uppercase;padding:12px 0 6px}
-.res-day-lbl{font-size:0.70rem;font-weight:700;letter-spacing:1px;color:#7a8fa6;text-transform:uppercase;padding:10px 0 6px;scroll-margin-top:60px}
+.res-round-lbl{font-size:0.72rem;font-weight:800;letter-spacing:1px;color:#e8edf5;padding:14px 0 8px;display:flex;align-items:center;gap:10px}
+.res-round-lbl::after{content:'';flex:1;height:1px;background:#1e3050}
+.res-day-lbl{font-size:0.76rem;font-weight:800;letter-spacing:0.5px;color:#d0dbe8;padding:14px 0 8px;scroll-margin-top:60px;display:flex;align-items:center;gap:10px}
+.res-day-lbl::after{content:'';flex:1;height:1px;background:#1a2e45}
+.res-day-lbl.today-divider{color:#c9a227}
+.res-day-lbl.today-divider::after{background:linear-gradient(90deg,rgba(201,162,39,0.4),transparent)}
 .res-cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-bottom:4px}
 .res-card{background:#111d2c;border-radius:10px;border:1px solid #1e3050;padding:11px 13px;display:flex;flex-direction:column;gap:7px}
 .res-card.rc-live-card{border-color:rgba(224,85,85,0.7);background:rgba(224,85,85,0.04)}
@@ -106,7 +110,7 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
 .rc-status-live{color:#e05555;display:flex;align-items:center;gap:4px}
 .rc-status-sched{color:#8a9fb8;line-height:1.5}
 .rc-live-dot{width:6px;height:6px;background:#e05555;border-radius:50%;animation:blink 1s infinite;flex-shrink:0}
-.rc-meta{font-size:0.60rem;color:#3a5068;font-weight:600;text-align:right;line-height:1.4}
+.rc-meta{font-size:0.62rem;color:#4a6a88;font-weight:600;text-align:right;line-height:1.4}
 .rc-divider{height:1px;background:#1a2e45;margin:2px 0}
 .rc-teams{display:flex;flex-direction:column;gap:5px}
 .rc-team{display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:7px}
@@ -2404,16 +2408,19 @@ async function fetchScores(){
       const kt1=norm(comp.competitors[0].team.displayName);
       const kt2=norm(comp.competitors[1].team.displayName);
       let round='Knockout Stage';
-      if(comp.notes&&comp.notes.length) round=comp.notes[0].headline||round;
-      const evN=(ev.name||'').toLowerCase();
-      if(round==='Knockout Stage'||round===''){
-        if(/\bfinal\b/i.test(evN)&&!/semi|quarter|third|3rd/i.test(evN)) round='Final';
-        else if(/third|3rd place/i.test(evN)) round='Third Place';
-        else if(/semi.?final/i.test(evN)) round='Semifinal';
-        else if(/quarter.?final/i.test(evN)) round='Quarterfinal';
-        else if(/round of 16|r16/i.test(evN)) round='Round of 16';
-        else if(/round of 32|r32/i.test(evN)) round='Round of 32';
+      // Parse round from event name or notes — only accept actual round labels, not match notes
+      function parseRound(s){
+        const t=(s||'').toLowerCase();
+        if(/\bfinal\b/.test(t)&&!/semi|quarter|third|3rd/.test(t)) return 'Final';
+        if(/third.?place|3rd.?place/.test(t)) return 'Third Place';
+        if(/semi.?final/.test(t)) return 'Semifinal';
+        if(/quarter.?final/.test(t)) return 'Quarterfinal';
+        if(/round of 16|r16/.test(t)) return 'Round of 16';
+        if(/round of 32|r32/.test(t)) return 'Round of 32';
+        return null;
       }
+      const noteHead=comp.notes&&comp.notes.length?comp.notes[0].headline||'':'';
+      round=parseRound(noteHead)||parseRound(ev.name)||'Knockout Stage';
       knockoutEvents.push({id:ev.id,t1:kt1,t2:kt2,date:MATCH_DATES[ev.id]||'',ts:matchTimestamps[ev.id]||0,round});
     }
     knockoutEvents.sort((a,b)=>a.ts-b.ts);
@@ -2823,7 +2830,7 @@ function renderMatches(){
     for(const round of rounds){
       const games=byRound[round].sort((a,b)=>a.ts-b.ts);
       html+=`<div class="res-round-lbl">${round}</div><div class="res-cards-grid">`;
-      for(const e of games) html+=knockoutCardHtml(e,todayStr);
+      for(const e of games) html+=knockoutCardHtml(e);
       html+=`</div>`;
     }
     html+=`<div style="height:18px"></div>`;
@@ -2881,15 +2888,14 @@ const ROUND_ORDER=['Round of 32','Round of 16','Quarterfinal','Semifinal','Third
 
 function getFlag(name){ return (typeof COUNTRY_FLAGS!=='undefined'&&COUNTRY_FLAGS[name])||FLAGS[name]||''; }
 
-function knockoutCardHtml(e, todayStr){
+function knockoutCardHtml(e){
   const res=results[e.id];
   const f1=getFlag(e.t1), f2=getFlag(e.t2);
   const anchorId='res-d-'+e.date.replace(/\s/g,'-');
   let statusHtml='', s1='', s2='', extra='', cardCls='';
   if(res&&res.live){
     const clk=matchClocks[e.id]||'LIVE';
-    const ht=res.status==='Halftime';
-    statusHtml=`<span class="rc-status rc-status-live"><span class="rc-live-dot"></span>${ht?'HT':clk}</span>`;
+    statusHtml=`<span class="rc-status rc-status-live"><span class="rc-live-dot"></span>${res.status==='Halftime'?'HT':clk}</span>`;
     s1=res.s1; s2=res.s2; cardCls='rc-live-card';
     extra=`<a class="rc-lnk" href="https://www.espn.com/soccer/match/_/gameId/${e.id}" target="_blank">Stats ↗</a>`;
   } else if(res&&res.done){
@@ -2897,28 +2903,18 @@ function knockoutCardHtml(e, todayStr){
     s1=res.s1; s2=res.s2;
     extra=`<a class="rc-lnk" href="https://www.espn.com/soccer/match/_/gameId/${e.id}" target="_blank">Recap ↗</a>`;
   } else {
-    const t=matchTimes[e.id]||'';
-    statusHtml=`<span class="rc-status rc-status-sched">${t||e.date}</span>`;
+    statusHtml=`<span class="rc-status rc-status-sched">${matchTimes[e.id]||e.date}</span>`;
     cardCls='rc-upcoming';
   }
   const n1=parseInt(s1)||0, n2=parseInt(s2)||0;
   const w1=res&&res.done&&n1>n2, w2=res&&res.done&&n2>n1;
-  const sc=(v,w)=>v!==''?`<span class="rc-score${w?' rc-team rc-w':''}" style="min-width:18px;text-align:right;font-size:1.05rem;font-weight:800;color:${w?'#e8edf5':'#4a5f75'}">${v}</span>`
-    :`<span class="rc-score-tbd">–</span>`;
+  const sc=(v)=>v!==''&&v!==undefined?`<span class="rc-score">${v}</span>`:`<span class="rc-score-tbd">–</span>`;
   return `<div class="res-card ${cardCls}" id="${anchorId}">
-    <div class="rc-top"><span>${statusHtml}</span><span class="rc-meta">${e.date}</span></div>
+    <div class="rc-top"><span>${statusHtml}</span></div>
     <div class="rc-divider"></div>
     <div class="rc-teams">
-      <div class="rc-team${w1?' rc-w':''}">
-        <span class="rc-flag">${f1}</span>
-        <span class="rc-name">${e.t1}</span>
-        ${sc(s1,w1)}
-      </div>
-      <div class="rc-team${w2?' rc-w':''}">
-        <span class="rc-flag">${f2}</span>
-        <span class="rc-name">${e.t2}</span>
-        ${sc(s2,w2)}
-      </div>
+      <div class="rc-team${w1?' rc-w':''}"><span class="rc-flag">${f1}</span><span class="rc-name">${e.t1}</span>${sc(s1)}</div>
+      <div class="rc-team${w2?' rc-w':''}"><span class="rc-flag">${f2}</span><span class="rc-name">${e.t2}</span>${sc(s2)}</div>
     </div>
     ${extra?`<div class="rc-footer">${extra}</div>`:''}
   </div>`;
@@ -2926,47 +2922,34 @@ function knockoutCardHtml(e, todayStr){
 
 function groupCardHtml(m){
   const res=results[m.id];
-  const date=MATCH_DATES[m.id]||'';
   const f1=getFlag(m.t1), f2=getFlag(m.t2);
   const es1=res?(res.t1===m.t1?res.s1:res.s2):'';
   const es2=res?(res.t1===m.t1?res.s2:res.s1):'';
   let statusHtml='', cardCls='', footer='';
   if(res&&res.live){
     const clk=matchClocks[m.id]||'LIVE';
-    const ht=res.status==='Halftime';
-    statusHtml=`<span class="rc-status rc-status-live"><span class="rc-live-dot"></span>${ht?'HT':clk}</span>`;
+    statusHtml=`<span class="rc-status rc-status-live"><span class="rc-live-dot"></span>${res.status==='Halftime'?'HT':clk}</span>`;
     cardCls='rc-live-card';
     footer=`<a class="rc-lnk" href="https://www.espn.com/soccer/match/_/gameId/${m.id}" target="_blank">Stats ↗</a>`;
   } else if(res&&res.done){
     statusHtml=`<span class="rc-status rc-status-ft">FT</span>`;
-    let correctCount=0;
-    PLAYERS.forEach((_,pi)=>{if(pts(m.p[pi],res)>0)correctCount++;});
-    footer=`<span class="rc-correct">✅ ${correctCount}/${PLAYERS.length}</span>`+
+    let cc=0; PLAYERS.forEach((_,pi)=>{if(pts(m.p[pi],res)>0)cc++;});
+    footer=`<span class="rc-correct">✅ ${cc}/${PLAYERS.length}</span>`+
       `<a class="rc-lnk" href="#" onclick="jumpToPicks('${m.group}');return false">Picks</a>`+
       `<a class="rc-lnk" href="https://www.espn.com/soccer/match/_/gameId/${m.id}" target="_blank">Recap ↗</a>`;
   } else {
-    const t=matchTimes[m.id]||'';
-    statusHtml=`<span class="rc-status rc-status-sched">${t}</span>`;
+    statusHtml=`<span class="rc-status rc-status-sched">${matchTimes[m.id]||''}</span>`;
     cardCls='rc-upcoming';
   }
   const n1=parseInt(es1)||0, n2=parseInt(es2)||0;
   const w1=res&&res.done&&n1>n2, w2=res&&res.done&&n2>n1;
-  const sc=(v,w)=>v!==''?`<span style="min-width:18px;text-align:right;font-size:1.05rem;font-weight:800;color:${w?'#e8edf5':'#4a5f75'}">${v}</span>`
-    :`<span class="rc-score-tbd">–</span>`;
+  const sc=(v)=>v!==''&&v!==undefined?`<span class="rc-score">${v}</span>`:`<span class="rc-score-tbd">–</span>`;
   return `<div class="res-card ${cardCls}">
     <div class="rc-top"><span>${statusHtml}</span><span class="rc-meta">Grp ${m.group} · MD${m.md}</span></div>
     <div class="rc-divider"></div>
     <div class="rc-teams">
-      <div class="rc-team${w1?' rc-w':''}">
-        <span class="rc-flag">${f1}</span>
-        <span class="rc-name">${m.t1}</span>
-        ${sc(es1,w1)}
-      </div>
-      <div class="rc-team${w2?' rc-w':''}">
-        <span class="rc-flag">${f2}</span>
-        <span class="rc-name">${m.t2}</span>
-        ${sc(es2,w2)}
-      </div>
+      <div class="rc-team${w1?' rc-w':''}"><span class="rc-flag">${f1}</span><span class="rc-name">${m.t1}</span>${sc(es1)}</div>
+      <div class="rc-team${w2?' rc-w':''}"><span class="rc-flag">${f2}</span><span class="rc-name">${m.t2}</span>${sc(es2)}</div>
     </div>
     ${footer?`<div class="rc-footer">${footer}</div>`:''}
   </div>`;
