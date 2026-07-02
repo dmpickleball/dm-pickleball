@@ -1951,30 +1951,7 @@ body.dark a[style*="color:#6a1b9a"] { color: #c084e0 !important; }
     setInterval(updatePrivCountdown, 30000);
     loadPrivComments();
     loadPhotoComments();
-    // Silently capture location for the family tracker
-    captureLocation();
-  }
-
-  function captureLocation() {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(async pos => {
-      const { latitude: lat, longitude: lng } = pos.coords;
-      // Reverse geocode with OSM Nominatim (free, no key needed)
-      let city = null;
-      try {
-        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
-        const d = await r.json();
-        city = d.address?.city || d.address?.town || d.address?.village || d.address?.county || null;
-        if (city && d.address?.country) city += ', ' + d.address.country;
-      } catch {}
-      // Push to server
-      const token = localStorage.getItem(TOKEN_KEY);
-      fetch(API_BASE + '/api/students?action=live-update-location', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-italy-token': token },
-        body: JSON.stringify({ lat, lng, city }),
-      }).catch(() => {});
-    }, () => {}, { timeout: 10000, enableHighAccuracy: false });
+    // Location tracking disabled — trip complete
   }
 
   // ── Section nav: mobile dropdown + IntersectionObserver ──

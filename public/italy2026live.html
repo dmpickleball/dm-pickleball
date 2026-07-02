@@ -902,7 +902,6 @@ body.dark [style*="color:#90a4ae"]   { color: #7a9aaa !important; }
       <span class="day-label" id="cd-label">Countdown</span>
       <span class="day-value" id="cd-value">—</span>
     </div>
-    <button class="topbar-btn" onclick="refreshLocation()">Refresh</button>
   <button class="topbar-comments" onclick="scrollToComments()" title="Jump to comments">
     💬<span class="topbar-comments-badge" id="comment-badge"></span>
   </button>
@@ -942,17 +941,7 @@ body.dark [style*="color:#90a4ae"]   { color: #7a9aaa !important; }
   <!-- Map + Photos -->
   <div class="content">
 
-    <div class="card">
-      <div class="card-label">Current Location</div>
-      <div id="map"></div>
-      <div class="loc-bar">
-        <div class="loc-pulse"></div>
-        <div class="loc-text">
-          <span class="loc-city" id="loc-city">Fetching location&hellip;</span>
-          <span class="loc-updated" id="loc-updated"></span>
-        </div>
-      </div>
-    </div>
+    <!-- Location tracking disabled — trip complete -->
 
     <div class="card">
       <div class="card-label">Trip Photos</div>
@@ -1146,18 +1135,16 @@ window.addEventListener('load', async () => {
 function showTracker() {
   document.getElementById('pw-screen').style.display = 'none';
   document.getElementById('tracker').style.display   = 'block';
-  initMap();
   buildTimeline();
   updateTimeline();
   updateClock();
-  refreshAll();          // load location + photos on first open
+  refreshAll();          // load photos on first open
   updateCountdown();
   setInterval(updateCountdown, 30000);
   loadComments();
   setInterval(updateTimeline, 60000);
   setInterval(updateClock, 10000);
-  setInterval(refreshLocation, 15 * 60 * 1000);   // location only, every 15 min
-  setInterval(refreshAll, 60 * 60 * 1000);        // full refresh (incl. photos) every 60 min
+  setInterval(refreshAll, 60 * 60 * 1000);        // photo refresh every 60 min
   // If David/Amanda are logged in on their private site, hide the visitor form
   if (localStorage.getItem('italy_session')) {
     const form = document.querySelector('.comment-form');
@@ -1346,12 +1333,11 @@ function initMap() {
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 async function refreshLocation() {
-  const token = localStorage.getItem(PW_KEY);
-  await loadLocation(token);
+  // Location tracking disabled — trip complete
 }
 async function refreshAll() {
   const token = localStorage.getItem(PW_KEY);
-  await Promise.all([loadLocation(token), loadPhotos(token)]);
+  await loadPhotos(token);
 }
 
 async function loadLocation(token) {
