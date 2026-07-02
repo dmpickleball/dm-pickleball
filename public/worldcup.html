@@ -110,6 +110,7 @@ main{max-width:1200px;margin:0 auto;padding:12px 8px 40px}
 .rc-status-sched{color:#8a9fb8;line-height:1.5}
 .rc-live-dot{width:6px;height:6px;background:#e05555;border-radius:50%;animation:blink 1s infinite;flex-shrink:0}
 .rc-meta{font-size:0.62rem;color:#4a6a88;font-weight:600;text-align:right;line-height:1.4}
+.rc-venue{font-size:0.58rem;color:#3a5a78;text-align:center;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rc-divider{height:1px;background:#1a2e45;margin:2px 0}
 .rc-teams{display:flex;flex-direction:column;gap:5px}
 .rc-team{display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:7px}
@@ -2350,6 +2351,7 @@ let results = {}; // espnId → {winner,done,live,score}
 let matchTimes = {}; // espnId → "12:00 PM PT"
 let matchTimestamps = {}; // espnId → epoch ms for sorting
 let matchClocks = {}; // espnId → "46'" (live clock)
+let matchVenues = {}; // espnId → "Stadium Name, City"
 let matchView = 'chrono'; // kept for legacy refs
 let liveIds = new Set();
 let knockoutEvents = []; // non-pool matches from ESPN (knockout stage)
@@ -2393,6 +2395,12 @@ async function fetchScores(){
       if(rawClock && rawClock!=='0:00'){
         const mins=rawClock.split(':')[0];
         matchClocks[ev.id]=mins+"'";
+      }
+      // Venue
+      const vn=comp.venue||ev.venue;
+      if(vn&&vn.fullName){
+        const city=vn.address&&vn.address.city?vn.address.city:'';
+        matchVenues[ev.id]=vn.fullName+(city?', '+city:'');
       }
       const res=getResult(t1,parseInt(s1),t2,parseInt(s2),status);
       if(res){
@@ -2947,6 +2955,7 @@ function knockoutCardHtml(e){
   const n1=parseInt(s1)||0, n2=parseInt(s2)||0;
   const w1=res&&res.done&&n1>n2, w2=res&&res.done&&n2>n1;
   const sc=(v)=>v!==''&&v!==undefined?`<span class="rc-score">${v}</span>`:`<span class="rc-score-tbd">–</span>`;
+  const venue=matchVenues[e.id]||'';
   return `<div class="res-card ${cardCls}" id="${anchorId}">
     <div class="rc-top"><span>${statusHtml}</span></div>
     <div class="rc-divider"></div>
@@ -2954,6 +2963,7 @@ function knockoutCardHtml(e){
       <div class="rc-team${w1?' rc-w':''}"><span class="rc-flag">${f1}</span><span class="rc-name">${e.t1}</span>${sc(s1)}</div>
       <div class="rc-team${w2?' rc-w':''}"><span class="rc-flag">${f2}</span><span class="rc-name">${e.t2}</span>${sc(s2)}</div>
     </div>
+    ${venue?`<div class="rc-venue">📍 ${venue}</div>`:''}
     ${extra?`<div class="rc-footer">${extra}</div>`:''}
   </div>`;
 }
@@ -2982,6 +2992,7 @@ function groupCardHtml(m){
   const n1=parseInt(es1)||0, n2=parseInt(es2)||0;
   const w1=res&&res.done&&n1>n2, w2=res&&res.done&&n2>n1;
   const sc=(v)=>v!==''&&v!==undefined?`<span class="rc-score">${v}</span>`:`<span class="rc-score-tbd">–</span>`;
+  const venue=matchVenues[m.id]||'';
   return `<div class="res-card ${cardCls}">
     <div class="rc-top"><span>${statusHtml}</span><span class="rc-meta">Grp ${m.group} · MD${m.md}</span></div>
     <div class="rc-divider"></div>
@@ -2989,6 +3000,7 @@ function groupCardHtml(m){
       <div class="rc-team${w1?' rc-w':''}"><span class="rc-flag">${f1}</span><span class="rc-name">${m.t1}</span>${sc(es1)}</div>
       <div class="rc-team${w2?' rc-w':''}"><span class="rc-flag">${f2}</span><span class="rc-name">${m.t2}</span>${sc(es2)}</div>
     </div>
+    ${venue?`<div class="rc-venue">📍 ${venue}</div>`:''}
     ${footer?`<div class="rc-footer">${footer}</div>`:''}
   </div>`;
 }
