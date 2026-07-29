@@ -6839,6 +6839,21 @@ function clearAdminSession(){try{localStorage.removeItem(ADMIN_SESSION_KEY);loca
 
 // ─── URL routing map ──────────────────────────────────────────────────────────
 // ─── STANDINGS PAGE ──────────────────────────────────────────────────────────
+// Country code → flag emoji helper
+const CC3={USA:'US',CAN:'CA',ARG:'AR',TPE:'TW',ESP:'ES',MEX:'MX',BRA:'BR',
+  AUS:'AU',GBR:'GB',DEU:'DE',GER:'DE',FRA:'FR',ITA:'IT',JPN:'JP',KOR:'KR',
+  CHN:'CN',NED:'NL',POR:'PT',ISR:'IL',COL:'CO',PAR:'PY',CHI:'CL',PER:'PE',
+  URU:'UY',ECU:'EC',VEN:'VE',PAN:'PA',GUA:'GT',CRC:'CR',DOM:'DO',PUR:'PR',
+  BEL:'BE',SUI:'CH',AUT:'AT',NOR:'NO',SWE:'SE',DEN:'DK',FIN:'FI',POL:'PL',
+  CZE:'CZ',SVK:'SK',HUN:'HU',GRE:'GR',TUR:'TR',ROU:'RO',UKR:'UA',SRB:'RS',
+  HKG:'HK',IND:'IN',THA:'TH',PHL:'PH',MYS:'MY',SGP:'SG',IDN:'ID',VNM:'VN',
+  ZAF:'ZA',EGY:'EG',NGA:'NG',KEN:'KE',MAR:'MA'};
+function toFlag(cc){
+  const c2=CC3[cc]||(cc?.length===2?cc:null);
+  if(!c2)return cc||'';
+  return Array.from(c2.toUpperCase()).map(l=>String.fromCodePoint(0x1F1E6+l.charCodeAt(0)-65)).join('');
+}
+
 // Static PPA data — Women's Singles also fetched live (server scrapes pickleball.com)
 // Men's/Doubles categories are hardcoded approximate early-2026 rankings.
 const PPA_STATIC={
@@ -6910,6 +6925,8 @@ function StandingsPage(){
   const[ppaCat,setPpaCat]=useState('md'); // md wd mx ms ws
   const[wsFetch,setWsFetch]=useState(null);   // {players, live, staticDate}
   const[wsLoading,setWsLoading]=useState(true);
+  const[mlpFetch,setMlpFetch]=useState(null); // {teams, live, staticDate}
+  const[mlpLoading,setMlpLoading]=useState(true);
 
   useEffect(()=>{const h=()=>setMob(window.innerWidth<=768);window.addEventListener('resize',h);return()=>window.removeEventListener('resize',h);},[]);
 
@@ -6925,10 +6942,22 @@ function StandingsPage(){
       .catch(()=>setWsLoading(false));
   },[]);
 
+  // Fetch MLP Premier team standings on mount
+  useEffect(()=>{
+    fetch('/api/traffic?resource=mlp')
+      .then(r=>r.json())
+      .then(d=>{
+        const teams=(d.mlp?.teams||[]).map(t=>({rank:t.rank,team:t.team,wins:t.wins,losses:t.losses,points:t.points??null}));
+        setMlpFetch({teams:teams.length?teams:null,live:d.live===true,staticDate:d.staticDate||null});
+        setMlpLoading(false);
+      })
+      .catch(()=>setMlpLoading(false));
+  },[]);
+
   const TABS=[
     {id:'ppa',label:'PPA',    accent:'#1d3461'},
-    {id:'app',label:'APP',    accent:'#b91c1c'},
     {id:'mlp',label:'MLP',    accent:'#14532d'},
+    {id:'app',label:'APP',    accent:'#b91c1c'},
     {id:'spt',label:'50+ PRO',accent:'#3730a3'},
   ];
 
@@ -6947,8 +6976,8 @@ function StandingsPage(){
     {name:'Austin',              dates:'Jun 11–14',   done:true},
     {name:'St. Petersburg',      dates:'Jun 17–21',   done:true},
     {name:'New York',            dates:'Jun 25–28',   done:true},
-    {name:'Grand Rapids',        dates:'Jul 8–12',    done:false,next:true},
-    {name:'San Diego',           dates:'Jul 16–19',   done:false},
+    {name:'Grand Rapids',        dates:'Jul 8–12',    done:true},
+    {name:'San Diego',           dates:'Jul 16–19',   done:false,next:true},
     {name:'Chicago',             dates:'Jul 23–26',   done:false},
     {name:'Orlando',             dates:'Jul 30–Aug 2',done:false},
     {name:'Playoffs — Dallas',   dates:'Aug 7–9',     done:false,playoff:true},
@@ -6961,6 +6990,31 @@ function StandingsPage(){
     'Dallas Flash','Florida Smash','Las Vegas Night Owls','LA Mad Drops',
     'Miami Pickleball Club','New Jersey 5S','Orlando Squeeze','Palm Beach Royals',
     'Phoenix Flames','SoCal Hard Eights','St. Louis Shock','Texas Ranchers','Utah Black Diamonds'];
+
+  // Static fallback — through Grand Rapids Mid-Season Tournament (Jul 12, 2026).
+  // Used only if /api/traffic?resource=mlp fails; server has the same fallback.
+  const MLP_STANDINGS_STATIC=[
+    {rank:1, team:'St. Louis Shock',          wins:24, losses:2},
+    {rank:2, team:'New Jersey 5s',            wins:22, losses:4},
+    {rank:3, team:'LA Mad Drops',             wins:18, losses:4},
+    {rank:4, team:'Columbus Sliders',         wins:20, losses:7},
+    {rank:5, team:'Brooklyn Pickleball Team', wins:15, losses:5},
+    {rank:6, team:'Texas Ranchers',           wins:16, losses:12},
+    {rank:7, team:'Palm Beach Royals',        wins:14, losses:12},
+    {rank:8, team:'Dallas Flash',             wins:11, losses:10},
+    {rank:9, team:'SoCal Hard Eights',        wins:10, losses:10},
+    {rank:10,team:'Utah Black Diamonds',      wins:9,  losses:13},
+    {rank:11,team:'Orlando Squeeze',          wins:9,  losses:9},
+    {rank:12,team:'Atlanta Bouncers',         wins:9,  losses:13},
+    {rank:13,team:'Las Vegas Night Owls',     wins:7,  losses:12},
+    {rank:14,team:'Chicago Slice',            wins:7,  losses:12},
+    {rank:15,team:'Florida Smash',            wins:8,  losses:17},
+    {rank:16,team:'Miami Pickleball Club',    wins:6,  losses:13},
+    {rank:17,team:'California Black Bears',   wins:3,  losses:7},
+    {rank:18,team:'Phoenix Flames',           wins:3,  losses:10},
+    {rank:19,team:'Bay Area Breakers',        wins:4,  losses:18},
+    {rank:20,team:'Carolina Hogs',            wins:2,  losses:18},
+  ];
 
   const SPT_LEADERS=[
     {cat:"Men's Singles",          name:'Mattias Johansson',note:'4th straight year · 186-week streak at #1'},
@@ -6983,24 +7037,24 @@ function StandingsPage(){
     return(
       <>
         {/* Column header */}
-        <div style={{display:'grid',gridTemplateColumns:showPoints?(mob?'38px 1fr 44px 52px':'42px 1fr 50px 52px 76px'):(mob?'38px 1fr 44px':'42px 1fr 50px 52px'),
+        <div style={{display:'grid',gridTemplateColumns:showPoints?(mob?'38px 1fr 32px 52px':'42px 1fr 36px 52px 76px'):(mob?'38px 1fr 32px':'42px 1fr 36px 52px'),
           padding:'7px 18px',background:'#f8fafc',borderBottom:'1px solid #e2e8f0',
           fontSize:'0.6rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.8px',color:'#94a3b8'}}>
           <span>#</span><span>Player</span>
-          {!mob&&<span>CC</span>}
+          <span></span>
           {showPoints&&<span style={{textAlign:'right'}}>Events</span>}
           {showPoints&&<span style={{textAlign:'right'}}>Points</span>}
         </div>
         {players.map((p,i)=>(
           <div key={i} style={{display:'grid',
-            gridTemplateColumns:showPoints?(mob?'38px 1fr 44px 52px':'42px 1fr 50px 52px 76px'):(mob?'38px 1fr 44px':'42px 1fr 50px 52px'),
+            gridTemplateColumns:showPoints?(mob?'38px 1fr 32px 52px':'42px 1fr 36px 52px 76px'):(mob?'38px 1fr 32px':'42px 1fr 36px 52px'),
             padding:'11px 18px',borderBottom:i<players.length-1?'1px solid #f1f5f9':'none',
             alignItems:'center',background:i===0?'#f0f7ff':i%2===0?'white':'#fafafa'}}>
             <span style={{fontWeight:800,color:p.rank<=3?'#1d3461':'#94a3b8',fontSize:'0.9rem'}}>
               {p.rank===1?'🥇':p.rank===2?'🥈':p.rank===3?'🥉':p.rank}
             </span>
             <span style={{fontWeight:p.rank<=3?700:500,color:'#0f172a',fontSize:mob?'0.82rem':'0.88rem'}}>{p.name}</span>
-            {!mob&&<span style={{color:'#64748b',fontSize:'0.75rem'}}>{p.cc}</span>}
+            <span title={p.cc} style={{fontSize:'1.2rem',lineHeight:1}}>{toFlag(p.cc)}</span>
             {showPoints&&<span style={{textAlign:'right',color:'#475569',fontSize:'0.82rem'}}>{p.events}</span>}
             {showPoints&&<span style={{textAlign:'right',fontWeight:700,color:p.rank<=3?'#1d3461':'#334155',
               fontSize:'0.88rem',fontVariantNumeric:'tabular-nums'}}>{(p.points||0).toLocaleString()}</span>}
@@ -7033,6 +7087,12 @@ function StandingsPage(){
     ? wsFetch.players.map(p=>({rank:p.rank,name:p.name,cc:p.cc||p.country||'',events:p.events,points:p.points}))
     : PPA_STATIC.womensSingles;
   const catPlayers=isWS?wsPlayers:(PPA_STATIC[activePPACat.key]||[]);
+
+  // MLP: prefer live API data, fall back to static snapshot
+  const mlpLive=mlpFetch?.live===true;
+  const mlpStaticDate=mlpFetch?.staticDate||null;
+  const mlpTeams=mlpFetch?.teams||MLP_STANDINGS_STATIC;
+  const mlpShowPts=mlpTeams.length>0&&mlpTeams.every(t=>t.points!=null);
 
   return(
     <div style={{background:'#f1f5f9',minHeight:'60vh'}}>
@@ -7141,6 +7201,65 @@ function StandingsPage(){
         {/* ══ MLP TAB ══ */}
         {activeLeague==='mlp'&&(
           <div>
+            {/* Premier team leaderboard */}
+            <div style={{background:'white',borderRadius:8,border:'1px solid #e2e8f0',overflow:'hidden',marginBottom:16}}>
+              <div style={{background:'#0f172a',padding:'11px 18px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
+                <div style={{display:'flex',alignItems:'center',gap:8}}>
+                  {mlpLive?<LiveBadge/>:<span style={{display:'inline-flex',alignItems:'center',gap:4,background:'#475569',color:'white',fontSize:'0.58rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'1.2px',padding:'2px 7px',borderRadius:3,lineHeight:1.6}}>2026</span>}
+                  <span style={{color:'white',fontWeight:700,fontSize:'0.84rem'}}>MLP Premier — Team Leaderboard</span>
+                </div>
+                <a href="https://majorleaguepickleball.co/standings/" target="_blank" rel="noopener noreferrer"
+                  style={{color:'rgba(255,255,255,0.5)',fontSize:'0.7rem',fontWeight:600,textDecoration:'none',whiteSpace:'nowrap'}}>majorleaguepickleball.co ↗</a>
+              </div>
+              {mlpLoading?(
+                <div style={{padding:'44px 20px',textAlign:'center',color:'#94a3b8',fontSize:'0.88rem'}}>Loading…</div>
+              ):(
+                <>
+                  {/* Column header */}
+                  <div style={{display:'grid',gridTemplateColumns:mob?(mlpShowPts?'34px 1fr 34px 34px 52px':'34px 1fr 34px 34px'):(mlpShowPts?'42px 1fr 56px 56px 64px 70px':'42px 1fr 56px 56px 64px'),
+                    padding:'7px 18px',background:'#f8fafc',borderBottom:'1px solid #e2e8f0',
+                    fontSize:'0.6rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.8px',color:'#94a3b8'}}>
+                    <span>#</span><span>Team</span>
+                    <span style={{textAlign:'right'}}>W</span>
+                    <span style={{textAlign:'right'}}>L</span>
+                    {!mob&&<span style={{textAlign:'right'}}>Pct</span>}
+                    {mlpShowPts&&<span style={{textAlign:'right'}}>Pts</span>}
+                  </div>
+                  {mlpTeams.map((t,i)=>{
+                    const gp=t.wins+t.losses;
+                    const pct=gp>0?(t.wins/gp):0;
+                    return(
+                      <div key={i} style={{display:'grid',
+                        gridTemplateColumns:mob?(mlpShowPts?'34px 1fr 34px 34px 52px':'34px 1fr 34px 34px'):(mlpShowPts?'42px 1fr 56px 56px 64px 70px':'42px 1fr 56px 56px 64px'),
+                        padding:'10px 18px',
+                        borderBottom:t.rank===12&&i<mlpTeams.length-1?'2px dashed #cbd5e1':i<mlpTeams.length-1?'1px solid #f1f5f9':'none',
+                        alignItems:'center',background:i===0?'#f0fdf4':i%2===0?'white':'#fafafa'}}>
+                        <span style={{fontWeight:800,color:t.rank<=3?'#14532d':'#94a3b8',fontSize:'0.88rem'}}>
+                          {t.rank===1?'🥇':t.rank===2?'🥈':t.rank===3?'🥉':t.rank}
+                        </span>
+                        <span style={{fontWeight:t.rank<=3?700:500,color:'#0f172a',fontSize:mob?'0.8rem':'0.86rem'}}>{t.team}</span>
+                        <span style={{textAlign:'right',fontWeight:700,color:'#15803d',fontSize:'0.84rem',fontVariantNumeric:'tabular-nums'}}>{t.wins}</span>
+                        <span style={{textAlign:'right',fontWeight:600,color:'#94a3b8',fontSize:'0.84rem',fontVariantNumeric:'tabular-nums'}}>{t.losses}</span>
+                        {!mob&&<span style={{textAlign:'right',color:'#475569',fontSize:'0.8rem',fontVariantNumeric:'tabular-nums'}}>{pct.toFixed(3).replace(/^0/,'')}</span>}
+                        {mlpShowPts&&<span style={{textAlign:'right',fontWeight:700,color:t.rank<=3?'#14532d':'#334155',fontSize:'0.84rem',fontVariantNumeric:'tabular-nums'}}>{t.points}</span>}
+                      </div>
+                    );
+                  })}
+                  <div style={{padding:'10px 18px',background:'#f8fafc',borderTop:'1px solid #e2e8f0',
+                    display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,flexWrap:'wrap'}}>
+                    <span style={{fontSize:'0.68rem',color:'#94a3b8'}}>Top 12 (above dashed line) qualify for the playoffs
+                      {!mlpLive&&mlpStaticDate&&<span style={{marginLeft:4,color:'#cbd5e1'}}>· as of {mlpStaticDate}</span>}
+                      {!mlpLive&&!mlpStaticDate&&<span style={{marginLeft:4,color:'#cbd5e1'}}>· through Grand Rapids, Jul 12</span>}
+                    </span>
+                    <a href="https://majorleaguepickleball.co/standings/" target="_blank" rel="noopener noreferrer"
+                      style={{fontSize:'0.7rem',color:'#14532d',fontWeight:700,textDecoration:'none',whiteSpace:'nowrap'}}>
+                      Full standings on MLP ↗
+                    </a>
+                  </div>
+                </>
+              )}
+            </div>
+
             {/* Season summary + standings link */}
             <div style={{background:'white',borderRadius:8,border:'1px solid #e2e8f0',overflow:'hidden',marginBottom:16}}>
               <div style={{background:'#0f172a',padding:'11px 18px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
@@ -7155,7 +7274,7 @@ function StandingsPage(){
               </div>
               <div style={{padding:mob?'18px':'22px 28px'}}>
                 <div style={{display:'flex',gap:mob?20:36,marginBottom:22,flexWrap:'wrap'}}>
-                  {[['6','Events Played'],['7','Remaining'],['3','Playoff Rounds'],['20','Teams']].map(([n,label])=>(
+                  {[['7','Events Played'],['6','Remaining'],['3','Playoff Rounds'],['20','Teams']].map(([n,label])=>(
                     <div key={label} style={{textAlign:'center'}}>
                       <div style={{fontSize:'1.8rem',fontWeight:900,color:'#14532d',lineHeight:1}}>{n}</div>
                       <div style={{fontSize:'0.65rem',color:'#64748b',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px',marginTop:3}}>{label}</div>
@@ -7163,8 +7282,8 @@ function StandingsPage(){
                   ))}
                 </div>
                 <div style={{background:'#f0fdf4',border:'1px solid #bbf7d0',borderRadius:7,padding:'14px 18px',marginBottom:18}}>
-                  <div style={{fontSize:'0.72rem',fontWeight:700,color:'#14532d',marginBottom:4}}>📍 Next Event: Grand Rapids, MI — July 8–12</div>
-                  <div style={{fontSize:'0.82rem',color:'#334155'}}>Six events complete through New York (Jun 25–28). Live team standings, win-loss records, and playoff seeding update on the MLP website after each event.</div>
+                  <div style={{fontSize:'0.72rem',fontWeight:700,color:'#14532d',marginBottom:4}}>📍 This Week: San Diego, CA — July 16–19</div>
+                  <div style={{fontSize:'0.82rem',color:'#334155'}}>Seven events complete through the Grand Rapids Mid-Season Tournament (Jul 8–12), where St. Louis swept New Jersey in the final to pull even at No. 1. Standings and playoff seeding update after each event.</div>
                 </div>
                 <a href="https://majorleaguepickleball.co/standings/" target="_blank" rel="noopener noreferrer"
                   style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,background:'#14532d',color:'white',
@@ -7179,7 +7298,7 @@ function StandingsPage(){
               <div style={{background:'#f8fafc',padding:'10px 18px',borderBottom:'1px solid #e2e8f0',
                 display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                 <div style={{fontSize:'0.68rem',fontWeight:700,color:'#475569',textTransform:'uppercase',letterSpacing:'0.8px'}}>2026 Season Schedule</div>
-                <span style={{fontSize:'0.68rem',color:'#94a3b8'}}>6 of 10 regular events complete</span>
+                <span style={{fontSize:'0.68rem',color:'#94a3b8'}}>7 of 10 regular events complete</span>
               </div>
               <div style={{padding:mob?'12px 14px':'14px 18px'}}>
                 <div style={{display:'grid',gridTemplateColumns:mob?'1fr 1fr':'repeat(3,1fr)',gap:6}}>
