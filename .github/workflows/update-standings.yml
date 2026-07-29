@@ -1,0 +1,37 @@
+name: Update Pro Pickleball Standings
+
+on:
+  schedule:
+    - cron: '0 10 * * *'   # 10am UTC daily (3am PST / 6am EST)
+  workflow_dispatch:         # Allow manual trigger from GitHub Actions tab
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install script dependencies
+        working-directory: scripts
+        run: npm install
+
+      - name: Install Playwright Chromium
+        working-directory: scripts
+        run: npx playwright install chromium --with-deps
+
+      - name: Scrape and update standings
+        working-directory: scripts
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node scrape-standings.mjs
+
+      - name: Report result
+        if: always()
+        run: echo "Standings update completed at $(date -u)"

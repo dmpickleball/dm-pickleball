@@ -196,17 +196,248 @@ async function fetchPPAData() {
   return ppaCache;
 }
 
+// All-category static fallback — used when Supabase is empty/unavailable
+const PPA_ALL_STATIC = {
+  womensSingles: PPA_STATIC_FALLBACK.players,
+  mensSingles: [
+    {rank:1, name:'Ben Johns',           country:'USA', events:8,  points:22000},
+    {rank:2, name:'JW Johnson',          country:'USA', events:9,  points:17200},
+    {rank:3, name:'Federico Staksrud',   country:'ARG', events:8,  points:13500},
+    {rank:4, name:'Jay DeVilliers',      country:'USA', events:7,  points:11000},
+    {rank:5, name:'Tyson McGuffin',      country:'USA', events:8,  points:8600},
+    {rank:6, name:'Dylan Frazier',       country:'USA', events:9,  points:7100},
+    {rank:7, name:'James Ignatowich',    country:'USA', events:8,  points:6000},
+    {rank:8, name:'Collin Johns',        country:'USA', events:7,  points:4900},
+    {rank:9, name:'Hunter Johnson',      country:'USA', events:6,  points:3950},
+    {rank:10,name:'AJ Koller',           country:'USA', events:7,  points:3500},
+  ],
+  womensDoubles: [
+    {rank:1, name:'Anna Leigh Waters',   country:'USA', events:8,  points:18200},
+    {rank:2, name:'Anna Bright',         country:'USA', events:7,  points:15400},
+    {rank:3, name:'Catherine Parenteau', country:'CAN', events:6,  points:11800},
+    {rank:4, name:'Lea Jansen',          country:'USA', events:7,  points:9500},
+    {rank:5, name:'Callie Smith',        country:'USA', events:8,  points:7700},
+    {rank:6, name:'Kaitlyn Christian',   country:'USA', events:9,  points:6400},
+    {rank:7, name:'Lauren Stratman',     country:'USA', events:6,  points:5100},
+    {rank:8, name:'Jessie Irvine',       country:'USA', events:7,  points:4100},
+    {rank:9, name:'Parris Todd',         country:'USA', events:5,  points:3550},
+    {rank:10,name:'Brooke Buckner',      country:'USA', events:8,  points:3200},
+  ],
+  mensDoubles: [
+    {rank:1, name:'Ben Johns',           country:'USA', events:8,  points:21000},
+    {rank:2, name:'JW Johnson',          country:'USA', events:9,  points:16500},
+    {rank:3, name:'Dylan Frazier',       country:'USA', events:9,  points:13100},
+    {rank:4, name:'Collin Johns',        country:'USA', events:7,  points:10500},
+    {rank:5, name:'Jay DeVilliers',      country:'USA', events:7,  points:8500},
+    {rank:6, name:'Federico Staksrud',   country:'ARG', events:8,  points:6800},
+    {rank:7, name:'James Ignatowich',    country:'USA', events:8,  points:5500},
+    {rank:8, name:'Matt Wright',         country:'USA', events:6,  points:4200},
+    {rank:9, name:'Riley Newman',        country:'USA', events:7,  points:3700},
+    {rank:10,name:'AJ Koller',           country:'USA', events:7,  points:3100},
+  ],
+  mixedDoubles: [
+    {rank:1, name:'Ben Johns',            country:'USA', events:8,  points:20100},
+    {rank:2, name:'Anna Leigh Waters',    country:'USA', events:8,  points:17500},
+    {rank:3, name:'JW Johnson',           country:'USA', events:9,  points:14100},
+    {rank:4, name:'Jessie Irvine',        country:'USA', events:7,  points:11000},
+    {rank:5, name:'Jay DeVilliers',       country:'USA', events:7,  points:8800},
+    {rank:6, name:'Lea Jansen',           country:'USA', events:7,  points:7200},
+    {rank:7, name:'Dylan Frazier',        country:'USA', events:9,  points:5800},
+    {rank:8, name:'Anna Bright',          country:'USA', events:7,  points:4500},
+    {rank:9, name:'Riley Newman',         country:'USA', events:6,  points:3800},
+    {rank:10,name:'Catherine Parenteau',  country:'CAN', events:6,  points:3200},
+  ],
+};
+
+const PPA_CAT_KEYS = ['mensDoubles','womensDoubles','mixedDoubles','mensSingles','womensSingles'];
+
 async function getPPARankings(res) {
+  // Try Supabase first — populated daily by the GitHub Actions scraper
   try {
-    const data = await fetchPPAData();
-    return res.status(200).json({ ppa: { womensSingles: data.players }, fetchedAt: data.at, live: true });
+    const { data: sbData, error: sbError } = await supabase
+      .from('ppa_rankings')
+      .select('category,rank,name,country,events,points,updated_at')
+      .order('rank', { ascending: true });
+
+    if (!sbError && sbData && sbData.length > 0) {
+      // Group rows by category
+      const grouped = {};
+      for (const row of sbData) {
+        if (!grouped[row.category]) grouped[row.category] = [];
+        grouped[row.category].push({
+          rank: row.rank, name: row.name,
+          country: row.country || '', events: row.events || 0, points: row.points || 0,
+        });
+      }
+      // Fill any missing categories from static fallback
+      const ppa = {};
+      for (const k of PPA_CAT_KEYS) {
+        ppa[k] = grouped[k]?.length ? grouped[k] : PPA_ALL_STATIC[k];
+      }
+      const updatedAt = sbData.reduce((a, r) => (r.updated_at > a ? r.updated_at : a), '');
+      return res.status(200).json({ ppa, fromSupabase: true, updatedAt, live: true });
+    }
+  } catch (_) { /* fall through to static */ }
+
+  // Static fallback — all 5 categories
+  const ppa = {};
+  for (const k of PPA_CAT_KEYS) ppa[k] = PPA_ALL_STATIC[k];
+  return res.status(200).json({
+    ppa,
+    staticDate: PPA_STATIC_FALLBACK.staticDate,
+    live: false,
+    staticFallback: true,
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MLP PREMIER TEAM STANDINGS — via majorleaguepickleball.co WP REST API
+// GET /api/traffic?resource=mlp  →  public Premier team leaderboard (no auth)
+// ══════════════════════════════════════════════════════════════════════════════
+
+const MLP_TTL = 60 * 60 * 1000; // 1 hour
+let mlpCache = null;
+
+// 2026 season UUID (from pickleballteamleagues.com standings URL)
+const MLP_SEASON_UUID = 'c90dcfd5-6209-49db-842d-48a6e1827bf9';
+
+// Static fallback — standings through Grand Rapids Mid-Season Tournament (Jul 12, 2026).
+// Top 5 per official standings reports; 6-20 ordered by record (approx.)
+const MLP_STATIC_FALLBACK = {
+  teams: [
+    {rank:1, team:'St. Louis Shock',          wins:24, losses:2},
+    {rank:2, team:'New Jersey 5s',            wins:22, losses:4},
+    {rank:3, team:'LA Mad Drops',             wins:18, losses:4},
+    {rank:4, team:'Columbus Sliders',         wins:20, losses:7},
+    {rank:5, team:'Brooklyn Pickleball Team', wins:15, losses:5},
+    {rank:6, team:'Texas Ranchers',           wins:16, losses:12},
+    {rank:7, team:'Palm Beach Royals',        wins:14, losses:12},
+    {rank:8, team:'Dallas Flash',             wins:11, losses:10},
+    {rank:9, team:'SoCal Hard Eights',        wins:10, losses:10},
+    {rank:10,team:'Utah Black Diamonds',      wins:9,  losses:13},
+    {rank:11,team:'Orlando Squeeze',          wins:9,  losses:9},
+    {rank:12,team:'Atlanta Bouncers',         wins:9,  losses:13},
+    {rank:13,team:'Las Vegas Night Owls',     wins:7,  losses:12},
+    {rank:14,team:'Chicago Slice',            wins:7,  losses:12},
+    {rank:15,team:'Florida Smash',            wins:8,  losses:17},
+    {rank:16,team:'Miami Pickleball Club',    wins:6,  losses:13},
+    {rank:17,team:'California Black Bears',   wins:3,  losses:7},
+    {rank:18,team:'Phoenix Flames',           wins:3,  losses:10},
+    {rank:19,team:'Bay Area Breakers',        wins:4,  losses:18},
+    {rank:20,team:'Carolina Hogs',            wins:2,  losses:18},
+  ],
+  staticDate: 'Jul 12, 2026 · through Grand Rapids',
+};
+
+// Find the best candidate array of team-standing objects anywhere in the JSON
+// (plugin response shape is not documented, so match flexibly on field names)
+function normalizeMLPTeams(data) {
+  const NAME_KEYS = ['team_name','teamName','name','team','title','display_name'];
+  const WIN_KEYS  = ['wins','win','w','match_wins','matches_won','matchWins'];
+  const LOSS_KEYS = ['losses','loss','l','match_losses','matches_lost','matchLosses'];
+  const PTS_KEYS  = ['points','pts','standings_points','standingsPoints','event_points','total_points'];
+  const RANK_KEYS = ['rank','position','place','standing'];
+
+  let best = null;
+  const visit = (node) => {
+    if (Array.isArray(node)) {
+      if (node.length >= 4 && node.every(o => o && typeof o === 'object' && !Array.isArray(o))) {
+        const s = node[0];
+        const nameKey = NAME_KEYS.find(k => typeof s[k] === 'string' && s[k].length > 1);
+        const winKey  = WIN_KEYS.find(k => s[k] !== undefined);
+        if (nameKey && winKey && (!best || node.length > best.node.length)) {
+          best = { node, nameKey, winKey };
+        }
+      }
+      node.forEach(visit);
+    } else if (node && typeof node === 'object') {
+      Object.values(node).forEach(visit);
+    }
+  };
+  visit(data);
+  if (!best) return null;
+
+  const s = best.node[0];
+  const lossKey = LOSS_KEYS.find(k => s[k] !== undefined);
+  const ptsKey  = PTS_KEYS.find(k => s[k] !== undefined);
+  const rankKey = RANK_KEYS.find(k => s[k] !== undefined);
+
+  const teams = best.node.map((t, i) => ({
+    rank:   rankKey ? parseInt(t[rankKey], 10) || (i + 1) : (i + 1),
+    team:   String(t[best.nameKey]).trim(),
+    wins:   parseInt(t[best.winKey], 10) || 0,
+    losses: lossKey ? (parseInt(t[lossKey], 10) || 0) : 0,
+    points: ptsKey ? (parseFloat(t[ptsKey]) || 0) : null,
+  })).filter(t => t.team);
+
+  if (teams.length < 4) return null;
+  // If no explicit rank, sort by points (when present) then win pct
+  if (!rankKey) {
+    teams.sort((a, b) => (b.points ?? -1) - (a.points ?? -1)
+      || (b.wins / Math.max(1, b.wins + b.losses)) - (a.wins / Math.max(1, a.wins + a.losses)));
+    teams.forEach((t, i) => { t.rank = i + 1; });
+  } else {
+    teams.sort((a, b) => a.rank - b.rank);
+  }
+  return teams.slice(0, 20);
+}
+
+async function fetchMLPData() {
+  if (mlpCache && Date.now() - mlpCache.at < MLP_TTL) return mlpCache;
+  const HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    'Accept': 'application/json, text/plain, */*',
+    'Referer': 'https://majorleaguepickleball.co/standings/',
+  };
+  const BASE = 'https://majorleaguepickleball.co/wp-json/fau-scores-and-stats/v1/standings';
+  // Try with the known season UUID first, then let the server resolve the season
+  const urls = [
+    `${BASE}?selectedDivision=premier&selectedStandings=team&season_uuid=${MLP_SEASON_UUID}`,
+    `${BASE}?selectedDivision=premier&selectedStandings=team`,
+  ];
+  for (const url of urls) {
+    try {
+      const r = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(7000) });
+      if (!r.ok) continue;
+      const text = await r.text();
+      if (!text) continue;
+      const teams = normalizeMLPTeams(JSON.parse(text));
+      if (teams && teams.length) {
+        mlpCache = { teams, at: Date.now() };
+        return mlpCache;
+      }
+    } catch (_) { /* try next */ }
+  }
+  throw new Error('No parseable MLP standings from majorleaguepickleball.co');
+}
+
+async function getMLPStandings(res) {
+  // Try Supabase first — populated daily by the GitHub Actions scraper
+  try {
+    const { data: sbData, error: sbError } = await supabase
+      .from('mlp_standings')
+      .select('rank,team,wins,losses,win_pct,updated_at')
+      .order('rank', { ascending: true })
+      .limit(20);
+    if (!sbError && sbData && sbData.length >= 4) {
+      const teams = sbData.map(t => ({
+        rank: t.rank, team: t.team, wins: t.wins, losses: t.losses,
+        win_pct: t.win_pct ?? null,
+      }));
+      const updatedAt = sbData[0]?.updated_at || null;
+      return res.status(200).json({ mlp: { teams }, fromSupabase: true, updatedAt, live: true });
+    }
+  } catch (_) { /* fall through */ }
+
+  // Try live MLP API
+  try {
+    const data = await fetchMLPData();
+    return res.status(200).json({ mlp: { teams: data.teams }, fetchedAt: data.at, live: true });
   } catch (e) {
-    // First try in-memory cache (from a previous successful fetch this session)
-    if (ppaCache) return res.status(200).json({ ppa: { womensSingles: ppaCache.players }, fetchedAt: ppaCache.at, live: false, stale: true });
-    // Always serve static fallback rather than a 500 — keeps the page useful
+    if (mlpCache) return res.status(200).json({ mlp: { teams: mlpCache.teams }, fetchedAt: mlpCache.at, live: false, stale: true });
     return res.status(200).json({
-      ppa: { womensSingles: PPA_STATIC_FALLBACK.players },
-      staticDate: PPA_STATIC_FALLBACK.staticDate,
+      mlp: { teams: MLP_STATIC_FALLBACK.teams },
+      staticDate: MLP_STATIC_FALLBACK.staticDate,
       live: false,
       staticFallback: true,
     });
@@ -363,6 +594,8 @@ export default async function handler(req, res) {
     if (req.query.resource === 'standings') return getStandings(res);
     // Public: PPA live rankings via pickleball.com (no auth)
     if (req.query.resource === 'ppa') return getPPARankings(res);
+    // Public: MLP Premier team standings (no auth)
+    if (req.query.resource === 'mlp') return getMLPStandings(res);
     // Admin only: traffic analytics
     const token = req.headers['x-admin-token'] || '';
     if (!verifyAdminToken(token)) return res.status(401).json({ error: 'Unauthorized' });

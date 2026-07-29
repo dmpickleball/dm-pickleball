@@ -1,0 +1,10 @@
+{
+  "name": "dm-pickleball-scraper",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@supabase/supabase-js": "^2.99.2",
+    "playwright": "^1.49.0"
+  }
+}

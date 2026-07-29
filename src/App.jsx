@@ -6923,23 +6923,26 @@ function StandingsPage(){
   const[mob,setMob]=useState(window.innerWidth<=768);
   const[activeLeague,setActiveLeague]=useState('ppa');
   const[ppaCat,setPpaCat]=useState('md'); // md wd mx ms ws
-  const[wsFetch,setWsFetch]=useState(null);   // {players, live, staticDate}
-  const[wsLoading,setWsLoading]=useState(true);
+  const[ppaFetch,setPpaFetch]=useState(null);  // {mensDoubles:[...], womensDoubles:[...], ...}
+  const[ppaLoading,setPpaLoading]=useState(true);
+  const[ppaLive,setPpaLive]=useState(false);
+  const[ppaStaticDate,setPpaStaticDate]=useState(null);
   const[mlpFetch,setMlpFetch]=useState(null); // {teams, live, staticDate}
   const[mlpLoading,setMlpLoading]=useState(true);
 
   useEffect(()=>{const h=()=>setMob(window.innerWidth<=768);window.addEventListener('resize',h);return()=>window.removeEventListener('resize',h);},[]);
 
-  // Fetch Women's Singles live data on mount
+  // Fetch all 5 PPA categories on mount (data comes from Supabase via GitHub Actions scraper)
   useEffect(()=>{
     fetch('/api/traffic?resource=ppa')
       .then(r=>r.json())
       .then(d=>{
-        const players=(d.ppa?.womensSingles||[]).map(p=>({rank:p.rank,name:p.name,cc:p.country,points:p.points,events:p.events}));
-        setWsFetch({players:players.length?players:null,live:d.live===true,staticDate:d.staticDate||null});
-        setWsLoading(false);
+        setPpaFetch(d.ppa&&Object.keys(d.ppa).length?d.ppa:null);
+        setPpaLive(d.fromSupabase===true||d.live===true);
+        setPpaStaticDate(d.staticDate||null);
+        setPpaLoading(false);
       })
-      .catch(()=>setWsLoading(false));
+      .catch(()=>setPpaLoading(false));
   },[]);
 
   // Fetch MLP Premier team standings on mount
@@ -7079,14 +7082,10 @@ function StandingsPage(){
 
   // Resolve which players to show in current PPA category
   const activePPACat=PPA_CATS.find(c=>c.id===ppaCat)||PPA_CATS[0];
-  const isWS=ppaCat==='ws';
-  const wsLive=wsFetch?.live===true;
-  const wsStaticDate=wsFetch?.staticDate||null;
-  // Women's Singles: prefer live API data (has real points), fall back to PPA_STATIC
-  const wsPlayers=wsFetch?.players
-    ? wsFetch.players.map(p=>({rank:p.rank,name:p.name,cc:p.cc||p.country||'',events:p.events,points:p.points}))
-    : PPA_STATIC.womensSingles;
-  const catPlayers=isWS?wsPlayers:(PPA_STATIC[activePPACat.key]||[]);
+  const rawCatPlayers=ppaFetch?.[activePPACat.key];
+  const catPlayers=rawCatPlayers?.length
+    ? rawCatPlayers.map(p=>({rank:p.rank,name:p.name,cc:p.country||p.cc||'',events:p.events||0,points:p.points||0}))
+    : (PPA_STATIC[activePPACat.key]||[]);
 
   // MLP: prefer live API data, fall back to static snapshot
   const mlpLive=mlpFetch?.live===true;
@@ -7133,7 +7132,7 @@ function StandingsPage(){
               {/* Header */}
               <div style={{background:'#0f172a',padding:'11px 18px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
                 <div style={{display:'flex',alignItems:'center',gap:8}}>
-                  {isWS&&wsLive?<LiveBadge/>:<span style={{display:'inline-flex',alignItems:'center',gap:4,background:'#475569',color:'white',fontSize:'0.58rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'1.2px',padding:'2px 7px',borderRadius:3,lineHeight:1.6}}>2026</span>}
+                  {ppaLive&&!ppaLoading?<LiveBadge/>:<span style={{display:'inline-flex',alignItems:'center',gap:4,background:'#475569',color:'white',fontSize:'0.58rem',fontWeight:800,textTransform:'uppercase',letterSpacing:'1.2px',padding:'2px 7px',borderRadius:3,lineHeight:1.6}}>2026</span>}
                   <span style={{color:'white',fontWeight:700,fontSize:'0.84rem'}}>PPA Tour Rankings — {activePPACat.label}</span>
                 </div>
                 <a href="https://ppatour.com/player-rankings/" target="_blank" rel="noopener noreferrer"
@@ -7155,9 +7154,9 @@ function StandingsPage(){
               <RankTable
                 players={catPlayers}
                 showPoints={true}
-                isLive={isWS&&wsLive}
-                staticDate={isWS?wsStaticDate:null}
-                loading={isWS&&wsLoading}
+                isLive={ppaLive}
+                staticDate={ppaStaticDate}
+                loading={ppaLoading}
                 footerNote={`PPA ${activePPACat.label} · 52-week rolling`}
                 footerLink="https://ppatour.com/player-rankings/"
                 footerLinkLabel="Live rankings on ppatour.com ↗"
