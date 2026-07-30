@@ -9,10 +9,12 @@ import { chromium } from 'playwright';
 import { createClient } from '@supabase/supabase-js';
 import ws from 'ws';
 
+// Polyfill WebSocket for Node < 22 (supabase-js realtime requires it)
+if (!globalThis.WebSocket) globalThis.WebSocket = ws;
+
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY,
-  { realtime: { transport: ws } }
+  process.env.SUPABASE_SERVICE_KEY
 );
 
 // ── PPA category definitions ──────────────────────────────────────────────────
