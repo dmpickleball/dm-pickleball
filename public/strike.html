@@ -1166,13 +1166,13 @@ function foresight(r,lots,tShares){
     body="You would exercise <b>"+tShares.toLocaleString()+"</b> shares ("+strikes+") and hold. The <b>"+f(r.bargain)+"</b> spread becomes an <b>AMT preference</b> — you would owe about <b>"+f(r.amtDue)+"</b> in federal AMT"+(r.caMarginal>0?(" plus "+f(r.caMarginal)+" California"):" (no California AMT at this size)")+", due next April, on a <i>paper</i> gain. Nothing is sold, so you are out of pocket <b>"+f(r.cashOutOfPocket)+"</b> now-plus-April to hold <b>"+f(r.paperValue)+"</b> of stock. Upside: this starts the 1-year clock toward the low long-term rate, and the AMT isn't lost — it becomes a credit you recover in future years. Risk: if BLLN falls before you sell, you have paid real tax on value that shrank.";
   } else if(BUILD.action==="sellNow"){
     let bk = rA>rB ? (" This pushes your top federal rate from <b>"+Math.round(rB*100)+"%</b> into the <b>"+Math.round(rA*100)+"%</b> bracket.") : (" You stay within your <b>"+Math.round(rA*100)+"%</b> federal bracket.");
-    body="You would exercise and immediately sell <b>"+tShares.toLocaleString()+"</b> shares. The <b>"+f(r.ordinaryAdd)+"</b> spread is taxed as <b>ordinary income</b> stacked on your income."+bk+" All-in tax is about <b>"+f(r.totalTax)+"</b> (~"+eff+"% of the spread), and you walk away with roughly <b>"+f(r.netAfterTax)+"</b> in cash. Cleanest, lowest-risk path — no AMT, no money left riding on the stock — but you give up the lower long-term rate and any future upside.";
+    body="You would exercise and immediately sell <b>"+tShares.toLocaleString()+"</b> shares. The <b>"+f(r.ordinaryAdd)+"</b> spread is taxed as <b>ordinary income</b> stacked on your income."+bk+" All-in tax is about <b>"+f(r.totalTax)+"</b> (~"+eff+"% of the spread), and you walk away with roughly <b>"+f(r.netAfterTax)+"</b> in cash. Cleanest, lowest-risk path — no AMT, no money left riding on the stock — but you give up the lower long-term rate and any future upside. Heads-up: a sale outside a 10b5-1 plan has to happen during an <b>open trading window</b> (about 3–4 weeks each quarter) when you hold no inside information.";
   } else {
     const qual=BUILD.qualifying;
     body="You would exercise now and sell later at <b>"+f(BUILD.target)+"</b>. "+(qual
       ? ("As a <b>qualifying</b> sale the whole gain gets the <b>long-term</b> federal rate (15–20%); California still taxes it as ordinary. ")
       : ("As a <b>disqualifying</b> sale the original spread is <b>ordinary income</b> and only the rest is capital gain. "))+
-      "Estimated total tax <b>"+f(r.totalTax)+"</b>, netting about <b>"+f(r.netAfterTax)+"</b>. Remember the target is a guess, not a forecast — slide it to test how sensitive the outcome is.";
+      "Estimated total tax <b>"+f(r.totalTax)+"</b>, netting about <b>"+f(r.netAfterTax)+"</b>. Remember the target is a guess, not a forecast — slide it to test how sensitive the outcome is. And any market sale outside a 10b5-1 plan must fall inside an open trading window when you hold no inside information.";
   }
   return '<div class="foresight"><span class="fh">What this means</span>'+body+'</div>';
 }
@@ -1193,7 +1193,7 @@ function renderTenb5(){
   const seg=function(k,opts){ return '<div class="seg">'+opts.map(function(o){
     return '<button class="'+(T[k]===o[0]?"on":"")+'" onclick="t5SetVal(\''+k+'\','+(typeof o[0]==="string"?("\''+o[0]+'\'"):o[0])+')">'+o[1]+'</button>';
   }).join("")+'</div>'; };
-  const monthsSel='<select onchange="t5SetVal(\'months\',+this.value)">'+[6,12,18,24,36].map(function(m){
+  const monthsSel='<select onchange="t5SetVal(\'months\',+this.value)">'+[6,12,18,24].map(function(m){
     return '<option value="'+m+'"'+(T.months===m?" selected":"")+'>'+m+' months</option>';}).join("")+'</select>';
 
   $("tenb5View").innerHTML=''+
@@ -1206,7 +1206,7 @@ function renderTenb5(){
       '<div><label class="fld">Assumed share price</label><input type="number" step="0.5" value="'+(T.price===""?"":T.price)+'" oninput="t5SetNum(\'price\',this.value)"><div class="hint">For estimating proceeds. Real price will vary.</div></div>'+
     '</div><div class="grid3" style="margin-top:12px">'+
       '<div><label class="fld">Sales are</label>'+seg("qualifying",[[true,"Long-term (qualifying)"],[false,"Short-term"]])+'<div class="hint">Long-term = held &gt;1yr from exercise &amp; &gt;2yr from grant → low LTCG rate.</div></div>'+
-      '<div><label class="fld">Plan length</label>'+monthsSel+'</div>'+
+      '<div><label class="fld">Plan length</label>'+monthsSel+'<div class="hint">BillionToOne allows a 6-month minimum and 2-year maximum term.</div></div>'+
       '<div><label class="fld">Sell frequency</label>'+seg("freq",[["monthly","Monthly"],["quarterly","Quarterly"]])+'</div>'+
     '</div><div class="grid3" style="margin-top:12px">'+
       '<div><label class="fld">Price floor <span class="muted">(optional)</span></label><input type="number" step="0.5" value="'+(T.floor===""?"":T.floor)+'" oninput="t5SetNum(\'floor\',this.value)"><div class="hint">Only sell at/above this price.</div></div>'+
@@ -1258,13 +1258,16 @@ function t5Recalc(){
     '<div class="foresight"><span class="fh">What a 10b5-1 does for you</span>'+
       'It turns "when do I sell?" into a decision you make <b>once</b>, in advance, then never touch. The trades run on autopilot — through blackout windows, earnings, whatever — which removes the emotion and the market-timing guesswork, and gives you an <b>affirmative defense</b> if anyone ever questions the timing. For you specifically: since these are exercised ISOs held past the 1-year and 2-year marks, each sale is a <b>qualifying disposition</b> taxed at the low long-term rate, so a 10b5-1 is a clean, systematic way to <b>diversify out of BLLN</b> without watching the ticker.</div>'+
 
-    '<div class="compliance"><span class="ch">Before you set it up — the rules</span><ul style="margin:0;padding-left:18px">'+
-      '<li>You can only <b>adopt it when you have no material nonpublic information</b>, and typically during an <b>open trading window</b>.</li>'+
-      '<li><b>Cooling-off</b> before the first trade: '+coolText+'.</li>'+
-      '<li><b>One plan at a time</b>, and only one single-trade plan in any 12-month period.</li>'+
-      '<li>You must act in <b>good faith</b> and can’t influence the timing or amounts once it is running.</li>'+
-      '<li>BillionToOne must <b>permit 10b5-1 plans and pre-clear yours</b> (legal / stock-admin sign-off). <b>Fidelity Stock Plan Services</b> sets up and executes the trades.</li>'+
-      '<li>These SEC rules took effect Feb 27, 2023. Confirm the specifics with BillionToOne’s stock-plan team and a securities attorney — this is general information, not legal advice.</li>'+
+    '<div class="compliance"><span class="ch">BillionToOne 10b5-1 rules (from the company FAQ)</span><ul style="margin:0;padding-left:18px">'+
+      '<li><b>It is not required.</b> You can also just sell during open windows (about 3–4 weeks each quarter) when you have no inside information — often simpler.</li>'+
+      '<li><b>Adopt only when you have no material nonpublic information</b>, and the plan can only become <b>effective during an open trading window</b>.</li>'+
+      '<li><b>Cooling-off before the first trade:</b> '+coolText+'.</li>'+
+      '<li><b>Term: 6-month minimum, 2-year maximum</b> (from the effective date). You are not required to space trades evenly.</li>'+
+      '<li><b>One active plan at a time.</b> Your option shares are at Fidelity; IPO Directed-Share (DSP) shares at JP Morgan can have a separate plan.</li>'+
+      '<li><b>One single-trade plan per 12 months</b>, and you may <b>modify a plan only once per 12 months</b> (which restarts the cooling-off). Terminating early also triggers a cooling-off before you can trade again.</li>'+
+      '<li>While the plan runs, <b>all your BLLN trades must go through it</b> (limited exceptions).</li>'+
+      '<li><b>To set it up:</b> call <b>Fidelity Executive Services, 800-823-0217</b> for your option shares, then send the plan to BillionToOne Legal at <b>equity@billiontoone.com</b> for review — reach out several weeks before your target effective date.</li>'+
+      '<li>Confirm details against BillionToOne’s Insider Trading Policy and with a securities attorney. General info, not legal advice.</li>'+
     '</ul></div>';
 }
 
