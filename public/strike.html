@@ -226,6 +226,11 @@ canvas{width:100%;display:block}
 .tl-what{color:var(--ink)}
 .tl-row.due{background:#fff7e9}
 @media(max-width:520px){.tl-row{flex-direction:column;gap:2px}.tl-when{width:auto}}
+.compliance{background:#f7fafc;border:1px solid var(--line);border-radius:11px;padding:14px 16px;margin-top:14px;font-size:.82rem;line-height:1.55}
+.compliance li{margin:6px 0}
+.compliance .ch{font-weight:800;color:var(--accent-dk);font-size:.72rem;letter-spacing:.6px;text-transform:uppercase;display:block;margin-bottom:8px}
+.startbanner{background:#eefaf2;border:1px solid #bfe7d0;border-radius:11px;padding:13px 15px;margin-bottom:14px;font-size:.9rem;line-height:1.5}
+.startbanner b{color:#13643f}
 </style>
 </head>
 <body>
@@ -258,11 +263,14 @@ canvas{width:100%;display:block}
       <button id="modeAdvisor" class="on" onclick="showMode('advisor')">🧭 Guided Advisor</button>
       <button id="modePlanner" onclick="showMode('planner')">📊 Scenario Planner</button>
       <button id="modeBuilder" onclick="showMode('builder')">🧮 Exercise Calculator</button>
+      <button id="modeTenb5" onclick="showMode('tenb5')">📅 10b5-1 Plan</button>
     </div>
 
     <div id="advisorView"></div>
 
     <div id="builderView" class="hide"></div>
+
+    <div id="tenb5View" class="hide"></div>
 
     <div id="plannerView" class="hide">
     <h2 class="sec"><span class="n">1</span>Your situation</h2>
@@ -489,13 +497,14 @@ function startApp(user, plan){
   initAdvisor();
 }
 function showMode(m){
-  ['advisor','planner','builder'].forEach(function(x){
+  ['advisor','planner','builder','tenb5'].forEach(function(x){
     var v=document.getElementById(x+'View'); if(v) v.classList.toggle('hide',x!==m);
     var b=document.getElementById('mode'+x.charAt(0).toUpperCase()+x.slice(1)); if(b) b.classList.toggle('on',x===m);
   });
   if(m==='advisor'&&!ADV) initAdvisor();
   if(m==='planner') recalc();
   if(m==='builder'){ if(!BUILD) initBuilder(); renderBuilder(); }
+  if(m==='tenb5'){ if(!TENB5) initTenb5(); renderTenb5(); }
 }
 function renderSubbar(){
   const ex=exercisableLots(); const totSh=ex.reduce((a,l)=>a+l.shares,0);
@@ -1166,6 +1175,97 @@ function foresight(r,lots,tShares){
       "Estimated total tax <b>"+f(r.totalTax)+"</b>, netting about <b>"+f(r.netAfterTax)+"</b>. Remember the target is a guess, not a forecast — slide it to test how sensitive the outcome is.";
   }
   return '<div class="foresight"><span class="fh">What this means</span>'+body+'</div>';
+}
+
+
+/* ============================================================
+   10b5-1 SELL-PLAN PLANNER — schedule automated sales, with
+   real dates, per-tranche tax, and a compliance checklist.
+   ============================================================ */
+let TENB5=null;
+function initTenb5(){ TENB5={ shares:3000, basis:2.80, qualifying:true, months:12,
+  freq:"quarterly", price:PLAN.currentPrice, floor:"", officer:false }; }
+function t5SetNum(k,v){ TENB5[k]= v===""? "" : (+v||0); t5Recalc(); }
+function t5SetVal(k,v){ TENB5[k]=v; renderTenb5(); }
+
+function renderTenb5(){
+  const T=TENB5;
+  const seg=function(k,opts){ return '<div class="seg">'+opts.map(function(o){
+    return '<button class="'+(T[k]===o[0]?"on":"")+'" onclick="t5SetVal(\''+k+'\','+(typeof o[0]==="string"?("\''+o[0]+'\'"):o[0])+')">'+o[1]+'</button>';
+  }).join("")+'</div>'; };
+  const monthsSel='<select onchange="t5SetVal(\'months\',+this.value)">'+[6,12,18,24,36].map(function(m){
+    return '<option value="'+m+'"'+(T.months===m?" selected":"")+'>'+m+' months</option>';}).join("")+'</select>';
+
+  $("tenb5View").innerHTML=''+
+    '<h2 class="sec"><span class="n">\u{1F4C5}</span>10b5-1 Sell Plan</h2>'+
+    '<div class="disclaimer" style="margin-bottom:14px">A 10b5-1 plan lets you pre-schedule stock sales in advance, so they run automatically even during blackout windows and give you a legal safe harbor against insider-trading claims. Design the schedule here; the actual plan is set up through BillionToOne + Fidelity. General info, not legal or tax advice.</div>'+
+
+    '<div class="panel" style="margin-bottom:14px"><div class="grid3">'+
+      '<div><label class="fld">Shares to sell (total)</label><input type="number" min="0" value="'+(T.shares===""?"":T.shares)+'" oninput="t5SetNum(\'shares\',this.value)"><div class="hint">Shares you will own by then (exercised &amp; held).</div></div>'+
+      '<div><label class="fld">Your cost basis / strike</label><input type="number" step="0.01" value="'+(T.basis===""?"":T.basis)+'" oninput="t5SetNum(\'basis\',this.value)"><div class="hint">The strike you paid to exercise these shares.</div></div>'+
+      '<div><label class="fld">Assumed share price</label><input type="number" step="0.5" value="'+(T.price===""?"":T.price)+'" oninput="t5SetNum(\'price\',this.value)"><div class="hint">For estimating proceeds. Real price will vary.</div></div>'+
+    '</div><div class="grid3" style="margin-top:12px">'+
+      '<div><label class="fld">Sales are</label>'+seg("qualifying",[[true,"Long-term (qualifying)"],[false,"Short-term"]])+'<div class="hint">Long-term = held &gt;1yr from exercise &amp; &gt;2yr from grant → low LTCG rate.</div></div>'+
+      '<div><label class="fld">Plan length</label>'+monthsSel+'</div>'+
+      '<div><label class="fld">Sell frequency</label>'+seg("freq",[["monthly","Monthly"],["quarterly","Quarterly"]])+'</div>'+
+    '</div><div class="grid3" style="margin-top:12px">'+
+      '<div><label class="fld">Price floor <span class="muted">(optional)</span></label><input type="number" step="0.5" value="'+(T.floor===""?"":T.floor)+'" oninput="t5SetNum(\'floor\',this.value)"><div class="hint">Only sell at/above this price.</div></div>'+
+      '<div style="grid-column:span 2"><label class="fld">Your role at the company</label>'+seg("officer",[[false,"Employee"],[true,"Officer / Director (Section 16)"]])+'<div class="hint">Sets the required cooling-off period before the first sale.</div></div>'+
+    '</div></div>'+
+
+    '<div id="t5Results"></div>';
+  t5Recalc();
+}
+
+function t5Recalc(){
+  const box=$("t5Results"); if(!box) return;
+  const T=TENB5, shares=+T.shares||0, basis=+T.basis||0, price=+T.price||0;
+  if(shares<=0||price<=0){ box.innerHTML='<div class="panel muted" style="text-align:center">Enter shares and a price to see the schedule.</div>'; return; }
+  const tranches=Math.max(1, Math.round(T.months/(T.freq==="monthly"?1:3)));
+  const per=Math.floor(shares/tranches);
+  const prior=(price-((PLAN.priorIsoExerciseThisYear&&PLAN.priorIsoExerciseThisYear.strike)||0))*((PLAN.priorIsoExerciseThisYear&&PLAN.priorIsoExerciseThisYear.shares)||0);
+  const r=computePlan({status:PLAN.filingStatus,otherIncome:PLAN.expectedIncome,priorIsoPref:prior,fmv:price,
+    lots:[{shares:shares,strike:basis,type:"ISO"}], action:"sellLater", salePrice:price, qualifying:T.qualifying, longTerm:true});
+  const gross=price*shares, tax=r.totalTax, net=gross-tax, gain=Math.max(0,(price-basis)*shares);
+
+  const cool=T.officer?90:30;
+  const start=new Date(); start.setDate(start.getDate()+cool);
+  const addM=function(d,n){ var x=new Date(d.getTime()); x.setMonth(x.getMonth()+n); return x; };
+  const fmtD=function(d){ return d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}); };
+  const interval=T.freq==="monthly"?1:3;
+
+  let rows="", alloc=0, lastDate=start;
+  for(let i=0;i<tranches;i++){
+    const sh = i===tranches-1 ? (shares-alloc) : per; alloc+=sh;
+    const g=sh*price, tx=tax*(shares? sh/shares:0); const d=addM(start,i*interval); lastDate=d;
+    rows+='<tr><td>'+(i+1)+'</td><td>'+fmtD(d)+'</td><td class="r">'+sh.toLocaleString()+'</td><td class="r">'+fmt0(g)+'</td><td class="r">'+fmt0(tx)+'</td><td class="r">'+fmt0(g-tx)+'</td></tr>';
+  }
+  const floorNote = (T.floor!==""&&+T.floor>0) ? '<div class="hint" style="margin-top:8px">With a $'+(+T.floor).toLocaleString()+' floor, a tranche only sells if BLLN is at or above that on its date — otherwise it is skipped (so actual proceeds may be lower).</div>' : "";
+
+  const coolText = T.officer
+    ? "90 days after you adopt the plan (or 2 business days after BillionToOne’s next earnings release, whichever is later, up to 120 days)"
+    : "30 days after you adopt the plan";
+
+  box.innerHTML=''+
+    '<div class="startbanner">Earliest first sale: <b>'+fmtD(start)+'</b> — after the required <b>'+cool+'-day cooling-off</b> ('+coolText+'). Last sale around <b>'+fmtD(lastDate)+'</b>.</div>'+
+    '<div class="panel" style="margin-bottom:14px"><div style="overflow-x:auto"><table class="gtab">'+
+      '<thead><tr><th>#</th><th class="l">Sell date</th><th>Shares</th><th>Gross</th><th>Est. tax</th><th>Net cash</th></tr></thead>'+
+      '<tbody>'+rows+'</tbody>'+
+      '<tfoot><tr class="btot"><td></td><td class="l">Totals ('+tranches+' sales)</td><td class="r">'+shares.toLocaleString()+'</td><td class="r">'+fmt0(gross)+'</td><td class="r">'+fmt0(tax)+'</td><td class="r">'+fmt0(net)+'</td></tr></tfoot>'+
+    '</table></div>'+floorNote+
+    '<div class="hint" style="margin-top:8px">Tax assumes '+(T.qualifying?"long-term / qualifying treatment (federal 15–20% + CA as ordinary + NIIT)":"disqualifying treatment (the spread is ordinary income)")+', with all sales stacked in one year. Spreading across two calendar years can lower it — the calculator understates that benefit.</div></div>'+
+
+    '<div class="foresight"><span class="fh">What a 10b5-1 does for you</span>'+
+      'It turns "when do I sell?" into a decision you make <b>once</b>, in advance, then never touch. The trades run on autopilot — through blackout windows, earnings, whatever — which removes the emotion and the market-timing guesswork, and gives you an <b>affirmative defense</b> if anyone ever questions the timing. For you specifically: since these are exercised ISOs held past the 1-year and 2-year marks, each sale is a <b>qualifying disposition</b> taxed at the low long-term rate, so a 10b5-1 is a clean, systematic way to <b>diversify out of BLLN</b> without watching the ticker.</div>'+
+
+    '<div class="compliance"><span class="ch">Before you set it up — the rules</span><ul style="margin:0;padding-left:18px">'+
+      '<li>You can only <b>adopt it when you have no material nonpublic information</b>, and typically during an <b>open trading window</b>.</li>'+
+      '<li><b>Cooling-off</b> before the first trade: '+coolText+'.</li>'+
+      '<li><b>One plan at a time</b>, and only one single-trade plan in any 12-month period.</li>'+
+      '<li>You must act in <b>good faith</b> and can’t influence the timing or amounts once it is running.</li>'+
+      '<li>BillionToOne must <b>permit 10b5-1 plans and pre-clear yours</b> (legal / stock-admin sign-off). <b>Fidelity Stock Plan Services</b> sets up and executes the trades.</li>'+
+      '<li>These SEC rules took effect Feb 27, 2023. Confirm the specifics with BillionToOne’s stock-plan team and a securities attorney — this is general information, not legal advice.</li>'+
+    '</ul></div>';
 }
 
 
