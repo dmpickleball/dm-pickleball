@@ -1184,7 +1184,7 @@ function foresight(r,lots,tShares){
    ============================================================ */
 let TENB5=null;
 function initTenb5(){ TENB5={ shares:3000, basis:2.80, qualifying:true, months:12,
-  freq:"quarterly", price:PLAN.currentPrice, floor:"", officer:false }; }
+  freq:"quarterly", price:PLAN.currentPrice, floor:"", officer:false, setupFee:250, perTrade:25 }; }
 function t5SetNum(k,v){ TENB5[k]= v===""? "" : (+v||0); t5Recalc(); }
 function t5SetVal(k,v){ TENB5[k]=v; renderTenb5(); }
 
@@ -1211,6 +1211,10 @@ function renderTenb5(){
     '</div><div class="grid3" style="margin-top:12px">'+
       '<div><label class="fld">Price floor <span class="muted">(optional)</span></label><input type="number" step="0.5" value="'+(T.floor===""?"":T.floor)+'" oninput="t5SetNum(\'floor\',this.value)"><div class="hint">Only sell at/above this price.</div></div>'+
       '<div style="grid-column:span 2"><label class="fld">Your role at the company</label>'+seg("officer",[[false,"Employee"],[true,"Officer / Director (Section 16)"]])+'<div class="hint">Sets the required cooling-off period before the first sale.</div></div>'+
+    '</div><div class="grid3" style="margin-top:12px">'+
+      '<div><label class="fld">Plan setup fee (one-time) <span class="tag est">estimate</span></label><input type="number" step="10" value="'+(T.setupFee===""?"":T.setupFee)+'" oninput="t5SetNum(\'setupFee\',this.value)"><div class="hint">Fidelity does not publish 10b5-1 pricing — confirm the real fee.</div></div>'+
+      '<div><label class="fld">Commission per sale <span class="tag est">estimate</span></label><input type="number" step="5" value="'+(T.perTrade===""?"":T.perTrade)+'" oninput="t5SetNum(\'perTrade\',this.value)"><div class="hint">A per-trade fee applied to each sale in the plan.</div></div>'+
+      '<div></div>'+
     '</div></div>'+
 
     '<div id="t5Results"></div>';
@@ -1223,10 +1227,19 @@ function t5Recalc(){
   if(shares<=0||price<=0){ box.innerHTML='<div class="panel muted" style="text-align:center">Enter shares and a price to see the schedule.</div>'; return; }
   const tranches=Math.max(1, Math.round(T.months/(T.freq==="monthly"?1:3)));
   const per=Math.floor(shares/tranches);
-  const prior=(price-((PLAN.priorIsoExerciseThisYear&&PLAN.priorIsoExerciseThisYear.strike)||0))*((PLAN.priorIsoExerciseThisYear&&PLAN.priorIsoExerciseThisYear.shares)||0);
-  const r=computePlan({status:PLAN.filingStatus,otherIncome:PLAN.expectedIncome,priorIsoPref:prior,fmv:price,
-    lots:[{shares:shares,strike:basis,type:"ISO"}], action:"sellLater", salePrice:price, qualifying:T.qualifying, longTerm:true});
-  const gross=price*shares, tax=r.totalTax, net=gross-tax, gain=Math.max(0,(price-basis)*shares);
+  // These shares are already exercised & held, so selling them is taxed as capital
+  // gains only (any AMT was handled back at exercise). No fresh AMT here.
+  const st=PLAN.filingStatus, gain=Math.max(0,(price-basis)*shares);
+  const stdF=TAX_CONFIG.federal.standardDeduction[st], ordT=Math.max(0,PLAN.expectedIncome-stdF), fb=TAX_CONFIG.federal.ordinaryBrackets[st];
+  let fedTax;
+  if(T.qualifying){ fedTax=ltcgTax(ordT,gain,TAX_CONFIG.federal.ltcgBreaks[st]); }
+  else { fedTax=progressiveTax(ordT+gain,fb)-progressiveTax(ordT,fb); }
+  const stdC=TAX_CONFIG.ca.standardDeduction[st], caT=Math.max(0,PLAN.expectedIncome-stdC), cb=TAX_CONFIG.ca.ordinaryBrackets[st];
+  const caTax=progressiveTax(caT+gain,cb)-progressiveTax(caT,cb);
+  const niitCfg=TAX_CONFIG.federal.niit, magi=PLAN.expectedIncome+gain;
+  const niit=niitCfg.rate*Math.min(gain,Math.max(0,magi-niitCfg.threshold[st]));
+  const gross=price*shares, tax=fedTax+caTax+niit, net=gross-tax;
+  const setupFee=+T.setupFee||0, perTrade=+T.perTrade||0, commTotal=perTrade*tranches, totalFees=setupFee+commTotal, netFinal=net-totalFees;
 
   const cool=T.officer?90:30;
   const start=new Date(); start.setDate(start.getDate()+cool);
@@ -1249,11 +1262,21 @@ function t5Recalc(){
   box.innerHTML=''+
     '<div class="startbanner">Earliest first sale: <b>'+fmtD(start)+'</b> — after the required <b>'+cool+'-day cooling-off</b> ('+coolText+'). Last sale around <b>'+fmtD(lastDate)+'</b>.</div>'+
     '<div class="panel" style="margin-bottom:14px"><div style="overflow-x:auto"><table class="gtab">'+
-      '<thead><tr><th>#</th><th class="l">Sell date</th><th>Shares</th><th>Gross</th><th>Est. tax</th><th>Net cash</th></tr></thead>'+
+      '<thead><tr><th>#</th><th class="l">Sell date</th><th>Shares</th><th>Gross</th><th>Est. tax</th><th>After tax</th></tr></thead>'+
       '<tbody>'+rows+'</tbody>'+
       '<tfoot><tr class="btot"><td></td><td class="l">Totals ('+tranches+' sales)</td><td class="r">'+shares.toLocaleString()+'</td><td class="r">'+fmt0(gross)+'</td><td class="r">'+fmt0(tax)+'</td><td class="r">'+fmt0(net)+'</td></tr></tfoot>'+
     '</table></div>'+floorNote+
     '<div class="hint" style="margin-top:8px">Tax assumes '+(T.qualifying?"long-term / qualifying treatment (federal 15–20% + CA as ordinary + NIIT)":"disqualifying treatment (the spread is ordinary income)")+', with all sales stacked in one year. Spreading across two calendar years can lower it — the calculator understates that benefit.</div></div>'+
+
+    '<div class="panel" style="margin-bottom:14px"><div class="rep-h" style="font-size:.95rem"><span class="ic">=</span>Your bottom line</div>'+
+      '<table class="mathtab">'+
+        '<tr><td>Gross proceeds ('+shares.toLocaleString()+' sh @ '+fmt0(price)+')</td><td class="r">'+fmt0(gross)+'</td></tr>'+
+        '<tr><td><span class="op">minus</span> Estimated tax</td><td class="r">'+fmt0(tax)+'</td></tr>'+
+        '<tr><td><span class="op">minus</span> Plan setup fee (one-time)</td><td class="r">'+fmt0(setupFee)+'</td></tr>'+
+        '<tr><td><span class="op">minus</span> Commissions ('+fmt0(perTrade)+' x '+tranches+' sales)</td><td class="r">'+fmt0(commTotal)+'</td></tr>'+
+        '<tr class="tot"><td>Net in your pocket</td><td class="r" style="color:var(--low)">'+fmt0(netFinal)+'</td></tr>'+
+      '</table>'+
+      '<div class="hint" style="margin-top:8px">Fidelity does not publish 10b5-1 pricing, so the setup fee and commission are <b>placeholders</b> — get the real numbers from Fidelity Executive Services (800-823-0217) and update them above. Fees are usually small next to the proceeds, but they complete the picture.</div></div>'+
 
     '<div class="foresight"><span class="fh">What a 10b5-1 does for you</span>'+
       'It turns "when do I sell?" into a decision you make <b>once</b>, in advance, then never touch. The trades run on autopilot — through blackout windows, earnings, whatever — which removes the emotion and the market-timing guesswork, and gives you an <b>affirmative defense</b> if anyone ever questions the timing. For you specifically: since these are exercised ISOs held past the 1-year and 2-year marks, each sale is a <b>qualifying disposition</b> taxed at the low long-term rate, so a 10b5-1 is a clean, systematic way to <b>diversify out of BLLN</b> without watching the ticker.</div>'+
