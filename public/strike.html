@@ -219,6 +219,13 @@ canvas{width:100%;display:block}
 .bspend{width:82px;display:inline-block;min-height:34px;padding:6px 8px 6px 3px}
 .dol{color:var(--muted);margin-right:1px}
 .btot td{border-top:2px solid var(--line);font-weight:800}
+.timeline{margin-top:14px;border:1px solid var(--line);border-radius:11px;overflow:hidden}
+.tl-row{display:flex;gap:12px;padding:10px 13px;border-bottom:1px solid var(--line2);font-size:.84rem;line-height:1.45}
+.tl-row:last-child{border-bottom:none}
+.tl-when{flex-shrink:0;width:104px;font-weight:800;color:var(--accent-dk)}
+.tl-what{color:var(--ink)}
+.tl-row.due{background:#fff7e9}
+@media(max-width:520px){.tl-row{flex-direction:column;gap:2px}.tl-when{width:auto}}
 </style>
 </head>
 <body>
@@ -1116,9 +1123,28 @@ function bRecalc(){
     t+=LB("Stock value held (paper)", fmt0(r.paperValue), "var(--low)"); }
   else { t+=LB("Net cash after tax", fmt0(r.netAfterTax), "var(--low)"); }
 
-  box.innerHTML='<div class="panel"><table class="mathtab">'+t+'</table>'+foresight(r,lots,tShares)+'</div>';
+  box.innerHTML='<div class="panel"><table class="mathtab">'+t+'</table>'+timeline(r)+foresight(r,lots,tShares)+'</div>';
 }
 
+function timeline(r){
+  var now=new Date(), y=now.getFullYear();
+  var apr="April 15, "+(y+1), jan="Jan 15, "+(y+1), f=fmt0, rows="";
+  var row=function(when,what,due){ return '<div class="tl-row'+(due?" due":"")+'"><span class="tl-when">'+when+'</span><span class="tl-what">'+what+'</span></div>'; };
+  if(BUILD.action==="hold"){
+    rows+=row("At exercise","Pay the strike cost, <b>"+f(r.cashToExercise)+"</b> (settles about 2 business days after you exercise).");
+    if(r.totalTax>0){
+      rows+=row(jan,"Likely an <b>estimated tax payment</b> toward the ~"+f(r.amtDue)+" AMT, to avoid an underpayment penalty. A safe harbor (paying 110% of last year's tax through withholding) may cover you, so check with your CPA.");
+      rows+=row(apr,"<b>"+f(r.totalTax)+"</b> AMT due with your "+y+" tax return.",true);
+    }
+  } else if(BUILD.action==="sellNow"){
+    rows+=row("At exercise / sale","You buy and sell the same day, so the sale covers the strike and frees your net cash of <b>"+f(r.netAfterTax)+"</b>.");
+    rows+=row(apr,"<b>"+f(r.totalTax)+"</b> tax due with your "+y+" return. Important: selling ISOs does <b>not</b> withhold any tax, so set this money aside now.",true);
+  } else {
+    rows+=row("At exercise","Pay the strike cost, <b>"+f(r.cashToExercise)+"</b>.");
+    rows+=row("When you sell","Tax of about <b>"+f(r.totalTax)+"</b> is due with the return for the <b>year you sell</b> (selling in 2027 means it is due April 15, 2028).",true);
+  }
+  return '<div class="timeline">'+rows+'</div>';
+}
 function foresight(r,lots,tShares){
   const price=BUILD.price, income=BUILD.income, status=BUILD.status, f=fmt0;
   const strikes=lots.map(function(l){return "$"+l.strike.toFixed(2);}).join(", ");
