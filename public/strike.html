@@ -216,6 +216,9 @@ canvas{width:100%;display:block}
 .foresight{background:var(--deep);color:#dff0f9;border-radius:11px;padding:14px 16px;margin-top:14px;font-size:.86rem;line-height:1.6}
 .foresight b{color:#fff}
 .foresight .fh{font-weight:800;color:#7fd4f3;font-size:.7rem;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px}
+.bspend{width:82px;display:inline-block;min-height:34px;padding:6px 8px 6px 3px}
+.dol{color:var(--muted);margin-right:1px}
+.btot td{border-top:2px solid var(--line);font-weight:800}
 </style>
 </head>
 <body>
@@ -1003,7 +1006,8 @@ function initBuilder(){ BUILD={ price:PLAN.currentPrice, income:PLAN.expectedInc
   status:PLAN.filingStatus||"single", shares:{}, action:"hold",
   target:Math.round(PLAN.currentPrice*2), qualifying:true }; }
 function bSetInput(k,v){ BUILD[k]= (k==="status")? v : (+v||0); bRecalc(); }
-function bSetQty(id,v){ BUILD.shares[id]=Math.max(0,+v||0); bRecalc(); }
+function bSetQty(id,v){ BUILD.shares[id]=Math.max(0,Math.floor(+v||0)); const g=PLAN.grants.find(x=>x.id===id); const el=document.getElementById('spend_'+id); if(el&&g) el.value= BUILD.shares[id]? Math.round(BUILD.shares[id]*g.strike):''; bRecalc(); }
+function bSetSpend(id,v){ const g=PLAN.grants.find(x=>x.id===id); if(!g) return; const sh=Math.min(g.exercisable, Math.floor((Math.max(0,+v||0))/g.strike)); BUILD.shares[id]=sh; const el=document.getElementById('q_'+id); if(el) el.value= sh||''; bRecalc(); }
 function bMax(id){ const g=PLAN.grants.find(x=>x.id===id); if(g){ BUILD.shares[id]=g.exercisable; renderBuilder(); } }
 function bClear(){ BUILD.shares={}; renderBuilder(); }
 function bAction(a){ BUILD.action=a; renderBuilder(); }
@@ -1025,11 +1029,12 @@ function fedMarginalRate(t,status){ const b=TAX_CONFIG.federal.ordinaryBrackets[
 function renderBuilder(){
   const g=PLAN.grants.filter(x=>x.exercisable>0);
   const price=BUILD.price;
-  const rows=g.map(function(x){ const q=BUILD.shares[x.id]||0;
+  const rows=g.map(function(x){ const q=BUILD.shares[x.id]||0; const spent=q?Math.round(q*x.strike):"";
     return '<tr>'+
       '<td class="l">'+x.year+' <span class="badge '+x.type+'">'+x.type+'</span></td>'+
       '<td>$'+x.strike.toFixed(2)+'</td>'+
       '<td>'+x.exercisable.toLocaleString()+'</td>'+
+      '<td><span class="dol">$</span><input class="bspend" id="spend_'+x.id+'" type="number" min="0" placeholder="0" value="'+spent+'" oninput="bSetSpend(\''+x.id+'\',this.value)"></td>'+
       '<td><input class="bqty" id="q_'+x.id+'" type="number" min="0" max="'+x.exercisable+'" value="'+(q||"")+'" placeholder="0" oninput="bSetQty(\''+x.id+'\',this.value)"> '+
       '<button class="bmax" onclick="bMax(\''+x.id+'\')">max</button></td>'+
       '<td class="r" id="sp_'+x.id+'">'+fmt0(Math.max(0,(price-x.strike)*q))+'</td></tr>';
@@ -1061,8 +1066,10 @@ function renderBuilder(){
         '<button class="btn btn-sm" onclick="bQuickFill()">Fill</button>'+
         '<button class="btn btn-ghost btn-sm" onclick="bClear()">Clear</button></div>'+
       '<div style="overflow-x:auto"><table class="gtab"><thead><tr>'+
-        '<th class="l">Grant</th><th>Strike</th><th>Available</th><th>Shares to exercise</th><th>Spread</th></tr></thead>'+
-        '<tbody>'+rows+'</tbody></table></div></div>'+
+        '<th class="l">Grant</th><th>Strike</th><th>Available</th><th>$ to spend</th><th>Shares</th><th>Spread</th></tr></thead>'+
+        '<tbody>'+rows+'</tbody>'+
+        '<tfoot><tr class="btot"><td class="l">Totals</td><td></td><td></td><td class="r" id="b_totCash">$0</td><td class="r" id="b_totShares">0</td><td class="r" id="b_totSpread">$0</td></tr></tfoot>'+
+        '</table></div></div>'+
 
     '<div class="panel" style="margin-bottom:14px"><label class="fld">What would you do?</label>'+seg+later+'</div>'+
 
@@ -1072,9 +1079,14 @@ function renderBuilder(){
 
 function bRecalc(){
   const price=BUILD.price, income=BUILD.income, status=BUILD.status;
-  const lots=[]; PLAN.grants.forEach(function(x){ const q=Math.min(BUILD.shares[x.id]||0, x.exercisable);
-    const el=document.getElementById("sp_"+x.id); if(el) el.textContent=fmt0(Math.max(0,(price-x.strike)*q));
-    if(q>0) lots.push({shares:q,strike:x.strike,type:x.type}); });
+  const lots=[]; let totSh=0, totCash=0, totSpread=0;
+  PLAN.grants.forEach(function(x){ const q=Math.min(BUILD.shares[x.id]||0, x.exercisable);
+    const sp=Math.max(0,(price-x.strike)*q);
+    const el=document.getElementById("sp_"+x.id); if(el) el.textContent=fmt0(sp);
+    if(q>0){ lots.push({shares:q,strike:x.strike,type:x.type}); totSh+=q; totCash+=q*x.strike; totSpread+=sp; } });
+  const tc=document.getElementById("b_totCash"); if(tc) tc.textContent=fmt0(totCash);
+  const tsh=document.getElementById("b_totShares"); if(tsh) tsh.textContent=totSh.toLocaleString();
+  const tsp=document.getElementById("b_totSpread"); if(tsp) tsp.textContent=fmt0(totSpread);
   const box=$("bResults"); if(!box) return;
   if(!lots.length){ box.innerHTML='<div class="panel muted" style="text-align:center">Pick some shares above (or use Quick fill) to see the tax and what it means.</div>'; return; }
   const prior=(price-((PLAN.priorIsoExerciseThisYear&&PLAN.priorIsoExerciseThisYear.strike)||0))*((PLAN.priorIsoExerciseThisYear&&PLAN.priorIsoExerciseThisYear.shares)||0);
