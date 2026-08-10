@@ -1184,7 +1184,7 @@ function foresight(r,lots,tShares){
    ============================================================ */
 let TENB5=null;
 function initTenb5(){ TENB5={ shares:3000, basis:2.80, qualifying:true, months:12,
-  freq:"quarterly", price:PLAN.currentPrice, floor:"", officer:false, setupFee:250, perTrade:25 }; }
+  freq:"quarterly", price:PLAN.currentPrice, floor:"", officer:false, setupFee:250, perTrade:25, ladderShares:6000, numPlans:3 }; }
 function t5SetNum(k,v){ TENB5[k]= v===""? "" : (+v||0); t5Recalc(); }
 function t5SetVal(k,v){ TENB5[k]=v; renderTenb5(); }
 
@@ -1199,6 +1199,7 @@ function renderTenb5(){
   $("tenb5View").innerHTML=''+
     '<h2 class="sec"><span class="n">\u{1F4C5}</span>10b5-1 Sell Plan</h2>'+
     '<div class="disclaimer" style="margin-bottom:14px">A 10b5-1 plan lets you pre-schedule stock sales in advance, so they run automatically even during blackout windows and give you a legal safe harbor against insider-trading claims. Design the schedule here; the actual plan is set up through BillionToOne + Fidelity. General info, not legal or tax advice.</div>'+
+    t5StrategyHtml()+
 
     '<div class="panel" style="margin-bottom:14px"><div class="grid3">'+
       '<div><label class="fld">Shares to sell (total)</label><input type="number" min="0" value="'+(T.shares===""?"":T.shares)+'" oninput="t5SetNum(\'shares\',this.value)"><div class="hint">Shares you will own by then (exercised &amp; held).</div></div>'+
@@ -1217,8 +1218,66 @@ function renderTenb5(){
       '<div></div>'+
     '</div></div>'+
 
-    '<div id="t5Results"></div>';
+    '<div id="t5Results"></div>'+
+    t5LadderInputsHtml();
   t5Recalc();
+}
+
+function t5SaleTax(gain, qualifying){
+  const st=PLAN.filingStatus, inc=PLAN.expectedIncome;
+  const stdF=TAX_CONFIG.federal.standardDeduction[st], ordT=Math.max(0,inc-stdF), fb=TAX_CONFIG.federal.ordinaryBrackets[st];
+  const fed = qualifying ? ltcgTax(ordT,gain,TAX_CONFIG.federal.ltcgBreaks[st]) : (progressiveTax(ordT+gain,fb)-progressiveTax(ordT,fb));
+  const stdC=TAX_CONFIG.ca.standardDeduction[st], caT=Math.max(0,inc-stdC), cb=TAX_CONFIG.ca.ordinaryBrackets[st];
+  const ca = progressiveTax(caT+gain,cb)-progressiveTax(caT,cb);
+  const nc=TAX_CONFIG.federal.niit; const niit=nc.rate*Math.min(gain,Math.max(0,(inc+gain)-nc.threshold[st]));
+  return { fed:fed, ca:ca, niit:niit, total:fed+ca+niit };
+}
+function t5StrategyHtml(){
+  return `<details class="panel" style="margin-bottom:14px"><summary style="cursor:pointer;font-weight:700;font-size:.92rem">Why do people set up a 10b5-1 plan? (the strategy)</summary>
+    <div style="margin-top:10px;font-size:.86rem;line-height:1.6">
+    <p style="margin-bottom:8px"><b>The core reason:</b> if you work at the company, you usually cannot sell whenever you want. You need an open trading window (about 3-4 weeks a quarter) and you must have no inside information, which may be exactly when you would want to sell. A 10b5-1 lets you set your sales in advance, while you are "clean," and they then run <b>automatically, even during blackout windows</b>, with a legal safe harbor.</p>
+    <p style="margin-bottom:8px"><b>It removes emotion and market-timing.</b> You are not watching the ticker trying to pick the perfect day. You set a rule (sell X every quarter, or sell when it hits a price) and let it run.</p>
+    <p style="margin-bottom:8px"><b>It is a disciplined way to diversify.</b> Turning one concentrated stock into cash and other investments on a fixed schedule keeps your whole net worth from riding on a single company.</p>
+    <p style="margin-bottom:8px"><b>It is tax-efficient.</b> Once your exercised shares are held long enough (over 1 year from exercise and over 2 years from grant), each sale is a long-term capital gain, taxed far lower than ordinary income.</p>
+    <p><b>Why more than one plan?</b> You can generally have only <b>one active plan at a time</b> (max 2 years each). So people "ladder" plans, one after another, to keep diversifying as more shares vest and season. You can also run <b>separate plans at different brokers</b> at the same time (option shares at Fidelity, IPO shares at JP Morgan). The ladder tool below shows how a few plans sequence toward a goal.</p>
+    </div></details>`;
+}
+function t5LadderInputsHtml(){
+  const T=TENB5;
+  const opts=[2,3,4].map(n=>`<option value="${n}"${T.numPlans===n?" selected":""}>${n} plans</option>`).join("");
+  return `<details class="panel" style="margin-top:14px"><summary style="cursor:pointer;font-weight:700;font-size:.92rem">Plan a ladder - a few plans toward your overall goal</summary>
+    <div class="hint" style="margin:10px 0">Diversify a larger block across several back-to-back plans (only one runs at a time). Uses the price, basis, plan length, frequency and fees from above.</div>
+    <div class="grid3">
+      <div><label class="fld">Total shares to diversify</label><input type="number" min="0" value="${T.ladderShares===""?"":T.ladderShares}" oninput="t5SetNum('ladderShares',this.value)"></div>
+      <div><label class="fld">Number of plans</label><select onchange="t5SetVal('numPlans',+this.value)">${opts}</select></div>
+      <div></div>
+    </div>
+    <div id="t5Ladder"></div></details>`;
+}
+function t5Ladder(){
+  const el=document.getElementById("t5Ladder"); if(!el) return;
+  const T=TENB5, total=+T.ladderShares||0, N=+T.numPlans||3, price=+T.price||0, basis=+T.basis||0;
+  if(total<=0||price<=0){ el.innerHTML=""; return; }
+  const per=Math.floor(total/N), cool=T.officer?90:30, months=T.months;
+  const start=new Date(); start.setDate(start.getDate()+cool);
+  const addM=(d,n)=>{const x=new Date(d.getTime());x.setMonth(x.getMonth()+n);return x;};
+  const fmtM=d=>d.toLocaleDateString("en-US",{month:"short",year:"numeric"});
+  const trades=Math.max(1,Math.round(months/(T.freq==="monthly"?1:3)));
+  const fees=(+T.setupFee||0)+(+T.perTrade||0)*trades;
+  let rows="", alloc=0, totNet=0, totTax=0;
+  for(let k=0;k<N;k++){
+    const sh = k===N-1 ? (total-alloc) : per; alloc+=sh;
+    const pStart=addM(start,k*months), pEnd=addM(pStart,months);
+    const gain=Math.max(0,(price-basis)*sh), tax=t5SaleTax(gain,T.qualifying).total, net=sh*price-tax-fees;
+    totNet+=net; totTax+=tax;
+    rows+=`<tr><td class="l">Plan ${k+1}</td><td>${fmtM(pStart)} - ${fmtM(pEnd)}</td><td class="r">${sh.toLocaleString()}</td><td class="r">${fmt0(sh*price)}</td><td class="r">${fmt0(tax)}</td><td class="r">${fmt0(net)}</td></tr>`;
+  }
+  el.innerHTML=`<div style="overflow-x:auto;margin-top:12px"><table class="gtab">
+    <thead><tr><th class="l">Plan</th><th>Sell window</th><th>Shares</th><th>Gross</th><th>Est. tax</th><th>Net</th></tr></thead>
+    <tbody>${rows}</tbody>
+    <tfoot><tr class="btot"><td class="l">All ${N} plans</td><td></td><td class="r">${total.toLocaleString()}</td><td class="r">${fmt0(total*price)}</td><td class="r">${fmt0(totTax)}</td><td class="r">${fmt0(totNet)}</td></tr></tfoot>
+    </table></div>
+    <div class="hint" style="margin-top:8px">A relay of back-to-back plans, each seasoning and selling its batch. Spreading sales across years also keeps more of each sale in the lower long-term brackets. Illustrative only - a broker and CPA set the exact dates and amounts.</div>`;
 }
 
 function t5Recalc(){
@@ -1227,18 +1286,9 @@ function t5Recalc(){
   if(shares<=0||price<=0){ box.innerHTML='<div class="panel muted" style="text-align:center">Enter shares and a price to see the schedule.</div>'; return; }
   const tranches=Math.max(1, Math.round(T.months/(T.freq==="monthly"?1:3)));
   const per=Math.floor(shares/tranches);
-  // These shares are already exercised & held, so selling them is taxed as capital
-  // gains only (any AMT was handled back at exercise). No fresh AMT here.
-  const st=PLAN.filingStatus, gain=Math.max(0,(price-basis)*shares);
-  const stdF=TAX_CONFIG.federal.standardDeduction[st], ordT=Math.max(0,PLAN.expectedIncome-stdF), fb=TAX_CONFIG.federal.ordinaryBrackets[st];
-  let fedTax;
-  if(T.qualifying){ fedTax=ltcgTax(ordT,gain,TAX_CONFIG.federal.ltcgBreaks[st]); }
-  else { fedTax=progressiveTax(ordT+gain,fb)-progressiveTax(ordT,fb); }
-  const stdC=TAX_CONFIG.ca.standardDeduction[st], caT=Math.max(0,PLAN.expectedIncome-stdC), cb=TAX_CONFIG.ca.ordinaryBrackets[st];
-  const caTax=progressiveTax(caT+gain,cb)-progressiveTax(caT,cb);
-  const niitCfg=TAX_CONFIG.federal.niit, magi=PLAN.expectedIncome+gain;
-  const niit=niitCfg.rate*Math.min(gain,Math.max(0,magi-niitCfg.threshold[st]));
-  const gross=price*shares, tax=fedTax+caTax+niit, net=gross-tax;
+  // Already exercised & held, so this is a capital-gains sale only (AMT was at exercise).
+  const gain=Math.max(0,(price-basis)*shares);
+  const gross=price*shares, tax=t5SaleTax(gain,T.qualifying).total, net=gross-tax;
   const setupFee=+T.setupFee||0, perTrade=+T.perTrade||0, commTotal=perTrade*tranches, totalFees=setupFee+commTotal, netFinal=net-totalFees;
 
   const cool=T.officer?90:30;
@@ -1292,6 +1342,7 @@ function t5Recalc(){
       '<li><b>To set it up:</b> call <b>Fidelity Executive Services, 800-823-0217</b> for your option shares, then send the plan to BillionToOne Legal at <b>equity@billiontoone.com</b> for review — reach out several weeks before your target effective date.</li>'+
       '<li>Confirm details against BillionToOne’s Insider Trading Policy and with a securities attorney. General info, not legal advice.</li>'+
     '</ul></div>';
+  t5Ladder();
 }
 
 
