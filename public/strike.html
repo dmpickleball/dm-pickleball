@@ -231,6 +231,29 @@ canvas{width:100%;display:block}
 .compliance .ch{font-weight:800;color:var(--accent-dk);font-size:.72rem;letter-spacing:.6px;text-transform:uppercase;display:block;margin-bottom:8px}
 .startbanner{background:#eefaf2;border:1px solid #bfe7d0;border-radius:11px;padding:13px 15px;margin-bottom:14px;font-size:.9rem;line-height:1.5}
 .startbanner b{color:#13643f}
+.steplabel{font-weight:800;font-size:.98rem;margin:22px 0 10px;display:flex;align-items:center;gap:9px}
+.steplabel .sn{width:23px;height:23px;border-radius:6px;background:var(--accent);color:#fff;font-size:.78rem;display:inline-flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0}
+.gcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:10px}
+.gcard{text-align:left;background:#fff;border:1px solid var(--line);border-radius:11px;padding:12px;cursor:pointer;box-shadow:var(--shadow)}
+.gcard.on{border-color:var(--accent);box-shadow:0 0 0 2px rgba(0,174,239,.2)}
+.gc-top{font-size:.76rem;color:var(--muted);font-weight:700;display:flex;gap:6px;align-items:center;margin-bottom:5px}
+.gc-strike{font-size:1.3rem;font-weight:800;letter-spacing:-.5px}
+.gc-strike .gc-sub{font-size:.68rem;color:var(--muted);font-weight:600}
+.gc-avail{font-size:.8rem;margin-top:4px}
+.gc-spread{font-size:.74rem;color:var(--low);font-weight:700;margin-top:2px}
+.actcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:10px}
+.actcard{text-align:left;background:#fff;border:1px solid var(--line);border-radius:11px;padding:13px;cursor:pointer;box-shadow:var(--shadow)}
+.actcard.on{border-color:var(--accent);background:#eef9fe;box-shadow:0 0 0 2px rgba(0,174,239,.2)}
+.actcard .at{font-weight:800;font-size:.88rem;margin-bottom:3px}
+.actcard .ad{font-size:.75rem;color:var(--muted);line-height:1.4}
+.amtsum{font-size:.95rem;font-weight:700;margin-top:12px}
+.amtsum b{color:var(--accent-dk)}
+.outcome{background:#fff;border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);overflow:hidden}
+.outcome-h{background:var(--deep);color:#fff;padding:13px 16px;font-weight:800;font-size:1rem}
+.outcome-b{padding:16px}
+.whatbox{background:#eaf7fd;border:1px solid #bfe6f5;border-radius:9px;padding:12px 13px;font-size:.86rem;line-height:1.55;margin-bottom:14px}
+.whatbox b{color:var(--accent-dk)}
+.phase .pt{font-weight:800;font-size:.72rem;color:var(--accent-dk);text-transform:uppercase;letter-spacing:.5px;border-left:3px solid var(--accent);padding-left:9px}
 </style>
 </head>
 <body>
@@ -1018,165 +1041,137 @@ function renderReport(){
    get AMT / capital gains and a plain-English read.
    ============================================================ */
 let BUILD=null;
-function initBuilder(){ BUILD={ price:PLAN.currentPrice, income:PLAN.expectedIncome,
-  status:PLAN.filingStatus||"single", shares:{}, action:"hold",
-  target:Math.round(PLAN.currentPrice*2), qualifying:true }; }
-function bSetInput(k,v){ BUILD[k]= (k==="status")? v : (+v||0); bRecalc(); }
-function bSetQty(id,v){ BUILD.shares[id]=Math.max(0,Math.floor(+v||0)); const g=PLAN.grants.find(x=>x.id===id); const el=document.getElementById('spend_'+id); if(el&&g) el.value= BUILD.shares[id]? Math.round(BUILD.shares[id]*g.strike):''; bRecalc(); }
-function bSetSpend(id,v){ const g=PLAN.grants.find(x=>x.id===id); if(!g) return; const sh=Math.min(g.exercisable, Math.floor((Math.max(0,+v||0))/g.strike)); BUILD.shares[id]=sh; const el=document.getElementById('q_'+id); if(el) el.value= sh||''; bRecalc(); }
-function bMax(id){ const g=PLAN.grants.find(x=>x.id===id); if(g){ BUILD.shares[id]=g.exercisable; renderBuilder(); } }
-function bClear(){ BUILD.shares={}; renderBuilder(); }
-function bAction(a){ BUILD.action=a; renderBuilder(); }
-function bQual(q){ BUILD.qualifying=q; renderBuilder(); }
-function bTarget(v){ BUILD.target=+v||0; bRecalc(); }
-function bQuickFill(){
-  const budget=+((document.getElementById("b_budget")||{}).value)||0;
-  BUILD.shares={};
-  let rem=budget;
-  PLAN.grants.filter(x=>x.exercisable>0).slice().sort((a,b)=>a.strike-b.strike).forEach(g=>{
-    if(rem<=0) return; const can=Math.min(g.exercisable, Math.floor(rem/g.strike));
-    if(can>0){ BUILD.shares[g.id]=can; rem-=can*g.strike; }
-  });
-  renderBuilder();
-}
-function fedMarginalRate(t,status){ const b=TAX_CONFIG.federal.ordinaryBrackets[status]; let r=b[0][1];
-  for(let i=0;i<b.length;i++){ if(t>=b[i][0]) r=b[i][1]; } return r; }
+function initBuilder(){ const g=PLAN.grants.filter(x=>x.exercisable>0);
+  BUILD={ price:PLAN.currentPrice, income:PLAN.expectedIncome, status:PLAN.filingStatus||"single",
+    grantId:(g[0]&&g[0].id)||null, shares:0, action:"hold",
+    target:Math.round(PLAN.currentPrice*2), qualifying:true, planMonths:12, planFreq:"quarterly" }; }
+function curGrant(){ return PLAN.grants.find(x=>x.id===BUILD.grantId) || PLAN.grants.filter(x=>x.exercisable>0)[0]; }
+function bSetInput(k,v){ BUILD[k]=(k==="status")?v:(+v||0); bRecalcOutcome(); }
+function bPick(id){ BUILD.grantId=id; const sel=curGrant(); if(sel&&BUILD.shares>sel.exercisable) BUILD.shares=0; renderBuilder(); }
+function bAmt(v){ const sel=curGrant(); if(!sel) return; BUILD.shares=Math.max(0,Math.min(sel.exercisable,Math.round(+v||0)));
+  const sl=document.getElementById("bSlider"), nu=document.getElementById("bNum");
+  if(sl) sl.value=BUILD.shares; if(nu) nu.value=BUILD.shares; bRecalcOutcome(); }
+function bPct(p){ const sel=curGrant(); if(sel) bAmt(Math.round(sel.exercisable*p)); }
+function bBudget(){ const sel=curGrant(); if(!sel) return; const b=+((document.getElementById("bBudgetIn")||{}).value)||0; bAmt(Math.floor(b/sel.strike)); }
+function bAct(a){ BUILD.action=a; renderBuilder(); }
+function bTargetB(v){ BUILD.target=+v||0; bRecalcOutcome(); }
+function bQualB(q){ BUILD.qualifying=q; renderBuilder(); }
+function bPlan(k,v){ BUILD[k]=(k==="planFreq")?v:(+v||0); renderBuilder(); }
+function fedMarginalRate(t,status){ const b=TAX_CONFIG.federal.ordinaryBrackets[status]; let r=b[0][1]; for(let i=0;i<b.length;i++){ if(t>=b[i][0]) r=b[i][1]; } return r; }
 
 function renderBuilder(){
-  const g=PLAN.grants.filter(x=>x.exercisable>0);
-  const price=BUILD.price;
-  const rows=g.map(function(x){ const q=BUILD.shares[x.id]||0; const spent=q?Math.round(q*x.strike):"";
-    return '<tr>'+
-      '<td class="l">'+x.year+' <span class="badge '+x.type+'">'+x.type+'</span></td>'+
-      '<td>$'+x.strike.toFixed(2)+'</td>'+
-      '<td>'+x.exercisable.toLocaleString()+'</td>'+
-      '<td><span class="dol">$</span><input class="bspend" id="spend_'+x.id+'" type="number" min="0" placeholder="0" value="'+spent+'" oninput="bSetSpend(\''+x.id+'\',this.value)"></td>'+
-      '<td><input class="bqty" id="q_'+x.id+'" type="number" min="0" max="'+x.exercisable+'" value="'+(q||"")+'" placeholder="0" oninput="bSetQty(\''+x.id+'\',this.value)"> '+
-      '<button class="bmax" onclick="bMax(\''+x.id+'\')">max</button></td>'+
-      '<td class="r" id="sp_'+x.id+'">'+fmt0(Math.max(0,(price-x.strike)*q))+'</td></tr>';
-  }).join("");
-  const seg='<div class="seg">'+
-    '<button class="'+(BUILD.action==="hold"?"on":"")+'" onclick="bAction(\'hold\')">Exercise &amp; hold</button>'+
-    '<button class="'+(BUILD.action==="sellNow"?"on":"")+'" onclick="bAction(\'sellNow\')">Exercise &amp; sell now</button>'+
-    '<button class="'+(BUILD.action==="sellLater"?"on":"")+'" onclick="bAction(\'sellLater\')">Exercise, sell later</button></div>';
-  const later = BUILD.action==="sellLater" ?
-    '<div style="margin-top:10px"><label class="fld">Target sale price</label>'+
-      '<input type="number" value="'+BUILD.target+'" oninput="bTarget(this.value)" style="max-width:180px">'+
-      '<div class="seg" style="margin-top:8px;max-width:420px">'+
-        '<button class="'+(BUILD.qualifying?"on":"")+'" onclick="bQual(true)">Long-term / qualifying</button>'+
-        '<button class="'+(!BUILD.qualifying?"on":"")+'" onclick="bQual(false)">Short / disqualifying</button></div>'+
-      '<div class="hint">Qualifying = held &gt;1yr from exercise AND &gt;2yr from grant (most of her grants are already past the 2-year mark).</div></div>' : "";
+  const g=PLAN.grants.filter(x=>x.exercisable>0); const B=BUILD, price=B.price;
+  if(!B.grantId && g[0]) B.grantId=g[0].id;
+  const sel=curGrant(); const q=Math.min(B.shares||0, sel?sel.exercisable:0);
+  const gcards=g.map(x=>`<button class="gcard ${x.id===B.grantId?"on":""}" onclick="bPick('${x.id}')">
+      <div class="gc-top">${x.year} <span class="badge ${x.type}">${x.type}</span></div>
+      <div class="gc-strike">$${x.strike.toFixed(2)} <span class="gc-sub">strike</span></div>
+      <div class="gc-avail">${x.exercisable.toLocaleString()} available</div>
+      <div class="gc-spread">${fmt0(Math.max(0,price-x.strike))}/sh in the money</div></button>`).join("");
+  const act=(id,t,d)=>`<button class="actcard ${B.action===id?"on":""}" onclick="bAct('${id}')"><div class="at">${t}</div><div class="ad">${d}</div></button>`;
+  const actionCards=act("hold","Exercise & hold","Buy and keep the shares. Starts the long-term clock; triggers AMT now.")+
+    act("sellNow","Exercise & sell now","Buy and immediately sell for cash. Taxed as ordinary income.")+
+    act("sellLater","Sell later at a price","Buy now, sell at a target price down the road.")+
+    act("holdThen10b5","Hold, then sell via 10b5-1","Buy & hold to reach low long-term rates, then auto-sell on a schedule.");
+  const sub = B.action==="sellLater"
+    ? `<div class="panel" style="margin-top:10px"><label class="fld">Target sale price</label><input type="number" step="0.5" value="${B.target}" oninput="bTargetB(this.value)" style="max-width:180px">
+        <div class="seg" style="margin-top:8px;max-width:440px"><button class="${B.qualifying?"on":""}" onclick="bQualB(true)">Long-term / qualifying</button><button class="${!B.qualifying?"on":""}" onclick="bQualB(false)">Short / disqualifying</button></div></div>`
+    : B.action==="holdThen10b5"
+    ? `<div class="panel" style="margin-top:10px"><div class="grid3">
+        <div><label class="fld">10b5-1 plan length</label><select onchange="bPlan('planMonths',+this.value)">${[6,12,18,24].map(m=>`<option value="${m}"${B.planMonths===m?" selected":""}>${m} months</option>`).join("")}</select></div>
+        <div><label class="fld">Sell frequency</label><div class="seg"><button class="${B.planFreq==="monthly"?"on":""}" onclick="bPlan('planFreq','monthly')">Monthly</button><button class="${B.planFreq==="quarterly"?"on":""}" onclick="bPlan('planFreq','quarterly')">Quarterly</button></div></div>
+        <div></div></div><div class="hint">Fine-tune fees and price floors in the 10b5-1 Plan tab.</div></div>` : "";
 
-  $("builderView").innerHTML=''+
-    '<h2 class="sec"><span class="n">\u{1F9EE}</span>Exercise Calculator</h2>'+
-    '<div class="disclaimer" style="margin-bottom:14px">Pick which grants and how many shares, choose what you would do, and see the exact tax. Everything is editable — set the price to the live quote before you act. Estimate only, not tax advice.</div>'+
-    '<div class="panel" style="margin-bottom:14px"><div class="grid3">'+
-      '<div><label class="fld">Share price (live)</label><input type="number" step="0.5" value="'+BUILD.price+'" oninput="bSetInput(\'price\',this.value)"></div>'+
-      '<div><label class="fld">Her other income (yr)</label><input type="number" step="1000" value="'+BUILD.income+'" oninput="bSetInput(\'income\',this.value)"></div>'+
-      '<div><label class="fld">Filing status</label><select onchange="bSetInput(\'status\',this.value)">'+
-        ['single','mfj','hoh','mfs'].map(function(s){return '<option value="'+s+'"'+(BUILD.status===s?" selected":"")+'>'+({single:"Single",mfj:"Married filing jointly",hoh:"Head of household",mfs:"Married filing separately"}[s])+'</option>';}).join("")+
-      '</select></div></div></div>'+
+  $("builderView").innerHTML=`
+    <h2 class="sec"><span class="n">\u{1F9EE}</span>Exercise Calculator</h2>
+    <div class="disclaimer" style="margin-bottom:14px">Pick a grant, choose how many shares, and pick what you would do — then see exactly what happens, with dates and taxes. Set the price to the live quote before you act. Estimate only, not tax advice.</div>
+    <div class="panel" style="margin-bottom:6px"><div class="grid3">
+      <div><label class="fld">Share price (live)</label><input type="number" step="0.5" value="${B.price}" oninput="bSetInput('price',this.value)"></div>
+      <div><label class="fld">Her other income (yr)</label><input type="number" step="1000" value="${B.income}" oninput="bSetInput('income',this.value)"></div>
+      <div><label class="fld">Filing status</label><select onchange="bSetInput('status',this.value)">${["single","mfj","hoh","mfs"].map(sx=>`<option value="${sx}"${B.status===sx?" selected":""}>${({single:"Single",mfj:"Married filing jointly",hoh:"Head of household",mfs:"Married filing separately"})[sx]}</option>`).join("")}</select></div>
+    </div></div>
 
-    '<div class="panel" style="margin-bottom:14px">'+
-      '<div class="quickfill"><b>Quick fill:</b> spend $<input type="number" id="b_budget" placeholder="1800"> on the cheapest strikes '+
-        '<button class="btn btn-sm" onclick="bQuickFill()">Fill</button>'+
-        '<button class="btn btn-ghost btn-sm" onclick="bClear()">Clear</button></div>'+
-      '<div style="overflow-x:auto"><table class="gtab"><thead><tr>'+
-        '<th class="l">Grant</th><th>Strike</th><th>Available</th><th>$ to spend</th><th>Shares</th><th>Spread</th></tr></thead>'+
-        '<tbody>'+rows+'</tbody>'+
-        '<tfoot><tr class="btot"><td class="l">Totals</td><td></td><td></td><td class="r" id="b_totCash">$0</td><td class="r" id="b_totShares">0</td><td class="r" id="b_totSpread">$0</td></tr></tfoot>'+
-        '</table></div></div>'+
+    <div class="steplabel"><span class="sn">1</span>Pick a grant</div>
+    <div class="gcards">${gcards}</div>
 
-    '<div class="panel" style="margin-bottom:14px"><label class="fld">What would you do?</label>'+seg+later+'</div>'+
+    <div class="steplabel"><span class="sn">2</span>How many to exercise <span class="muted" style="font-weight:600;font-size:.8rem">&nbsp;from your $${sel?sel.strike.toFixed(2):""} grant (${sel?sel.exercisable.toLocaleString():0} available)</span></div>
+    <div class="panel">
+      <input type="range" id="bSlider" min="0" max="${sel?sel.exercisable:0}" step="1" value="${q}" oninput="bAmt(this.value)">
+      <div class="seg" style="margin-top:8px;max-width:330px"><button onclick="bPct(.25)">25%</button><button onclick="bPct(.5)">50%</button><button onclick="bPct(1)">Max</button></div>
+      <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:.82rem" class="muted">
+        <span>Exact:</span><input type="number" id="bNum" min="0" max="${sel?sel.exercisable:0}" value="${q}" oninput="bAmt(this.value)" style="width:110px">
+        <span>shares &nbsp;·&nbsp; or by cash: $</span><input type="number" id="bBudgetIn" placeholder="1800" style="width:100px"><button class="btn btn-ghost btn-sm" onclick="bBudget()">= shares</button>
+      </div>
+      <div class="amtsum" id="bAmtSummary"></div>
+    </div>
 
-    '<div id="bResults"></div>';
-  bRecalc();
+    <div class="steplabel"><span class="sn">3</span>What will you do?</div>
+    <div class="actcards">${actionCards}</div>${sub}
+
+    <div id="bOutcome" style="margin-top:14px"></div>`;
+  bRecalcOutcome();
 }
 
-function bRecalc(){
-  const price=BUILD.price, income=BUILD.income, status=BUILD.status;
-  const lots=[]; let totSh=0, totCash=0, totSpread=0;
-  PLAN.grants.forEach(function(x){ const q=Math.min(BUILD.shares[x.id]||0, x.exercisable);
-    const sp=Math.max(0,(price-x.strike)*q);
-    const el=document.getElementById("sp_"+x.id); if(el) el.textContent=fmt0(sp);
-    if(q>0){ lots.push({shares:q,strike:x.strike,type:x.type}); totSh+=q; totCash+=q*x.strike; totSpread+=sp; } });
-  const tc=document.getElementById("b_totCash"); if(tc) tc.textContent=fmt0(totCash);
-  const tsh=document.getElementById("b_totShares"); if(tsh) tsh.textContent=totSh.toLocaleString();
-  const tsp=document.getElementById("b_totSpread"); if(tsp) tsp.textContent=fmt0(totSpread);
-  const box=$("bResults"); if(!box) return;
-  if(!lots.length){ box.innerHTML='<div class="panel muted" style="text-align:center">Pick some shares above (or use Quick fill) to see the tax and what it means.</div>'; return; }
+function bRecalcOutcome(){
+  const sel=curGrant(); const B=BUILD, price=B.price, q=Math.min(B.shares||0, sel?sel.exercisable:0);
+  const sumEl=document.getElementById("bAmtSummary");
+  if(sumEl) sumEl.innerHTML = (sel&&q>0) ? `<b>${q.toLocaleString()}</b> shares &nbsp;·&nbsp; <b>${fmt0(q*sel.strike)}</b> to exercise &nbsp;·&nbsp; controls <b>${fmt0(q*price)}</b> of stock` : `<span class="muted" style="font-weight:600">Choose how many shares to exercise.</span>`;
+  const box=document.getElementById("bOutcome"); if(!box) return;
+  if(!sel||q<=0){ box.innerHTML=`<div class="panel muted" style="text-align:center">Pick a grant and an amount to see what happens.</div>`; return; }
   const prior=(price-((PLAN.priorIsoExerciseThisYear&&PLAN.priorIsoExerciseThisYear.strike)||0))*((PLAN.priorIsoExerciseThisYear&&PLAN.priorIsoExerciseThisYear.shares)||0);
-  const base={status:status,otherIncome:income,priorIsoPref:prior,fmv:price};
-  const r=computePlan(Object.assign({},base,{lots:lots,action:BUILD.action,salePrice:BUILD.target,qualifying:BUILD.qualifying,longTerm:true}));
-  const isHold=BUILD.action==="hold";
-  const tShares=lots.reduce(function(s,l){return s+l.shares;},0);
-  const L=function(k,v){return '<tr><td>'+k+'</td><td class="r">'+v+'</td></tr>';};
-  const LB=function(k,v,c){return '<tr class="tot"><td>'+k+'</td><td class="r" style="color:'+(c||"var(--ink)")+'">'+v+'</td></tr>';};
-  let t='';
-  t+=L("Shares exercised", tShares.toLocaleString());
-  t+=L("Bargain element (spread)", fmt0(r.bargain));
-  if(r.ordinaryAdd>0) t+=L("Ordinary income added", fmt0(r.ordinaryAdd));
-  if(r.isoPref>0) t+=L("ISO AMT preference", fmt0(r.isoPref));
-  if(r.capGain>0) t+=L("Capital gain ("+(r.capGainLT?"long-term":"short-term")+")", fmt0(r.capGain));
-  t+='<tr><td colspan="2" style="border:none;padding-top:9px"><b style="color:var(--accent-dk);font-size:.72rem;letter-spacing:.6px;text-transform:uppercase">Tax</b></td></tr>';
-  if(r.amtDue>0) t+=L("Federal AMT", fmt0(r.amtDue));
-  if(r.fedIncMarginal>0) t+=L("Federal income / cap-gains", fmt0(r.fedIncMarginal));
-  if(r.niit>0) t+=L("NIIT (3.8%)", fmt0(r.niit));
-  if(r.addlMed>0) t+=L("Additional Medicare", fmt0(r.addlMed));
-  t+=L("California", fmt0(r.caMarginal));
-  t+=LB("Total tax from this", fmt0(r.totalTax));
-  t+='<tr><td colspan="2" style="border:none;padding-top:9px"><b style="color:var(--accent-dk);font-size:.72rem;letter-spacing:.6px;text-transform:uppercase">Cash</b></td></tr>';
-  t+=L("Cash to exercise (strike)", fmt0(r.cashToExercise));
-  if(isHold){ t+=L("Cash for AMT (next April)", fmt0(r.totalTax));
-    t+=LB("Out of pocket", fmt0(r.cashOutOfPocket), "#c2545a");
-    t+=LB("Stock value held (paper)", fmt0(r.paperValue), "var(--low)"); }
-  else { t+=LB("Net cash after tax", fmt0(r.netAfterTax), "var(--low)"); }
+  const base={status:B.status,otherIncome:B.income,priorIsoPref:prior,fmv:price};
+  const lots=[{shares:q,strike:sel.strike,type:sel.type}];
+  const now=new Date(), y=now.getFullYear(), apr="April 15, "+(y+1), f=fmt0;
+  const L=(k,v,c)=>`<tr><td>${k}</td><td class="r"${c?` style="color:${c}"`:""}>${v}</td></tr>`;
+  const LB=(k,v,c)=>`<tr class="tot"><td>${k}</td><td class="r" style="color:${c||"var(--ink)"}">${v}</td></tr>`;
+  let head, what, rows, tl;
 
-  box.innerHTML='<div class="panel"><table class="mathtab">'+t+'</table>'+timeline(r)+foresight(r,lots,tShares)+'</div>';
-}
-
-function timeline(r){
-  var now=new Date(), y=now.getFullYear();
-  var apr="April 15, "+(y+1), jan="Jan 15, "+(y+1), f=fmt0, rows="";
-  var row=function(when,what,due){ return '<div class="tl-row'+(due?" due":"")+'"><span class="tl-when">'+when+'</span><span class="tl-what">'+what+'</span></div>'; };
-  if(BUILD.action==="hold"){
-    rows+=row("At exercise","Pay the strike cost, <b>"+f(r.cashToExercise)+"</b> (settles about 2 business days after you exercise).");
-    if(r.totalTax>0){
-      rows+=row(jan,"Likely an <b>estimated tax payment</b> toward the ~"+f(r.amtDue)+" AMT, to avoid an underpayment penalty. A safe harbor (paying 110% of last year's tax through withholding) may cover you, so check with your CPA.");
-      rows+=row(apr,"<b>"+f(r.totalTax)+"</b> AMT due with your "+y+" tax return.",true);
-    }
-  } else if(BUILD.action==="sellNow"){
-    rows+=row("At exercise / sale","You buy and sell the same day, so the sale covers the strike and frees your net cash of <b>"+f(r.netAfterTax)+"</b>.");
-    rows+=row(apr,"<b>"+f(r.totalTax)+"</b> tax due with your "+y+" return. Important: selling ISOs does <b>not</b> withhold any tax, so set this money aside now.",true);
+  if(B.action==="hold"){
+    const r=computePlan({...base,lots,action:"hold"});
+    head=`Exercise & hold ${q.toLocaleString()} shares`;
+    what=`You buy ${q.toLocaleString()} shares at $${sel.strike.toFixed(2)} (that is <b>${f(r.cashToExercise)}</b>) and keep them. The <b>${f(r.bargain)}</b> paper gain becomes an <b>AMT preference</b>, so you would owe about <b>${f(r.amtDue)}</b> in AMT next April${r.caMarginal>0?` plus ${f(r.caMarginal)} California`:""}. Nothing is sold — you spend real cash to hold — and you start the 1-year clock toward the low long-term rate. If BLLN drops before you sell, you paid tax on a gain that shrank (recoverable later as an AMT credit).`;
+    rows=L("Cost to exercise",f(r.cashToExercise))+(r.amtDue>0?L("Federal AMT",f(r.amtDue)):"")+(r.caMarginal>0?L("California",f(r.caMarginal)):"")+LB("Out of pocket (now + April)",f(r.cashOutOfPocket),"#c2545a")+LB("Stock value held (paper)",f(r.paperValue),"var(--low)");
+    tl=[["At exercise",`Pay ${f(r.cashToExercise)} for the shares (settles ~2 business days out).`],[apr,`${f(r.totalTax)} AMT due with your ${y} return.`,1]];
+  } else if(B.action==="sellNow"){
+    const r=computePlan({...base,lots,action:"sellNow"});
+    const stdd=TAX_CONFIG.federal.standardDeduction[B.status];
+    const rB=fedMarginalRate(Math.max(0,B.income-stdd),B.status), rA=fedMarginalRate(Math.max(0,B.income+r.ordinaryAdd-stdd),B.status);
+    const bk=rA>rB?` and pushes your top federal rate from ${Math.round(rB*100)}% to ${Math.round(rA*100)}%`:"";
+    head=`Exercise & sell ${q.toLocaleString()} shares now`;
+    what=`You buy and immediately sell ${q.toLocaleString()} shares. The <b>${f(r.ordinaryAdd)}</b> gain is taxed as <b>ordinary income</b>${bk}. You never risk your own cash — the sale covers the strike and the tax — and you walk away with about <b>${f(r.netAfterTax)}</b>. You give up the lower long-term rate and future upside. A sale outside a 10b5-1 plan must happen in an open trading window with no inside information.`;
+    rows=L("Ordinary income added",f(r.ordinaryAdd))+L("Total tax",f(r.totalTax))+LB("Net cash to you",f(r.netAfterTax),"var(--low)");
+    tl=[["At sale","Buy and sell together — no cash out of pocket."],[apr,`${f(r.totalTax)} tax due with your ${y} return — no tax is withheld, so set it aside.`,1]];
+  } else if(B.action==="sellLater"){
+    const r=computePlan({...base,lots,action:"sellLater",salePrice:B.target,qualifying:B.qualifying,longTerm:true});
+    head=`Exercise now, sell later at ${f(B.target)}`;
+    what=`You buy ${q.toLocaleString()} shares now (${f(r.cashToExercise)}) and sell later at $${(+B.target).toFixed(0)}. `+(B.qualifying?`As a <b>qualifying</b> sale the whole gain gets the <b>long-term</b> rate (15–20% federal, plus CA). `:`As a <b>disqualifying</b> sale the gain is <b>ordinary income</b>. `)+`Estimated tax <b>${f(r.totalTax)}</b>, netting about <b>${f(r.netAfterTax)}</b>. The target is a guess — nobody knows the future price.`;
+    rows=L("Cost to exercise",f(r.cashToExercise))+L(`Capital gain (${r.capGainLT?"long-term":"short-term"})`,f(r.capGain))+L("Total tax",f(r.totalTax))+LB("Net after tax",f(r.netAfterTax),"var(--low)");
+    tl=[["At exercise",`Pay ${f(r.cashToExercise)} for the shares.`],["When you sell",`Tax of ~${f(r.totalTax)} due with the return for the year you sell.`]];
   } else {
-    rows+=row("At exercise","Pay the strike cost, <b>"+f(r.cashToExercise)+"</b>.");
-    rows+=row("When you sell","Tax of about <b>"+f(r.totalTax)+"</b> is due with the return for the <b>year you sell</b> (selling in 2027 means it is due April 15, 2028).",true);
+    const rH=computePlan({...base,lots,action:"hold"});
+    const gain=Math.max(0,(price-sel.strike)*q), saleTax=t5SaleTax(gain,true).total;
+    const trades=Math.max(1,Math.round(B.planMonths/(B.planFreq==="monthly"?1:3)));
+    const fees=250+25*trades;
+    const saleNet=q*price - saleTax - fees;
+    const season=new Date(now.getTime()); season.setMonth(season.getMonth()+12);
+    const firstSell=new Date(season.getTime()); firstSell.setDate(firstSell.getDate()+30);
+    const lastSell=new Date(firstSell.getTime()); lastSell.setMonth(lastSell.getMonth()+B.planMonths);
+    const fmtD=d=>d.toLocaleDateString("en-US",{month:"short",year:"numeric"});
+    head=`Exercise & hold ${q.toLocaleString()}, then sell via a 10b5-1 plan`;
+    what=`The full lifecycle in three steps: <b>(1)</b> buy &amp; hold ${q.toLocaleString()} shares now — costs ${f(rH.cashToExercise)} plus about ${f(rH.amtDue)} AMT next April. <b>(2)</b> Let them season ~1 year so they qualify for long-term rates. <b>(3)</b> A 10b5-1 plan <b>automatically sells them</b> over ${B.planMonths} months (${trades} ${B.planFreq} sales), even through blackout windows, at the low long-term rate. Net from the sales: about <b>${f(saleNet)}</b> after ~${f(saleTax)} tax and ~${f(fees)} plan fees.`;
+    rows=`<tr><td colspan="2" style="border:none;padding-top:2px"><span class="phase"><span class="pt">Now — exercise &amp; hold</span></span></td></tr>`+
+      L("Cost to exercise",f(rH.cashToExercise))+(rH.amtDue>0?L("AMT (due next April)",f(rH.amtDue)):"")+LB("Out of pocket now + April",f(rH.cashOutOfPocket),"#c2545a")+
+      `<tr><td colspan="2" style="border:none;padding-top:10px"><span class="phase"><span class="pt">~1 year later — 10b5-1 sells them</span></span></td></tr>`+
+      L("Gross from sales",f(q*price))+L("Long-term tax",f(saleTax))+L("Plan fees (est.)",f(fees))+LB("Net cash from selling",f(saleNet),"var(--low)");
+    tl=[["At exercise",`Buy &amp; hold — pay ${f(rH.cashToExercise)}.`],[apr,`${f(rH.totalTax)} AMT due.`,1],[fmtD(season),"Shares seasoned (held ~1 yr) — now qualify for long-term rates."],[`${fmtD(firstSell)} – ${fmtD(lastSell)}`,`10b5-1 auto-sells over ${B.planMonths} months at the long-term rate.`]];
   }
-  return '<div class="timeline">'+rows+'</div>';
+  const tlHtml=tl.map(r=>`<div class="tl-row${r[2]?" due":""}"><span class="tl-when">${r[0]}</span><span class="tl-what">${r[1]}</span></div>`).join("");
+  box.innerHTML=`<div class="outcome"><div class="outcome-h">${head}</div><div class="outcome-b">
+    <div class="whatbox">${what}</div>
+    <table class="mathtab">${rows}</table>
+    <div class="timeline" style="margin-top:14px">${tlHtml}</div>
+  </div></div>`;
 }
-function foresight(r,lots,tShares){
-  const price=BUILD.price, income=BUILD.income, status=BUILD.status, f=fmt0;
-  const strikes=lots.map(function(l){return "$"+l.strike.toFixed(2);}).join(", ");
-  const stdd=TAX_CONFIG.federal.standardDeduction[status];
-  const rB=fedMarginalRate(Math.max(0,income-stdd),status);
-  const rA=fedMarginalRate(Math.max(0,income+r.ordinaryAdd-stdd),status);
-  const eff=r.bargain>0?((r.totalTax/r.bargain)*100).toFixed(0):"0";
-  let body="";
-  if(BUILD.action==="hold"){
-    body="You would exercise <b>"+tShares.toLocaleString()+"</b> shares ("+strikes+") and hold. The <b>"+f(r.bargain)+"</b> spread becomes an <b>AMT preference</b> — you would owe about <b>"+f(r.amtDue)+"</b> in federal AMT"+(r.caMarginal>0?(" plus "+f(r.caMarginal)+" California"):" (no California AMT at this size)")+", due next April, on a <i>paper</i> gain. Nothing is sold, so you are out of pocket <b>"+f(r.cashOutOfPocket)+"</b> now-plus-April to hold <b>"+f(r.paperValue)+"</b> of stock. Upside: this starts the 1-year clock toward the low long-term rate, and the AMT isn't lost — it becomes a credit you recover in future years. Risk: if BLLN falls before you sell, you have paid real tax on value that shrank.";
-  } else if(BUILD.action==="sellNow"){
-    let bk = rA>rB ? (" This pushes your top federal rate from <b>"+Math.round(rB*100)+"%</b> into the <b>"+Math.round(rA*100)+"%</b> bracket.") : (" You stay within your <b>"+Math.round(rA*100)+"%</b> federal bracket.");
-    body="You would exercise and immediately sell <b>"+tShares.toLocaleString()+"</b> shares. The <b>"+f(r.ordinaryAdd)+"</b> spread is taxed as <b>ordinary income</b> stacked on your income."+bk+" All-in tax is about <b>"+f(r.totalTax)+"</b> (~"+eff+"% of the spread), and you walk away with roughly <b>"+f(r.netAfterTax)+"</b> in cash. Cleanest, lowest-risk path — no AMT, no money left riding on the stock — but you give up the lower long-term rate and any future upside. Heads-up: a sale outside a 10b5-1 plan has to happen during an <b>open trading window</b> (about 3–4 weeks each quarter) when you hold no inside information.";
-  } else {
-    const qual=BUILD.qualifying;
-    body="You would exercise now and sell later at <b>"+f(BUILD.target)+"</b>. "+(qual
-      ? ("As a <b>qualifying</b> sale the whole gain gets the <b>long-term</b> federal rate (15–20%); California still taxes it as ordinary. ")
-      : ("As a <b>disqualifying</b> sale the original spread is <b>ordinary income</b> and only the rest is capital gain. "))+
-      "Estimated total tax <b>"+f(r.totalTax)+"</b>, netting about <b>"+f(r.netAfterTax)+"</b>. Remember the target is a guess, not a forecast — slide it to test how sensitive the outcome is. And any market sale outside a 10b5-1 plan must fall inside an open trading window when you hold no inside information.";
-  }
-  return '<div class="foresight"><span class="fh">What this means</span>'+body+'</div>';
-}
-
 
 /* ============================================================
    10b5-1 SELL-PLAN PLANNER — schedule automated sales, with
