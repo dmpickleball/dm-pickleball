@@ -254,6 +254,15 @@ canvas{width:100%;display:block}
 .whatbox{background:#eaf7fd;border:1px solid #bfe6f5;border-radius:9px;padding:12px 13px;font-size:.86rem;line-height:1.55;margin-bottom:14px}
 .whatbox b{color:var(--accent-dk)}
 .phase .pt{font-weight:800;font-size:.72rem;color:var(--accent-dk);text-transform:uppercase;letter-spacing:.5px;border-left:3px solid var(--accent);padding-left:9px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:640px){.grid2{grid-template-columns:1fr}}
+.bp-hero{background:var(--deep);color:#fff;border-radius:13px;padding:18px 20px;margin-bottom:14px}
+.bp-hero .big{font-size:2rem;font-weight:800;letter-spacing:-.5px;line-height:1.05}
+.bp-hero .sub{color:#cfe6f1;font-size:.9rem;margin-top:6px;line-height:1.5}
+.bar{background:#e5edf2;border-radius:8px;height:24px;overflow:hidden}
+.bar > span{display:block;height:100%;background:var(--accent);border-radius:8px;min-width:2px}
+.bar-lbl{display:flex;justify-content:space-between;font-size:.78rem;font-weight:700;margin-bottom:5px}
+.bindnote{background:#fff7e9;border:1px solid #f0d49a;border-radius:9px;padding:11px 13px;font-size:.83rem;line-height:1.5;margin-top:14px}
 </style>
 </head>
 <body>
@@ -287,6 +296,7 @@ canvas{width:100%;display:block}
       <button id="modePlanner" onclick="showMode('planner')">📊 Scenario Planner</button>
       <button id="modeBuilder" onclick="showMode('builder')">🧮 Exercise Calculator</button>
       <button id="modeTenb5" onclick="showMode('tenb5')">📅 10b5-1 Plan</button>
+      <button id="modeBudget" onclick="showMode('budget')">💰 Budget Planner</button>
     </div>
 
     <div id="advisorView"></div>
@@ -294,6 +304,8 @@ canvas{width:100%;display:block}
     <div id="builderView" class="hide"></div>
 
     <div id="tenb5View" class="hide"></div>
+
+    <div id="budgetView" class="hide"></div>
 
     <div id="plannerView" class="hide">
     <h2 class="sec"><span class="n">1</span>Your situation</h2>
@@ -520,7 +532,7 @@ function startApp(user, plan){
   initAdvisor();
 }
 function showMode(m){
-  ['advisor','planner','builder','tenb5'].forEach(function(x){
+  ['advisor','planner','builder','tenb5','budget'].forEach(function(x){
     var v=document.getElementById(x+'View'); if(v) v.classList.toggle('hide',x!==m);
     var b=document.getElementById('mode'+x.charAt(0).toUpperCase()+x.slice(1)); if(b) b.classList.toggle('on',x===m);
   });
@@ -528,6 +540,7 @@ function showMode(m){
   if(m==='planner') recalc();
   if(m==='builder'){ if(!BUILD) initBuilder(); renderBuilder(); }
   if(m==='tenb5'){ if(!TENB5) initTenb5(); renderTenb5(); }
+  if(m==='budget'){ if(!BP) initBudget(); renderBudget(); }
 }
 function renderSubbar(){
   const ex=exercisableLots(); const totSh=ex.reduce((a,l)=>a+l.shares,0);
@@ -1340,6 +1353,106 @@ function t5Recalc(){
   t5Ladder();
 }
 
+
+/* ============================================================
+   BUDGET PLANNER — start from the cash you have, get the most
+   stock you can exercise & hold within it (cheapest strikes first).
+   ============================================================ */
+let BP=null;
+function initBudget(){ BP={ cashEx:20000, cashTax:60000, price:PLAN.currentPrice, income:PLAN.expectedIncome, status:PLAN.filingStatus||"single" }; }
+function bpSetNum(k,v){ BP[k]= v===""?"":(+v||0); bpRecalc(); }
+function bpSetVal(k,v){ BP[k]=v; renderBudget(); }
+
+function bpMax(cashEx,cashTax){
+  const lots=exercisableLots(); const total=lots.reduce((s,l)=>s+l.shares,0);
+  const prior=(BP.price-((PLAN.priorIsoExerciseThisYear&&PLAN.priorIsoExerciseThisYear.strike)||0))*((PLAN.priorIsoExerciseThisYear&&PLAN.priorIsoExerciseThisYear.shares)||0);
+  const base={status:BP.status,otherIncome:BP.income,priorIsoPref:prior,fmv:BP.price};
+  const fill=n=>{ let rem=Math.round(n),ll=[]; for(const l of lots){ if(rem<=0)break; const t=Math.min(l.shares,rem); ll.push({shares:t,strike:l.strike,type:l.type}); rem-=t;} return ll; };
+  const step=Math.max(5,Math.round(total/500));
+  let best=0,bestR=null,nextR=null;
+  for(let n=step;n<=total;n+=step){ const r=computePlan({...base,lots:fill(n),action:"hold"});
+    if(r.cashToExercise<=cashEx && r.totalTax<=cashTax){ best=n; bestR=r; } else { nextR=r; break; } }
+  const rAll=computePlan({...base,lots:fill(total),action:"hold"});
+  if(rAll.cashToExercise<=cashEx && rAll.totalTax<=cashTax){ best=total; bestR=rAll; nextR=null; }
+  return {best,bestR,nextR,total,fill,base};
+}
+
+function renderBudget(){
+  const B=BP;
+  $("budgetView").innerHTML=`
+    <h2 class="sec"><span class="n">\u{1F4B0}</span>Budget Planner</h2>
+    <div class="disclaimer" style="margin-bottom:14px">Tell me the cash you actually have, and I will show the <b>most stock you can exercise and hold</b> within it. Exercising and holding costs cash twice: the strike to buy the shares, and the AMT you owe next April. Estimate only, not tax advice.</div>
+    <div class="panel" style="margin-bottom:14px"><div class="grid2">
+      <div><label class="fld">Cash to buy the shares <span class="muted">(the strike, due now)</span></label><input type="number" step="1000" value="${B.cashEx===""?"":B.cashEx}" oninput="bpSetNum('cashEx',this.value)"></div>
+      <div><label class="fld">Cash for the tax bill <span class="muted">(the AMT, by next April)</span></label><input type="number" step="1000" value="${B.cashTax===""?"":B.cashTax}" oninput="bpSetNum('cashTax',this.value)"></div>
+    </div><div class="grid3" style="margin-top:12px">
+      <div><label class="fld">Share price (live)</label><input type="number" step="0.5" value="${B.price}" oninput="bpSetNum('price',this.value)"></div>
+      <div><label class="fld">Her other income (yr)</label><input type="number" step="1000" value="${B.income}" oninput="bpSetNum('income',this.value)"></div>
+      <div><label class="fld">Filing status</label><select onchange="bpSetVal('status',this.value)">${["single","mfj","hoh","mfs"].map(sx=>`<option value="${sx}"${B.status===sx?" selected":""}>${({single:"Single",mfj:"Married filing jointly",hoh:"Head of household",mfs:"Married filing separately"})[sx]}</option>`).join("")}</select></div>
+    </div></div>
+    <div id="bpResults"></div>`;
+  bpRecalc();
+}
+
+function bpRecalc(){
+  const box=$("bpResults"); if(!box) return;
+  const cashEx=+BP.cashEx||0, cashTax=+BP.cashTax||0, price=+BP.price||0, f=fmt0;
+  if(price<=0 || (cashEx<=0&&cashTax<=0)){ box.innerHTML=`<div class="panel muted" style="text-align:center">Enter the cash you have (and a price) to see what you can do.</div>`; return; }
+  const M=bpMax(cashEx,cashTax);
+  const now=new Date(), y=now.getFullYear();
+
+  if(M.best<=0){
+    box.innerHTML=`<div class="panel"><div class="whatbox" style="margin:0">With this cash you cannot exercise-and-hold any shares yet — even a small block pushes the AMT past your tax budget. Two options: raise the tax-cash pot, or use <b>exercise-and-sell</b> instead (the sale pays its own tax, so it needs no cash up front) if your goal is cash rather than holding. Try the Exercise Calculator for that.</div></div>`;
+    return;
+  }
+  const r=M.bestR, shares=M.best, allDone=(M.best>=M.total);
+  const grants=M.fill(shares);
+  const gRows=grants.map(l=>`<tr><td class="l">$${l.strike.toFixed(2)}</td><td class="r">${l.shares.toLocaleString()}</td><td class="r">${f(l.strike*l.shares)}</td><td class="r">${f((price-l.strike)*l.shares)}</td></tr>`).join("");
+
+  // which pot is the limit?
+  let binding="none";
+  if(!allDone && M.nextR){ const eOver=M.nextR.cashToExercise>cashEx, tOver=M.nextR.totalTax>cashTax; binding=eOver&&tOver?"both":eOver?"exercise":"tax"; }
+  // what a bit more would buy
+  let moreHtml="";
+  if(binding==="tax"){ const m=bpMax(cashEx,cashTax*1.25); const d=m.best-shares; if(d>0) moreHtml=`About <b>${f(cashTax*0.25)}</b> more tax cash would let you hold roughly <b>${d.toLocaleString()}</b> more shares.`; }
+  else if(binding==="exercise"){ const m=bpMax(cashEx*1.25,cashTax); const d=m.best-shares; if(d>0) moreHtml=`About <b>${f(cashEx*0.25)}</b> more exercise cash would let you hold roughly <b>${d.toLocaleString()}</b> more shares.`; }
+
+  const bindMsg = allDone ? `Your cash covers <b>every</b> exercisable share — nice. Below is the full position.`
+    : binding==="tax" ? `Your <b>tax cash (AMT)</b> is the tighter limit here — you run out of AMT budget before exercise budget. ${moreHtml}`
+    : binding==="exercise" ? `Your <b>exercise cash</b> is the tighter limit — you run out of buying budget before AMT budget. ${moreHtml}`
+    : `Both pots are about maxed out. ${moreHtml}`;
+
+  const exPct=Math.min(100, cashEx>0? r.cashToExercise/cashEx*100:0);
+  const txPct=Math.min(100, cashTax>0? r.totalTax/cashTax*100:0);
+
+  box.innerHTML=`
+    <div class="bp-hero"><div class="big">${shares.toLocaleString()} shares</div>
+      <div class="sub">is the most you can <b>exercise &amp; hold</b> with this cash — about ${f(shares*price)} of BLLN, using your cheapest strikes first (the most stock per dollar).</div></div>
+
+    <div class="panel" style="margin-bottom:14px">
+      <div class="bar-lbl"><span>Cash to buy shares</span><span>${f(r.cashToExercise)} of ${f(cashEx)}</span></div>
+      <div class="bar"><span style="width:${exPct}%"></span></div>
+      <div class="bar-lbl" style="margin-top:12px"><span>Cash for the AMT (next April)</span><span>${f(r.totalTax)} of ${f(cashTax)}</span></div>
+      <div class="bar"><span style="width:${txPct}%"></span></div>
+      <div class="bindnote">${bindMsg}</div>
+    </div>
+
+    <div class="panel" style="margin-bottom:14px"><div class="rep-h" style="font-size:.95rem"><span class="ic">✓</span>What you would exercise</div>
+      <div style="overflow-x:auto"><table class="gtab"><thead><tr><th class="l">Strike</th><th>Shares</th><th>Cost to buy</th><th>Spread</th></tr></thead>
+      <tbody>${gRows}</tbody>
+      <tfoot><tr class="btot"><td class="l">Total</td><td class="r">${shares.toLocaleString()}</td><td class="r">${f(r.cashToExercise)}</td><td class="r">${f(r.bargain)}</td></tr></tfoot></table></div>
+    </div>
+
+    <div class="panel" style="margin-bottom:14px"><table class="mathtab">
+      <tr><td>Stock you would hold (at ${f(price)})</td><td class="r" style="color:var(--low)">${f(shares*price)}</td></tr>
+      <tr><td>Cash to buy the shares (now)</td><td class="r">${f(r.cashToExercise)}</td></tr>
+      <tr><td>AMT — due April 15, ${y+1}</td><td class="r">${f(r.totalTax)}</td></tr>
+      <tr class="tot"><td>Total cash this uses</td><td class="r" style="color:#c2545a">${f(r.cashToExercise+r.totalTax)}</td></tr>
+    </table></div>
+
+    <div class="foresight"><span class="fh">How to read this</span>
+      Exercising your <b>cheapest strikes first</b> gives you the most shares and the most future upside per dollar — that is why the block above leans on your low-strike grants. Two honest reminders: the AMT is real tax on a <b>paper</b> gain (recoverable later as a credit, but only after you have paid it), and holding means your cash is spent on stock you have not sold. If your goal is cash rather than a bigger position, <b>exercise-and-sell</b> needs no money up front — the sale funds itself. Set the price to the live quote before you act.</div>`;
+}
 
 /* test hook (no data embedded; used only for offline render verification) */
 window.__startApp=startApp;
